@@ -1,0 +1,10 @@
+{
+    "component": {
+        "type": "composite",
+        "subcomponents": [
+            {"type": "primitive"},
+            {"type": "primitive"},
+            {"type": "primitive"}
+        ]
+    }
+}

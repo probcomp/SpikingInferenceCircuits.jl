@@ -1,0 +1,284 @@
+{
+  "nodes": [
+    {
+      "name": "Input{Symbol}(:on)"
+    },
+    {
+      "name": "Input{Symbol}(:off)"
+    },
+    {
+      "name": "Output{Int64}(1)"
+    },
+    {
+      "name": "Output{Int64}(2)"
+    },
+    {
+      "name": "Output{Int64}(3)"
+    },
+    {
+      "name": "Output{Int64}(4)"
+    },
+    {
+      "name": "CompIn{Int64,Symbol}(1, :on)"
+    },
+    {
+      "name": "CompIn{Int64,Symbol}(1, :off)"
+    },
+    {
+      "name": "CompIn{Int64,Symbol}(2, :on)"
+    },
+    {
+      "name": "CompIn{Int64,Symbol}(2, :off)"
+    },
+    {
+      "name": "CompIn{Int64,Symbol}(3, :on)"
+    },
+    {
+      "name": "CompIn{Int64,Symbol}(3, :off)"
+    },
+    {
+      "name": "CompIn{Int64,Symbol}(4, :on)"
+    },
+    {
+      "name": "CompIn{Int64,Symbol}(4, :off)"
+    },
+    {
+      "name": "CompOut{Int64,Symbol}(1, :out)"
+    },
+    {
+      "name": "CompOut{Int64,Symbol}(2, :out)"
+    },
+    {
+      "name": "CompOut{Int64,Symbol}(3, :out)"
+    },
+    {
+      "name": "CompOut{Int64,Symbol}(4, :out)"
+    }
+  ],
+  "groups": [
+    {
+      "leaves": [
+        7,
+        8,
+        15
+      ]
+    },
+    {
+      "leaves": [
+        9,
+        10,
+        16
+      ]
+    },
+    {
+      "leaves": [
+        11,
+        12,
+        17
+      ]
+    },
+    {
+      "leaves": [
+        13,
+        14,
+        18
+      ]
+    }
+  ],
+  "constraints": [
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 7
+        },
+        {
+          "offset": 0,
+          "node": 8
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 15
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 9
+        },
+        {
+          "offset": 0,
+          "node": 10
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 16
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 11
+        },
+        {
+          "offset": 0,
+          "node": 12
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 17
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 13
+        },
+        {
+          "offset": 0,
+          "node": 14
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 18
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    }
+  ],
+  "links": [
+    {
+      "source": 1,
+      "target": 7
+    },
+    {
+      "source": 1,
+      "target": 9
+    },
+    {
+      "source": 1,
+      "target": 11
+    },
+    {
+      "source": 1,
+      "target": 13
+    },
+    {
+      "source": 15,
+      "target": 3
+    },
+    {
+      "source": 15,
+      "target": 7
+    },
+    {
+      "source": 15,
+      "target": 9
+    },
+    {
+      "source": 15,
+      "target": 11
+    },
+    {
+      "source": 15,
+      "target": 13
+    },
+    {
+      "source": 16,
+      "target": 4
+    },
+    {
+      "source": 16,
+      "target": 7
+    },
+    {
+      "source": 16,
+      "target": 9
+    },
+    {
+      "source": 16,
+      "target": 11
+    },
+    {
+      "source": 16,
+      "target": 13
+    },
+    {
+      "source": 17,
+      "target": 5
+    },
+    {
+      "source": 17,
+      "target": 7
+    },
+    {
+      "source": 17,
+      "target": 9
+    },
+    {
+      "source": 17,
+      "target": 11
+    },
+    {
+      "source": 17,
+      "target": 13
+    },
+    {
+      "source": 18,
+      "target": 6
+    },
+    {
+      "source": 18,
+      "target": 7
+    },
+    {
+      "source": 18,
+      "target": 9
+    },
+    {
+      "source": 18,
+      "target": 11
+    },
+    {
+      "source": 18,
+      "target": 13
+    }
+  ]
+}

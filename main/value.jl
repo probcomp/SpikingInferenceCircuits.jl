@@ -8,7 +8,7 @@ abstract type GenericValue <: Value end
 abstract type PrimitiveValue{Target} <: Value end
 struct CompositeValue{T} <: Value
     vals::T
-    CompositeValue(t::T) where {T <: Union{
+    CompositeValue(vals::T) where {T <: Union{
         Tuple{Vararg{<:Value}},
         NamedTuple{<:Any, <:Tuple{Vararg{<:Value}}}
     }} = new{T}(vals)
@@ -16,6 +16,8 @@ end
 IndexedValues(t) = CompositeValue(Tuple(t))
 NamedValues(t) = CompositeValue(NamedTuple(t))
 Base.pairs(v::CompositeValue) = Base.pairs(v.vals)
+Base.keys(v::CompositeValue) = keys(v.vals)
+Base.values(v::CompositeValue) = values(v.vals)
 
 ###############
 # Value Types #

@@ -51,13 +51,13 @@ struct CompositeComponent{InID, OutID, SC} <: Component
         input::CompositeValue{InID},
         output::CompositeValue{OutID},
         subcomponents::SC,
-        node_to_idx::Dict{NodeName, UInt}
-        idx_to_node::Vector{NodeName}
+        node_to_idx::Dict{NodeName, UInt},
+        idx_to_node::Vector{NodeName},
         graph::SimpleDiGraph
     ) where {InID, OutID, SC <: Union{
         Tuple{Vararg{<:Component}}, 
         NamedTuple{<:Any, <:Tuple{Vararg{<:Component}}}
-    }} = CompositeComponent{InID, OutID, SC}(input, output, subcomponents, node_to_idx, idx_to_node, graph)
+    }} = new{InID, OutID, SC}(input, output, subcomponents, node_to_idx, idx_to_node, graph)
 end
 
 function CompositeComponent(
@@ -67,14 +67,23 @@ function CompositeComponent(
     edges
 )
     idx_to_node = collect(Iterators.flatten((
-        (Input(k) for k in keys(inputs)), (Output(k) for k in keys(outputs)),
-        (CompIn(compname, inname) for compname in keys(subcomponents) for inname in keys(input(subcomponents))),
-        (CompOut(compname, outname) for compname in keys(subcomponents) for outname in keys(output(subcomponents)))
+        (Input(k) for k in keys(input)), (Output(k) for k in keys(output)),
+        (CompIn(compname, inname) for (compname, subcomp) in pairs(subcomponents) for inname in keys(inputs(subcomp))),
+        (CompOut(compname, outname) for (compname, subcomp) in pairs(subcomponents) for outname in keys(outputs(subcomp)))
     )))
-    node_to_idx = Dict(name => idx for (idx, name) in idx_to_node)
-    graph = SimpleDiGraph(length(idx_to_node), (node_to_idx[src_name] => node_to_idx[dst_name] for (src_name, dst_name) in edges))
+    node_to_idx = Dict{NodeName, UInt}(name => idx for (idx, name) in enumerate(idx_to_node))
+    
+    graph = try
+        SimpleDiGraphFromIterator((Edge(node_to_idx[src_name], node_to_idx[dst_name]) for (src_name, dst_name) in edges))
+    catch e
+        if e isa KeyError && e.key isa NodeName
+            @error("$(e.key) used in `edges` but does not match the nodenames derived from `input`, `output`, and `subcomponents`")
+        end
+        throw(e)
+    end
+    @assert nv(graph) == length(idx_to_node)
 
-    CompositeComponent(inputs, outputs, subcomponents, node_to_idx, idx_to_node, graph)
+    CompositeComponent(input, output, subcomponents, node_to_idx, idx_to_node, graph)
 end
 inputs(c::CompositeComponent) = c.input
 outputs(c::CompositeComponent) = c.output
