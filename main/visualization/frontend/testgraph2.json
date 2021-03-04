@@ -25,16 +25,7 @@
       "name": "off"
     },
     {
-      "name": "on"
-    },
-    {
-      "name": "off"
-    },
-    {
-      "name": "on"
-    },
-    {
-      "name": "off"
+      "name": "out"
     },
     {
       "name": "on"
@@ -46,10 +37,19 @@
       "name": "out"
     },
     {
-      "name": "out"
+      "name": "on"
+    },
+    {
+      "name": "off"
     },
     {
       "name": "out"
+    },
+    {
+      "name": "on"
+    },
+    {
+      "name": "off"
     },
     {
       "name": "out"
@@ -57,30 +57,46 @@
   ],
   "groups": [
     {
+      "groups": [
+        4,
+        2,
+        3,
+        1
+      ],
+      "leaves": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
       "leaves": [
         6,
         7,
-        14
+        8
       ]
     },
     {
       "leaves": [
-        8,
         9,
-        15
-      ]
-    },
-    {
-      "leaves": [
         10,
-        11,
-        16
+        11
       ]
     },
     {
       "leaves": [
         12,
         13,
+        14
+      ]
+    },
+    {
+      "leaves": [
+        15,
+        16,
         17
       ]
     }
@@ -123,6 +139,88 @@
       "type": "alignment"
     },
     {
+      "left": 0,
+      "axis": "x",
+      "right": 2,
+      "type": "separation"
+    },
+    {
+      "left": 0,
+      "axis": "y",
+      "right": 1,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "left": 2,
+      "axis": "y",
+      "right": 3,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "left": 3,
+      "axis": "y",
+      "right": 4,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "left": 4,
+      "axis": "y",
+      "right": 5,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "left": 0,
+      "axis": "x",
+      "right": 6,
+      "type": "separation"
+    },
+    {
+      "left": 8,
+      "axis": "x",
+      "right": 2,
+      "type": "separation"
+    },
+    {
+      "left": 0,
+      "axis": "x",
+      "right": 9,
+      "type": "separation"
+    },
+    {
+      "left": 11,
+      "axis": "x",
+      "right": 2,
+      "type": "separation"
+    },
+    {
+      "left": 0,
+      "axis": "x",
+      "right": 12,
+      "type": "separation"
+    },
+    {
+      "left": 14,
+      "axis": "x",
+      "right": 2,
+      "type": "separation"
+    },
+    {
+      "left": 0,
+      "axis": "x",
+      "right": 15,
+      "type": "separation"
+    },
+    {
+      "left": 17,
+      "axis": "x",
+      "right": 2,
+      "type": "separation"
+    },
+    {
       "offsets": [
         {
           "offset": 0,
@@ -140,7 +238,7 @@
       "offsets": [
         {
           "offset": 0,
-          "node": 14
+          "node": 8
         }
       ],
       "axis": "x",
@@ -148,82 +246,33 @@
     },
     {
       "left": 6,
-      "equality": true,
       "axis": "x",
-      "right": 14,
-      "gap": 60,
+      "right": 8,
       "type": "separation"
     },
     {
-      "left": 0,
-      "equality": false,
-      "axis": "x",
-      "right": 6,
-      "gap": 60,
-      "type": "separation"
-    },
-    {
-      "left": 14,
-      "equality": false,
-      "axis": "x",
-      "right": 2,
-      "gap": 60,
+      "left": 6,
+      "axis": "y",
+      "right": 7,
+      "gap": 0,
       "type": "separation"
     },
     {
       "offsets": [
-        {
-          "offset": 0,
-          "node": 8
-        },
         {
           "offset": 0,
           "node": 9
-        }
-      ],
-      "axis": "x",
-      "type": "alignment"
-    },
-    {
-      "offsets": [
-        {
-          "offset": 0,
-          "node": 15
-        }
-      ],
-      "axis": "x",
-      "type": "alignment"
-    },
-    {
-      "left": 8,
-      "equality": true,
-      "axis": "x",
-      "right": 15,
-      "gap": 60,
-      "type": "separation"
-    },
-    {
-      "left": 0,
-      "equality": false,
-      "axis": "x",
-      "right": 8,
-      "gap": 60,
-      "type": "separation"
-    },
-    {
-      "left": 15,
-      "equality": false,
-      "axis": "x",
-      "right": 2,
-      "gap": 60,
-      "type": "separation"
-    },
-    {
-      "offsets": [
+        },
         {
           "offset": 0,
           "node": 10
-        },
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "offsets": [
         {
           "offset": 0,
           "node": 11
@@ -233,37 +282,16 @@
       "type": "alignment"
     },
     {
-      "offsets": [
-        {
-          "offset": 0,
-          "node": 16
-        }
-      ],
+      "left": 9,
       "axis": "x",
-      "type": "alignment"
-    },
-    {
-      "left": 10,
-      "equality": true,
-      "axis": "x",
-      "right": 16,
-      "gap": 60,
+      "right": 11,
       "type": "separation"
     },
     {
-      "left": 0,
-      "equality": false,
-      "axis": "x",
+      "left": 9,
+      "axis": "y",
       "right": 10,
-      "gap": 60,
-      "type": "separation"
-    },
-    {
-      "left": 16,
-      "equality": false,
-      "axis": "x",
-      "right": 2,
-      "gap": 60,
+      "gap": 0,
       "type": "separation"
     },
     {
@@ -284,7 +312,7 @@
       "offsets": [
         {
           "offset": 0,
-          "node": 17
+          "node": 14
         }
       ],
       "axis": "x",
@@ -292,26 +320,52 @@
     },
     {
       "left": 12,
-      "equality": true,
+      "axis": "x",
+      "right": 14,
+      "type": "separation"
+    },
+    {
+      "left": 12,
+      "axis": "y",
+      "right": 13,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 15
+        },
+        {
+          "offset": 0,
+          "node": 16
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 17
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "left": 15,
       "axis": "x",
       "right": 17,
-      "gap": 60,
       "type": "separation"
     },
     {
-      "left": 0,
-      "equality": false,
-      "axis": "x",
-      "right": 12,
-      "gap": 60,
-      "type": "separation"
-    },
-    {
-      "left": 17,
-      "equality": false,
-      "axis": "x",
-      "right": 2,
-      "gap": 60,
+      "left": 15,
+      "axis": "y",
+      "right": 16,
+      "gap": 0,
       "type": "separation"
     }
   ],
@@ -322,91 +376,91 @@
     },
     {
       "source": 0,
-      "target": 8
-    },
-    {
-      "source": 0,
-      "target": 10
+      "target": 9
     },
     {
       "source": 0,
       "target": 12
     },
     {
+      "source": 0,
+      "target": 15
+    },
+    {
       "source": 1,
       "target": 7
     },
     {
       "source": 1,
-      "target": 9
-    },
-    {
-      "source": 1,
-      "target": 11
+      "target": 10
     },
     {
       "source": 1,
       "target": 13
     },
     {
-      "source": 14,
+      "source": 1,
+      "target": 16
+    },
+    {
+      "source": 8,
       "target": 2
     },
     {
-      "source": 14,
+      "source": 8,
       "target": 7
     },
     {
-      "source": 14,
-      "target": 9
+      "source": 8,
+      "target": 10
     },
     {
-      "source": 14,
-      "target": 11
-    },
-    {
-      "source": 14,
+      "source": 8,
       "target": 13
     },
     {
-      "source": 15,
+      "source": 8,
+      "target": 16
+    },
+    {
+      "source": 11,
       "target": 3
     },
     {
-      "source": 15,
+      "source": 11,
       "target": 7
     },
     {
-      "source": 15,
-      "target": 9
+      "source": 11,
+      "target": 10
     },
     {
-      "source": 15,
-      "target": 11
-    },
-    {
-      "source": 15,
+      "source": 11,
       "target": 13
     },
     {
-      "source": 16,
+      "source": 11,
+      "target": 16
+    },
+    {
+      "source": 14,
       "target": 4
     },
     {
-      "source": 16,
+      "source": 14,
       "target": 7
     },
     {
-      "source": 16,
-      "target": 9
+      "source": 14,
+      "target": 10
     },
     {
-      "source": 16,
-      "target": 11
-    },
-    {
-      "source": 16,
+      "source": 14,
       "target": 13
+    },
+    {
+      "source": 14,
+      "target": 16
     },
     {
       "source": 17,
@@ -418,15 +472,15 @@
     },
     {
       "source": 17,
-      "target": 9
-    },
-    {
-      "source": 17,
-      "target": 11
+      "target": 10
     },
     {
       "source": 17,
       "target": 13
+    },
+    {
+      "source": 17,
+      "target": 16
     }
   ]
 }

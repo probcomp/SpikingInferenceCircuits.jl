@@ -16,8 +16,9 @@ end
 IndexedValues(t) = CompositeValue(Tuple(t))
 NamedValues(t) = CompositeValue(NamedTuple(t))
 Base.pairs(v::CompositeValue) = Base.pairs(v.vals)
-Base.keys(v::CompositeValue) = keys(v.vals)
-Base.values(v::CompositeValue) = values(v.vals)
+Base.keys(v::CompositeValue) = Base.keys(v.vals)
+Base.values(v::CompositeValue) = Base.values(v.vals)
+Base.length(v::CompositeValue) = Base.length(v.vals)
 
 ###############
 # Value Types #

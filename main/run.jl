@@ -1,8 +1,8 @@
 include("main.jl")
 
-spiking_sampler = PoissonRaceCatSampler(Categorical([0.1, 0.2, 0.2, 0.5]), 1.0)
-graph = implement(spiking_sampler, Spiking())
+spiking_sampler = SNNs.PoissonRaceCatSampler(SNNs.Categorical([0.1, 0.2, 0.2, 0.5]), 1.0)
+graph = SNNs.implement(spiking_sampler, SNNs.Spiking())
 
-open("visualization/frontend/testgraph.json", "w") do f
-    JSON.print(f, JSON.parse(json_graph(graph)), 2)
+open("visualization/frontend/testgraph2.json", "w") do f
+    JSON.print(f, SNNs.json_graph(graph), 2)
 end

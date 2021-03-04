@@ -1,10 +1,3 @@
-"""
-    Spiking <: Target
-
-Spiking circuit target for information processing.
-"""
-struct Spiking <: Target end
-
 # TODO: docstrings
 
 struct SpikeWire <: PrimitiveValue{Spiking} end
