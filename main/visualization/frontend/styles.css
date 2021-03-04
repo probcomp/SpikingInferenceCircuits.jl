@@ -9,11 +9,15 @@ body,
     cursor: move;
 }
 
-.group {
-    stroke: #fff;
+.compGroup {
+    stroke: black;
     stroke-width: 1.5px;
+    fill: white;
     cursor: move;
-    opacity: 0.7;
+}
+
+.poissonGroup {
+    fill: lightblue;
 }
 
 .link {
@@ -22,10 +26,18 @@ body,
     stroke-opacity: 1;
 }
 
-.label {
+.nodeLabel {
     fill: grey;
     font-family: Verdana;
     font-size: 8px;
     text-anchor: bottom;
+    cursor: move;
+}
+
+.groupLabel {
+    fill: grey;
+    font-family: Verdana;
+    font-size: 10px;
+    text-anchor: middle;
     cursor: move;
 }

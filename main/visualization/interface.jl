@@ -131,7 +131,7 @@ in vizgraph for `comp` (which this method does not construct),
 and `name_to_groupidx`, a dictionary mapping subcomponent names to the index
 of the corresponding subcomponent group in the vizgraph for `comp`.
 """
-function get_sub_vizgraphs(comp::CompositeComponent, start_node_idx, start_group_idx)
+function get_subcomps_vizgraph(comp::CompositeComponent, start_node_idx, start_group_idx)
     vg = VizGraph([], [], [], [])
     name_to_groupidx = Dict()
     name_to_nodeidx = Dict()
@@ -216,6 +216,7 @@ get_io_nodes(comp) = [
     for nodename in Iterators.flatten((keys(inputs(comp)), keys(outputs(comp))))
 ]
 
+comp_type_name(comp) = typeof(comp).name.name
 """
     make_group(comp, initial_node_idx, subgroup_indices=[])
 
@@ -225,11 +226,15 @@ in a format ready to be JSON-ified and sent to the frontend.
 make_group(comp, initial_node_idx, subgroup_indices=[]) =
     let leaves = collect(io_inds(comp, initial_node_idx))
         if isempty(subgroup_indices)
-            Dict("leaves" => leaves)
+            Dict(
+                "leaves" => leaves,
+                "comptype" => comp_type_name(comp)
+            )
         else
             Dict(
                 "leaves" => leaves,
-                "groups" => collect(subgroup_indices)
+                "groups" => collect(subgroup_indices),
+                "comptype" => comp_type_name(comp)
             )
         end
     end

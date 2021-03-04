@@ -55,6 +55,120 @@
       "name": "out"
     }
   ],
+  "links": [
+    {
+      "source": 0,
+      "target": 6
+    },
+    {
+      "source": 0,
+      "target": 9
+    },
+    {
+      "source": 0,
+      "target": 12
+    },
+    {
+      "source": 0,
+      "target": 15
+    },
+    {
+      "source": 1,
+      "target": 7
+    },
+    {
+      "source": 1,
+      "target": 10
+    },
+    {
+      "source": 1,
+      "target": 13
+    },
+    {
+      "source": 1,
+      "target": 16
+    },
+    {
+      "source": 8,
+      "target": 2
+    },
+    {
+      "source": 8,
+      "target": 7
+    },
+    {
+      "source": 8,
+      "target": 10
+    },
+    {
+      "source": 8,
+      "target": 13
+    },
+    {
+      "source": 8,
+      "target": 16
+    },
+    {
+      "source": 11,
+      "target": 3
+    },
+    {
+      "source": 11,
+      "target": 7
+    },
+    {
+      "source": 11,
+      "target": 10
+    },
+    {
+      "source": 11,
+      "target": 13
+    },
+    {
+      "source": 11,
+      "target": 16
+    },
+    {
+      "source": 14,
+      "target": 4
+    },
+    {
+      "source": 14,
+      "target": 7
+    },
+    {
+      "source": 14,
+      "target": 10
+    },
+    {
+      "source": 14,
+      "target": 13
+    },
+    {
+      "source": 14,
+      "target": 16
+    },
+    {
+      "source": 17,
+      "target": 5
+    },
+    {
+      "source": 17,
+      "target": 7
+    },
+    {
+      "source": 17,
+      "target": 10
+    },
+    {
+      "source": 17,
+      "target": 13
+    },
+    {
+      "source": 17,
+      "target": 16
+    }
+  ],
   "groups": [
     {
       "groups": [
@@ -63,6 +177,7 @@
         3,
         1
       ],
+      "comptype": "CompositeComponent",
       "leaves": [
         0,
         1,
@@ -73,6 +188,7 @@
       ]
     },
     {
+      "comptype": "PoissonNeuron",
       "leaves": [
         6,
         7,
@@ -80,6 +196,7 @@
       ]
     },
     {
+      "comptype": "PoissonNeuron",
       "leaves": [
         9,
         10,
@@ -87,6 +204,7 @@
       ]
     },
     {
+      "comptype": "PoissonNeuron",
       "leaves": [
         12,
         13,
@@ -94,6 +212,7 @@
       ]
     },
     {
+      "comptype": "PoissonNeuron",
       "leaves": [
         15,
         16,
@@ -367,120 +486,6 @@
       "right": 16,
       "gap": 0,
       "type": "separation"
-    }
-  ],
-  "links": [
-    {
-      "source": 0,
-      "target": 6
-    },
-    {
-      "source": 0,
-      "target": 9
-    },
-    {
-      "source": 0,
-      "target": 12
-    },
-    {
-      "source": 0,
-      "target": 15
-    },
-    {
-      "source": 1,
-      "target": 7
-    },
-    {
-      "source": 1,
-      "target": 10
-    },
-    {
-      "source": 1,
-      "target": 13
-    },
-    {
-      "source": 1,
-      "target": 16
-    },
-    {
-      "source": 8,
-      "target": 2
-    },
-    {
-      "source": 8,
-      "target": 7
-    },
-    {
-      "source": 8,
-      "target": 10
-    },
-    {
-      "source": 8,
-      "target": 13
-    },
-    {
-      "source": 8,
-      "target": 16
-    },
-    {
-      "source": 11,
-      "target": 3
-    },
-    {
-      "source": 11,
-      "target": 7
-    },
-    {
-      "source": 11,
-      "target": 10
-    },
-    {
-      "source": 11,
-      "target": 13
-    },
-    {
-      "source": 11,
-      "target": 16
-    },
-    {
-      "source": 14,
-      "target": 4
-    },
-    {
-      "source": 14,
-      "target": 7
-    },
-    {
-      "source": 14,
-      "target": 10
-    },
-    {
-      "source": 14,
-      "target": 13
-    },
-    {
-      "source": 14,
-      "target": 16
-    },
-    {
-      "source": 17,
-      "target": 5
-    },
-    {
-      "source": 17,
-      "target": 7
-    },
-    {
-      "source": 17,
-      "target": 10
-    },
-    {
-      "source": 17,
-      "target": 13
-    },
-    {
-      "source": 17,
-      "target": 16
     }
   ]
 }
