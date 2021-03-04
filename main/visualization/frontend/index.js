@@ -40,6 +40,7 @@ d3.json("testgraph2.json", function(graph) {
         .style("fill", (d, i) => color(i))
         .call(cola.drag)
         .on("mouseup", d => { d.fixed = false });
+    // TODO: Group (component) title
 
     // a `node` is an input to/output from a component
     const NodeR = 2;
@@ -56,7 +57,6 @@ d3.json("testgraph2.json", function(graph) {
         .enter().append("line")
         .attr("class", "link");
 
-    // TODO: display node name?
     var label = svg.selectAll(".label")
         .data(graph.nodes)
         .enter().append("text")
