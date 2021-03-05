@@ -1,5 +1,11 @@
 # TODO: docstrings
 
+include("simulator.jl")
+
+##############
+# Primitives #
+##############
+
 struct SpikeWire <: PrimitiveValue{Spiking} end
 
 struct PoissonNeuron <: PrimitiveComponent{Spiking}
@@ -7,3 +13,5 @@ struct PoissonNeuron <: PrimitiveComponent{Spiking}
 end
 inputs(::PoissonNeuron) = CompositeValue((on=SpikeWire(), off=SpikeWire()))
 outputs(::PoissonNeuron) = CompositeValue((out=SpikeWire(),))
+
+initial_state(::PoissonNeuron) = EmptyState()
