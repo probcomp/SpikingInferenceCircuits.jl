@@ -1,7 +1,5 @@
 # TODO: docstrings
 
-include("simulator.jl")
-
 ##############
 # Primitives #
 ##############
@@ -15,3 +13,6 @@ inputs(::PoissonNeuron) = CompositeValue((on=SpikeWire(), off=SpikeWire()))
 outputs(::PoissonNeuron) = CompositeValue((out=SpikeWire(),))
 
 initial_state(::PoissonNeuron) = EmptyState()
+
+### Simulator ###
+include("simulator.jl")

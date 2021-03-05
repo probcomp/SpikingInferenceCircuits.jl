@@ -88,6 +88,34 @@ end
 inputs(c::CompositeComponent) = c.input
 outputs(c::CompositeComponent) = c.output
 
+"""
+    does_output(c::CompositeComponent, name::Union{Input, CompOut})
+
+True if the node with the given name is connected to an `Output`; false false otherwise.
+"""
+# TODO: should we try to be smart about whether we iterate through the neighbors or the outputs?
+does_output(c::CompositeComponent, name::Union{Input, CompOut}) =
+    any(
+        c.idx_to_node[idx] isa Output
+        for idx in neighbors(c.graph, c.node_to_idx[name])
+    )
+
+"""
+    receivers(c::CompositeComponent: name::Union{Input, CompOut})
+
+Iterator over all the `NodeName`s which receive output from the node named `name`.
+
+(Each element of the outputted iterator will either be an `Output` or a `CompIn`.)
+"""
+receivers(c::CompositeComponent, name::Union{Input, CompOut}) = (
+        c.idx_to_node[idx] for idx in neighbors(c.graph, c.node_to_idx[name])
+    )
+
+# TODO: what are the accessors we need?
+# Base.getindex(c::CompositeComponent, i::Input) = input(c)[i.id]
+# Base.getindex(c::CompositeComponent, o::Output) = output(c)[o.id]
+# Base.getindex(c::CompositeComponent, i::CompIn) = 
+
 # TODO: figure out the details of Junction.  Do we want one `Junction` concrete type, or instead
 # something like a `Junction` abstract type with concrete subtypes `ValSplit`, `ValMerge`, and some combiner?
 """
@@ -101,8 +129,3 @@ Implementation & details of how this works: TODO
 struct Junction <: PrimitiveComponent{Target}
 
 end
-
-# TODO: what are the accessors we need?
-# Base.getindex(c::CompositeComponent, i::Input) = input(c)[i.id]
-# Base.getindex(c::CompositeComponent, o::Output) = output(c)[o.id]
-# Base.getindex(c::CompositeComponent, i::CompIn) = 
