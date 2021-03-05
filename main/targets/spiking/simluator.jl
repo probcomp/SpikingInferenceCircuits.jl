@@ -122,6 +122,25 @@ Thus, if `Ts ≤ ΔT` so that `spiking_output_names` is nonempty, we must have `
 advance_time_by(::Component, ::State, ::Trajectory, ΔT) = error("Not implemented.")
 
 """
+    (new_state, new_traj, spiking_output_names) = advance_time_by(c::Component, ::State, ::Trajectory, ΔT, f::Function)
+
+Same as `advance_time_by`, but calls `f(itr, ΔT)` before returning, where
+`itr` is an iterator over pairs `(nested_name, outputname)`.
+`nested_name` has the form `n1 => (n2 => ... => (n_n))`,
+and specifies the subcomponent `c.subcomponents[n1].subcomponents[n2]....subcomponents[n_n]`.
+`outputname` is an output of this nested subcomponent which spiked at `ΔT` seconds.
+`nested_name` will be `nothing` to indicate a spike for this output and `n1` to indicate a spike for `c.subcomponents[n1]`.
+
+By default, for any component other than a `CompositeComponent`, it is assumed that there are no internal spikes,
+and so `f` is only called on the component output spikes.
+"""
+function advance_time_by(c::Component, s::State, t::Trajectory, ΔT, f::Function)
+    (n, t, son) = advance_time_by(c, s, t, ΔT)
+    f(((nothing, name) for name in son), ΔT)
+    return (n, t, son)
+end
+
+"""
     (new_state, new_traj, spiking_output_names) = receive_input_spike(::Component, ::State, ::Trajectory, inname)
 
 Returns a new state and trajectory consistent with the component receiving a spike in the input with name `inname`.
@@ -178,21 +197,38 @@ trajectory_length(t::NextSpikeTrajectory) = t.time_to_next_spike
 # Simulator Methods #
 #####################
 
-# TODO: have a way to give input spikes
-# TODO: have a way to see which internal nodes are spiking
-# TODO: docstring
-function simulate_for_time(c::Component, s::State, t::Trajectory, ΔT; outspike_callback)
+# TODO: more general method with a way to give input spikes and a callback to receive output spikes
+
+"""
+    simulate_for_time_and_get_spikes(c::Component, s::State, t::Trajectory, ΔT)
+    simulate_for_time_and_get_spikes(c::Component, ΔT)
+
+Simulates the component for `ΔT` milliseconds and returns a vector giving all the output spikes which
+occurred during the simulation.  The vector is ordered by time, and contains elements of the form
+`(spiketime, (nestname, outputname))`, where `spiketime` is the time since the beginning of
+the simulation at which this spike occurred, `outputname` is the name of a component output which spiked,
+and `nestname` is as follows.
+`nestname` will be `nothing` for outputs of `c`, `n1` for a subcomponent with name `n1`,
+and `n1 => n2 => ... => n_n` for `c.subcomponents[n1].subcomponents[n2]....subcomponents[n_n]`.
+"""
+function simulate_for_time_and_get_spikes(c::Component, s::State, t::Trajectory, ΔT)
+    spikes = []
+    function f(itr, dt)
+        for outspec in itr
+            push!(spiketimes, (time_passed + dt, outspec))
+        end
+    end
+
     time_passed = 0
     while time_passed < ΔT
         t = extend_trajectory(c, s, t)
         time_passed += trajectory_length(t)
-        (s, t, outnames) = advance_time_by(c, s, t, trajectory_length(t))
-        outspike_callback(outnames)
-        # Possibility: have `inputnames = outspike_callback(outnames)`
-        # and then call `receive_input_spike` for the elements of this.
-        # It might be even better to have a way to set up for input spikes to arrive at certain times.
+        (s, t, _) = advance_time_by(c, s, t, trajectory_length(t))
     end
+
+    return spiketimes
 end
+simulate_for_time_and_get_spikes(c::Component, ΔT) = simulate_for_time_and_get_spikes(c, initial_state(c), empty_trajectory(c), ΔT)
 
 #################
 # PoissonNeuron #
@@ -222,6 +258,11 @@ receive_input_spike(p::PoissonNeuron, s::OnOffState, ::Trajectory, inputname) =
 #############
 # Composite #
 #############
+
+mutable_version(t::Tuple) = collect(t)
+mutable_version(n::NamedTuple) = Dict(pairs(n))
+immutable_version(v::Vector) = Tuple(v)
+immutable_version(d::Dict) = NamedTuple(d)
 
 """
     CompositeState <: State
@@ -276,11 +317,27 @@ function extend_trajectory(c::CompositeComponent, s::CompositeState, t::Composit
     )
 end
 
-# we assume that this (1) does not extend time past where we have extended the trajectories to, and
+function nest_callback(f, nest_at)
+    function nested(itr, ΔT)
+        nested_itr = (
+            (   isnothing(nst) ? nest_at : (nest_at => nst),
+                name
+            )
+            for (nst, name) in itr
+        )
+        f(nested_itr, ΔT)
+    end
+end
+
+# by the invariants, this:
+# (1) does not extend time past where we have extended the trajectories to, and
 # (2) does not extend time past the first spike which occurs in this component
-function advance_time_by(c::CompositeComponent, s::CompositeState, t::CompositeTrajectory, time)
-    @assert (trajectory_length(t) >= time) "Should not advance a time past trajectory length!"
-    advanced = map((args...) -> advance_time_by(args..., time), zip(c.subcomponents, s.substates, t.subtrajectories))
+function advance_time_by(c::CompositeComponent, s::CompositeState, t::CompositeTrajectory, ΔT, f::Function)
+    @assert (trajectory_length(t) >= ΔT) "Should not advance a time past trajectory length!"
+    advanced = map(
+        ((name, sc), ss, st) -> advance_time_by(sc, ss, st, ΔT, nest_callback(f, name)),
+        zip(pairs(c.subcomponents), s.substates, t.subtrajectories)
+    )
     advanced_states_and_trajs = mutable_version(map((s_, t_, _) -> (s_, t_), advanced))
     # pairs(advanced) = [subcomp_name => (substate, subtraj, itr_over_spiking_out_names) for ... in ...]
 
@@ -317,7 +374,7 @@ function advance_time_by(c::CompositeComponent, s::CompositeState, t::CompositeT
         CompositeState(map((_s, _) -> _s, advanced_states_and_trajs)),
         CompositeTrajectory(
             immutable_version(map((_, _t) -> _t, advanced_states_and_trajs)),
-            trajectory_length(t) - time,
+            trajectory_length(t) - ΔT,
             handled_spikes && t.has_next_spike,
             handled_spikes ? nothing : t.next_spike_time,
             handled_spikes ? nothing : t.next_spike_name,
@@ -325,6 +382,7 @@ function advance_time_by(c::CompositeComponent, s::CompositeState, t::CompositeT
         outspikes
     )
 end
+advance_time_by(c::CompositeComponent, s::CompositeState, t::CompositeTrajectory, ΔT) = advance_time_by(c, s, t, ΔT, identity)
 
 function receive_input_spike(c::CompositeComponent, s::CompositeState, t::CompositeTrajectory, inname)
     outspikes = []
