@@ -5,7 +5,12 @@ A hardware/software target for information processing.
 """
 abstract type Target end
 
-include("spiking.jl")
+"""
+    Spiking <: Target
+
+Spiking circuit target for information processing.
+"""
+struct Spiking <: Target end
 
 """
     ComputerProgram <: Target

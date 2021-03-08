@@ -1,0 +1,63 @@
+html,
+body,
+#graph {
+    height: 80vh
+}
+
+.nodeLabel {
+    fill: grey;
+    font-family: Verdana;
+    font-size: 8px;
+    text-anchor: bottom;
+    cursor: move;
+}
+
+.groupLabel {
+    fill: grey;
+    font-family: Verdana;
+    font-size: 10px;
+    text-anchor: middle;
+    cursor: move;
+}
+
+
+/* Non-Spiking Stylings */
+
+.node {
+    fill: black;
+    stroke-width: 0px;
+    cursor: move;
+}
+
+.compGroup {
+    stroke: black;
+    stroke-width: 1.5px;
+    fill: white;
+    cursor: move;
+}
+
+.poissonGroup {
+    fill: lightblue;
+}
+
+.link {
+    stroke: #7a4e4e;
+    stroke-width: 1px;
+    stroke-opacity: 0.2;
+}
+
+
+/* Spiking Stylings */
+
+.spikingNode {
+    fill: yellow;
+}
+
+.spikingLink {
+    stroke: yellow;
+    stroke-opacity: 1;
+}
+
+.spikingGroup {
+    fill: yellow;
+}

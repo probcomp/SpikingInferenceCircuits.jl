@@ -51,13 +51,13 @@ struct CompositeComponent{InID, OutID, SC} <: Component
         input::CompositeValue{InID},
         output::CompositeValue{OutID},
         subcomponents::SC,
-        node_to_idx::Dict{NodeName, UInt}
-        idx_to_node::Vector{NodeName}
+        node_to_idx::Dict{NodeName, UInt},
+        idx_to_node::Vector{NodeName},
         graph::SimpleDiGraph
     ) where {InID, OutID, SC <: Union{
         Tuple{Vararg{<:Component}}, 
         NamedTuple{<:Any, <:Tuple{Vararg{<:Component}}}
-    }} = CompositeComponent{InID, OutID, SC}(input, output, subcomponents, node_to_idx, idx_to_node, graph)
+    }} = new{InID, OutID, SC}(input, output, subcomponents, node_to_idx, idx_to_node, graph)
 end
 
 function CompositeComponent(
@@ -67,17 +67,54 @@ function CompositeComponent(
     edges
 )
     idx_to_node = collect(Iterators.flatten((
-        (Input(k) for k in keys(inputs)), (Output(k) for k in keys(outputs)),
-        (CompIn(compname, inname) for compname in keys(subcomponents) for inname in keys(input(subcomponents))),
-        (CompOut(compname, outname) for compname in keys(subcomponents) for outname in keys(output(subcomponents)))
+        (Input(k) for k in keys(input)), (Output(k) for k in keys(output)),
+        (CompIn(compname, inname) for (compname, subcomp) in pairs(subcomponents) for inname in keys(inputs(subcomp))),
+        (CompOut(compname, outname) for (compname, subcomp) in pairs(subcomponents) for outname in keys(outputs(subcomp)))
     )))
-    node_to_idx = Dict(name => idx for (idx, name) in idx_to_node)
-    graph = SimpleDiGraph(length(idx_to_node), (node_to_idx[src_name] => node_to_idx[dst_name] for (src_name, dst_name) in edges))
+    node_to_idx = Dict{NodeName, UInt}(name => idx for (idx, name) in enumerate(idx_to_node))
+    
+    graph = try
+        SimpleDiGraphFromIterator((Edge(node_to_idx[src_name], node_to_idx[dst_name]) for (src_name, dst_name) in edges))
+    catch e
+        if e isa KeyError && e.key isa NodeName
+            @error("$(e.key) used in `edges` but does not match the nodenames derived from `input`, `output`, and `subcomponents`")
+        end
+        throw(e)
+    end
+    @assert nv(graph) == length(idx_to_node)
 
-    CompositeComponent(inputs, outputs, subcomponents, node_to_idx, idx_to_node, graph)
+    CompositeComponent(input, output, subcomponents, node_to_idx, idx_to_node, graph)
 end
 inputs(c::CompositeComponent) = c.input
 outputs(c::CompositeComponent) = c.output
+
+"""
+    does_output(c::CompositeComponent, name::Union{Input, CompOut})
+
+True if the node with the given name is connected to an `Output`; false false otherwise.
+"""
+# TODO: should we try to be smart about whether we iterate through the neighbors or the outputs?
+does_output(c::CompositeComponent, name::Union{Input, CompOut}) =
+    any(
+        c.idx_to_node[idx] isa Output
+        for idx in neighbors(c.graph, c.node_to_idx[name])
+    )
+
+"""
+    receivers(c::CompositeComponent: name::Union{Input, CompOut})
+
+Iterator over all the `NodeName`s which receive output from the node named `name`.
+
+(Each element of the outputted iterator will either be an `Output` or a `CompIn`.)
+"""
+receivers(c::CompositeComponent, name::Union{Input, CompOut}) = (
+        c.idx_to_node[idx] for idx in neighbors(c.graph, c.node_to_idx[name])
+    )
+
+# TODO: what are the accessors we need?
+# Base.getindex(c::CompositeComponent, i::Input) = input(c)[i.id]
+# Base.getindex(c::CompositeComponent, o::Output) = output(c)[o.id]
+# Base.getindex(c::CompositeComponent, i::CompIn) = 
 
 # TODO: figure out the details of Junction.  Do we want one `Junction` concrete type, or instead
 # something like a `Junction` abstract type with concrete subtypes `ValSplit`, `ValMerge`, and some combiner?
@@ -92,8 +129,3 @@ Implementation & details of how this works: TODO
 struct Junction <: PrimitiveComponent{Target}
 
 end
-
-# TODO: what are the accessors we need?
-# Base.getindex(c::CompositeComponent, i::Input) = input(c)[i.id]
-# Base.getindex(c::CompositeComponent, o::Output) = output(c)[o.id]
-# Base.getindex(c::CompositeComponent, i::CompIn) = 
