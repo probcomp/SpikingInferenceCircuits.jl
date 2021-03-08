@@ -41,6 +41,7 @@ Whether the given value is an implementation for the given target (ie. whether i
 by the simulator for that target).
 """
 is_implementation_for(::PrimitiveValue{<:T}, ::T) where {T <: Target} = true
+is_implementation_for(::PrimitiveValue, ::Target) = false
 is_implementation_for(::GenericValue, ::Target) = false
 
 """
@@ -74,10 +75,10 @@ one may use `v[x1 => (x2 => ... => (x_n))]`, which equals `v[x1][x2][...][x_n]`.
 `Base.pairs(::CompositeComponent)` iterates over `(val_name, sub_value)` pairs,
 `Base.keys` gives an iterator over the names, and `Base.values` gives an iterator over the sub-values.
 """
-struct CompositeValue{T, A} <: Value
+struct CompositeValue{T} <: Value
     vals::T
-    abstract::GenericValue
-    CompositeValue(vals::T, abstract::GenericValue=nothing) where {T <: Union{
+    abstract::Union{Value, Nothing}
+    CompositeValue(vals::T, abstract::Union{Value, Nothing}=nothing) where {T <: Union{
             Tuple{Vararg{<:Value}},
             NamedTuple{<:Any, <:Tuple{Vararg{<:Value}}}
         }
@@ -106,13 +107,34 @@ Base.keys(v::CompositeValue) = Base.keys(v.vals)
 Base.values(v::CompositeValue) = Base.values(v.vals)
 Base.length(v::CompositeValue) = Base.length(v.vals)
 
+"""
+    keys_deep(v::CompositeValue)
+
+An iterator over all the nested value names (nesting until reaching
+a non-composite value).
+
+### Example
+```julia
+c = CompositeValue((
+    a = CompositeValue((SpikeWire(), SpikeWire())).
+    b = CompositeValue((k=SomeGenericValue(),)),
+    c = SomeGenericValue()
+))
+collect(keys_deep)(c) # == [:a => 1, :a => 2, :b => :k, :c]
+```
+"""
+keys_deep(v::CompositeValue) = Iterators.flatten((
+    val isa CompositeValue ? (k => subkey for subkey in keys_deep(val)) : (k,)
+    for (k, val) in Base.pairs(v)
+))
+
 abstract(v::CompositeValue) = v.abstract
 
 Base.getindex(cv::CompositeValue, k) = cv.vals[k]
-Base.getindex(cv::CompositeValue, p::Pair) = cv.vals[p.first][p.rest]
+Base.getindex(cv::CompositeValue, p::Pair) = cv.vals[p.first][p.second]
 
+# TODO: faster implementations for `is_implementation_for`, `implement_deep`?
 is_implementation_for(v::CompositeValue, t::Target) = all(is_implementation_for(val, t) for val in values(v))
-
 implement_deep(v::CompositeValue, t::Target) =
     if is_implementation_for(v, t)
         v
@@ -180,6 +202,5 @@ the transmitted value is `p/q` (so this is an unbiased estimate of `p/q`).
 struct BinarySamplesUnbiasedPositiveReal <: GenericValue
     num_samples::UInt
 end
-abstract(::SpikingUnbiasedPositiveReal) = UnbiasedPositiveReal()
-implement(s::SpikingUnbiasedPositiveReal, _) =
-    CompositeValue(Tuple(FiniteDomainValue(2) for _=1:s.num_samples), s)
+abstract(::BinarySamplesUnbiasedPositiveReal) = UnbiasedPositiveReal()
+implement(s::BinarySamplesUnbiasedPositiveReal, ::Target) = IndexedValues(FiniteDomainValue(2) for _=1:s.num_samples)

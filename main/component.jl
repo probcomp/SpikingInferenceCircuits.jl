@@ -53,6 +53,34 @@ abstract(::Component) = nothing
 ### TODO: document `target` (and maybe add an `is_concrete`?)
 # TODO: while working on this, think about whether things are set up right or this could be done better
 
+"""
+    implement(::Component, ::Target)
+
+Make progress implementing the component for the target, so that a finite
+number of repeated calls to `implement` will yield a component `c` so that `is_implementation_for(c, t)` is true.
+"""
+implement(::Component) = nothing
+
+"""
+    is_implementation_for(::Component, ::Target)
+
+Whether the given component is an implementation for the given target (ie. whether it can be simulated
+by the simulator for that target without any additional implementation work).
+"""
+is_implementation_for(::PrimitiveComponent{<:T}, ::T) where {T <: Target} = true
+is_implementation_for(::PrimitiveComponent, ::Target) = false
+is_implementation_for(::GenericComponent, ::Target) = false
+
+"""
+    implement_deep(::Component, t::Target)
+
+Implement the component for the target recursively, yielding a component `c` such that
+`is_implementation_for(c, t)` is true.
+"""
+implement_deep(c::PrimitiveComponent{U}, t::Target) where {U <: Target} = error("Cannot implement $c, a PrimitiveComponent{$u}, for target $t.")
+implement_deep(c::PrimitiveComponent{<:T}, ::T) where {T <: Target} = c
+implement_deep(c::GenericComponent, t::Target) = implement_deep(implement(c, t), t)
+
 ######################
 # CompositeComponent #
 ######################
@@ -98,6 +126,14 @@ An output value from a composite component with the given `name`.
 struct Output{ID} <: NodeName
     id::ID
 end
+
+Base.:(==)(a::Input, b::Input) = (a.id == b.id)
+Base.:(==)(a::Output, b::Output) = (a.id == b.id)
+Base.hash(i::Input, h::UInt) = hash(i.id, h)
+Base.hash(o::Output, h::UInt) = hash(o.id, h)
+
+# TODO: better docs about what types `comp_name` and `in_name`
+# can be, and about the fact that we move nesting to the values
 """
     CompIn <: NodeName
     CompIn(comp_name, in_name)
@@ -108,6 +144,9 @@ with name `in_name` in the subcomponent.
 struct CompIn{I1, I2} <: NodeName
     comp_name::I1
     in_name::I2
+    CompIn(i1::I1, i2::I2) where {
+        I1 <: Union{Symbol, Integer}, I2 <: Union{Symbol, Integer, Pair}
+    } = new{I1, I2}(i1, i2)
 end
 """
     CompOut <: NodeName
@@ -116,11 +155,39 @@ end
 An output value from a sub-component named `comp_name` in a composite component,
 with name `out_name` in the subcomponent.
 """
-
 struct CompOut{I1, I2} <: NodeName
     comp_name::I1
     out_name::I2
+    CompOut(i1::I1, i2::I2) where {
+        I1 <: Union{Symbol, Integer}, I2 <: Union{Symbol, Integer, Pair}
+    } = new{I1, I2}(i1, i2)
 end
+
+"""
+    CompIn(x_1 => ... => x_n, inname)
+
+This is transformed into `CompIn(x_1, x_2 => ... => x_n => inname)`,
+so accessing nested components transforms into accessing nested values
+in a `ComponentGroup`.
+"""
+CompIn(p::Pair, inname) = CompIn(p.first, nest(p.second, inname))
+
+"""
+    CompOut(x_1 => ... => x_n, outname)
+
+This is transformed into `CompOut(x_1, x_2 => ... => x_n => outname)`.
+so accessing nested components transforms into accessing nested values
+in a `ComponentGroup`.
+"""
+CompOut(p::Pair, outname) = CompOut(p.first, nest(p.second, outname))
+
+nest(p, v) = p => v
+nest(p::Pair, v) = p.first => nest(p.second, v)
+
+Base.:(==)(a::CompIn, b::CompIn) = (a.comp_name == b.comp_name && a.in_name == b.in_name)
+Base.:(==)(a::CompOut, b::CompOut) = (a.comp_name == b.comp_name && a.out_name == b.out_name)
+Base.hash(i::CompIn, h::UInt) = hash(i.comp_name, hash(i.in_name, h))
+Base.hash(o::CompOut, h::UInt) = hash(o.comp_name, hash(o.out_name, h))
 
 # TODO: better docstring here?
 """
@@ -184,12 +251,12 @@ function CompositeComponent(
     edges, abstract::Union{Nothing, Component}=nothing
 )
     idx_to_node = collect(Iterators.flatten((
-        (Input(k) for k in keys(input)), (Output(k) for k in keys(output)),
-        (CompIn(compname, inname) for (compname, subcomp) in pairs(subcomponents) for inname in keys(inputs(subcomp))),
-        (CompOut(compname, outname) for (compname, subcomp) in pairs(subcomponents) for outname in keys(outputs(subcomp)))
+        (Input(k) for k in keys_deep(input)), (Output(k) for k in keys_deep(output)),
+        (CompIn(compname, inname) for (compname, subcomp) in pairs(subcomponents) for inname in keys_deep(inputs(subcomp))),
+        (CompOut(compname, outname) for (compname, subcomp) in pairs(subcomponents) for outname in keys_deep(outputs(subcomp)))
     )))
     node_to_idx = Dict{NodeName, UInt}(name => idx for (idx, name) in enumerate(idx_to_node))
-    
+
     graph = try
         SimpleDiGraphFromIterator((Edge(node_to_idx[src_name], node_to_idx[dst_name]) for (src_name, dst_name) in edges))
     catch e
@@ -205,6 +272,36 @@ end
 inputs(c::CompositeComponent) = c.input
 outputs(c::CompositeComponent) = c.output
 abstract(c::CompositeComponent) = c.abstract
+
+"""
+    get_edges(c::CompositeComponent)
+
+Iterator over edges in the composite component graph.
+"""
+get_edges(c::CompositeComponent) = (
+        c.idx_to_node[src(edge)] => c.idx_to_node[dst(edge)]
+        for edge in edges(c.graph)
+    )
+
+# TODO: faster implementations for `is_implementation_for`, `implement_deep`?
+is_implementation_for(c::CompositeComponent, t::Target) =
+    is_implementation_for(inputs(c), t) && is_implementation_for(outputs(c), t) && all(
+        is_implementation_for(subc, t) for subc in values(c.subcomponents)
+    )
+implement_deep(c::CompositeComponent, t::Target) =
+    if is_implementation_for(c::CompositeComponent, t::Target)
+        c
+    else
+        CompositeComponent(
+            implement_deep(inputs(c), t),
+            implement_deep(outputs(c), t),
+            map(sc -> implement_deep(sc, t), c.subcomponents),
+            c.node_to_idx,
+            c.idx_to_node,
+            c.graph,
+            c
+        )
+    end
 
 """
     does_output(c::CompositeComponent, name::Union{Input, CompOut})
@@ -229,20 +326,47 @@ receivers(c::CompositeComponent, name::Union{Input, CompOut}) = (
         c.idx_to_node[idx] for idx in neighbors(c.graph, c.node_to_idx[name])
     )
 
+# TODO: better documentation
+# TODO: could I directly have this be a subtype of `CompositeComponent`
+# which satisfies some standard interface, rather than it needing to be `implement`ed?
+"""
+    ComponentGroup <: GenericComponent
+    ComponentGroup(subcomponents)
 
-# TODO: is_implementation_for & implement_deep
-# implement_deep(c::PrimitiveComponent{U}, t::Target) where {U <: Target} = error("Cannot implement $c, a PrimitiveComponent{$u}, for target $t.")
-# implement_deep(c::PrimitiveComponent{<:T}, ::T) where {T <: Target} = c
-# implement_deep(c::GenericComponent, t::Target) = implement_deep(implement(c, t), t)
-# implement_deep(c::CompositeComponent, t::Target) =
-#     if is_implementation_for(c, t)
-#         c
-#     else
-#         CompositeComponent(
-#             # TODO!
-#         )
-#     end
+A group of several components, with names given by indices if `subcomponents` is a `Tuple`
+and keys if `subcomponents` is a `NamedTuple`.
+"""
+struct ComponentGroup{T} <: GenericComponent
+    subcomponents::T
+end
+inputs(c::ComponentGroup) = CompositeValue(map(inputs, c.subcomponents))
+outputs(c::ComponentGroup) = CompositeValue(map(outputs, c.subcomponents))
+implement(c::ComponentGroup, ::Target) =
+    CompositeComponent(inputs(c), outputs(c), c.subcomponents, Iterators.flatten((
+        (
+            Input(i => inname) => CompIn(i, inname)
+            for (i, sc) in pairs(c.subcomponents) for inname in keys_deep(inputs(sc))
+        ),
+        (
+            CompOut(i, outname) => Output(i => outname)
+            for (i, sc) in pairs(c.subcomponents) for outname in keys_deep(outputs(sc))
+        )
+    )), c)
 
+"""
+    IndexedComponentGroup(subcomponents)
+
+A `ComponentGroup` with subcomponents named via indices of values in `subcomponents`.
+"""
+IndexedComponentGroup(t) = ComponentGroup(Tuple(t))
+
+"""
+    NamedComponentGroup(subcomponents)
+
+A `ComponentGroup` with subcomponent named via keys given keys, given a `subcomponents`
+iterator over `(key::Symbol, subcomponent)` pairs.
+"""
+NamedComponentGroup(n) = ComponentGroup(NamedTuple(n))
 
 # TODO: figure out the details of Junction.  Do we want one `Junction` concrete type, or instead
 # something like a `Junction` abstract type with concrete subtypes `ValSplit`, `ValMerge`, and some combiner?

@@ -1,4 +1,4 @@
-module SNNs
+module Circuits
 
 using Distributions: Categorical, ncategories, probs
 
@@ -13,6 +13,7 @@ include("components/cat_sampler/spiking.jl")
 
 # Categorical Sampler which outputs probability of chosen Sampler
 include("components/cat_sampler_with_prob/abstract.jl")
+include("components/cat_sampler_with_prob/spiking.jl")
 
 include("visualization/component_interface.jl")
 include("visualization/animation_interface.jl")
