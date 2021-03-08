@@ -1,0 +1,79 @@
+{
+  "nodes": [
+    {
+      "name": "on"
+    },
+    {
+      "name": "off"
+    },
+    {
+      "name": "value"
+    },
+    {
+      "name": "prob"
+    }
+  ],
+  "links": [],
+  "groups": [
+    {
+      "comptype": "AbstractCatSamplerWithProb",
+      "name": null,
+      "leaves": [
+        0,
+        1,
+        2,
+        3
+      ]
+    }
+  ],
+  "constraints": [
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 0
+        },
+        {
+          "offset": 0,
+          "node": 1
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 2
+        },
+        {
+          "offset": 0,
+          "node": 3
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "left": 0,
+      "axis": "x",
+      "right": 2,
+      "type": "separation"
+    },
+    {
+      "left": 0,
+      "axis": "y",
+      "right": 1,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "left": 2,
+      "axis": "y",
+      "right": 3,
+      "gap": 0,
+      "type": "separation"
+    }
+  ]
+}

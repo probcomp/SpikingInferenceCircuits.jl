@@ -7,14 +7,14 @@ var width = graphbox.width,
 var cola = cola.d3adaptor(d3)
     .jaccardLinkLengths(40, 0.7) // TODO: be smarter with this
     .avoidOverlaps(true)
-    .handleDisconnected(false)
+    .handleDisconnected(true)
     .size([width, height]);
 
 var svg = d3.select("#graph").append("svg")
     .attr("width", width)
     .attr("height", height);
 
-d3.json("testgraph2.json", function(graph) {
+d3.json("abs_samp.json", function(graph) {
     make_initial_graph_modifications(graph)
     console.log(graph);
 
@@ -63,7 +63,7 @@ function make_initial_graph_modifications(graph) {
         v.height = NodeH;
     });
     graph.groups.forEach(g => {
-        g.padding = is_composite(g) ? GroupPadding : 0.01;
+        g.padding = is_composite(g) || is_generic(g) ? GroupPadding : 0.01;
     })
 
     graph.constraints.filter(c => c.type === "separation")
@@ -111,6 +111,14 @@ function add_groups(svg, graph) {
         .call(cola.drag)
         .on("mouseup", d => { d.fixed = false });
 
+    var generic_groups = svg.selectAll(".genericGroup")
+        .data(graph.groups.filter(is_generic))
+        .enter().append("rect")
+        .attr("rx", 8).attr("ry", 8)
+        .attr("class", "genericGroup")
+        .call(cola.drag)
+        .on("mouseup", d => { d.fixed = false });
+
     var poisson_groups = svg.selectAll(".poissonGroup")
         .data(graph.groups.filter(is_poisson))
         .enter().append("polygon")
@@ -119,7 +127,8 @@ function add_groups(svg, graph) {
 
     return {
         composite: composite_groups,
-        poisson: poisson_groups
+        poisson: poisson_groups,
+        generic: generic_groups
     }
 }
 
@@ -142,7 +151,7 @@ function add_links(svg, graph) {
 
 function add_group_labels(svg, graph) {
     return svg.selectAll(".nodeLabel")
-        .data(graph.groups.filter(is_composite))
+        .data(graph.groups.filter(is_generic))
         .enter().append("text")
         .attr("class", "groupLabel")
         .attr("alignment-baseline", "top")
@@ -183,6 +192,12 @@ function update_groups(groups) {
         .attr("width", g => g.bounds.width() - 2 * GroupPadding)
         .attr("height", g => g.bounds.height());
 
+    groups.generic
+        .attr("x", g => g.bounds.x + GroupPadding)
+        .attr("y", g => g.bounds.y)
+        .attr("width", g => g.bounds.width() - 2 * GroupPadding)
+        .attr("height", g => g.bounds.height());
+
     groups.poisson
         .attr("points", triangle_points);
 }
@@ -207,6 +222,10 @@ function is_composite(g) {
 
 function is_poisson(g) {
     return g.comptype === "PoissonNeuron"
+}
+
+function is_generic(g) {
+    return !is_composite(g) && !is_poisson(g);
 }
 
 function triangle_points(g) {

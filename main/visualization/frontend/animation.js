@@ -1,5 +1,4 @@
 function setup_animation(viz) {
-    d3.json("animation.json", animation => run_animation(animation, viz));
     d3.select("#play_animation").on("click", () => {
         d3.json("animation.json", animation => run_animation(animation, viz));
     });

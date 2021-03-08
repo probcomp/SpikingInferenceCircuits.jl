@@ -36,6 +36,13 @@ body,
     cursor: move;
 }
 
+.genericGroup {
+    stroke: black;
+    stroke-width: 1.5px;
+    fill: pink;
+    cursor: move;
+}
+
 .poissonGroup {
     fill: lightblue;
 }
