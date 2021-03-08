@@ -39,8 +39,6 @@ at the same instant, we instead sequence them with some tiny ϵ-milisecond delay
 """
 module SpikingSimulator
 
-using Distributions: Exponential
-exponential(rate) = rand(Exponential(1/rate))
 using DataStructures: Queue, enqueue!, dequeue!
 # TODO: move the details of `PoissonNeuron` out of the simulator and into `targets/spiking/spiking.jl`
 import ..Component, ..PrimitiveComponent, ..CompositeComponent, ..Spiking, ..PoissonNeuron
@@ -249,35 +247,6 @@ function simulate_for_time_and_get_spikes(c::Component, s::State, t::Trajectory,
 end
 simulate_for_time_and_get_spikes(c::Component, s::State, ΔT) = simulate_for_time_and_get_spikes(c, s, empty_trajectory(c), ΔT)
 simulate_for_time_and_get_spikes(c::Component, ΔT) = simulate_for_time_and_get_spikes(c, initial_state(c), ΔT)
-
-#################
-# PoissonNeuron #
-#################
-
-next_spike(::PoissonNeuron, t::NextSpikeTrajectory) = :out
-
-extend_trajectory(n::PoissonNeuron, s::OnOffState, ::EmptyTrajectory) = NextSpikeTrajectory(s.on ? exponential(n.rate) : Inf)
-extend_trajectory(::PoissonNeuron, s::OnOffState, t::NextSpikeTrajectory) = t
-
-advance_time_by(::PoissonNeuron, s::OnOffState, t::NextSpikeTrajectory, ΔT) =
-    let remaining_time = t.time_to_next_spike - ΔT
-        if remaining_time == 0
-            (s, EmptyTrajectory(), (:out,))
-        elseif remaining_time > 0
-            (s, NextSpikeTrajectory(remaining_time), ())
-        else
-            advancing_too_far_error(t, ΔT)
-        end
-    end
-
-receive_input_spike(p::PoissonNeuron, s::OnOffState, ::Trajectory, inputname) =
-    if inputname === :on
-        (OnOffState(true), EmptyTrajectory(), ())
-    elseif inputname === :off
-        (OnOffState(false), EmptyTrajectory(), ())
-    else
-        error("Unrecognized input name: $inputname")
-    end
 
 #############
 # Composite #

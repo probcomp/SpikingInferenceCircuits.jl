@@ -3,22 +3,122 @@
 ##############
 # Core Types #
 ##############
+
+"""
+    abstract type Value end
+
+A "wire" in a circuit diagram, which can transmit a value of a certain type.
+"""
 abstract type Value end
+
+"""
+    abstract type GenericValue <: Value end
+
+A `Value` which is not a `PrimitiveValue` nor `CompositeValue`.
+"""
 abstract type GenericValue <: Value end
+
+"""
+    abstract type PrimitiveValue{T} <: Value end
+
+A primitive value for `T  <: Target`.  Ie. the simulator for `T`
+can directly use this type of value.
+"""
 abstract type PrimitiveValue{Target} <: Value end
-struct CompositeValue{T} <: Value
+
+"""
+    implement(::Value, ::Target)
+
+Make progress implementing the value for the target, so that a finite
+number of repeated calls to `implement` will yield a value `v` so that `is_implementation_for(v, t)` is true.
+"""
+implement(::V, ::T) where {V <: Value, T <: Target} = error("No implementation for values of type `$V` defined for target `$T`.")
+
+"""
+    is_implementation_for(::Value, ::Target)
+
+Whether the given value is an implementation for the given target (ie. whether it is supported
+by the simulator for that target).
+"""
+is_implementation_for(::PrimitiveValue{<:T}, ::T) where {T <: Target} = true
+is_implementation_for(::GenericValue, ::Target) = false
+
+"""
+    implement_deep(::Value, t::Target)
+
+Implement the value for the target recursively, yielding a value `v` such that
+`is_implementation_for(v, t)` is true.
+"""
+implement_deep(v::PrimitiveValue{U}, t::Target) where {U <: Target} = error("Cannot implement $v, a PrimitiveValue{$u}, for target $t.")
+implement_deep(v::PrimitiveValue{<:T}, ::T) where {T <: Target} = v
+implement_deep(v::GenericValue, t::Target) = implement_deep(implement(v, t), t)
+
+##################
+# CompositeValue #
+##################
+
+"""
+    CompositeValue <: Value
+    CompositeValue(vals::Union{Tuple, NamedTuple}, abstract=nothing)
+
+A value composed from other values.
+
+If constructed with `vals::Tuple`, the sub-values are named `1, ..., length(vals)`;
+if constructed with `vals::NamedTuple`, the sub-values are named using the named tuple keys.
+`abstract` is the more abstract value which was implemented to yield this composite value.
+
+Sub-values may be accessed using `Base.getindex`, so `v[name]` yields the subvalue with that name
+in `v::CompositeValue`.  To access a sub-value nested within several layers of `CompositeValue`s,
+one may use `v[x1 => (x2 => ... => (x_n))]`, which equals `v[x1][x2][...][x_n]`.
+
+`Base.pairs(::CompositeComponent)` iterates over `(val_name, sub_value)` pairs,
+`Base.keys` gives an iterator over the names, and `Base.values` gives an iterator over the sub-values.
+"""
+struct CompositeValue{T, A} <: Value
     vals::T
-    CompositeValue(vals::T) where {T <: Union{
-        Tuple{Vararg{<:Value}},
-        NamedTuple{<:Any, <:Tuple{Vararg{<:Value}}}
-    }} = new{T}(vals)
+    abstract::GenericValue
+    CompositeValue(vals::T, abstract::GenericValue=nothing) where {T <: Union{
+            Tuple{Vararg{<:Value}},
+            NamedTuple{<:Any, <:Tuple{Vararg{<:Value}}}
+        }
+    } = new{T}(vals, abstract)
 end
+
+"""
+    IndexedValues(t)
+
+Given iterator `t` over values,
+a `CompositeValue` with sub-value names, `1, ..., length(t)` and values
+given by iterating through `t`.
+"""
 IndexedValues(t) = CompositeValue(Tuple(t))
+
+"""
+    NamedValues(t)
+
+Given iterator `t` over `(name::Symbol, value::Value)` pairs,
+a `CompositeValue` with the given values at the given names.
+"""
 NamedValues(t) = CompositeValue(NamedTuple(t))
+
 Base.pairs(v::CompositeValue) = Base.pairs(v.vals)
 Base.keys(v::CompositeValue) = Base.keys(v.vals)
 Base.values(v::CompositeValue) = Base.values(v.vals)
 Base.length(v::CompositeValue) = Base.length(v.vals)
+
+abstract(v::CompositeValue) = v.abstract
+
+Base.getindex(cv::CompositeValue, k) = cv.vals[k]
+Base.getindex(cv::CompositeValue, p::Pair) = cv.vals[p.first][p.rest]
+
+is_implementation_for(v::CompositeValue, t::Target) = all(is_implementation_for(val, t) for val in values(v))
+
+implement_deep(v::CompositeValue, t::Target) =
+    if is_implementation_for(v, t)
+        v
+    else
+        CompositeValue(map(val -> implement_deep(val, t), v.vals), v)
+    end
 
 ###############
 # Value Types #
@@ -56,102 +156,30 @@ FiniteDomainValue(f::SpikingCategoricalValue) = FiniteDomainValue(f.n)
 target(::Type{SpikingCategoricalValue}) = Spiking()
 abstract(v::SpikingCategoricalValue) = FiniteDomainValue(v.n)
 # performance TODO: can we avoid explicitely constructing a tuple?
-implement(v::SpikingCategoricalValue, ::Spiking) = CompositeValue(Tuple(SpikeWire() for _=1:n))
+implement(v::SpikingCategoricalValue, ::Spiking) = CompositeValue(Tuple(SpikeWire() for _=1:v.n), v)
 
-# abstract type Value end
+"""
+    UnbiasedPositiveReal <: GenericValue
 
-# abstract type Values{VT} <: VT end
+An unbiased estimate of a positive real number.
+"""
+struct UnbiasedPositiveReal <: GenericValue end
 
-# """
-#     AbstractValue
+"""
+    BinarySamplesUnbiasedPositiveReal <: GenericValue
+    BinarySamplesUnbiasedPositiveReal(n)
 
-# A value or values in an information-processing circuit,
-# not tied to any particular hardware target nor encoding scheme.
-# """
-# abstract type AbstractValue <: Value end
+An abstract implementation of a `UnbiasedPositiveReal`.
+Sends `n` binary "sample" values (as `FiniteDomainValue(2)`s).
+If `n1` samples of `1` and `n2` samples of `2` are sent,
+the transmitted value is `n1/(1 + n2)`.
 
-# """
-#     AbstractValues <: AbstractValue
-
-# A value consisting of multiple values.
-# Iteration yields the values it comprises.
-# """
-# abstract type AbstractValues <: AbstractValue end
-
-# """
-#     named_values(v::Values)
-
-# An iterator over (name, value) pairs for the underlying values.
-# By default, `name` is the index of the value.
-# """
-# named_values(v::Values) = enumerate(v)
-
-# """
-#     FiniteDomainValue(n)
-
-# An `AbstractValue` with a finite domain of size `n`.
-# """
-# struct FiniteDomainValue <: AbstractValue
-#     domain_size::UInt
-# end
-
-# # struct FinitePrecisionRealValue <: AbstractValue end
-# # struct UnbiasedRealValueEstimate <: AbstractValue end
-
-# """
-#     ConcreteValue
-
-# A concrete representation of a value or values in an information-processing circuit,
-# specialized to a hardware target and an encoding scheme.
-# """
-# abstract type ConcreteValue <: Value end
-
-# # TODO: docstring
-# struct ConcreteValues{Itr}
-#     itr::Itr
-# end
-# iterate(v::ConcreteValues) = iterate(v.itr)
-# iterate(v::ConcreteValues, s) = iterate(v.itr, s)
-
-# # TODO: docstring
-# struct Wire <: ConcreteValue end
-# target(::Type{Wire}) = Spiking()
-
-# """
-#     target(::Type{<:ConcreteValue})::Target
-
-# The hardware/software target this type of concrete value is specialized to.
-# """
-# target(::Type{<:ConcreteValue})::Target = error("Not implemented.")
-
-# """
-#     abstract_value(::ConcreteValue)::AbstractValue
-
-# The abstract value that this concrete value implements.
-# """
-# # TODO: do we also allow this function to return `nothing`?
-# abstract_value(::ConcreteValue) = error("Not implemented.")
-
-# """
-#     wires(::ConcreteValue)::ConcreteValues
-
-# Returns a `ConcreteValues` of `Wire`s which can transmit the value.
-# """
-# wires(::ConcreteValue) = error("Not implemented.")
-
-# """
-#     CategoricalValue(n)
-
-# A value with a finite domain of size `n`, represented using `n` wires.
-# The value `i` is transmitted when the `i`th of the `n` wires spikes.
-# """
-# struct CategoricalValue <: ConcreteValue
-#     domain_size::UInt
-# end
-# target(::Type{CategoricalValue}) = Spiking()
-# abstract_value(v::CategoricalValue) = FiniteDomainValue(v.domain_size)
-# wires(c::CategoricalValue) = ConcreteValues((Wire() for _=1:c.domain_size))
-
-# # struct Float64Val <: ConcreteValue end
-# # target(::Type{ConcreteValue}) = Spiking()
-# # abstract_value(::Float64Val) = FinitePrecisionRealValue()
+If the probability of any sample being `1` is `p/(p + q)`, then in expectation
+the transmitted value is `p/q` (so this is an unbiased estimate of `p/q`).
+"""
+struct BinarySamplesUnbiasedPositiveReal <: GenericValue
+    num_samples::UInt
+end
+abstract(::SpikingUnbiasedPositiveReal) = UnbiasedPositiveReal()
+implement(s::SpikingUnbiasedPositiveReal, _) =
+    CompositeValue(Tuple(FiniteDomainValue(2) for _=1:s.num_samples), s)
