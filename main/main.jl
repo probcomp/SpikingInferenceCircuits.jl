@@ -11,6 +11,7 @@ include("targets/spiking/spiking.jl")
 include("components/cat_sampler/abstract.jl")
 include("components/cat_sampler/spiking.jl")
 
-include("visualization/interface.jl")
+include("visualization/component_interface.jl")
+include("visualization/animation_interface.jl")
 
 end

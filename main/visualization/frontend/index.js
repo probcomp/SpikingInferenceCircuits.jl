@@ -38,6 +38,13 @@ d3.json("testgraph2.json", function(graph) {
         update_node_labels(node_labels)
         update_group_labels(group_labels)
     })
+
+    setup_animation({
+        nodes: nodes,
+        links: links,
+        groups: groups.poisson,
+        graph: graph
+    })
 })
 
 /**
@@ -123,7 +130,6 @@ function add_nodes(svg, graph) {
         .enter().append("circle")
         .attr("class", "node")
         .attr("r", NodeR)
-        .style("fill", d => "black")
         .call(cola.drag);
 }
 

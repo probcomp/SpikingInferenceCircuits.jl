@@ -1,5 +1,5 @@
 """
-    visualization/interface.jl
+    visualization/component_interface.jl
 
 Code to convert Julia components into a JSON format renderable
 by the WebCola-based front-end.
@@ -12,8 +12,6 @@ and due to the desirability of pushing all visualization logic to the client-sid
 to have a format in which we directly communicate components,
 and have this conversion-to-webcola-format happen in javascript on the client-side.
 """
-
-import JSON
 
 ############
 # VizGraph #
@@ -86,12 +84,13 @@ The vizgraph must obey the following:
 """
 
 # to draw a non-composite component, we just draw its inputs and outputs
-_viz_graph(comp::Component, startidx, _) = VizGraph(get_io_nodes(comp), [], [make_group(comp, startidx)], io_constraints(comp, startidx))
+_viz_graph(comp::Component, startidx, a; compname=nothing) =
+    VizGraph(get_io_nodes(comp), [], [make_group(comp, startidx; compname)], io_constraints(comp, startidx))
 
 # to draw a composite component, we draw the inputs and outputs,
 # recursively draw the subcomponents,
 # and then draw the links
-function _viz_graph(comp::CompositeComponent, start_node_idx, start_group_idx)
+function _viz_graph(comp::CompositeComponent, start_node_idx, start_group_idx; compname=nothing)
     io_nodes = get_io_nodes(comp)
 
     # recursively call on subcomponents
@@ -106,7 +105,7 @@ function _viz_graph(comp::CompositeComponent, start_node_idx, start_group_idx)
     prepend!(vizgraph.nodes, io_nodes)
 
     # construct group which has all the ins/outs as nodes, and all the subcomponents as sub-groups
-    insert!(vizgraph.groups, 1, make_group(comp, start_node_idx, values(name_to_groupidx)))
+    insert!(vizgraph.groups, 1, make_group(comp, start_node_idx, values(name_to_groupidx); compname))
 
     # links
     prepend!(vizgraph.links, make_links(comp, name_to_nodeidx))
@@ -136,7 +135,7 @@ function get_subcomps_vizgraph(comp::CompositeComponent, start_node_idx, start_g
     name_to_groupidx = Dict()
     name_to_nodeidx = Dict()
     for (sname, sc) in pairs(comp.subcomponents)
-        subcomp_data = _viz_graph(sc, start_node_idx, start_group_idx)
+        subcomp_data = _viz_graph(sc, start_node_idx, start_group_idx; compname=sname)
         in_inds = start_node_idx:(start_node_idx + length(inputs(sc)))
         out_inds = last(in_inds):(last(in_inds) + length(outputs(sc)))
 
@@ -218,26 +217,23 @@ get_io_nodes(comp) = [
 
 comp_type_name(comp) = typeof(comp).name.name
 """
-    make_group(comp, initial_node_idx, subgroup_indices=[])
+    make_group(comp, initial_node_idx, subgroup_indices=[]; compname)
 
-A group for the component `comp` with subcomponents having group indices `subgroup_indices`,
+A group for the component `comp` called `compname` by its parent,
+with subcomponents having group indices `subgroup_indices`,
 in a format ready to be JSON-ified and sent to the frontend.
 """
-make_group(comp, initial_node_idx, subgroup_indices=[]) =
-    let leaves = collect(io_inds(comp, initial_node_idx))
-        if isempty(subgroup_indices)
-            Dict(
-                "leaves" => leaves,
-                "comptype" => comp_type_name(comp)
-            )
-        else
-            Dict(
-                "leaves" => leaves,
-                "groups" => collect(subgroup_indices),
-                "comptype" => comp_type_name(comp)
-            )
-        end
+function make_group(comp, initial_node_idx, subgroup_indices=[]; compname)
+    d = Dict(
+        "leaves" => collect(io_inds(comp, initial_node_idx)),
+        "comptype" => comp_type_name(comp),
+        "name" => compname
+    )
+    if !isempty(subgroup_indices)
+        d["groups"] = collect(subgroup_indices)
     end
+    d
+end
 
 
 """
