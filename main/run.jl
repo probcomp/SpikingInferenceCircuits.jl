@@ -19,9 +19,13 @@ abstract_sampler = AbstractCatSamplerWithProb(Circuits.Categorical([0.1, 0.2, 0.
 #     JSON.print(f, Circuits.animation_to_frontend_format(frames), 2)
 # end
 comp = concrete_sampler = Circuits.implement_deep(abstract_sampler, Spiking())
-# display(comp)
-println("made component")
+# comp = Circuits.implement_deep(
+#     Circuits.IndexedComponentGroup(Circuits.PoissonNeuron(1.0) for _=1:2),
+#     Spiking()
+# )
 
+# comp = Circuits.implement(Circuits.PoissonRaceCatSampler(Circuits.Categorical([0.1,0.2,0.2,0.5]), 1.0), Spiking())
+println("made component")
 open("visualization/frontend/conc_samp.json", "w") do f
     JSON.print(f, Circuits.viz_graph(comp), 2)
 end

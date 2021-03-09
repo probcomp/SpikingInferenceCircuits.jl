@@ -41,7 +41,7 @@ module SpikingSimulator
 
 using DataStructures: Queue, enqueue!, dequeue!
 # TODO: move the details of `PoissonNeuron` out of the simulator and into `targets/spiking/spiking.jl`
-import ..Component, ..PrimitiveComponent, ..CompositeComponent, ..Spiking, ..PoissonNeuron
+import ..Component, ..PrimitiveComponent, ..CompositeComponent, ..Spiking
 import ..Output, ..Input, ..CompOut, ..CompIn, ..receivers, ..does_output
 const PrimComp = PrimitiveComponent{>:Spiking}
 

@@ -1,478 +1,496 @@
 {
-    "nodes": [{
-            "name": "on"
+  "nodes": [
+    {
+      "name": "on"
+    },
+    {
+      "name": "off"
+    },
+    {
+      "name": "1"
+    },
+    {
+      "name": "2"
+    },
+    {
+      "name": "3"
+    },
+    {
+      "name": "4"
+    },
+    {
+      "name": "on"
+    },
+    {
+      "name": "off"
+    },
+    {
+      "name": "out"
+    },
+    {
+      "name": "on"
+    },
+    {
+      "name": "off"
+    },
+    {
+      "name": "out"
+    },
+    {
+      "name": "on"
+    },
+    {
+      "name": "off"
+    },
+    {
+      "name": "out"
+    },
+    {
+      "name": "on"
+    },
+    {
+      "name": "off"
+    },
+    {
+      "name": "out"
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "target": 6
+    },
+    {
+      "source": 0,
+      "target": 9
+    },
+    {
+      "source": 0,
+      "target": 12
+    },
+    {
+      "source": 0,
+      "target": 15
+    },
+    {
+      "source": 1,
+      "target": 7
+    },
+    {
+      "source": 1,
+      "target": 10
+    },
+    {
+      "source": 1,
+      "target": 13
+    },
+    {
+      "source": 1,
+      "target": 16
+    },
+    {
+      "source": 8,
+      "target": 2
+    },
+    {
+      "source": 8,
+      "target": 7
+    },
+    {
+      "source": 8,
+      "target": 10
+    },
+    {
+      "source": 8,
+      "target": 13
+    },
+    {
+      "source": 8,
+      "target": 16
+    },
+    {
+      "source": 11,
+      "target": 3
+    },
+    {
+      "source": 11,
+      "target": 7
+    },
+    {
+      "source": 11,
+      "target": 10
+    },
+    {
+      "source": 11,
+      "target": 13
+    },
+    {
+      "source": 11,
+      "target": 16
+    },
+    {
+      "source": 14,
+      "target": 4
+    },
+    {
+      "source": 14,
+      "target": 7
+    },
+    {
+      "source": 14,
+      "target": 10
+    },
+    {
+      "source": 14,
+      "target": 13
+    },
+    {
+      "source": 14,
+      "target": 16
+    },
+    {
+      "source": 17,
+      "target": 5
+    },
+    {
+      "source": 17,
+      "target": 7
+    },
+    {
+      "source": 17,
+      "target": 10
+    },
+    {
+      "source": 17,
+      "target": 13
+    },
+    {
+      "source": 17,
+      "target": 16
+    }
+  ],
+  "groups": [
+    {
+      "comptype": "CompositeComponent",
+      "name": null,
+      "groups": [
+        4,
+        2,
+        3,
+        1
+      ],
+      "leaves": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "comptype": "PoissonNeuron",
+      "name": 1,
+      "leaves": [
+        6,
+        7,
+        8
+      ]
+    },
+    {
+      "comptype": "PoissonNeuron",
+      "name": 2,
+      "leaves": [
+        9,
+        10,
+        11
+      ]
+    },
+    {
+      "comptype": "PoissonNeuron",
+      "name": 3,
+      "leaves": [
+        12,
+        13,
+        14
+      ]
+    },
+    {
+      "comptype": "PoissonNeuron",
+      "name": 4,
+      "leaves": [
+        15,
+        16,
+        17
+      ]
+    }
+  ],
+  "constraints": [
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 0
         },
         {
-            "name": "off"
-        },
-        {
-            "name": "1"
-        },
-        {
-            "name": "2"
-        },
-        {
-            "name": "3"
-        },
-        {
-            "name": "4"
-        },
-        {
-            "name": "on"
-        },
-        {
-            "name": "off"
-        },
-        {
-            "name": "out"
-        },
-        {
-            "name": "on"
-        },
-        {
-            "name": "off"
-        },
-        {
-            "name": "out"
-        },
-        {
-            "name": "on"
-        },
-        {
-            "name": "off"
-        },
-        {
-            "name": "out"
-        },
-        {
-            "name": "on"
-        },
-        {
-            "name": "off"
-        },
-        {
-            "name": "out"
+          "offset": 0,
+          "node": 1
         }
-    ],
-    "links": [{
-            "source": 0,
-            "target": 6
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 2
         },
         {
-            "source": 0,
-            "target": 9
+          "offset": 0,
+          "node": 3
         },
         {
-            "source": 0,
-            "target": 12
+          "offset": 0,
+          "node": 4
         },
         {
-            "source": 0,
-            "target": 15
-        },
-        {
-            "source": 1,
-            "target": 7
-        },
-        {
-            "source": 1,
-            "target": 10
-        },
-        {
-            "source": 1,
-            "target": 13
-        },
-        {
-            "source": 1,
-            "target": 16
-        },
-        {
-            "source": 8,
-            "target": 2
-        },
-        {
-            "source": 8,
-            "target": 7
-        },
-        {
-            "source": 8,
-            "target": 10
-        },
-        {
-            "source": 8,
-            "target": 13
-        },
-        {
-            "source": 8,
-            "target": 16
-        },
-        {
-            "source": 11,
-            "target": 3
-        },
-        {
-            "source": 11,
-            "target": 7
-        },
-        {
-            "source": 11,
-            "target": 10
-        },
-        {
-            "source": 11,
-            "target": 13
-        },
-        {
-            "source": 11,
-            "target": 16
-        },
-        {
-            "source": 14,
-            "target": 4
-        },
-        {
-            "source": 14,
-            "target": 7
-        },
-        {
-            "source": 14,
-            "target": 10
-        },
-        {
-            "source": 14,
-            "target": 13
-        },
-        {
-            "source": 14,
-            "target": 16
-        },
-        {
-            "source": 17,
-            "target": 5
-        },
-        {
-            "source": 17,
-            "target": 7
-        },
-        {
-            "source": 17,
-            "target": 10
-        },
-        {
-            "source": 17,
-            "target": 13
-        },
-        {
-            "source": 17,
-            "target": 16
+          "offset": 0,
+          "node": 5
         }
-    ],
-    "groups": [{
-            "comptype": "CompositeComponent",
-            "name": null,
-            "groups": [
-                4,
-                2,
-                3,
-                1
-            ],
-            "leaves": [
-                0,
-                1,
-                2,
-                3,
-                4,
-                5
-            ]
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "left": 0,
+      "axis": "x",
+      "right": 2,
+      "type": "separation"
+    },
+    {
+      "left": 0,
+      "axis": "y",
+      "right": 1,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "left": 2,
+      "axis": "y",
+      "right": 3,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "left": 3,
+      "axis": "y",
+      "right": 4,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "left": 4,
+      "axis": "y",
+      "right": 5,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "left": 0,
+      "axis": "x",
+      "right": 6,
+      "type": "separation"
+    },
+    {
+      "left": 8,
+      "axis": "x",
+      "right": 2,
+      "type": "separation"
+    },
+    {
+      "left": 0,
+      "axis": "x",
+      "right": 9,
+      "type": "separation"
+    },
+    {
+      "left": 11,
+      "axis": "x",
+      "right": 2,
+      "type": "separation"
+    },
+    {
+      "left": 0,
+      "axis": "x",
+      "right": 12,
+      "type": "separation"
+    },
+    {
+      "left": 14,
+      "axis": "x",
+      "right": 2,
+      "type": "separation"
+    },
+    {
+      "left": 0,
+      "axis": "x",
+      "right": 15,
+      "type": "separation"
+    },
+    {
+      "left": 17,
+      "axis": "x",
+      "right": 2,
+      "type": "separation"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 6
         },
         {
-            "comptype": "PoissonNeuron",
-            "name": 1,
-            "leaves": [
-                6,
-                7,
-                8
-            ]
-        },
-        {
-            "comptype": "PoissonNeuron",
-            "name": 2,
-            "leaves": [
-                9,
-                10,
-                11
-            ]
-        },
-        {
-            "comptype": "PoissonNeuron",
-            "name": 3,
-            "leaves": [
-                12,
-                13,
-                14
-            ]
-        },
-        {
-            "comptype": "PoissonNeuron",
-            "name": 4,
-            "leaves": [
-                15,
-                16,
-                17
-            ]
+          "offset": 0,
+          "node": 7
         }
-    ],
-    "constraints": [{
-            "offsets": [{
-                    "offset": 0,
-                    "node": 0
-                },
-                {
-                    "offset": 0,
-                    "node": 1
-                }
-            ],
-            "axis": "x",
-            "type": "alignment"
-        },
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "offsets": [
         {
-            "offsets": [{
-                    "offset": 0,
-                    "node": 2
-                },
-                {
-                    "offset": 0,
-                    "node": 3
-                },
-                {
-                    "offset": 0,
-                    "node": 4
-                },
-                {
-                    "offset": 0,
-                    "node": 5
-                }
-            ],
-            "axis": "x",
-            "type": "alignment"
-        },
-        {
-            "left": 0,
-            "axis": "x",
-            "right": 2,
-            "type": "separation"
-        },
-        {
-            "left": 0,
-            "axis": "y",
-            "right": 1,
-            "gap": 0,
-            "type": "separation"
-        },
-        {
-            "left": 2,
-            "axis": "y",
-            "right": 3,
-            "gap": 0,
-            "type": "separation"
-        },
-        {
-            "left": 3,
-            "axis": "y",
-            "right": 4,
-            "gap": 0,
-            "type": "separation"
-        },
-        {
-            "left": 4,
-            "axis": "y",
-            "right": 5,
-            "gap": 0,
-            "type": "separation"
-        },
-        {
-            "left": 0,
-            "axis": "x",
-            "right": 6,
-            "type": "separation"
-        },
-        {
-            "left": 8,
-            "axis": "x",
-            "right": 2,
-            "type": "separation"
-        },
-        {
-            "left": 0,
-            "axis": "x",
-            "right": 9,
-            "type": "separation"
-        },
-        {
-            "left": 11,
-            "axis": "x",
-            "right": 2,
-            "type": "separation"
-        },
-        {
-            "left": 0,
-            "axis": "x",
-            "right": 12,
-            "type": "separation"
-        },
-        {
-            "left": 14,
-            "axis": "x",
-            "right": 2,
-            "type": "separation"
-        },
-        {
-            "left": 0,
-            "axis": "x",
-            "right": 15,
-            "type": "separation"
-        },
-        {
-            "left": 17,
-            "axis": "x",
-            "right": 2,
-            "type": "separation"
-        },
-        {
-            "offsets": [{
-                    "offset": 0,
-                    "node": 6
-                },
-                {
-                    "offset": 0,
-                    "node": 7
-                }
-            ],
-            "axis": "x",
-            "type": "alignment"
-        },
-        {
-            "offsets": [{
-                "offset": 0,
-                "node": 8
-            }],
-            "axis": "x",
-            "type": "alignment"
-        },
-        {
-            "left": 6,
-            "axis": "x",
-            "right": 8,
-            "type": "separation"
-        },
-        {
-            "left": 6,
-            "axis": "y",
-            "right": 7,
-            "gap": 0,
-            "type": "separation"
-        },
-        {
-            "offsets": [{
-                    "offset": 0,
-                    "node": 9
-                },
-                {
-                    "offset": 0,
-                    "node": 10
-                }
-            ],
-            "axis": "x",
-            "type": "alignment"
-        },
-        {
-            "offsets": [{
-                "offset": 0,
-                "node": 11
-            }],
-            "axis": "x",
-            "type": "alignment"
-        },
-        {
-            "left": 9,
-            "axis": "x",
-            "right": 11,
-            "type": "separation"
-        },
-        {
-            "left": 9,
-            "axis": "y",
-            "right": 10,
-            "gap": 0,
-            "type": "separation"
-        },
-        {
-            "offsets": [{
-                    "offset": 0,
-                    "node": 12
-                },
-                {
-                    "offset": 0,
-                    "node": 13
-                }
-            ],
-            "axis": "x",
-            "type": "alignment"
-        },
-        {
-            "offsets": [{
-                "offset": 0,
-                "node": 14
-            }],
-            "axis": "x",
-            "type": "alignment"
-        },
-        {
-            "left": 12,
-            "axis": "x",
-            "right": 14,
-            "type": "separation"
-        },
-        {
-            "left": 12,
-            "axis": "y",
-            "right": 13,
-            "gap": 0,
-            "type": "separation"
-        },
-        {
-            "offsets": [{
-                    "offset": 0,
-                    "node": 15
-                },
-                {
-                    "offset": 0,
-                    "node": 16
-                }
-            ],
-            "axis": "x",
-            "type": "alignment"
-        },
-        {
-            "offsets": [{
-                "offset": 0,
-                "node": 17
-            }],
-            "axis": "x",
-            "type": "alignment"
-        },
-        {
-            "left": 15,
-            "axis": "x",
-            "right": 17,
-            "type": "separation"
-        },
-        {
-            "left": 15,
-            "axis": "y",
-            "right": 16,
-            "gap": 0,
-            "type": "separation"
+          "offset": 0,
+          "node": 8
         }
-    ]
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "left": 6,
+      "axis": "x",
+      "right": 8,
+      "type": "separation"
+    },
+    {
+      "left": 6,
+      "axis": "y",
+      "right": 7,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 9
+        },
+        {
+          "offset": 0,
+          "node": 10
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 11
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "left": 9,
+      "axis": "x",
+      "right": 11,
+      "type": "separation"
+    },
+    {
+      "left": 9,
+      "axis": "y",
+      "right": 10,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 12
+        },
+        {
+          "offset": 0,
+          "node": 13
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 14
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "left": 12,
+      "axis": "x",
+      "right": 14,
+      "type": "separation"
+    },
+    {
+      "left": 12,
+      "axis": "y",
+      "right": 13,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 15
+        },
+        {
+          "offset": 0,
+          "node": 16
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 17
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "left": 15,
+      "axis": "x",
+      "right": 17,
+      "type": "separation"
+    },
+    {
+      "left": 15,
+      "axis": "y",
+      "right": 16,
+      "gap": 0,
+      "type": "separation"
+    }
+  ]
 }

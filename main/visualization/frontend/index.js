@@ -5,16 +5,15 @@ var width = graphbox.width,
     height = graphbox.height;
 
 var cola = cola.d3adaptor(d3)
-    .jaccardLinkLengths(40, 0.7) // TODO: be smarter with this
     .avoidOverlaps(true)
-    .handleDisconnected(true)
+    .handleDisconnected(false)
     .size([width, height]);
 
 var svg = d3.select("#graph").append("svg")
     .attr("width", width)
     .attr("height", height);
 
-d3.json("abs_samp.json", function(graph) {
+d3.json("conc_samp.json", function(graph) {
     make_initial_graph_modifications(graph)
     console.log(graph);
 
@@ -23,6 +22,8 @@ d3.json("abs_samp.json", function(graph) {
         .links(graph.links)
         .groups(graph.groups)
         .constraints(graph.constraints)
+        // .flowLayout("x")  // this doesn't seem to work.  But would it be better?
+        .symmetricDiffLinkLengths(20)
         .start(50, 100, 50, 50);
 
     groups = add_groups(svg, graph)
@@ -66,7 +67,7 @@ function make_initial_graph_modifications(graph) {
         g.padding = is_composite(g) || is_generic(g) ? GroupPadding : 0.01;
     })
 
-    graph.constraints.filter(c => c.type === "separation")
+    graph.constraints.filter(c => c.type === "separation" && c.axis === "x")
         .forEach(c => { c.gap = 20 });
 
     // add constraints to ensure the poisson neurons are triangles

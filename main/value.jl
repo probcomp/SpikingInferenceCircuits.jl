@@ -107,6 +107,11 @@ Base.keys(v::CompositeValue) = Base.keys(v.vals)
 Base.values(v::CompositeValue) = Base.values(v.vals)
 Base.length(v::CompositeValue) = Base.length(v.vals)
 
+# TODO: performance
+length_deep(v::CompositeValue) = sum(length_deep(sv) for sv in values(v))
+length_deep(::PrimitiveValue) = 1
+length_deep(::GenericValue) = 1
+
 """
     keys_deep(v::CompositeValue)
 

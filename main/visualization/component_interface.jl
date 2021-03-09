@@ -85,7 +85,7 @@ The vizgraph must obey the following:
 
 # to draw a non-composite component, we just draw its inputs and outputs
 _viz_graph(comp::Component, startidx, a; compname=nothing) =
-    VizGraph(get_io_nodes(comp), [], [make_group(comp, startidx; compname)], io_constraints(comp, startidx))
+    VizGraph(get_io_nodes(comp), [], [make_comp_group(comp, startidx; compname)], io_constraints(comp, startidx))
 
 # to draw a composite component, we draw the inputs and outputs,
 # recursively draw the subcomponents,
@@ -99,13 +99,19 @@ function _viz_graph(comp::CompositeComponent, start_node_idx, start_group_idx; c
         start_node_idx + length(io_nodes),
         start_group_idx + 1
     )
+
     add_io_nodes_to_table!(name_to_nodeidx, comp, start_node_idx)
    
     # i/o nodes go at the beginning
     prepend!(vizgraph.nodes, io_nodes)
 
+    @assert all(
+        vizgraph.nodes[idx + 1 - start_node_idx]["name"] == "$(valname(nodename))"
+        for (nodename, idx) in name_to_nodeidx
+    )
+
     # construct group which has all the ins/outs as nodes, and all the subcomponents as sub-groups
-    insert!(vizgraph.groups, 1, make_group(comp, start_node_idx, values(name_to_groupidx); compname))
+    insert!(vizgraph.groups, 1, make_comp_group(comp, start_node_idx, values(name_to_groupidx); compname))
 
     # links
     prepend!(vizgraph.links, make_links(comp, name_to_nodeidx))
@@ -114,7 +120,7 @@ function _viz_graph(comp::CompositeComponent, start_node_idx, start_group_idx; c
         # i/o x align constraints; i/o y order constraints
         io_constraints(comp, start_node_idx),
         # constraints to keep subgroups in the middle of the i/o
-        io_on_outside_constraints(comp, name_to_nodeidx)
+        io_on_outside_constraints(comp, name_to_nodeidx, vizgraph.nodes, start_node_idx)
     )
     prepend!(vizgraph.constraints, new_constraints)
 
@@ -129,6 +135,8 @@ Also return `name_to_nodeidx`, a dictionary mapping `NodeName`s for `comp` to th
 in vizgraph for `comp` (which this method does not construct),
 and `name_to_groupidx`, a dictionary mapping subcomponent names to the index
 of the corresponding subcomponent group in the vizgraph for `comp`.
+
+Note that these dictionaries map to indices in Javascript's 0-indexing scheme, not Julia's 1-indexing scheme.
 """
 function get_subcomps_vizgraph(comp::CompositeComponent, start_node_idx, start_group_idx)
     vg = VizGraph([], [], [], [])
@@ -136,13 +144,13 @@ function get_subcomps_vizgraph(comp::CompositeComponent, start_node_idx, start_g
     name_to_nodeidx = Dict()
     for (sname, sc) in pairs(comp.subcomponents)
         subcomp_data = _viz_graph(sc, start_node_idx, start_group_idx; compname=sname)
-        in_inds = start_node_idx:(start_node_idx + length(inputs(sc)))
-        out_inds = last(in_inds):(last(in_inds) + length(outputs(sc)))
+        in_indices = in_inds(sc, start_node_idx)
+        out_indices = out_inds(sc, in_indices, start_node_idx)
 
-        for (name, idx) in zip(keys(inputs(sc)), in_inds)
+        for (name, idx) in zip(keys_deep(inputs(sc)), in_indices)
             name_to_nodeidx[CompIn(sname, name)] = idx
         end
-        for (name, idx) in zip(keys(outputs(sc)), out_inds)
+        for (name, idx) in zip(keys_deep(outputs(sc)), out_indices)
             name_to_nodeidx[CompOut(sname, name)] = idx
         end
         name_to_groupidx[sname] = start_group_idx
@@ -163,11 +171,11 @@ Add entries for the `Input` and `Output` nodenames to `name_to_nodeidx`.
 """
 function add_io_nodes_to_table!(name_to_nodeidx, comp, start_node_idx)
     idx = start_node_idx
-    for name in keys(inputs(comp))
+    for name in keys_deep(inputs(comp))
         name_to_nodeidx[Input(name)] = idx
         idx += 1
     end
-    for name in keys(outputs(comp))
+    for name in keys_deep(outputs(comp))
         name_to_nodeidx[Output(name)] = idx
         idx += 1
     end
@@ -179,14 +187,14 @@ end
 
 The range of vizgraph indices for the component's inputs.
 """
-in_inds(comp, startidx) = startidx:(startidx + length(inputs(comp)) - 1)
+in_inds(comp, startidx) = startidx:(startidx + length_deep(inputs(comp)) - 1)
 """
     out_inds(comp, startidx)
     out_inds(comp, in_indices, startidx)
 
 The range of vizgraph indices for the component's outputs.
 """
-out_inds(comp, in_indices, startidx) = (startidx + length(in_indices)):(startidx + length(in_indices) + length(outputs(comp)) - 1)
+out_inds(comp, in_indices, startidx) = (startidx + length(in_indices)):(startidx + length(in_indices) + length_deep(outputs(comp)) - 1)
 out_inds(comp, startidx) = out_inds(comp, in_inds(comp, startidx), startidx)
 """
     io_inds(comp, startidx)
@@ -212,18 +220,18 @@ Each object is a dictionary ready to be JSON-ified and sent to the front-end.
 """
 get_io_nodes(comp) = [
     Dict("name" => "$nodename")
-    for nodename in Iterators.flatten((keys(inputs(comp)), keys(outputs(comp))))
+    for nodename in Iterators.flatten((keys_deep(inputs(comp)), keys_deep(outputs(comp))))
 ]
 
 comp_type_name(comp) = typeof(comp).name.name
 """
-    make_group(comp, initial_node_idx, subgroup_indices=[]; compname)
+    make_comp_group(comp, initial_node_idx, subgroup_indices=[]; compname)
 
 A group for the component `comp` called `compname` by its parent,
 with subcomponents having group indices `subgroup_indices`,
 in a format ready to be JSON-ified and sent to the frontend.
 """
-function make_group(comp, initial_node_idx, subgroup_indices=[]; compname)
+function make_comp_group(comp, initial_node_idx, subgroup_indices=[]; compname)
     d = Dict(
         "leaves" => collect(io_inds(comp, initial_node_idx)),
         "comptype" => comp_type_name(comp),
@@ -269,10 +277,10 @@ io_constraints(comp, startidx) =
             collect(Iterators.flatten((
                 (
                     x_align_constraint(in_indices),
-                    x_align_constraint(out_indices),
+                    x_align_constraint(out_indices) #,
                     x_offset_constraint( # outputs to right of inputs
-                        first(in_inds(comp, startidx)),
-                        first(out_inds(comp, startidx))
+                        first(in_indices),
+                        first(out_indices)
                     )
                 ),
                 y_order_constraints(in_indices),
@@ -287,16 +295,16 @@ Constraints to ensure subcomponents are in between the inputs and outputs of `co
 
 In a format ready to be JSON-ified and sent to the frontend.
 """
-io_on_outside_constraints(comp, name_to_nodeidx) = collect(
+io_on_outside_constraints(comp, name_to_nodeidx, nodes, start_node_idx) = collect(
         Iterators.flatten((
             (
                 x_offset_constraint( # inputs left of subcomponent inputs
-                    name_to_nodeidx[Input(first(keys(inputs(comp))))],
-                    name_to_nodeidx[CompIn(subname, first(keys(inputs(subcomp))))]
+                name_to_nodeidx[Input(first(keys_deep(inputs(comp))))],
+                name_to_nodeidx[CompIn(subname, first(keys_deep(inputs(subcomp))))]
                 ),
                 x_offset_constraint( # outputs right of subcomp outputs
-                    name_to_nodeidx[CompOut(subname, first(keys(outputs(subcomp))))],
-                    name_to_nodeidx[Output(first(keys(outputs(comp))))]
+                    name_to_nodeidx[CompOut(subname, first(keys_deep(outputs(subcomp))))],
+                    name_to_nodeidx[Output(first(keys_deep(outputs(comp))))]
                 )
             )
             for (subname, subcomp) in pairs(comp.subcomponents)

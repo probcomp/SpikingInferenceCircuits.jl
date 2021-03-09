@@ -189,6 +189,10 @@ Base.:(==)(a::CompOut, b::CompOut) = (a.comp_name == b.comp_name && a.out_name =
 Base.hash(i::CompIn, h::UInt) = hash(i.comp_name, hash(i.in_name, h))
 Base.hash(o::CompOut, h::UInt) = hash(o.comp_name, hash(o.out_name, h))
 
+valname(v::Union{Input, Output}) = v.id
+valname(v::CompIn) = v.in_name
+valname(v::CompOut) = v.out_name
+
 # TODO: better docstring here?
 """
     CompositeComponent <: Component
