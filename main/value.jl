@@ -100,7 +100,7 @@ IndexedValues(t) = CompositeValue(Tuple(t))
 Given iterator `t` over `(name::Symbol, value::Value)` pairs,
 a `CompositeValue` with the given values at the given names.
 """
-NamedValues(t) = CompositeValue(NamedTuple(t))
+NamedValues(t) = CompositeValue((;t...))
 
 Base.pairs(v::CompositeValue) = Base.pairs(v.vals)
 Base.keys(v::CompositeValue) = Base.keys(v.vals)

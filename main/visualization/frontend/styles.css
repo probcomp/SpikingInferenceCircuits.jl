@@ -68,3 +68,14 @@ body,
 .spikingGroup {
     fill: yellow;
 }
+
+
+/* On vs Off component states */
+
+.onState {
+    fill-opacity: 100%;
+}
+
+.offState {
+    fill-opacity: 20%;
+}

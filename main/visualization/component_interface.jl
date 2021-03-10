@@ -277,7 +277,7 @@ io_constraints(comp, startidx) =
             collect(Iterators.flatten((
                 (
                     x_align_constraint(in_indices),
-                    x_align_constraint(out_indices) #,
+                    x_align_constraint(out_indices),
                     x_offset_constraint( # outputs to right of inputs
                         first(in_indices),
                         first(out_indices)

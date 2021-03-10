@@ -1,4 +1,4 @@
-import .SSim: NextSpikeTrajectory, OnOffState
+import .SSim: NextSpikeTrajectory, OnOffState, EmptyState, EmptyTrajectory
 using Distributions: Exponential
 exponential(rate) = rand(Exponential(1/rate))
 
@@ -8,7 +8,7 @@ end
 inputs(::PoissonNeuron) = CompositeValue((on=SpikeWire(), off=SpikeWire()))
 outputs(::PoissonNeuron) = CompositeValue((out=SpikeWire(),))
 
-SSim.initial_state(::PoissonNeuron) = EmptyState()
+SSim.initial_state(::PoissonNeuron) = OnOffState(false)
 
 SSim.next_spike(::PoissonNeuron, t::NextSpikeTrajectory) = :out
 
@@ -22,7 +22,7 @@ SSim.advance_time_by(::PoissonNeuron, s::OnOffState, t::NextSpikeTrajectory, ΔT
         elseif remaining_time > 0
             (s, NextSpikeTrajectory(remaining_time), ())
         else
-            advancing_too_far_error(t, ΔT)
+            SSim.advancing_too_far_error(t, ΔT)
         end
     end
 

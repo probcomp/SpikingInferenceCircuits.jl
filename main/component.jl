@@ -198,6 +198,11 @@ valname(v::CompOut) = v.out_name
     CompositeComponent <: Component
 
 A `Component` represented as a graph of wires connecting inputs & outputs of subcomponents.
+
+Sub-components may be accessed via Base.getindex, so `c[name]` yields the subcomponent
+with `name` in `c::CompositeComponent`.  `c[nothing]` will yield `c`, and `c[x1 => (x2 => (... => (x_n)))]`
+will yield `c[x1][x2][...][x_n]`.  Thus, a subcomponent name may be `nothing`, a top-level name,
+or, to refer to a nested subcomponent, a nested name implemented as a `Pair`-based linked list.
 """
 # Has an input `CompositeValue`, an output `CompositeValue`, and some number of internal `Component`s.
 # Each input/output `Value` and each `Component` has a name.
@@ -276,6 +281,10 @@ end
 inputs(c::CompositeComponent) = c.input
 outputs(c::CompositeComponent) = c.output
 abstract(c::CompositeComponent) = c.abstract
+
+Base.getindex(c::CompositeComponent, ::Nothing) = c
+Base.getindex(c::CompositeComponent, p::Pair) = c[p.first][p.second]
+Base.getindex(c::CompositeComponent, name) = c.subcomponents[name]
 
 """
     get_edges(c::CompositeComponent)

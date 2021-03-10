@@ -13,7 +13,7 @@ var svg = d3.select("#graph").append("svg")
     .attr("width", width)
     .attr("height", height);
 
-d3.json("conc_samp.json", function(graph) {
+d3.json("renders/conc_samp.json", function(graph) {
     make_initial_graph_modifications(graph)
     console.log(graph);
 
@@ -24,7 +24,7 @@ d3.json("conc_samp.json", function(graph) {
         .constraints(graph.constraints)
         // .flowLayout("x")  // this doesn't seem to work.  But would it be better?
         .symmetricDiffLinkLengths(20)
-        .start(50, 100, 50, 50);
+        .start(10, 15, 10, 10);
 
     groups = add_groups(svg, graph)
     nodes = add_nodes(svg, graph)
@@ -69,6 +69,8 @@ function make_initial_graph_modifications(graph) {
 
     graph.constraints.filter(c => c.type === "separation" && c.axis === "x")
         .forEach(c => { c.gap = 20 });
+    graph.constraints.filter(c => c.type === "separation" && c.axis === "y")
+        .forEach(c => { c.gap = 4 });
 
     // add constraints to ensure the poisson neurons are triangles
     graph.groups.filter(is_poisson).forEach(function(g) {

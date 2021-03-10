@@ -1,0 +1,547 @@
+{
+  "events": [
+    {
+      "time": 0.0011969226636004227,
+      "out": "out",
+      "type": "spike",
+      "group": [
+        "first_samplers",
+        2
+      ]
+    },
+    {
+      "time": 0.0,
+      "out": "2 => :out",
+      "type": "spike",
+      "group": [
+        "first_samplers"
+      ]
+    },
+    {
+      "time": 0.0,
+      "statetype": "OnOffState",
+      "val": false,
+      "type": "statechange",
+      "group": [
+        "first_samplers",
+        1
+      ]
+    },
+    {
+      "time": 0.0,
+      "statetype": "OnOffState",
+      "val": false,
+      "type": "statechange",
+      "group": [
+        "first_samplers",
+        2
+      ]
+    },
+    {
+      "time": 0.0,
+      "statetype": "OnOffState",
+      "val": false,
+      "type": "statechange",
+      "group": [
+        "first_samplers",
+        3
+      ]
+    },
+    {
+      "time": 0.0,
+      "statetype": "OnOffState",
+      "val": false,
+      "type": "statechange",
+      "group": [
+        "first_samplers",
+        4
+      ]
+    },
+    {
+      "time": 0.0,
+      "statetype": "OnOffState",
+      "val": true,
+      "type": "statechange",
+      "group": [
+        "prob_samplers",
+        1,
+        2
+      ]
+    },
+    {
+      "time": 0.0,
+      "statetype": "OnOffState",
+      "val": true,
+      "type": "statechange",
+      "group": [
+        "prob_samplers",
+        2,
+        2
+      ]
+    },
+    {
+      "time": 0.0,
+      "statetype": "OnOffState",
+      "val": true,
+      "type": "statechange",
+      "group": [
+        "prob_samplers",
+        3,
+        2
+      ]
+    },
+    {
+      "time": 0.0,
+      "statetype": "OnOffState",
+      "val": true,
+      "type": "statechange",
+      "group": [
+        "prob_samplers",
+        4,
+        2
+      ]
+    },
+    {
+      "time": 0.0,
+      "statetype": "OnOffState",
+      "val": true,
+      "type": "statechange",
+      "group": [
+        "prob_timers",
+        1
+      ]
+    },
+    {
+      "time": 0.0,
+      "statetype": "OnOffState",
+      "val": true,
+      "type": "statechange",
+      "group": [
+        "prob_timers",
+        2
+      ]
+    },
+    {
+      "time": 0.0,
+      "statetype": "OnOffState",
+      "val": true,
+      "type": "statechange",
+      "group": [
+        "prob_timers",
+        3
+      ]
+    },
+    {
+      "time": 0.0,
+      "statetype": "OnOffState",
+      "val": true,
+      "type": "statechange",
+      "group": [
+        "prob_timers",
+        4
+      ]
+    },
+    {
+      "time": 0.0,
+      "out": ":value => 2",
+      "type": "spike",
+      "group": []
+    },
+    {
+      "time": 0.1056288953237769,
+      "out": "out",
+      "type": "spike",
+      "group": [
+        "prob_timers",
+        3
+      ]
+    },
+    {
+      "time": 0.0011969226636004227,
+      "out": "3 => :out",
+      "type": "spike",
+      "group": [
+        "prob_timers"
+      ]
+    },
+    {
+      "time": 0.0011969226636004227,
+      "statetype": "OnOffState",
+      "val": false,
+      "type": "statechange",
+      "group": [
+        "prob_samplers",
+        3,
+        2
+      ]
+    },
+    {
+      "time": 0.0011969226636004227,
+      "statetype": "OnOffState",
+      "val": false,
+      "type": "statechange",
+      "group": [
+        "prob_timers",
+        3
+      ]
+    },
+    {
+      "time": 0.0011969226636004227,
+      "out": ":prob => (3 => 2)",
+      "type": "spike",
+      "group": []
+    },
+    {
+      "time": 0.12757644921753114,
+      "out": "out",
+      "type": "spike",
+      "group": [
+        "prob_timers",
+        2
+      ]
+    },
+    {
+      "time": 0.1056288953237769,
+      "out": "2 => :out",
+      "type": "spike",
+      "group": [
+        "prob_timers"
+      ]
+    },
+    {
+      "time": 0.1056288953237769,
+      "statetype": "OnOffState",
+      "val": false,
+      "type": "statechange",
+      "group": [
+        "prob_samplers",
+        2,
+        2
+      ]
+    },
+    {
+      "time": 0.1056288953237769,
+      "statetype": "OnOffState",
+      "val": false,
+      "type": "statechange",
+      "group": [
+        "prob_timers",
+        2
+      ]
+    },
+    {
+      "time": 0.1056288953237769,
+      "out": ":prob => (2 => 2)",
+      "type": "spike",
+      "group": []
+    },
+    {
+      "time": 0.8626161638354033,
+      "out": "out",
+      "type": "spike",
+      "group": [
+        "prob_samplers",
+        4,
+        2
+      ]
+    },
+    {
+      "time": 0.12757644921753114,
+      "out": "2 => :out",
+      "type": "spike",
+      "group": [
+        "prob_samplers",
+        4
+      ]
+    },
+    {
+      "time": 0.12757644921753114,
+      "out": "4 => (2 => :out)",
+      "type": "spike",
+      "group": [
+        "prob_samplers"
+      ]
+    },
+    {
+      "time": 0.12757644921753114,
+      "statetype": "OnOffState",
+      "val": false,
+      "type": "statechange",
+      "group": [
+        "prob_samplers",
+        4,
+        2
+      ]
+    },
+    {
+      "time": 0.12757644921753114,
+      "statetype": "OnOffState",
+      "val": false,
+      "type": "statechange",
+      "group": [
+        "prob_timers",
+        4
+      ]
+    },
+    {
+      "time": 0.12757644921753114,
+      "out": ":prob => (4 => 1)",
+      "type": "spike",
+      "group": []
+    },
+    {
+      "time": 2.384882465672011,
+      "out": "out",
+      "type": "spike",
+      "group": [
+        "prob_timers",
+        1
+      ]
+    },
+    {
+      "time": 0.8626161638354033,
+      "out": "1 => :out",
+      "type": "spike",
+      "group": [
+        "prob_timers"
+      ]
+    },
+    {
+      "time": 0.8626161638354033,
+      "statetype": "OnOffState",
+      "val": false,
+      "type": "statechange",
+      "group": [
+        "prob_samplers",
+        1,
+        2
+      ]
+    },
+    {
+      "time": 0.8626161638354033,
+      "statetype": "OnOffState",
+      "val": false,
+      "type": "statechange",
+      "group": [
+        "prob_timers",
+        1
+      ]
+    },
+    {
+      "time": 0.8626161638354033,
+      "out": ":prob => (1 => 2)",
+      "type": "spike",
+      "group": []
+    }
+  ],
+  "initial_states": [
+    {
+      "statetype": "OnOffState",
+      "val": false,
+      "group": [
+        "first_samplers",
+        1
+      ]
+    },
+    {
+      "statetype": "OnOffState",
+      "val": false,
+      "group": [
+        "first_samplers",
+        2
+      ]
+    },
+    {
+      "statetype": "OnOffState",
+      "val": false,
+      "group": [
+        "first_samplers",
+        3
+      ]
+    },
+    {
+      "statetype": "OnOffState",
+      "val": false,
+      "group": [
+        "first_samplers",
+        4
+      ]
+    },
+    {
+      "statetype": "OnOffState",
+      "val": false,
+      "group": [
+        "prob_samplers",
+        1,
+        1
+      ]
+    },
+    {
+      "statetype": "OnOffState",
+      "val": false,
+      "group": [
+        "prob_samplers",
+        1,
+        2
+      ]
+    },
+    {
+      "statetype": "OnOffState",
+      "val": false,
+      "group": [
+        "prob_samplers",
+        1,
+        3
+      ]
+    },
+    {
+      "statetype": "OnOffState",
+      "val": false,
+      "group": [
+        "prob_samplers",
+        1,
+        4
+      ]
+    },
+    {
+      "statetype": "OnOffState",
+      "val": false,
+      "group": [
+        "prob_samplers",
+        2,
+        1
+      ]
+    },
+    {
+      "statetype": "OnOffState",
+      "val": false,
+      "group": [
+        "prob_samplers",
+        2,
+        2
+      ]
+    },
+    {
+      "statetype": "OnOffState",
+      "val": false,
+      "group": [
+        "prob_samplers",
+        2,
+        3
+      ]
+    },
+    {
+      "statetype": "OnOffState",
+      "val": false,
+      "group": [
+        "prob_samplers",
+        2,
+        4
+      ]
+    },
+    {
+      "statetype": "OnOffState",
+      "val": false,
+      "group": [
+        "prob_samplers",
+        3,
+        1
+      ]
+    },
+    {
+      "statetype": "OnOffState",
+      "val": false,
+      "group": [
+        "prob_samplers",
+        3,
+        2
+      ]
+    },
+    {
+      "statetype": "OnOffState",
+      "val": false,
+      "group": [
+        "prob_samplers",
+        3,
+        3
+      ]
+    },
+    {
+      "statetype": "OnOffState",
+      "val": false,
+      "group": [
+        "prob_samplers",
+        3,
+        4
+      ]
+    },
+    {
+      "statetype": "OnOffState",
+      "val": false,
+      "group": [
+        "prob_samplers",
+        4,
+        1
+      ]
+    },
+    {
+      "statetype": "OnOffState",
+      "val": false,
+      "group": [
+        "prob_samplers",
+        4,
+        2
+      ]
+    },
+    {
+      "statetype": "OnOffState",
+      "val": false,
+      "group": [
+        "prob_samplers",
+        4,
+        3
+      ]
+    },
+    {
+      "statetype": "OnOffState",
+      "val": false,
+      "group": [
+        "prob_samplers",
+        4,
+        4
+      ]
+    },
+    {
+      "statetype": "OnOffState",
+      "val": false,
+      "group": [
+        "prob_timers",
+        1
+      ]
+    },
+    {
+      "statetype": "OnOffState",
+      "val": false,
+      "group": [
+        "prob_timers",
+        2
+      ]
+    },
+    {
+      "statetype": "OnOffState",
+      "val": false,
+      "group": [
+        "prob_timers",
+        3
+      ]
+    },
+    {
+      "statetype": "OnOffState",
+      "val": false,
+      "group": [
+        "prob_timers",
+        4
+      ]
+    }
+  ]
+}
