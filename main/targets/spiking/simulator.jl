@@ -305,7 +305,7 @@ back into `c`'s inputs.  If recurrent connections are needed, nest the recurrent
 """
 function simulate_for_time(
     callback, c::Component, ΔT, s::State=initial_state(c), t::Trajectory=empty_trajectory(c);
-    initial_inputs=(), event_filter=(e->true)
+    initial_inputs=(), event_filter=((compname, event)->true)
 )
     filtered_callback(itr, dt) = callback(
         Iterators.filter(args -> event_filter(args...), itr),
