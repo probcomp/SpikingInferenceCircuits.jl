@@ -17,7 +17,8 @@ include("components/cat_sampler/spiking.jl")
 include("components/cat_sampler_with_prob/abstract.jl")
 include("components/cat_sampler_with_prob/spiking.jl")
 
-include("visualization/component_interface.jl")
-include("visualization/animation_interface.jl")
+# Exporting to web visualization format
+include("visualization/circuit_visualization/component_interface.jl")
+include("visualization/circuit_visualization/animation_interface.jl")
 
 end

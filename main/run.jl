@@ -1,12 +1,10 @@
 module Test
 import JSON
 
-include("main.jl")
+include("circuits.jl")
+
 using .Circuits: AbstractCatSamplerWithProb, implement_deep, Spiking, PoissonRace_MultiProbNeuron_CatSampler
 const Sim = Circuits.SpikingSimulator
-
-
-
 
 # non-standard implementations we will use:
 Circuits.implement(s::AbstractCatSamplerWithProb, ::Spiking) =
@@ -16,41 +14,82 @@ Circuits.implement(v::Circuits.FiniteDomainValue, ::Spiking) =
 
 abstract_sampler = AbstractCatSamplerWithProb(Circuits.Categorical([0.1, 0.2, 0.2, 0.5]))
 
-# initial_state = Sim.CompositeState(Tuple(Sim.OnOffState(true) for _=1:4))
-# frames = Sim.simulate_for_time_and_get_spikes(graph, initial_state, 5.0)
-# open("visualization/frontend/animation.json", "w") do f
-#     JSON.print(f, Circuits.animation_to_frontend_format(frames), 2)
-# end
 comp = concrete_sampler = Circuits.implement_deep(abstract_sampler, Spiking())
 println("Made component!")
 
-open("visualization/frontend/renders/conc_samp.json", "w") do f
-    JSON.print(f, Circuits.viz_graph(comp), 2)
-end
-println("Wrote component viz file.")
+# open("visualization/frontend/renders/conc_samp.json", "w") do f
+#     JSON.print(f, Circuits.viz_graph(comp), 2)
+# end
+# println("Wrote component viz file.")
 
-events = Sim.simulate_for_time_and_get_spikes_and_primitive_statechanges(comp, 5.0; initial_inputs=(:on,))
+is_primitive_outspike(compname, event) = (
+    event isa Sim.OutputSpike && comp[compname] isa Circuits.PrimitiveComponent
+)
+is_spike_or_primitive_statechange(compname, event) = (
+    event isa Sim.Spike || comp[compname] isa Circuits.PrimitiveComponent
+)
+events = Sim.simulate_for_time_and_get_events(comp, 5.0; initial_inputs=(:on,), event_filter=is_spike_or_primitive_statechange)
 println("Simulation completed!")
 
-open("visualization/frontend/renders/conc_samp_animation.json", "w") do f
-    JSON.print(f, Circuits.animation_to_frontend_format(Sim.initial_state(comp), events), 2)
+try
+    open("visualization/circuit_visualization/frontend/renders/conc_samp_animation.json", "w") do f
+        JSON.print(f, Circuits.animation_to_frontend_format(Sim.initial_state(comp), events), 2)
+    end
+    println("Wrote animation file.")
+catch e
+    @warn "Failed to write animation file: $e"
 end
-println("Wrote animation file.")
 
-#==
-TODO: the errors now are probably being caused because I don't think the code can support a component output
-going into a component input (nor a compout going into a component input).
+filtered = filter(((t, c, e),) -> is_primitive_outspike(c, e), events)
 
-I should think through which of these we need to support, and fix the parts of the code which disallow it.
-The simulator is part of it; I don't remember if other parts of the code will need fixing as well.
-=#
+function spiketrain_dict(event_vector)
+    spiketrains = Dict()
+    for (time, neuronname, _) in event_vector
+        if haskey(spiketrains, neuronname)
+            push!(spiketrains[neuronname], time)
+        else
+            spiketrains[neuronname] = [time]
+        end
+    end
+    return spiketrains
+end
+spikedict = spiketrain_dict(filtered)
+println("Spiketrain dictionary:")
+display(spikedict)
 
+include("visualization/spiketrain.jl")
+using .SpiketrainViz: draw_spiketrain_figure
+using ColorSchemes
 
-# comp = Circuits.implement_deep(
-#     Circuits.IndexedComponentGroup(Circuits.PoissonNeuron(1.0) for _=1:2),
-#     Spiking()
-# )
+function collect_spiketrains(spiketrain_dict)
+    order = Iterators.flatten((
+        [:first_samplers => j for j=1:4],
+        (Iterators.flatten((
+            (:prob_timers => k,),
+            (:prob_samplers => k => i for i=1:4)
+        )) for k=1:4)...
+    ))
 
-# comp = Circuits.implement(Circuits.PoissonRaceCatSampler(Circuits.Categorical([0.1,0.2,0.2,0.5]), 1.0), Spiking())
+    return (order, [
+        get(spiketrain_dict, name, Float64[]) for name in order
+    ])
+end
+
+colors() = let (c1, rest) = Iterators.peel(ColorSchemes.tableau_10[1:5])
+    collect(Iterators.flatten((
+        Iterators.repeated(c1, 4),
+        (Iterators.repeated(c, 5) for c in rest)...
+    )))
+end
+
+function drawfig()
+    order, trains = collect_spiketrains(spikedict)
+    @assert length(trains) == 24
+    @assert length(collect(order)) == 24
+    println(collect(order))
+    draw_spiketrain_figure(trains; names = map(x -> "$x", order), colors=colors())
+end
+
+f, cols = drawfig()
 
 end

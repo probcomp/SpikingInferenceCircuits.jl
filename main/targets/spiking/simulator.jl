@@ -278,44 +278,49 @@ function receive_input_spike(c::Component, s::State, t::Trajectory, inname, f::F
     return (newstate, t, son)
 end
 
-
-# TODO: more general method with a way to give input spikes and a callback to receive output spikes
+# TODO: more general method with a way to give input spikes during the simulation
 
 """
-    simulate_for_time_and_get_events(c::Component, s::State, t::Trajectory, ΔT)
-    simulate_for_time_and_get_events(c::Component, s::State, ΔT)
-    simulate_for_time_and_get_events(c::Component, ΔT)
+    simulate_for_time(c::Component, ΔT, callback, s::State=initial_state(c), t::Trajectory=empty_trajectory(c);
+        initial_inputs=(), event_filter=((compname, event)->true)
+    )
 
-Simulates the component for `ΔT` milliseconds and returns a vector giving all the events which
-occurred during the simulation.  The component must not have any recurrent connections to its own inputs.
+Simulates the component for `ΔT` milliseconds.  Begins the simulation by feeding a spike to each input in `c`
+whose name is in the iterator `initial_inputs`.
 
-The outputted vector is ordered by time, and contains elements of the form
-`(time, compname, event)`, where `time` is the time since the beginning of
-the simulation at which this event occurred, `compname` specifies the component for which
-this event occurred, and `event` is the `Event` which occurred for this component at this time.
+Calls `callback(itr, time)` at every time since the start of the simulation
+when any `Event`s occur occur for `c` or one of its subcomponents.
+`itr` will be an iterator over pairs `(component_name, event::Event)`
+giving each event to occur for `c` or one of its subcomponents at `time`.
+Any `event` for a component with name `compname` such that `!event_filter(compname, event)` will be skipped.
+Invariant: if `callback(itr1, t1)` is called before `callback(itr2, t2)`, then `t1 ≤ t2`.
 
-`compname` will be a subcomponent name (possibly nested, `nothing` to refer to `c`); see documentation
+`component_name` will be a subcomponent name (possibly nested; `nothing` to refer to `c`); see documentation
 for `CompositeComponent`.
-"""
-function simulate_for_time_and_get_events(c::Component, s::State, t::Trajectory, ΔT; initial_inputs=())
-    events = Tuple{Float64, Union{Nothing, Name}, Event}[]
-    time_passed = 0
 
-    # function to add events to the array
-    function f(itr, dt)
-        for (compname, event) in itr
-            push!(events, (time_passed + dt, compname, event))
-        end
-    end
+See also: `simulate_for_time_and_get_events`.
+
+Note: this function assumes no additional inputs enter `c` after the `initial_inputs`. (So, eg., there must be no recurrent connections
+back into `c`'s inputs.  If recurrent connections are needed, nest the recurrent component within an outer `CompositeComponent`.)
+"""
+function simulate_for_time(
+    callback, c::Component, ΔT, s::State=initial_state(c), t::Trajectory=empty_trajectory(c);
+    initial_inputs=(), event_filter=(e->true)
+)
+    filtered_callback(itr, dt) = callback(
+        Iterators.filter(args -> event_filter(args...), itr),
+        dt
+    )
 
     for input in initial_inputs
-        (s, t, output_names) = receive_input_spike(c, s, t, input, itr -> f(itr, 0.))
-        f(Iterators.flatten((
+        (s, t, output_names) = receive_input_spike(c, s, t, input, itr -> filtered_callback(itr, 0.))
+        callback(Iterators.flatten((
             ((nothing, InputSpike(input)),),
             ((nothing, OutputSpike(n)) for n in output_names)
         )), 0.)
     end
 
+    time_passed = 0.
     while time_passed < ΔT
         t = extend_trajectory(c, s, t)
         extending_by = trajectory_length(t)
@@ -324,21 +329,43 @@ function simulate_for_time_and_get_events(c::Component, s::State, t::Trajectory,
             break;
         end
 
-        (s, t, _) = advance_time_by(c, s, t, trajectory_length(t), f)
+        (s, t, _) = advance_time_by(c, s, t, trajectory_length(t), (itr, t) -> filtered_callback(itr, t + time_passed))
         time_passed += extending_by
     end
 
+    return nothing
+end
+
+"""
+    simulate_for_time_and_get_events(c::Component, ΔT, s::State=initial_state(c), t::Trajectory=empty_trajectory(c);
+        initial_inputs=(), event_filter=((compname, evt)->true)
+    )
+
+Same as `simulate_for_time`, but returns a vector of triples `(time, component_name, event)`
+giving the events which occurred for `c` and subcomponents during the simulation,
+instead of using a callback function.
+
+See also: `simulate_for_time`.
+"""
+function simulate_for_time_and_get_events(args...; kwargs...)
+    events = Tuple{Float64, Union{Nothing, Name}, Event}[]
+
+    # function to add events to the array
+    function callback(itr, time)
+        for (compname, event) in itr
+            push!(events, (time, compname, event))
+        end
+    end
+
+    simulate_for_time(callback, args...; kwargs...)
+
     return events
 end
-simulate_for_time_and_get_events(c::Component, s::State, ΔT; initial_inputs=()) =
-    simulate_for_time_and_get_events(c, s, empty_trajectory(c), ΔT; initial_inputs)
-simulate_for_time_and_get_events(c::Component, ΔT; initial_inputs=()) =
-    simulate_for_time_and_get_events(c, initial_state(c), ΔT; initial_inputs)
 
-simulate_for_time_and_get_spikes_and_primitive_statechanges(c, args...; kwargs...) =
-    filter(simulate_for_time_and_get_events(c, args...; kwargs...)) do (_, compname, event)
-        (event isa Spike) || (event isa StateChange && c[compname] isa PrimitiveComponent{>:Spiking})
-    end
+# simulate_for_time_and_get_spikes_and_primitive_statechanges(c, args...; kwargs...) =
+#     simulate_for_time_and_get_events(c, args..., kwargs..., event_filter= (compname, e) -> (
+#         (e isa Spike) || (e isa StateChange && c[compname] isa PrimitiveComponent{>:Spiking})
+#     ))
 
 #############
 # Composite #
