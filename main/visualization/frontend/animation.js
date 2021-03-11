@@ -2,13 +2,13 @@ animationTimeout = undefined;
 
 function setup_animation(viz) {
     d3.select("#play_animation").on("click", () => {
-        d3.json("renders/simple_test_animation.json", animation => {
+        d3.json("renders/conc_samp_animation.json", animation => {
             if (animationTimeout) { // end old animation if one is running
                 clearTimeout(animationTimeout);
                 end_animation(viz);
             }
 
-            slowdown = d3.select("#slowdown").node().value;
+            var slowdown = d3.select("#slowdown").node().value;
             run_animation(animation, viz, slowdown)
         });
     });
@@ -32,7 +32,7 @@ function size_should_be_one_will_use_first(list, listname) {
 }
 
 function get_group(graph, group_name) {
-    group = graph.groups[0];
+    var group = graph.groups[0];
     for (name of group_name) {
         next_groups = group.groups.filter(g => g.name == name);
         size_should_be_one_will_use_first(next_groups, "next_groups");
@@ -43,7 +43,7 @@ function get_group(graph, group_name) {
 
 // TODO: what if we have an input and output with the same name?!
 function get_node(group, name, is_output_node) {
-    nodes = group.leaves.filter(n => n.name === name && n.is_output == is_output_node);
+    var nodes = group.leaves.filter(n => n.name === name && n.is_output == is_output_node);
     size_should_be_one_will_use_first(nodes, "nodes");
     return nodes[0];
 }
@@ -64,7 +64,7 @@ function run_animation(animation, viz, slowdown) {
     console.log(animation);
     begin_animation(animation, viz);
     if (animation.events.length !== 0) {
-        first_action_time = animation.events[0].time;
+        var first_action_time = animation.events[0].time;
         sleep_or_do(
             first_action_time,
             slowdown,
@@ -79,7 +79,7 @@ function begin_animation(animation, viz) {
 
 // called in the last `setup_next_action` call
 function end_animation(viz) {
-    unset_on_off_states(viz.groups);
+    // unset_on_off_states(viz.groups);
 }
 
 function setup_initial_states(initial_states, graph, groups) {
@@ -101,13 +101,13 @@ function unset_on_off_states(groups) {
  */
 
 function handle_frame(viz, current_time, remaining_frames, currently_spiking, slowdown) {
-    next_frame = remaining_frames.splice(0, 1)[0]
+    var next_frame = remaining_frames.splice(0, 1)[0]
     if (Math.abs(next_frame.time - current_time) > 0.0001) {
         console.warn("Reached a frame at the wrong time!  next_frame.time = " + next_frame.time + " but current_time = " + current_time)
     }
 
     if (next_frame.type === "spike") {
-        currently_spiking = handle_spike(viz, next_frame, current_time, currently_spiking)
+        var currently_spiking = handle_spike(viz, next_frame, current_time, currently_spiking)
     } else if (next_frame.type === "statechange") {
         handle_state_change(viz, next_frame)
     }
@@ -120,20 +120,22 @@ function handle_frame(viz, current_time, remaining_frames, currently_spiking, sl
  */
 function handle_spike(viz, next_frame, current_time, currently_spiking) {
     // TODO: give SVG elements IDs so we can more efficiently access them!
-    isoutput = next_frame.spiketype === "output";
+    var isoutput = next_frame.spiketype === "output";
 
-    group = get_group(viz.graph, next_frame.group);
-    node = get_node(group, next_frame.name, isoutput);
+    var group = get_group(viz.graph, next_frame.group);
+    var node = get_node(group, next_frame.name, isoutput);
 
     if (isoutput) {
         on_groups = viz.groups.filter(g => g === group)
-            .attr("class", "group spikingGroup");
+            .classed("spikingGroup", true);
+    } else {
+        on_groups = undefined;
     }
-    on_nodes = viz.nodes.filter(n => n === node)
-        .attr("class", "node spikingNode");
+    var on_nodes = viz.nodes.filter(n => n === node)
+        .classed("spikingNode", true);
 
-    on_links = links.filter(d => d.source === node)
-        .attr("class", "link spikingLink");
+    var on_links = viz.links.filter(d => d.source === node)
+        .classed("spikingLink", true);
 
     // TODO: change style of nodes receiving spikes
 
@@ -162,14 +164,16 @@ function handle_state_change(viz, frame) {
  * Turn off the node we set to spiking longest ago.
  */
 function remove_spiking(viz, current_time, remaining_frames, currently_spiking, slowdown) {
-    obj = currently_spiking.splice(0, 1)[0];
+    var obj = currently_spiking.splice(0, 1)[0];
     if (obj.time + spike_length - current_time > 0.00001) {
         console.warn("`removed_spiking` called to remove a frame at the wrong time!  current_time = " + current_time + "; obj.time = " + obj.time + "; spike_length = " + spike_length)
     }
 
-    obj.groups.attr("class", "poissonGroup");
-    obj.nodes.attr("class", "node");
-    obj.links.attr("class", "link");
+    if (obj.groups) {
+        obj.groups.classed("spikingGroup", false);
+    }
+    obj.nodes.classed("spikingNode", false);
+    obj.links.classed("spikingLink", false);
 
     setup_next_action(viz, current_time, remaining_frames, currently_spiking, slowdown);
 }
@@ -178,8 +182,8 @@ function remove_spiking(viz, current_time, remaining_frames, currently_spiking, 
  * Queue up the next action in the animation to be performed after the appropriate delay.
  */
 function setup_next_action(viz, current_time, remaining_frames, currently_spiking, slowdown) {
-    time_to_frame = remaining_frames.length === 0 ? Infinity : (remaining_frames[0].time - current_time)
-    time_to_removal = currently_spiking.length === 0 ? Infinity : (currently_spiking[0].time + spike_length) - current_time
+    var time_to_frame = remaining_frames.length === 0 ? Infinity : (remaining_frames[0].time - current_time)
+    var time_to_removal = currently_spiking.length === 0 ? Infinity : (currently_spiking[0].time + spike_length) - current_time
 
     if (time_to_frame === Infinity && time_to_removal === Infinity) {
         end_animation(viz); // animation is completed

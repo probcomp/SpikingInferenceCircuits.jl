@@ -13,7 +13,7 @@ var svg = d3.select("#graph").append("svg")
     .attr("width", width)
     .attr("height", height);
 
-d3.json("renders/simple_test.json", function(graph) {
+d3.json("renders/conc_samp.json", function(graph) {
     make_initial_graph_modifications(graph)
     console.log(graph);
 
@@ -26,11 +26,11 @@ d3.json("renders/simple_test.json", function(graph) {
         .symmetricDiffLinkLengths(20)
         .start(10, 15, 10, 10);
 
-    groups = add_groups(svg, graph)
-    nodes = add_nodes(svg, graph)
-    links = add_links(svg, graph)
-    group_labels = add_group_labels(svg, graph)
-    node_labels = add_node_labels(svg, graph)
+    var groups = add_groups(svg, graph)
+    var nodes = add_nodes(svg, graph)
+    var links = add_links(svg, graph)
+    var group_labels = add_group_labels(svg, graph)
+    var node_labels = add_node_labels(svg, graph)
 
     cola.on("tick", function() {
         update_links(links)
@@ -233,14 +233,14 @@ function is_generic(g) {
 
 function triangle_points(g) {
     // top left
-    x1 = g.bounds.x + NodeW / 2
-    y1 = g.bounds.y + NodeH / 2
+    var x1 = g.bounds.x + NodeW / 2
+    var y1 = g.bounds.y + NodeH / 2
         // bottom left
-    x2 = g.bounds.x + NodeW / 2
-    y2 = g.bounds.y + g.bounds.height() - NodeH / 2
+    var x2 = g.bounds.x + NodeW / 2
+    var y2 = g.bounds.y + g.bounds.height() - NodeH / 2
         // center right
-    x3 = g.bounds.x + g.bounds.width()
-    y3 = g.bounds.y + g.bounds.height() / 2 + NodeH / 2
+    var x3 = g.bounds.x + g.bounds.width()
+    var y3 = g.bounds.y + g.bounds.height() / 2 + NodeH / 2
 
     return "" + x1 + "," + y1 + " " + x2 + "," + y2 + " " + x3 + "," + y3
 }

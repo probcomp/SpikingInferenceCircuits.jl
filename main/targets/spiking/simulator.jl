@@ -257,7 +257,7 @@ end
 """
     (new_state, new_traj, spiking_output_names) = receive_input_spike(c::Component, s::State, t::Trajectory, inname, f::Function)
 
-Same as `advance_time_by`, but calls `f(itr, 0)` before returning, where `itr` is an iterator
+Same as `advance_time_by`, but calls `f(itr)` before returning, where `itr` is an iterator
 over values `(compname, event)` specifying each `event::Event` occurring in `c` or a subcomponent
 (specified by `compname`) when this input spike is received.  `compname` is a subcomponent name (possibly nested, or `nothing` to refer to `c`);
 see documentation for `CompositeComponent`.
@@ -272,8 +272,7 @@ function receive_input_spike(c::Component, s::State, t::Trajectory, inname, f::F
             ((nothing, InputSpike(inname)),),
             ((nothing, OutputSpike(name)) for name in son),
             newstate == s ? () : ((nothing, StateChange(newstate)),)
-        )),
-        0.
+        ))
     )
 
     return (newstate, t, son)
@@ -302,7 +301,7 @@ function simulate_for_time_and_get_events(c::Component, s::State, t::Trajectory,
     events = Tuple{Float64, Union{Nothing, Name}, Event}[]
     time_passed = 0
 
-    # function to add spikes to the array
+    # function to add events to the array
     function f(itr, dt)
         for (compname, event) in itr
             push!(events, (time_passed + dt, compname, event))
@@ -310,7 +309,7 @@ function simulate_for_time_and_get_events(c::Component, s::State, t::Trajectory,
     end
 
     for input in initial_inputs
-        (s, t, output_names) = receive_input_spike(c, s, t, input)
+        (s, t, output_names) = receive_input_spike(c, s, t, input, itr -> f(itr, 0.))
         f(Iterators.flatten((
             ((nothing, InputSpike(input)),),
             ((nothing, OutputSpike(n)) for n in output_names)
@@ -430,14 +429,14 @@ function extend_trajectory(c::CompositeComponent, s::CompositeState, t::Composit
 end
 
 function nest_callback(f, nest_at)
-    function nested(itr, ΔT)
+    function nested(itr, dt...)
         nested_itr = (
             (   isnothing(name) ? nest_at : (nest_at => name),
                 event
             )
             for (name, event) in itr
         )
-        f(nested_itr, ΔT)
+        f(nested_itr, dt...)
     end
 end
 
@@ -463,7 +462,7 @@ function advance_time_by(c::CompositeComponent, s::CompositeState, t::CompositeT
     spikes_to_process = (CompOut(compname, outname) for (compname, (ss, st, spiking_out_names)) in pairs(advanced) for outname in spiking_out_names)
     handled_spikes = !isempty(spikes_to_process)
 
-    (outspikes, _) = process_internal_spiking!(c, advanced_states, advanced_trajs, spikes_to_process, f)
+    (outspikes, _) = process_internal_spiking!(c, advanced_states, advanced_trajs, spikes_to_process, itr -> f(itr, ΔT))
 
     new_state = CompositeState(immutable_version(advanced_states))
 
@@ -471,7 +470,7 @@ function advance_time_by(c::CompositeComponent, s::CompositeState, t::CompositeT
     f(Iterators.flatten((
         ((nothing, OutputSpike(name)) for name in outspikes),
         s == new_state ? () : ((nothing, StateChange(new_state)),)
-    )), 0.)
+    )), ΔT)
 
     return (
         new_state,
@@ -499,7 +498,7 @@ function receive_input_spike(c::CompositeComponent, s::CompositeState, t::Compos
         ((nothing, InputSpike(inname)),),
         ((nothing, OutputSpike(name)) for name in outspikes),
         state_changed ? ((nothing, StateChange(new_state)),) : ()
-    )), 0.)
+    )))
 
     return (
         new_state,

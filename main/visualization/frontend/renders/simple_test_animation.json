@@ -2,7 +2,7 @@
   "events": [
     {
       "name": "out",
-      "time": 1.1591943039327521,
+      "time": 0.06096836030868902,
       "spiketype": "output",
       "type": "spike",
       "group": [
@@ -12,7 +12,7 @@
     },
     {
       "name": "4 => :out",
-      "time": 0.0,
+      "time": 0.06096836030868902,
       "spiketype": "output",
       "type": "spike",
       "group": [
@@ -21,7 +21,7 @@
     },
     {
       "name": "off",
-      "time": 0.0,
+      "time": 0.06096836030868902,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -30,7 +30,7 @@
       ]
     },
     {
-      "time": 0.0,
+      "time": 0.06096836030868902,
       "statetype": "OnOffState",
       "val": false,
       "type": "statechange",
@@ -41,7 +41,7 @@
     },
     {
       "name": "1 => :off",
-      "time": 0.0,
+      "time": 0.06096836030868902,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -50,7 +50,7 @@
     },
     {
       "name": "off",
-      "time": 0.0,
+      "time": 0.06096836030868902,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -59,7 +59,7 @@
       ]
     },
     {
-      "time": 0.0,
+      "time": 0.06096836030868902,
       "statetype": "OnOffState",
       "val": false,
       "type": "statechange",
@@ -70,7 +70,7 @@
     },
     {
       "name": "2 => :off",
-      "time": 0.0,
+      "time": 0.06096836030868902,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -79,7 +79,7 @@
     },
     {
       "name": "off",
-      "time": 0.0,
+      "time": 0.06096836030868902,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -88,7 +88,7 @@
       ]
     },
     {
-      "time": 0.0,
+      "time": 0.06096836030868902,
       "statetype": "OnOffState",
       "val": false,
       "type": "statechange",
@@ -99,7 +99,7 @@
     },
     {
       "name": "3 => :off",
-      "time": 0.0,
+      "time": 0.06096836030868902,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -108,7 +108,7 @@
     },
     {
       "name": "off",
-      "time": 0.0,
+      "time": 0.06096836030868902,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -117,7 +117,7 @@
       ]
     },
     {
-      "time": 0.0,
+      "time": 0.06096836030868902,
       "statetype": "OnOffState",
       "val": false,
       "type": "statechange",
@@ -128,7 +128,7 @@
     },
     {
       "name": "4 => :off",
-      "time": 0.0,
+      "time": 0.06096836030868902,
       "spiketype": "input",
       "type": "spike",
       "group": [
