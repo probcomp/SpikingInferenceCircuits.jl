@@ -6,6 +6,10 @@ include("circuits.jl")
 using .Circuits: AbstractCatSamplerWithProb, implement_deep, Spiking, PoissonRace_MultiProbNeuron_CatSampler
 const Sim = Circuits.SpikingSimulator
 
+#################
+# Get Component #
+#################
+
 # non-standard implementations we will use:
 Circuits.implement(s::AbstractCatSamplerWithProb, ::Spiking) =
     PoissonRace_MultiProbNeuron_CatSampler(s, 1.0, 4)
@@ -21,6 +25,10 @@ println("Made component!")
 #     JSON.print(f, Circuits.viz_graph(comp), 2)
 # end
 # println("Wrote component viz file.")
+
+##################
+# Run simulation #
+##################
 
 is_primitive_outspike(compname, event) = (
     event isa Sim.OutputSpike && comp[compname] isa Circuits.PrimitiveComponent
@@ -40,6 +48,10 @@ catch e
     @warn "Failed to write animation file: $e"
 end
 
+######################
+# Display spiketrain #
+######################
+
 filtered = filter(((t, c, e),) -> is_primitive_outspike(c, e), events)
 
 function spiketrain_dict(event_vector)
@@ -55,7 +67,6 @@ function spiketrain_dict(event_vector)
 end
 spikedict = spiketrain_dict(filtered)
 println("Spiketrain dictionary:")
-display(spikedict)
 
 include("visualization/spiketrain.jl")
 using .SpiketrainViz: draw_spiketrain_figure
@@ -90,6 +101,6 @@ function drawfig()
     draw_spiketrain_figure(trains; names = map(x -> "$x", order), colors=colors())
 end
 
-f, cols = drawfig()
+f = drawfig()
 
 end
