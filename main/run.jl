@@ -5,6 +5,9 @@ include("main.jl")
 using .Circuits: AbstractCatSamplerWithProb, implement_deep, Spiking, PoissonRace_MultiProbNeuron_CatSampler
 const Sim = Circuits.SpikingSimulator
 
+
+
+
 # non-standard implementations we will use:
 Circuits.implement(s::AbstractCatSamplerWithProb, ::Spiking) =
     PoissonRace_MultiProbNeuron_CatSampler(s, 1.0, 4)
@@ -33,6 +36,15 @@ open("visualization/frontend/renders/conc_samp_animation.json", "w") do f
     JSON.print(f, Circuits.animation_to_frontend_format(Sim.initial_state(comp), events), 2)
 end
 println("Wrote animation file.")
+
+#==
+TODO: the errors now are probably being caused because I don't think the code can support a component output
+going into a component input (nor a compout going into a component input).
+
+I should think through which of these we need to support, and fix the parts of the code which disallow it.
+The simulator is part of it; I don't remember if other parts of the code will need fixing as well.
+=#
+
 
 # comp = Circuits.implement_deep(
 #     Circuits.IndexedComponentGroup(Circuits.PoissonNeuron(1.0) for _=1:2),

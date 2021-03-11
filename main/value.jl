@@ -75,15 +75,14 @@ one may use `v[x1 => (x2 => ... => (x_n))]`, which equals `v[x1][x2][...][x_n]`.
 `Base.pairs(::CompositeComponent)` iterates over `(val_name, sub_value)` pairs,
 `Base.keys` gives an iterator over the names, and `Base.values` gives an iterator over the sub-values.
 """
-struct CompositeValue{T} <: Value
-    vals::T
+struct CompositeValue <: Value# {T} <: Value
+    vals #::T
     abstract::Union{Value, Nothing}
-    CompositeValue(vals::T, abstract::Union{Value, Nothing}=nothing) where {T <: Union{
-            Tuple{Vararg{<:Value}},
-            NamedTuple{<:Any, <:Tuple{Vararg{<:Value}}}
-        }
-    } = new{T}(vals, abstract)
+    # CompositeValue(v::T, abst=nothing) where {T <: tup_or_namedtup(Value)} = new{basetype(T)}(v, abst)
+    # CompositeValue(v::T, args...) where {T <: Tuple{Vararg{<:Value}}} = new{Tuple}(vals, args...)
+    # CompositeValue(v::T, args...) where {T <: NamedTuple{<:Any, <:Tuple{Vararg{<:Value}}}} = new{NamedTuple}(vals, args...)
 end
+CompositeValue(vals) = CompositeValue(vals, nothing)
 
 """
     IndexedValues(t)
@@ -108,7 +107,7 @@ Base.values(v::CompositeValue) = Base.values(v.vals)
 Base.length(v::CompositeValue) = Base.length(v.vals)
 
 # TODO: performance
-length_deep(v::CompositeValue) = sum(length_deep(sv) for sv in values(v))
+length_deep(v::CompositeValue) = reduce(+, length_deep(sv) for sv in values(v); init=0)
 length_deep(::PrimitiveValue) = 1
 length_deep(::GenericValue) = 1
 

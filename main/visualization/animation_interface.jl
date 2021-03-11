@@ -23,9 +23,10 @@ animation_to_frontend_format(initial_state, events) = Dict(
 render_event((time, compname, event)) = render_event(time, compname, event)
 render_event(time, compname, s::SpikingSimulator.Spike) = Dict(
     "type" => "spike",
+    "spiketype" => s isa SpikingSimulator.InputSpike ? "input" : "output",
     "time" => time,
     "group" => convert_compname(compname),
-    "out" => "$(s.outputname)"
+    "name" => "$(s.name)"
 )
 render_event(time, compname, s::SpikingSimulator.StateChange) = 
     # Currently, the only states the front-end can only render OnOffStates

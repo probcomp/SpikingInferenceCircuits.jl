@@ -2,14 +2,13 @@ animationTimeout = undefined;
 
 function setup_animation(viz) {
     d3.select("#play_animation").on("click", () => {
-        d3.json("renders/conc_samp_animation.json", animation => {
+        d3.json("renders/simple_test_animation.json", animation => {
             if (animationTimeout) { // end old animation if one is running
                 clearTimeout(animationTimeout);
                 end_animation(viz);
             }
 
             slowdown = d3.select("#slowdown").node().value;
-            console.log("slowdown is " + slowdown)
             run_animation(animation, viz, slowdown)
         });
     });
@@ -42,10 +41,11 @@ function get_group(graph, group_name) {
     return group
 }
 
-function get_outnode(group, outname) {
-    outnodes = group.leaves.filter(n => n.name === outname);
-    size_should_be_one_will_use_first(outnodes, "outnodes");
-    return outnodes[0];
+// TODO: what if we have an input and output with the same name?!
+function get_node(group, name, is_output_node) {
+    nodes = group.leaves.filter(n => n.name === name && n.is_output == is_output_node);
+    size_should_be_one_will_use_first(nodes, "nodes");
+    return nodes[0];
 }
 
 /**
@@ -120,21 +120,24 @@ function handle_frame(viz, current_time, remaining_frames, currently_spiking, sl
  */
 function handle_spike(viz, next_frame, current_time, currently_spiking) {
     // TODO: give SVG elements IDs so we can more efficiently access them!
+    isoutput = next_frame.spiketype === "output";
 
     group = get_group(viz.graph, next_frame.group);
-    outnode = get_outnode(group, next_frame.out);
+    node = get_node(group, next_frame.name, isoutput);
 
-    on_groups = viz.groups.filter(g => g === group)
-        .attr("class", "group spikingGroup");
-    on_nodes = viz.nodes.filter(n => n === outnode)
+    if (isoutput) {
+        on_groups = viz.groups.filter(g => g === group)
+            .attr("class", "group spikingGroup");
+    }
+    on_nodes = viz.nodes.filter(n => n === node)
         .attr("class", "node spikingNode");
 
-    on_links = links.filter(d => d.source === outnode)
+    on_links = links.filter(d => d.source === node)
         .attr("class", "link spikingLink");
 
     // TODO: change style of nodes receiving spikes
 
-    currently_spiking.splice(0, 0, {
+    currently_spiking.push({
         time: current_time,
         links: on_links,
         groups: on_groups,
@@ -160,7 +163,7 @@ function handle_state_change(viz, frame) {
  */
 function remove_spiking(viz, current_time, remaining_frames, currently_spiking, slowdown) {
     obj = currently_spiking.splice(0, 1)[0];
-    if (obj.time + spike_length !== current_time) {
+    if (obj.time + spike_length - current_time > 0.00001) {
         console.warn("`removed_spiking` called to remove a frame at the wrong time!  current_time = " + current_time + "; obj.time = " + obj.time + "; spike_length = " + spike_length)
     }
 
@@ -188,7 +191,6 @@ function setup_next_action(viz, current_time, remaining_frames, currently_spikin
 }
 
 function sleep_or_do(time, slowdown, fn) {
-    console.log("slowdown is " + slowdown)
     if (time === 0) {
         fn()
     } else {

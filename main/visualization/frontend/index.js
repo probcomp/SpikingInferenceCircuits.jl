@@ -13,7 +13,7 @@ var svg = d3.select("#graph").append("svg")
     .attr("width", width)
     .attr("height", height);
 
-d3.json("renders/conc_samp.json", function(graph) {
+d3.json("renders/simple_test.json", function(graph) {
     make_initial_graph_modifications(graph)
     console.log(graph);
 

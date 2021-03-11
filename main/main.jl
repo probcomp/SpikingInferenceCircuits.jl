@@ -2,6 +2,8 @@ module Circuits
 
 using Distributions: Categorical, ncategories, probs
 
+include("utils.jl")
+
 include("targets/types.jl")
 include("value.jl")
 include("component.jl")

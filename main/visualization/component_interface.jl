@@ -218,10 +218,10 @@ io_inds(comp, startidx) =
 A list of `node` objects for the component's inputs and outputs.
 Each object is a dictionary ready to be JSON-ified and sent to the front-end.
 """
-get_io_nodes(comp) = [
-    Dict("name" => "$nodename")
-    for nodename in Iterators.flatten((keys_deep(inputs(comp)), keys_deep(outputs(comp))))
-]
+get_io_nodes(comp) = collect(Iterators.flatten((
+    (Dict("name" => "$nodename", "is_output" => false) for nodename in keys_deep(inputs(comp))),
+    (Dict("name" => "$nodename", "is_output" => true) for nodename in keys_deep(outputs(comp)))
+)))
 
 comp_type_name(comp) = typeof(comp).name.name
 """
@@ -298,11 +298,11 @@ In a format ready to be JSON-ified and sent to the frontend.
 io_on_outside_constraints(comp, name_to_nodeidx, nodes, start_node_idx) = collect(
         Iterators.flatten((
             (
-                x_offset_constraint( # inputs left of subcomponent inputs
+                isempty(pairs(inputs(comp))) ? () : x_offset_constraint( # inputs left of subcomponent inputs
                 name_to_nodeidx[Input(first(keys_deep(inputs(comp))))],
                 name_to_nodeidx[CompIn(subname, first(keys_deep(inputs(subcomp))))]
                 ),
-                x_offset_constraint( # outputs right of subcomp outputs
+                isempty(pairs(outputs(comp))) ? () : x_offset_constraint( # outputs right of subcomp outputs
                     name_to_nodeidx[CompOut(subname, first(keys_deep(outputs(subcomp))))],
                     name_to_nodeidx[Output(first(keys_deep(outputs(comp))))]
                 )

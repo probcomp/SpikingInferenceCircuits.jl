@@ -216,29 +216,25 @@ or, to refer to a nested subcomponent, a nested name implemented as a `Pair`-bas
 # We store a 2-way mapping between these node names and vertex indices in the graph.
 # We store the `Value` for each input/output name, and the `Component` for each component name.
 # """
-struct CompositeComponent{InID, OutID, SC} <: Component
-    input::CompositeValue{InID}
-    output::CompositeValue{OutID}
-    subcomponents::SC # `Tuple` or `NamedTuple` of subcomponents
+struct CompositeComponent <: Component #{InID, OutID, SC} <: Component
+    input::CompositeValue #{InID}
+    output::CompositeValue #{OutID}
+    subcomponents #::SC # `Tuple` or `NamedTuple` of subcomponents
     node_to_idx::Dict{NodeName, UInt} # maps from `NodeName` to index of this node in the graph
     idx_to_node::Vector{NodeName} # maps index of a node in the graph to its `NodeName`
     graph::SimpleDiGraph # graph of connections between input/output values
     abstract::Union{Nothing, Component} # the component which was `implement`ed to obtain this `CompositeComponent`
     
     # ensure `subcomponents` is either a Tuple or NamedTuple of Components
-    CompositeComponent(
-        input::CompositeValue{InID},
-        output::CompositeValue{OutID},
-        subcomponents::SC,
-        node_to_idx::Dict{NodeName, UInt},
-        idx_to_node::Vector{NodeName},
-        graph::SimpleDiGraph,
-        abstract::Union{Nothing, Component}=nothing
-    ) where {InID, OutID, SC <: Union{
-        Tuple{Vararg{<:Component}}, 
-        NamedTuple{<:Any, <:Tuple{Vararg{<:Component}}}
-    }} = new{InID, OutID, SC}(input, output, subcomponents, node_to_idx, idx_to_node, graph, abstract)
+    # CompositeComponent(i::CompositeValue{I}, o::CompositeValue{O}, sc::T, ni, in, g, abs=nothing) where {I, O, T <: tup_or_namedtup(Component)} =
+    #     new{I, O, basetype(T)}(i, o, sc, ni, in, g, abs)
+
+    # CompositeComponent(i::CompositeValue{I}, o::CompositeValue{O}, sc::T, args...) where {I, O, T <: Tuple{Vararg{<:Component}}} =
+    #     new{I, O, Tuple}(i, o, sc, args...)
+    # CompositeComponent(i::CompositeValue{I}, o::CompositeValue{O}, sc::NT, args...) where {I, O, NT <: NamedTuple{<:Any, <:Tuple{Vararg{<:Component}}}} =
+    #     new{I, O, NamedTuple}(i, o, sc, args...)
 end
+CompositeComponent(i, o, sc, ni, in, g) = new(i, o, sc, ni, in, g, nothing)
 
 """
     CompositeComponent(
@@ -329,14 +325,22 @@ does_output(c::CompositeComponent, name::Union{Input, CompOut}) =
     )
 
 """
-    receivers(c::CompositeComponent: name::Union{Input, CompOut})
+    receivers(c::CompositeComponent: name::NodeName)
 
 Iterator over all the `NodeName`s which receive output from the node named `name`.
 
-(Each element of the outputted iterator will either be an `Output` or a `CompIn`.)
+(If the component is valid, each element of the outputted iterator
+will either be an `Input`, `Output` or `CompIn`.)
 """
-receivers(c::CompositeComponent, name::Union{Input, CompOut}) = (
-        c.idx_to_node[idx] for idx in neighbors(c.graph, c.node_to_idx[name])
+function receivers(c::CompositeComponent, name::CompIn)
+    r = _receivers(c, name)
+    @assert isempty(r)
+    r
+end
+receivers(c::CompositeComponent, name::Union{Input, Output, CompOut}) = _receivers(c, name)
+
+_receivers(c::CompositeComponent, name::NodeName) = (
+        c.idx_to_node[idx] for idx in outneighbors(c.graph, c.node_to_idx[name])
     )
 
 # TODO: better documentation

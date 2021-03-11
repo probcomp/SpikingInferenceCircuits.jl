@@ -1,0 +1,140 @@
+{
+  "events": [
+    {
+      "name": "out",
+      "time": 1.1591943039327521,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        1,
+        4
+      ]
+    },
+    {
+      "name": "4 => :out",
+      "time": 0.0,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        1
+      ]
+    },
+    {
+      "name": "off",
+      "time": 0.0,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        1,
+        1
+      ]
+    },
+    {
+      "time": 0.0,
+      "statetype": "OnOffState",
+      "val": false,
+      "type": "statechange",
+      "group": [
+        1,
+        1
+      ]
+    },
+    {
+      "name": "1 => :off",
+      "time": 0.0,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        1
+      ]
+    },
+    {
+      "name": "off",
+      "time": 0.0,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        1,
+        2
+      ]
+    },
+    {
+      "time": 0.0,
+      "statetype": "OnOffState",
+      "val": false,
+      "type": "statechange",
+      "group": [
+        1,
+        2
+      ]
+    },
+    {
+      "name": "2 => :off",
+      "time": 0.0,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        1
+      ]
+    },
+    {
+      "name": "off",
+      "time": 0.0,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        1,
+        3
+      ]
+    },
+    {
+      "time": 0.0,
+      "statetype": "OnOffState",
+      "val": false,
+      "type": "statechange",
+      "group": [
+        1,
+        3
+      ]
+    },
+    {
+      "name": "3 => :off",
+      "time": 0.0,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        1
+      ]
+    },
+    {
+      "name": "off",
+      "time": 0.0,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        1,
+        4
+      ]
+    },
+    {
+      "time": 0.0,
+      "statetype": "OnOffState",
+      "val": false,
+      "type": "statechange",
+      "group": [
+        1,
+        4
+      ]
+    },
+    {
+      "name": "4 => :off",
+      "time": 0.0,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        1
+      ]
+    }
+  ],
+  "initial_states": []
+}
