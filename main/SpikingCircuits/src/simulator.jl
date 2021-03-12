@@ -39,12 +39,11 @@ at the same instant, we instead sequence them with some tiny ϵ-milisecond delay
 """
 module SpikingSimulator
 
-include("../../utils.jl")
-
 using DataStructures: OrderedDict, Queue, enqueue!, dequeue!
-# TODO: move the details of `PoissonNeuron` out of the simulator and into `targets/spiking/spiking.jl`
-import ..Component, ..PrimitiveComponent, ..CompositeComponent, ..Spiking
-import ..Output, ..Input, ..CompOut, ..CompIn, ..NodeName, ..receivers, ..does_output
+import Circuits: Component, PrimitiveComponent, CompositeComponent
+import Circuits: Output, Input, CompOut, CompIn, NodeName, receivers, does_output
+import ..Spiking
+
 const PrimComp = PrimitiveComponent{>:Spiking}
 
 # TODO: could we do this better/in a more specific way?  This currently probably enables _some_ type checking but not performance improvements.

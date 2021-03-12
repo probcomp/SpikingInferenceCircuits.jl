@@ -50,9 +50,29 @@ is_implementation_for(::GenericValue, ::Target) = false
 Implement the value for the target recursively, yielding a value `v` such that
 `is_implementation_for(v, t)` is true.
 """
-implement_deep(v::PrimitiveValue{U}, t::Target) where {U <: Target} = error("Cannot implement $v, a PrimitiveValue{$u}, for target $t.")
-implement_deep(v::PrimitiveValue{<:T}, ::T) where {T <: Target} = v
+implement_deep(v::PrimitiveValue{T1}, t::T2) where {T1 <: Target, T2 <: Target} =
+    if T1 <: T2
+        v
+    else
+        error("Cannot implement $v, a PrimitiveValue{$T1}, for target $t.")
+    end
 implement_deep(v::GenericValue, t::Target) = implement_deep(implement(v, t), t)
+
+"""
+    abstract(v::Value)
+
+Returns the value which was `implement`ed to produce `v` if it exists and is available;
+otherwise returns `nothing`.
+"""
+abstract(::Value) = nothing
+
+"""
+    target(v::Value)
+
+If `v` is a _concrete value_ which has 1 implementation for 1 target,
+return the `Target` `v` can be implemented for.  Else, returns `nothing`.
+"""
+target(::Value) = nothing
 
 ##################
 # CompositeValue #
@@ -145,66 +165,3 @@ implement_deep(v::CompositeValue, t::Target) =
     else
         CompositeValue(map(val -> implement_deep(val, t), v.vals), v)
     end
-
-###############
-# Value Types #
-###############
-
-"""
-    struct Binary <: GenericValue end
-
-Abstract Value representing a signal that is either `0` or `1` (`true` or `false`)
-at each moment in time.
-"""
-struct Binary <: GenericValue end
-implement(::Binary, ::Spiking) = SpikeWire()
-
-"""
-    FiniteDomainValue(n)
-
-An `AbstractValue` with a finite domain of size `n`.
-"""
-struct FiniteDomainValue <: GenericValue
-    n::UInt
-end
-
-"""
-    SpikingCategoricalValue(n)
-
-A value with a finite domain of size `n`, represented using `n` wires.
-The value `i` is transmitted when the `i`th of the `n` wires spikes.
-"""
-struct SpikingCategoricalValue <: GenericValue
-    n::UInt
-end
-SpikingCategoricalValue(f::FiniteDomainValue) = SpikingCategoricalValue(f.n)
-FiniteDomainValue(f::SpikingCategoricalValue) = FiniteDomainValue(f.n)
-target(::Type{SpikingCategoricalValue}) = Spiking()
-abstract(v::SpikingCategoricalValue) = FiniteDomainValue(v.n)
-# performance TODO: can we avoid explicitely constructing a tuple?
-implement(v::SpikingCategoricalValue, ::Spiking) = CompositeValue(Tuple(SpikeWire() for _=1:v.n), v)
-
-"""
-    UnbiasedPositiveReal <: GenericValue
-
-An unbiased estimate of a positive real number.
-"""
-struct UnbiasedPositiveReal <: GenericValue end
-
-"""
-    BinarySamplesUnbiasedPositiveReal <: GenericValue
-    BinarySamplesUnbiasedPositiveReal(n)
-
-An abstract implementation of a `UnbiasedPositiveReal`.
-Sends `n` binary "sample" values (as `FiniteDomainValue(2)`s).
-If `n1` samples of `1` and `n2` samples of `2` are sent,
-the transmitted value is `n1/(1 + n2)`.
-
-If the probability of any sample being `1` is `p/(p + q)`, then in expectation
-the transmitted value is `p/q` (so this is an unbiased estimate of `p/q`).
-"""
-struct BinarySamplesUnbiasedPositiveReal <: GenericValue
-    num_samples::UInt
-end
-abstract(::BinarySamplesUnbiasedPositiveReal) = UnbiasedPositiveReal()
-implement(s::BinarySamplesUnbiasedPositiveReal, ::Target) = IndexedValues(FiniteDomainValue(2) for _=1:s.num_samples)

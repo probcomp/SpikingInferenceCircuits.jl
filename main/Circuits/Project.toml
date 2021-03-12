@@ -1,0 +1,8 @@
+name = "Circuits"
+uuid = "f5b243b3-c95b-4650-9ac7-659d8f0b0982"
+authors = ["George Matheos <georgematheos@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
+LightGraphs = "093fc24a-ae57-5d10-9952-331d41423f4d"

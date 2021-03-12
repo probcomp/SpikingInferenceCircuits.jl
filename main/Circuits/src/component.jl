@@ -49,6 +49,15 @@ not exist or is not available.
 """
 abstract(::Component) = nothing
 
+"""
+    target(c::Component)
+
+If `c` is a _concrete component_ which has 1 implementation for 1 target,
+returns the `Target` `c` can be implemented for.  Else, returns `nothing`.
+"""
+target(::Component) = error("Not implemented.  (This may be a non-concrete value with multiple possible targets.)")
+
+
 ### TODO: document `implement` (and `is_implementation_for` and `implement_deep`)
 ### TODO: document `target` (and maybe add an `is_concrete`?)
 # TODO: while working on this, think about whether things are set up right or this could be done better
@@ -77,8 +86,12 @@ is_implementation_for(::GenericComponent, ::Target) = false
 Implement the component for the target recursively, yielding a component `c` such that
 `is_implementation_for(c, t)` is true.
 """
-implement_deep(c::PrimitiveComponent{U}, t::Target) where {U <: Target} = error("Cannot implement $c, a PrimitiveComponent{$u}, for target $t.")
-implement_deep(c::PrimitiveComponent{<:T}, ::T) where {T <: Target} = c
+implement_deep(c::PrimitiveComponent{T1}, t::T2) where {T1 <: Target, T2 <: Target} =
+    if T1 <: T2
+        c
+    else
+        error("Cannot implement $c, a PrimitiveComponent{$T1}, for target $t.")
+    end
 implement_deep(c::GenericComponent, t::Target) = implement_deep(implement(c, t), t)
 
 ######################

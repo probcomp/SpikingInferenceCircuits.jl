@@ -1,0 +1,9 @@
+name = "SpikingCircuits"
+uuid = "549ce59a-75fd-4aaf-b0ba-30f73ee3de21"
+authors = ["George Matheos <georgematheos@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+Circuits = "f5b243b3-c95b-4650-9ac7-659d8f0b0982"
+DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
