@@ -5,7 +5,7 @@ Core spiking neural network research code!
 
 - `Circuits` is a Julia package for operating on circuits in an abstract way
 - `SpikingCircuits` is a Julia package specializing `Circuits` to the Spiking Neural domain.
-  It includes primitive units for circuits (eg. values like `SpikeWire` and components like `PoissonNeuron`),
+  It includes primitive units for circuits (eg. values like `SpikeWire` and components like `OnOffPoissonNeuron`),
   and implements a SNN simulator `SpikingSimulator`.
 - `visualizations` contains code to produce visualizations, including:
   - Spiketrain visualization

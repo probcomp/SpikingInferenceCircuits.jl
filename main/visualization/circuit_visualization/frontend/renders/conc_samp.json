@@ -1865,7 +1865,7 @@
       ]
     },
     {
-      "comptype": "PoissonNeuron",
+      "comptype": "OnOffPoissonNeuron",
       "name": 1,
       "leaves": [
         25,
@@ -1874,7 +1874,7 @@
       ]
     },
     {
-      "comptype": "PoissonNeuron",
+      "comptype": "OnOffPoissonNeuron",
       "name": 2,
       "leaves": [
         28,
@@ -1883,7 +1883,7 @@
       ]
     },
     {
-      "comptype": "PoissonNeuron",
+      "comptype": "OnOffPoissonNeuron",
       "name": 3,
       "leaves": [
         31,
@@ -1892,7 +1892,7 @@
       ]
     },
     {
-      "comptype": "PoissonNeuron",
+      "comptype": "OnOffPoissonNeuron",
       "name": 4,
       "leaves": [
         34,
@@ -1985,7 +1985,7 @@
       ]
     },
     {
-      "comptype": "PoissonNeuron",
+      "comptype": "OnOffPoissonNeuron",
       "name": 1,
       "leaves": [
         97,
@@ -1994,7 +1994,7 @@
       ]
     },
     {
-      "comptype": "PoissonNeuron",
+      "comptype": "OnOffPoissonNeuron",
       "name": 2,
       "leaves": [
         100,
@@ -2003,7 +2003,7 @@
       ]
     },
     {
-      "comptype": "PoissonNeuron",
+      "comptype": "OnOffPoissonNeuron",
       "name": 3,
       "leaves": [
         103,
@@ -2012,7 +2012,7 @@
       ]
     },
     {
-      "comptype": "PoissonNeuron",
+      "comptype": "OnOffPoissonNeuron",
       "name": 4,
       "leaves": [
         106,
@@ -2045,7 +2045,7 @@
       ]
     },
     {
-      "comptype": "PoissonNeuron",
+      "comptype": "OnOffPoissonNeuron",
       "name": 1,
       "leaves": [
         121,
@@ -2054,7 +2054,7 @@
       ]
     },
     {
-      "comptype": "PoissonNeuron",
+      "comptype": "OnOffPoissonNeuron",
       "name": 2,
       "leaves": [
         124,
@@ -2063,7 +2063,7 @@
       ]
     },
     {
-      "comptype": "PoissonNeuron",
+      "comptype": "OnOffPoissonNeuron",
       "name": 3,
       "leaves": [
         127,
@@ -2072,7 +2072,7 @@
       ]
     },
     {
-      "comptype": "PoissonNeuron",
+      "comptype": "OnOffPoissonNeuron",
       "name": 4,
       "leaves": [
         130,
@@ -2105,7 +2105,7 @@
       ]
     },
     {
-      "comptype": "PoissonNeuron",
+      "comptype": "OnOffPoissonNeuron",
       "name": 1,
       "leaves": [
         145,
@@ -2114,7 +2114,7 @@
       ]
     },
     {
-      "comptype": "PoissonNeuron",
+      "comptype": "OnOffPoissonNeuron",
       "name": 2,
       "leaves": [
         148,
@@ -2123,7 +2123,7 @@
       ]
     },
     {
-      "comptype": "PoissonNeuron",
+      "comptype": "OnOffPoissonNeuron",
       "name": 3,
       "leaves": [
         151,
@@ -2132,7 +2132,7 @@
       ]
     },
     {
-      "comptype": "PoissonNeuron",
+      "comptype": "OnOffPoissonNeuron",
       "name": 4,
       "leaves": [
         154,
@@ -2165,7 +2165,7 @@
       ]
     },
     {
-      "comptype": "PoissonNeuron",
+      "comptype": "OnOffPoissonNeuron",
       "name": 1,
       "leaves": [
         169,
@@ -2174,7 +2174,7 @@
       ]
     },
     {
-      "comptype": "PoissonNeuron",
+      "comptype": "OnOffPoissonNeuron",
       "name": 2,
       "leaves": [
         172,
@@ -2183,7 +2183,7 @@
       ]
     },
     {
-      "comptype": "PoissonNeuron",
+      "comptype": "OnOffPoissonNeuron",
       "name": 3,
       "leaves": [
         175,
@@ -2192,7 +2192,7 @@
       ]
     },
     {
-      "comptype": "PoissonNeuron",
+      "comptype": "OnOffPoissonNeuron",
       "name": 4,
       "leaves": [
         178,
@@ -2225,7 +2225,7 @@
       ]
     },
     {
-      "comptype": "PoissonNeuron",
+      "comptype": "OnOffPoissonNeuron",
       "name": 1,
       "leaves": [
         193,
@@ -2234,7 +2234,7 @@
       ]
     },
     {
-      "comptype": "PoissonNeuron",
+      "comptype": "OnOffPoissonNeuron",
       "name": 2,
       "leaves": [
         196,
@@ -2243,7 +2243,7 @@
       ]
     },
     {
-      "comptype": "PoissonNeuron",
+      "comptype": "OnOffPoissonNeuron",
       "name": 3,
       "leaves": [
         199,
@@ -2252,7 +2252,7 @@
       ]
     },
     {
-      "comptype": "PoissonNeuron",
+      "comptype": "OnOffPoissonNeuron",
       "name": 4,
       "leaves": [
         202,

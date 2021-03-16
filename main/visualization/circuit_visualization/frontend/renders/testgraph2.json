@@ -189,7 +189,7 @@
       ]
     },
     {
-      "comptype": "PoissonNeuron",
+      "comptype": "OnOffPoissonNeuron",
       "name": 1,
       "leaves": [
         6,
@@ -198,7 +198,7 @@
       ]
     },
     {
-      "comptype": "PoissonNeuron",
+      "comptype": "OnOffPoissonNeuron",
       "name": 2,
       "leaves": [
         9,
@@ -207,7 +207,7 @@
       ]
     },
     {
-      "comptype": "PoissonNeuron",
+      "comptype": "OnOffPoissonNeuron",
       "name": 3,
       "leaves": [
         12,
@@ -216,7 +216,7 @@
       ]
     },
     {
-      "comptype": "PoissonNeuron",
+      "comptype": "OnOffPoissonNeuron",
       "name": 4,
       "leaves": [
         15,

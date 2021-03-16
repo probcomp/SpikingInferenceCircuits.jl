@@ -21,6 +21,6 @@ struct SpikeWire <: Circuits.PrimitiveValue{Spiking} end
 include("poisson_neuron.jl")
 
 export Spiking, SpikingSimulator, SpikeWire
-export PoissonNeuron
+export OnOffPoissonNeuron
 
 end # module

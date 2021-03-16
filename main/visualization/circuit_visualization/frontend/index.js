@@ -224,7 +224,7 @@ function is_composite(g) {
 }
 
 function is_poisson(g) {
-    return g.comptype === "PoissonNeuron"
+    return g.comptype === "OnOffPoissonNeuron"
 }
 
 function is_generic(g) {
