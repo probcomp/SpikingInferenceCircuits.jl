@@ -57,18 +57,20 @@ returns the `Target` `c` can be implemented for.  Else, returns `nothing`.
 """
 target(::Component) = error("Not implemented.  (This may be a non-concrete value with multiple possible targets.)")
 
-
-### TODO: document `implement` (and `is_implementation_for` and `implement_deep`)
-### TODO: document `target` (and maybe add an `is_concrete`?)
-# TODO: while working on this, think about whether things are set up right or this could be done better
-
 """
-    implement(::Component, ::Target)
+    implement(c::Component, t::Target)
 
 Make progress implementing the component for the target, so that a finite
-number of repeated calls to `implement` will yield a component `c` so that `is_implementation_for(c, t)` is true.
+number of repeated calls to `implement` will yield a component `c` so that
+`is_implementation_for(c, t)` is true.        
 """
-implement(::Component) = nothing
+implement(c::Component, t::Target) = no_impl_error(c, t)
+implement(c::PrimitiveValue{T1}, t::T2) where {T1 <: Target, T2 <: Target} =
+    if T1 <: T2
+        c
+    else
+        error("Cannot implement $c, a PrimitiveComponent{$T1}, for target $t.")
+    end
 
 """
     is_implementation_for(::Component, ::Target)
@@ -305,25 +307,58 @@ get_edges(c::CompositeComponent) = (
         for edge in edges(c.graph)
     )
 
-# TODO: faster implementations for `is_implementation_for`, `implement_deep`?
 is_implementation_for(c::CompositeComponent, t::Target) =
     is_implementation_for(inputs(c), t) && is_implementation_for(outputs(c), t) && all(
         is_implementation_for(subc, t) for subc in values(c.subcomponents)
     )
-implement_deep(c::CompositeComponent, t::Target) =
-    if is_implementation_for(c::CompositeComponent, t::Target)
-        c
-    else
-        CompositeComponent(
-            implement_deep(inputs(c), t),
-            implement_deep(outputs(c), t),
-            map(sc -> implement_deep(sc, t), c.subcomponents),
-            c.node_to_idx,
-            c.idx_to_node,
-            c.graph,
-            c
-        )
-    end
+
+"""
+    implement(c::CompositeComponent, t::Target,
+        subcomponent_filter::Function = (n -> true),
+        input_filter::Function = (n -> true),
+        output_filter::Function = (n -> true);
+        deep=false
+    )
+
+Make progress implementing `c` for `t`.  Implement each subcomponent
+whose name passes `subcomponent_filter`, each input value whose name
+passes `input_filter`, and each output whose name passes `output_filter`.
+
+If `deep` is false, `implement` will be used for recursive calls (shallow one-step implement);
+if `deep` is true, `implement_deep` will be used (fully implementing `c` for `t`).
+"""
+implement(c::CompositeComponent, t::Target,
+    subcomponent_filter::Function = (n -> true),
+    input_filter::Function = (n -> true),
+    output_filter::Function = (n -> true);
+    deep=false
+) =
+    CompositeComponent(
+        implement(inputs(c), t, input_filter; deep),
+        implement(outputs(c), t, output_filter; deep),
+        map(names(c.subcomponents), c.subcomponents) do name, subcomp
+            if deep
+                implement_deep(subcomp, t)
+            else
+                implement(subcomp, t)
+            end
+        end,
+        c.node_to_idx, c.idx_to_node, c.graph, c
+    )
+
+"""
+    implement(c::CompositeComponent, t::Target, subcomp_names...)
+    implement_deep(c, t::Target, subcomp_names...)
+
+Implement or deep-implement the subcomponents of `c` with names in `subcomp_names`.
+This will not implement the input/output values at all; if that is needed, use
+the more general `implement(::CompositeComponent, ...)` with name filtering.
+"""
+implement(c::CompositeComponent, t::Target, subcomp_names...; kwargs...) =
+    implement(c, t, in(subcomp_names); kwargs...)
+
+implement_deep(c, t::Target, subcomp_names...; kwargs...) =
+    implement(c, t, subcomp_names...; deep=true)
 
 """
     does_output(c::CompositeComponent, name::Union{Input, CompOut})

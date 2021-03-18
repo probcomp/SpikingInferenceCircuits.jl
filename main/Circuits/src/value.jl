@@ -32,7 +32,13 @@ abstract type PrimitiveValue{Target} <: Value end
 Make progress implementing the value for the target, so that a finite
 number of repeated calls to `implement` will yield a value `v` so that `is_implementation_for(v, t)` is true.
 """
-implement(::V, ::T) where {V <: Value, T <: Target} = error("No implementation for values of type `$V` defined for target `$T`.")
+implement(v::Value, t::Target) = no_impl_error(v, t)
+implement(v::PrimitiveValue{T1}, t::T2) where {T1 <: Target, T2 <: Target} =
+    if T1 <: T2
+        v
+    else
+        error("Cannot implement $v, a PrimitiveValue{$T1}, for target $t.")
+    end
 
 """
     is_implementation_for(::Value, ::Target)
@@ -50,12 +56,7 @@ is_implementation_for(::GenericValue, ::Target) = false
 Implement the value for the target recursively, yielding a value `v` such that
 `is_implementation_for(v, t)` is true.
 """
-implement_deep(v::PrimitiveValue{T1}, t::T2) where {T1 <: Target, T2 <: Target} =
-    if T1 <: T2
-        v
-    else
-        error("Cannot implement $v, a PrimitiveValue{$T1}, for target $t.")
-    end
+implement_deep(v::PrimitiveValue, t::Target) = implement(v, t)
 implement_deep(v::GenericValue, t::Target) = implement_deep(implement(v, t), t)
 
 """
@@ -114,12 +115,12 @@ given by iterating through `t`.
 IndexedValues(t) = CompositeValue(Tuple(t))
 
 """
-    NamedValues(t)
+    NamedValues(t...)
 
-Given iterator `t` over `(name::Symbol, value::Value)` pairs,
+Given a vararg `t` of `(name::Symbol, value::Value)` pairs,
 a `CompositeValue` with the given values at the given names.
 """
-NamedValues(t) = CompositeValue((;t...))
+NamedValues(t...) = CompositeValue((;t...))
 
 Base.pairs(v::CompositeValue) = Base.pairs(v.vals)
 Base.keys(v::CompositeValue) = Base.keys(v.vals)
@@ -157,11 +158,46 @@ abstract(v::CompositeValue) = v.abstract
 Base.getindex(cv::CompositeValue, k) = cv.vals[k]
 Base.getindex(cv::CompositeValue, p::Pair) = cv.vals[p.first][p.second]
 
-# TODO: faster implementations for `is_implementation_for`, `implement_deep`?
 is_implementation_for(v::CompositeValue, t::Target) = all(is_implementation_for(val, t) for val in values(v))
-implement_deep(v::CompositeValue, t::Target) =
-    if is_implementation_for(v, t)
+
+"""
+    implement(v::CompositeValue, t::Target, filter::Function = (x -> true); deep=false)
+
+Make progress implementing `v` for `t`.  All subvalues whose name `n` is such that `filter(n) == true`
+will be implemented; by default all subvalues are implemented.
+
+If `deep` is false, each subvalue will be implemented one "level" using `implement`; if `deep` is true,
+each subvalue will be fully implemented via `implement_deep`.
+"""
+implement(v::CompositeValue, t::Target, filter::Function = (x -> true); deep=false) =
+    CompositeValue(
+        map(names(v.vals), v.vals) do name, val
+            if filter(name)
+                if deep
+                    implement_deep(val, t)
+                else
+                    implement(val, t)
+                end
+            else
+                val
+            end
+        end,
         v
-    else
-        CompositeValue(map(val -> implement_deep(val, t), v.vals), v)
-    end
+    )
+
+"""
+    implement(v::CompositeValue, t::Target, names...; deep=false)
+    implement_deep(v::CompositeValue, t::Target, names...)
+
+Implement or implement deep all subvalues of `v` whose name is in `names`.
+"""
+implement(v::CompositeValue, t::Target, names...; kwargs...) = implement(v, t, in(names); kwargs...)
+implement_deep(v::CompositeValue, t::Target, names...) = implement(v, t, names...; deep=true)
+
+### Binary ###
+"""
+    Binary <: GenericValue
+
+A value which at any given time either represents a `1` or `0`.
+"""
+struct Binary <: GenericValue end
