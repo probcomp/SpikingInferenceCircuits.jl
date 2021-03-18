@@ -1,7 +1,5 @@
 import .Sim: NextSpikeTrajectory, OnOffState, EmptyState, EmptyTrajectory
 import Circuits: CompositeValue, PrimitiveComponent
-using Distributions: Exponential
-exponential(rate) = rand(Exponential(1/rate))
 
 struct OnOffPoissonNeuron <: PrimitiveComponent{Spiking}
     rate::Float64

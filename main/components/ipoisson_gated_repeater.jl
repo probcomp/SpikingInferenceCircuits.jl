@@ -17,7 +17,7 @@ Circuits.target(::IPoissonGatedRepeater) = Spiking()
 Circuits.implement(r::IPoissonGatedRepeater, ::Spiking) =
     CompositeComponent(
         inputs(r), outputs(r),
-        (IntegratingPoisson([+IPOISSONGATE_REPEATING_RATE, -IPOISSONGATE_REPEATING_RATE, -Inf], 0., identity),),
+        (IntegratingPoisson([+IPOISSONGATE_REPEATING_RATE, -IPOISSONGATE_REPEATING_RATE, -Inf], 0., ReLU),),
         (
             Input(:in) => CompIn(1, 1),
             CompOut(1, :out) => CompIn(1, 2),
@@ -25,3 +25,5 @@ Circuits.implement(r::IPoissonGatedRepeater, ::Spiking) =
             Input(:off) => CompIn(1, 3)
         )
     )
+
+ReLU(x) = max(x, 0.)

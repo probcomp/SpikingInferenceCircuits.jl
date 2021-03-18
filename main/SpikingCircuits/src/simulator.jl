@@ -324,7 +324,7 @@ function simulate_for_time(
 
     for input in initial_inputs
         (s, t, output_names) = receive_input_spike(c, s, t, input, itr -> filtered_callback(itr, 0.))
-        callback(Iterators.flatten((
+        filtered_callback(Iterators.flatten((
             ((nothing, InputSpike(input)),),
             ((nothing, OutputSpike(n)) for n in output_names)
         )), 0.)

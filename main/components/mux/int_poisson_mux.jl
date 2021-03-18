@@ -19,6 +19,7 @@ Circuits.implement(m::BitMux, ::Spiking) = CompositeComponent(
             Input(:value) => CompIn(:inhibitor, :in),
             Input(:value) => CompIn(:outputter, 1),
             CompOut(:inhibitor, :out) => CompIn(:outputter, 2),
+            CompOut(:outputter, :out) => CompIn(:outputter, 2),
             CompOut(:outputter, :out) => Output(:out)
         )
     )

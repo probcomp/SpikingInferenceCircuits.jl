@@ -23,6 +23,8 @@ struct SpikeWire <: Circuits.PrimitiveValue{Spiking} end
 Circuits.abstract(::SpikeWire) = Circuits.Binary()
 Circuits.implement(::Circuits.Binary, ::Spiking) = SpikeWire()
 
+using Distributions: Exponential
+exponential(rate) = rand(Exponential(1/rate))
 include("on_off_poisson_neuron.jl")
 include("integrating_poisson.jl")
 
