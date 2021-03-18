@@ -185,6 +185,17 @@ next_spike(::Component, ::EmptyTrajectory) = nothing # no next spike is within t
 trajectory_length(::EmptyTrajectory) = 0.
 trajectory_length(t::NextSpikeTrajectory) = t.time_to_next_spike
 
+advance_without_statechange(s::State, t::NextSpikeTrajectory, ΔT) =
+    let remaining_time = t.time_to_next_spike - ΔT
+        if remaining_time == 0
+            (s, EmptyTrajectory(), (:out,))
+        elseif remaining_time > 0
+            (s, NextSpikeTrajectory(remaining_time), ())
+        else
+            advancing_too_far_error(t, ΔT)
+        end
+    end
+
 ################################
 # High-Level Simulator Methods #
 ################################

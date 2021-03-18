@@ -17,10 +17,13 @@ const Sim = SpikingSimulator
 ##############
 
 struct SpikeWire <: Circuits.PrimitiveValue{Spiking} end
+Circuits.abstract(::SpikeWire) = Circuits.Binary()
+Circuits.implement(::Circuits.Binary, ::Spiking) = SpikeWire()
 
-include("poisson_neuron.jl")
+include("on_off_poisson_neuron.jl")
+include("integrating_poisson.jl")
 
 export Spiking, SpikingSimulator, SpikeWire
-export OnOffPoissonNeuron
+export OnOffPoissonNeuron, IntegratingPoisson
 
 end # module

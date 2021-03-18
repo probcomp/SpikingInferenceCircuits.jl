@@ -17,15 +17,7 @@ Sim.extend_trajectory(n::OnOffPoissonNeuron, s::OnOffState, ::Sim.EmptyTrajector
 Sim.extend_trajectory(::OnOffPoissonNeuron, s::OnOffState, t::NextSpikeTrajectory) = t
 
 Sim.advance_time_by(::OnOffPoissonNeuron, s::OnOffState, t::NextSpikeTrajectory, ΔT) =
-    let remaining_time = t.time_to_next_spike - ΔT
-        if remaining_time == 0
-            (s, EmptyTrajectory(), (:out,))
-        elseif remaining_time > 0
-            (s, NextSpikeTrajectory(remaining_time), ())
-        else
-            Sim.advancing_too_far_error(t, ΔT)
-        end
-    end
+    Sim.advance_without_statechange(s, t, ΔT)
 
 Sim.receive_input_spike(p::OnOffPoissonNeuron, s::OnOffState, ::Sim.Trajectory, inputname) =
     if inputname === :on
