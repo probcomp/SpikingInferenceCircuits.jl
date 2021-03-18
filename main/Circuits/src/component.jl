@@ -65,7 +65,7 @@ number of repeated calls to `implement` will yield a component `c` so that
 `is_implementation_for(c, t)` is true.        
 """
 implement(c::Component, t::Target) = no_impl_error(c, t)
-implement(c::PrimitiveValue{T1}, t::T2) where {T1 <: Target, T2 <: Target} =
+implement(c::PrimitiveComponent{T1}, t::T2) where {T1 <: Target, T2 <: Target} =
     if T1 <: T2
         c
     else

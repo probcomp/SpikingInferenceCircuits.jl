@@ -12,6 +12,14 @@ include("target.jl")
 include("value.jl")
 include("component.jl")
 
+"""
+    can_implement(c::Component, t::Target)
+    can_implement(v::Value, t::Target)
+
+Whether the given component/value can be implemented in this target.
+"""
+can_implement(::K, ::T) where {K <: Union{Component, Value}, T <: Target} = hasmethod(implement, Tuple{K, T})
+
 export Target
 export Value, PrimitiveValue, GenericValue, CompositeValue
 export Component, PrimitiveComponent, GenericComponent, CompositeComponent
@@ -21,5 +29,6 @@ export IndexedValues, NamedValues
 export ComponentGroup, IndexedComponentGroup, NamedComponentGroup
 export NodeName, Input, Output, CompIn, CompOut
 export Binary
+export can_implement, compiles_to_binary
 
 end

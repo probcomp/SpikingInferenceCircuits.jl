@@ -8,6 +8,9 @@ Spiking circuit target for information processing.
 """
 struct Spiking <: Circuits.Target end
 
+# all values in a spiking circuit can be compiled into `SpikeWire`s
+Circuits.compiles_to_binary(::Circuits.Value, ::Spiking) = true
+
 ### Simulator ###
 include("simulator.jl")
 const Sim = SpikingSimulator

@@ -1,5 +1,9 @@
-include("../ipoisson_gated_repeater.jl")
+"""
+    IPoissonBitMux <: GenericComponent
 
+Implementation of `BitMux` for `Spiking` using an `IntegratingPoisson`.
+Once an input is selected, it is selected forever.
+"""
 struct IPoissonBitMux <: GenericComponent end
 Circuits.inputs(::BitMux) = NamedValues(:value => SpikeWire(), :sel => SpikeWire())
 Circuits.outputs(::BitMux) = NamedValues(:out => SpikeWire())

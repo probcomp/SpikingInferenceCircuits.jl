@@ -112,7 +112,7 @@ Given iterator `t` over values,
 a `CompositeValue` with sub-value names, `1, ..., length(t)` and values
 given by iterating through `t`.
 """
-IndexedValues(t) = CompositeValue(Tuple(t))
+IndexedValues(t, abstract=nothing) = CompositeValue(Tuple(t), abstract)
 
 """
     NamedValues(t...)
@@ -201,3 +201,15 @@ implement_deep(v::CompositeValue, t::Target, names...) = implement(v, t, names..
 A value which at any given time either represents a `1` or `0`.
 """
 struct Binary <: GenericValue end
+
+"""
+    compiles_to_binary(v::Value, t::Target)
+
+Whether this value can be compiled for this target
+into a `CompositeValue` made entirely of `Binary` values
+(or values which are implementations of `Binary`).
+"""
+compiles_to_binary(v::Value, t::Target) = _compiles_to_binary(v, t)
+_compiles_to_binary(v::CompositeValue, t::Target) = all(compiles_to_binary(val, t) for val in v.vals)
+_compiles_to_binary(v::Value, t::Target) = compiles_to_binary(implement(v, t), t)
+_compiles_to_binary(::Binary, ::Target) = true

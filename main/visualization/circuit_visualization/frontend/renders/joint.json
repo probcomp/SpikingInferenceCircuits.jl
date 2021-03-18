@@ -93,6 +93,134 @@
       "is_output": true
     },
     {
+      "name": ":val => :value",
+      "is_output": false
+    },
+    {
+      "name": ":val => :sel",
+      "is_output": false
+    },
+    {
+      "name": ":val => :out",
+      "is_output": true
+    },
+    {
+      "name": "value",
+      "is_output": false
+    },
+    {
+      "name": "sel",
+      "is_output": false
+    },
+    {
+      "name": "out",
+      "is_output": true
+    },
+    {
+      "name": "in",
+      "is_output": false
+    },
+    {
+      "name": "off",
+      "is_output": false
+    },
+    {
+      "name": "out",
+      "is_output": true
+    },
+    {
+      "name": "1",
+      "is_output": false
+    },
+    {
+      "name": "2",
+      "is_output": false
+    },
+    {
+      "name": "3",
+      "is_output": false
+    },
+    {
+      "name": "out",
+      "is_output": true
+    },
+    {
+      "name": "1",
+      "is_output": false
+    },
+    {
+      "name": "2",
+      "is_output": false
+    },
+    {
+      "name": "out",
+      "is_output": true
+    },
+    {
+      "name": ":val => :value",
+      "is_output": false
+    },
+    {
+      "name": ":val => :sel",
+      "is_output": false
+    },
+    {
+      "name": ":val => :out",
+      "is_output": true
+    },
+    {
+      "name": "value",
+      "is_output": false
+    },
+    {
+      "name": "sel",
+      "is_output": false
+    },
+    {
+      "name": "out",
+      "is_output": true
+    },
+    {
+      "name": "in",
+      "is_output": false
+    },
+    {
+      "name": "off",
+      "is_output": false
+    },
+    {
+      "name": "out",
+      "is_output": true
+    },
+    {
+      "name": "1",
+      "is_output": false
+    },
+    {
+      "name": "2",
+      "is_output": false
+    },
+    {
+      "name": "3",
+      "is_output": false
+    },
+    {
+      "name": "out",
+      "is_output": true
+    },
+    {
+      "name": "1",
+      "is_output": false
+    },
+    {
+      "name": "2",
+      "is_output": false
+    },
+    {
+      "name": "out",
+      "is_output": true
+    },
+    {
       "name": "1",
       "is_output": false
     },
@@ -106,6 +234,62 @@
     },
     {
       "name": "2",
+      "is_output": true
+    },
+    {
+      "name": "in",
+      "is_output": false
+    },
+    {
+      "name": "off",
+      "is_output": false
+    },
+    {
+      "name": "out",
+      "is_output": true
+    },
+    {
+      "name": "1",
+      "is_output": false
+    },
+    {
+      "name": "2",
+      "is_output": false
+    },
+    {
+      "name": "3",
+      "is_output": false
+    },
+    {
+      "name": "out",
+      "is_output": true
+    },
+    {
+      "name": "in",
+      "is_output": false
+    },
+    {
+      "name": "off",
+      "is_output": false
+    },
+    {
+      "name": "out",
+      "is_output": true
+    },
+    {
+      "name": "1",
+      "is_output": false
+    },
+    {
+      "name": "2",
+      "is_output": false
+    },
+    {
+      "name": "3",
+      "is_output": false
+    },
+    {
+      "name": "out",
       "is_output": true
     }
   ],
@@ -136,7 +320,7 @@
     },
     {
       "source": 10,
-      "target": 23
+      "target": 55
     },
     {
       "source": 11,
@@ -148,26 +332,26 @@
     },
     {
       "source": 11,
-      "target": 24
+      "target": 56
     },
     {
       "source": 22,
       "target": 3
     },
     {
-      "source": 25,
+      "source": 57,
       "target": 4
     },
     {
-      "source": 25,
+      "source": 57,
       "target": 20
     },
     {
-      "source": 26,
+      "source": 58,
       "target": 5
     },
     {
-      "source": 26,
+      "source": 58,
       "target": 21
     },
     {
@@ -193,6 +377,190 @@
     {
       "source": 17,
       "target": 11
+    },
+    {
+      "source": 18,
+      "target": 23
+    },
+    {
+      "source": 19,
+      "target": 39
+    },
+    {
+      "source": 20,
+      "target": 24
+    },
+    {
+      "source": 21,
+      "target": 40
+    },
+    {
+      "source": 25,
+      "target": 22
+    },
+    {
+      "source": 41,
+      "target": 22
+    },
+    {
+      "source": 23,
+      "target": 26
+    },
+    {
+      "source": 24,
+      "target": 27
+    },
+    {
+      "source": 28,
+      "target": 25
+    },
+    {
+      "source": 26,
+      "target": 29
+    },
+    {
+      "source": 26,
+      "target": 36
+    },
+    {
+      "source": 27,
+      "target": 30
+    },
+    {
+      "source": 31,
+      "target": 37
+    },
+    {
+      "source": 38,
+      "target": 28
+    },
+    {
+      "source": 29,
+      "target": 32
+    },
+    {
+      "source": 30,
+      "target": 34
+    },
+    {
+      "source": 35,
+      "target": 31
+    },
+    {
+      "source": 35,
+      "target": 33
+    },
+    {
+      "source": 39,
+      "target": 42
+    },
+    {
+      "source": 40,
+      "target": 43
+    },
+    {
+      "source": 44,
+      "target": 41
+    },
+    {
+      "source": 42,
+      "target": 45
+    },
+    {
+      "source": 42,
+      "target": 52
+    },
+    {
+      "source": 43,
+      "target": 46
+    },
+    {
+      "source": 47,
+      "target": 53
+    },
+    {
+      "source": 54,
+      "target": 44
+    },
+    {
+      "source": 45,
+      "target": 48
+    },
+    {
+      "source": 46,
+      "target": 50
+    },
+    {
+      "source": 51,
+      "target": 47
+    },
+    {
+      "source": 51,
+      "target": 49
+    },
+    {
+      "source": 55,
+      "target": 59
+    },
+    {
+      "source": 56,
+      "target": 66
+    },
+    {
+      "source": 61,
+      "target": 57
+    },
+    {
+      "source": 61,
+      "target": 60
+    },
+    {
+      "source": 61,
+      "target": 67
+    },
+    {
+      "source": 68,
+      "target": 58
+    },
+    {
+      "source": 68,
+      "target": 60
+    },
+    {
+      "source": 68,
+      "target": 67
+    },
+    {
+      "source": 59,
+      "target": 62
+    },
+    {
+      "source": 60,
+      "target": 64
+    },
+    {
+      "source": 65,
+      "target": 61
+    },
+    {
+      "source": 65,
+      "target": 63
+    },
+    {
+      "source": 66,
+      "target": 69
+    },
+    {
+      "source": 67,
+      "target": 71
+    },
+    {
+      "source": 72,
+      "target": 68
+    },
+    {
+      "source": 72,
+      "target": 70
     }
   ],
   "groups": [
@@ -202,7 +570,7 @@
       "groups": [
         1,
         4,
-        5
+        15
       ],
       "leaves": [
         0,
@@ -248,8 +616,12 @@
       ]
     },
     {
-      "comptype": "Mux",
+      "comptype": "CompositeComponent",
       "name": "mux",
+      "groups": [
+        10,
+        5
+      ],
       "leaves": [
         18,
         19,
@@ -259,13 +631,173 @@
       ]
     },
     {
-      "comptype": "CVB",
-      "name": "cvb",
+      "comptype": "CompositeComponent",
+      "name": 1,
+      "groups": [
+        6
+      ],
       "leaves": [
         23,
         24,
-        25,
-        26
+        25
+      ]
+    },
+    {
+      "comptype": "CompositeComponent",
+      "name": "val",
+      "groups": [
+        9,
+        7
+      ],
+      "leaves": [
+        26,
+        27,
+        28
+      ]
+    },
+    {
+      "comptype": "CompositeComponent",
+      "name": "inhibitor",
+      "groups": [
+        8
+      ],
+      "leaves": [
+        29,
+        30,
+        31
+      ]
+    },
+    {
+      "comptype": "IntegratingPoisson",
+      "name": 1,
+      "leaves": [
+        32,
+        33,
+        34,
+        35
+      ]
+    },
+    {
+      "comptype": "IntegratingPoisson",
+      "name": "outputter",
+      "leaves": [
+        36,
+        37,
+        38
+      ]
+    },
+    {
+      "comptype": "CompositeComponent",
+      "name": 2,
+      "groups": [
+        11
+      ],
+      "leaves": [
+        39,
+        40,
+        41
+      ]
+    },
+    {
+      "comptype": "CompositeComponent",
+      "name": "val",
+      "groups": [
+        14,
+        12
+      ],
+      "leaves": [
+        42,
+        43,
+        44
+      ]
+    },
+    {
+      "comptype": "CompositeComponent",
+      "name": "inhibitor",
+      "groups": [
+        13
+      ],
+      "leaves": [
+        45,
+        46,
+        47
+      ]
+    },
+    {
+      "comptype": "IntegratingPoisson",
+      "name": 1,
+      "leaves": [
+        48,
+        49,
+        50,
+        51
+      ]
+    },
+    {
+      "comptype": "IntegratingPoisson",
+      "name": "outputter",
+      "leaves": [
+        52,
+        53,
+        54
+      ]
+    },
+    {
+      "comptype": "CompositeComponent",
+      "name": "cvb",
+      "groups": [
+        18,
+        16
+      ],
+      "leaves": [
+        55,
+        56,
+        57,
+        58
+      ]
+    },
+    {
+      "comptype": "CompositeComponent",
+      "name": 1,
+      "groups": [
+        17
+      ],
+      "leaves": [
+        59,
+        60,
+        61
+      ]
+    },
+    {
+      "comptype": "IntegratingPoisson",
+      "name": 1,
+      "leaves": [
+        62,
+        63,
+        64,
+        65
+      ]
+    },
+    {
+      "comptype": "CompositeComponent",
+      "name": 2,
+      "groups": [
+        19
+      ],
+      "leaves": [
+        66,
+        67,
+        68
+      ]
+    },
+    {
+      "comptype": "IntegratingPoisson",
+      "name": 1,
+      "leaves": [
+        69,
+        70,
+        71,
+        72
       ]
     }
   ],
@@ -367,11 +899,11 @@
     {
       "left": 0,
       "axis": "x",
-      "right": 23,
+      "right": 55,
       "type": "separation"
     },
     {
-      "left": 25,
+      "left": 57,
       "axis": "x",
       "right": 2,
       "type": "separation"
@@ -604,6 +1136,30 @@
       "type": "separation"
     },
     {
+      "left": 18,
+      "axis": "x",
+      "right": 23,
+      "type": "separation"
+    },
+    {
+      "left": 25,
+      "axis": "x",
+      "right": 22,
+      "type": "separation"
+    },
+    {
+      "left": 18,
+      "axis": "x",
+      "right": 39,
+      "type": "separation"
+    },
+    {
+      "left": 41,
+      "axis": "x",
+      "right": 22,
+      "type": "separation"
+    },
+    {
       "offsets": [
         {
           "offset": 0,
@@ -622,10 +1178,6 @@
         {
           "offset": 0,
           "node": 25
-        },
-        {
-          "offset": 0,
-          "node": 26
         }
       ],
       "axis": "x",
@@ -645,9 +1197,719 @@
       "type": "separation"
     },
     {
-      "left": 25,
-      "axis": "y",
+      "left": 23,
+      "axis": "x",
       "right": 26,
+      "type": "separation"
+    },
+    {
+      "left": 28,
+      "axis": "x",
+      "right": 25,
+      "type": "separation"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 26
+        },
+        {
+          "offset": 0,
+          "node": 27
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 28
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "left": 26,
+      "axis": "x",
+      "right": 28,
+      "type": "separation"
+    },
+    {
+      "left": 26,
+      "axis": "y",
+      "right": 27,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "left": 26,
+      "axis": "x",
+      "right": 29,
+      "type": "separation"
+    },
+    {
+      "left": 31,
+      "axis": "x",
+      "right": 28,
+      "type": "separation"
+    },
+    {
+      "left": 26,
+      "axis": "x",
+      "right": 36,
+      "type": "separation"
+    },
+    {
+      "left": 38,
+      "axis": "x",
+      "right": 28,
+      "type": "separation"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 29
+        },
+        {
+          "offset": 0,
+          "node": 30
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 31
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "left": 29,
+      "axis": "x",
+      "right": 31,
+      "type": "separation"
+    },
+    {
+      "left": 29,
+      "axis": "y",
+      "right": 30,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "left": 29,
+      "axis": "x",
+      "right": 32,
+      "type": "separation"
+    },
+    {
+      "left": 35,
+      "axis": "x",
+      "right": 31,
+      "type": "separation"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 32
+        },
+        {
+          "offset": 0,
+          "node": 33
+        },
+        {
+          "offset": 0,
+          "node": 34
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 35
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "left": 32,
+      "axis": "x",
+      "right": 35,
+      "type": "separation"
+    },
+    {
+      "left": 32,
+      "axis": "y",
+      "right": 33,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "left": 33,
+      "axis": "y",
+      "right": 34,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 36
+        },
+        {
+          "offset": 0,
+          "node": 37
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 38
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "left": 36,
+      "axis": "x",
+      "right": 38,
+      "type": "separation"
+    },
+    {
+      "left": 36,
+      "axis": "y",
+      "right": 37,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 39
+        },
+        {
+          "offset": 0,
+          "node": 40
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 41
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "left": 39,
+      "axis": "x",
+      "right": 41,
+      "type": "separation"
+    },
+    {
+      "left": 39,
+      "axis": "y",
+      "right": 40,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "left": 39,
+      "axis": "x",
+      "right": 42,
+      "type": "separation"
+    },
+    {
+      "left": 44,
+      "axis": "x",
+      "right": 41,
+      "type": "separation"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 42
+        },
+        {
+          "offset": 0,
+          "node": 43
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 44
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "left": 42,
+      "axis": "x",
+      "right": 44,
+      "type": "separation"
+    },
+    {
+      "left": 42,
+      "axis": "y",
+      "right": 43,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "left": 42,
+      "axis": "x",
+      "right": 45,
+      "type": "separation"
+    },
+    {
+      "left": 47,
+      "axis": "x",
+      "right": 44,
+      "type": "separation"
+    },
+    {
+      "left": 42,
+      "axis": "x",
+      "right": 52,
+      "type": "separation"
+    },
+    {
+      "left": 54,
+      "axis": "x",
+      "right": 44,
+      "type": "separation"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 45
+        },
+        {
+          "offset": 0,
+          "node": 46
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 47
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "left": 45,
+      "axis": "x",
+      "right": 47,
+      "type": "separation"
+    },
+    {
+      "left": 45,
+      "axis": "y",
+      "right": 46,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "left": 45,
+      "axis": "x",
+      "right": 48,
+      "type": "separation"
+    },
+    {
+      "left": 51,
+      "axis": "x",
+      "right": 47,
+      "type": "separation"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 48
+        },
+        {
+          "offset": 0,
+          "node": 49
+        },
+        {
+          "offset": 0,
+          "node": 50
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 51
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "left": 48,
+      "axis": "x",
+      "right": 51,
+      "type": "separation"
+    },
+    {
+      "left": 48,
+      "axis": "y",
+      "right": 49,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "left": 49,
+      "axis": "y",
+      "right": 50,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 52
+        },
+        {
+          "offset": 0,
+          "node": 53
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 54
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "left": 52,
+      "axis": "x",
+      "right": 54,
+      "type": "separation"
+    },
+    {
+      "left": 52,
+      "axis": "y",
+      "right": 53,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 55
+        },
+        {
+          "offset": 0,
+          "node": 56
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 57
+        },
+        {
+          "offset": 0,
+          "node": 58
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "left": 55,
+      "axis": "x",
+      "right": 57,
+      "type": "separation"
+    },
+    {
+      "left": 55,
+      "axis": "y",
+      "right": 56,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "left": 57,
+      "axis": "y",
+      "right": 58,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "left": 55,
+      "axis": "x",
+      "right": 59,
+      "type": "separation"
+    },
+    {
+      "left": 61,
+      "axis": "x",
+      "right": 57,
+      "type": "separation"
+    },
+    {
+      "left": 55,
+      "axis": "x",
+      "right": 66,
+      "type": "separation"
+    },
+    {
+      "left": 68,
+      "axis": "x",
+      "right": 57,
+      "type": "separation"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 59
+        },
+        {
+          "offset": 0,
+          "node": 60
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 61
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "left": 59,
+      "axis": "x",
+      "right": 61,
+      "type": "separation"
+    },
+    {
+      "left": 59,
+      "axis": "y",
+      "right": 60,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "left": 59,
+      "axis": "x",
+      "right": 62,
+      "type": "separation"
+    },
+    {
+      "left": 65,
+      "axis": "x",
+      "right": 61,
+      "type": "separation"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 62
+        },
+        {
+          "offset": 0,
+          "node": 63
+        },
+        {
+          "offset": 0,
+          "node": 64
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 65
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "left": 62,
+      "axis": "x",
+      "right": 65,
+      "type": "separation"
+    },
+    {
+      "left": 62,
+      "axis": "y",
+      "right": 63,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "left": 63,
+      "axis": "y",
+      "right": 64,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 66
+        },
+        {
+          "offset": 0,
+          "node": 67
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 68
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "left": 66,
+      "axis": "x",
+      "right": 68,
+      "type": "separation"
+    },
+    {
+      "left": 66,
+      "axis": "y",
+      "right": 67,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "left": 66,
+      "axis": "x",
+      "right": 69,
+      "type": "separation"
+    },
+    {
+      "left": 72,
+      "axis": "x",
+      "right": 68,
+      "type": "separation"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 69
+        },
+        {
+          "offset": 0,
+          "node": 70
+        },
+        {
+          "offset": 0,
+          "node": 71
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 72
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "left": 69,
+      "axis": "x",
+      "right": 72,
+      "type": "separation"
+    },
+    {
+      "left": 69,
+      "axis": "y",
+      "right": 70,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "left": 70,
+      "axis": "y",
+      "right": 71,
       "gap": 0,
       "type": "separation"
     }
