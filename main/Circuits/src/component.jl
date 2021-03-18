@@ -337,10 +337,14 @@ implement(c::CompositeComponent, t::Target,
         implement(inputs(c), t, input_filter; deep),
         implement(outputs(c), t, output_filter; deep),
         map(names(c.subcomponents), c.subcomponents) do name, subcomp
-            if deep
-                implement_deep(subcomp, t)
+            if subcomponent_filter(name)
+                if deep
+                    implement_deep(subcomp, t)
+                else
+                    implement(subcomp, t)
+                end
             else
-                implement(subcomp, t)
+                subcomp
             end
         end,
         c.node_to_idx, c.idx_to_node, c.graph, c
