@@ -1,0 +1,655 @@
+{
+  "nodes": [
+    {
+      "name": ":in_val => 1",
+      "is_output": false
+    },
+    {
+      "name": ":in_val => 2",
+      "is_output": false
+    },
+    {
+      "name": "marginal_prob",
+      "is_output": true
+    },
+    {
+      "name": "joint_prob",
+      "is_output": true
+    },
+    {
+      "name": ":sample => 1",
+      "is_output": true
+    },
+    {
+      "name": ":sample => 2",
+      "is_output": true
+    },
+    {
+      "name": "1 => 1",
+      "is_output": false
+    },
+    {
+      "name": "1 => 2",
+      "is_output": false
+    },
+    {
+      "name": "2 => 1",
+      "is_output": false
+    },
+    {
+      "name": "2 => 2",
+      "is_output": false
+    },
+    {
+      "name": "1 => :out",
+      "is_output": true
+    },
+    {
+      "name": "2 => :out",
+      "is_output": true
+    },
+    {
+      "name": "1",
+      "is_output": false
+    },
+    {
+      "name": "2",
+      "is_output": false
+    },
+    {
+      "name": "out",
+      "is_output": true
+    },
+    {
+      "name": "1",
+      "is_output": false
+    },
+    {
+      "name": "2",
+      "is_output": false
+    },
+    {
+      "name": "out",
+      "is_output": true
+    },
+    {
+      "name": ":values => (1 => :val)",
+      "is_output": false
+    },
+    {
+      "name": ":values => (2 => :val)",
+      "is_output": false
+    },
+    {
+      "name": ":sel => 1",
+      "is_output": false
+    },
+    {
+      "name": ":sel => 2",
+      "is_output": false
+    },
+    {
+      "name": "val",
+      "is_output": true
+    },
+    {
+      "name": "1",
+      "is_output": false
+    },
+    {
+      "name": "2",
+      "is_output": false
+    },
+    {
+      "name": "1",
+      "is_output": true
+    },
+    {
+      "name": "2",
+      "is_output": true
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "target": 6
+    },
+    {
+      "source": 0,
+      "target": 8
+    },
+    {
+      "source": 1,
+      "target": 7
+    },
+    {
+      "source": 1,
+      "target": 9
+    },
+    {
+      "source": 10,
+      "target": 2
+    },
+    {
+      "source": 10,
+      "target": 18
+    },
+    {
+      "source": 10,
+      "target": 23
+    },
+    {
+      "source": 11,
+      "target": 2
+    },
+    {
+      "source": 11,
+      "target": 19
+    },
+    {
+      "source": 11,
+      "target": 24
+    },
+    {
+      "source": 22,
+      "target": 3
+    },
+    {
+      "source": 25,
+      "target": 4
+    },
+    {
+      "source": 25,
+      "target": 20
+    },
+    {
+      "source": 26,
+      "target": 5
+    },
+    {
+      "source": 26,
+      "target": 21
+    },
+    {
+      "source": 6,
+      "target": 12
+    },
+    {
+      "source": 7,
+      "target": 13
+    },
+    {
+      "source": 8,
+      "target": 15
+    },
+    {
+      "source": 9,
+      "target": 16
+    },
+    {
+      "source": 14,
+      "target": 10
+    },
+    {
+      "source": 17,
+      "target": 11
+    }
+  ],
+  "groups": [
+    {
+      "comptype": "CompositeComponent",
+      "name": null,
+      "groups": [
+        1,
+        4,
+        5
+      ],
+      "leaves": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "comptype": "CompositeComponent",
+      "name": "spikers",
+      "groups": [
+        3,
+        2
+      ],
+      "leaves": [
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ]
+    },
+    {
+      "comptype": "IntegratingPoisson",
+      "name": 1,
+      "leaves": [
+        12,
+        13,
+        14
+      ]
+    },
+    {
+      "comptype": "IntegratingPoisson",
+      "name": 2,
+      "leaves": [
+        15,
+        16,
+        17
+      ]
+    },
+    {
+      "comptype": "Mux",
+      "name": "mux",
+      "leaves": [
+        18,
+        19,
+        20,
+        21,
+        22
+      ]
+    },
+    {
+      "comptype": "CVB",
+      "name": "cvb",
+      "leaves": [
+        23,
+        24,
+        25,
+        26
+      ]
+    }
+  ],
+  "constraints": [
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 0
+        },
+        {
+          "offset": 0,
+          "node": 1
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 2
+        },
+        {
+          "offset": 0,
+          "node": 3
+        },
+        {
+          "offset": 0,
+          "node": 4
+        },
+        {
+          "offset": 0,
+          "node": 5
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "left": 0,
+      "axis": "x",
+      "right": 2,
+      "type": "separation"
+    },
+    {
+      "left": 0,
+      "axis": "y",
+      "right": 1,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "left": 2,
+      "axis": "y",
+      "right": 3,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "left": 3,
+      "axis": "y",
+      "right": 4,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "left": 4,
+      "axis": "y",
+      "right": 5,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "left": 0,
+      "axis": "x",
+      "right": 6,
+      "type": "separation"
+    },
+    {
+      "left": 10,
+      "axis": "x",
+      "right": 2,
+      "type": "separation"
+    },
+    {
+      "left": 0,
+      "axis": "x",
+      "right": 18,
+      "type": "separation"
+    },
+    {
+      "left": 22,
+      "axis": "x",
+      "right": 2,
+      "type": "separation"
+    },
+    {
+      "left": 0,
+      "axis": "x",
+      "right": 23,
+      "type": "separation"
+    },
+    {
+      "left": 25,
+      "axis": "x",
+      "right": 2,
+      "type": "separation"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 6
+        },
+        {
+          "offset": 0,
+          "node": 7
+        },
+        {
+          "offset": 0,
+          "node": 8
+        },
+        {
+          "offset": 0,
+          "node": 9
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 10
+        },
+        {
+          "offset": 0,
+          "node": 11
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "left": 6,
+      "axis": "x",
+      "right": 10,
+      "type": "separation"
+    },
+    {
+      "left": 6,
+      "axis": "y",
+      "right": 7,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "left": 7,
+      "axis": "y",
+      "right": 8,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "left": 8,
+      "axis": "y",
+      "right": 9,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "left": 10,
+      "axis": "y",
+      "right": 11,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "left": 6,
+      "axis": "x",
+      "right": 12,
+      "type": "separation"
+    },
+    {
+      "left": 14,
+      "axis": "x",
+      "right": 10,
+      "type": "separation"
+    },
+    {
+      "left": 6,
+      "axis": "x",
+      "right": 15,
+      "type": "separation"
+    },
+    {
+      "left": 17,
+      "axis": "x",
+      "right": 10,
+      "type": "separation"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 12
+        },
+        {
+          "offset": 0,
+          "node": 13
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 14
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "left": 12,
+      "axis": "x",
+      "right": 14,
+      "type": "separation"
+    },
+    {
+      "left": 12,
+      "axis": "y",
+      "right": 13,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 15
+        },
+        {
+          "offset": 0,
+          "node": 16
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 17
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "left": 15,
+      "axis": "x",
+      "right": 17,
+      "type": "separation"
+    },
+    {
+      "left": 15,
+      "axis": "y",
+      "right": 16,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 18
+        },
+        {
+          "offset": 0,
+          "node": 19
+        },
+        {
+          "offset": 0,
+          "node": 20
+        },
+        {
+          "offset": 0,
+          "node": 21
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 22
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "left": 18,
+      "axis": "x",
+      "right": 22,
+      "type": "separation"
+    },
+    {
+      "left": 18,
+      "axis": "y",
+      "right": 19,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "left": 19,
+      "axis": "y",
+      "right": 20,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "left": 20,
+      "axis": "y",
+      "right": 21,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 23
+        },
+        {
+          "offset": 0,
+          "node": 24
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "offsets": [
+        {
+          "offset": 0,
+          "node": 25
+        },
+        {
+          "offset": 0,
+          "node": 26
+        }
+      ],
+      "axis": "x",
+      "type": "alignment"
+    },
+    {
+      "left": 23,
+      "axis": "x",
+      "right": 25,
+      "type": "separation"
+    },
+    {
+      "left": 23,
+      "axis": "y",
+      "right": 24,
+      "gap": 0,
+      "type": "separation"
+    },
+    {
+      "left": 25,
+      "axis": "y",
+      "right": 26,
+      "gap": 0,
+      "type": "separation"
+    }
+  ]
+}

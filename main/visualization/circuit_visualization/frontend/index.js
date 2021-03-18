@@ -48,7 +48,7 @@ d3.select("#load_component").on("click", function() {
         setup_animation({
             nodes: nodes,
             links: links,
-            groups: groups.poisson,
+            groups: groups.neuron,
             graph: graph
         })
     })
@@ -78,8 +78,8 @@ function make_initial_graph_modifications(graph) {
     graph.constraints.filter(c => c.type === "separation" && c.axis === "y")
         .forEach(c => { c.gap = 4 });
 
-    // add constraints to ensure the poisson neurons are triangles
-    graph.groups.filter(is_poisson).forEach(function(g) {
+    // add constraints to ensure the neurons triangles
+    graph.groups.filter(is_neuron).forEach(function(g) {
         graph.constraints.push({ // top and bottom y separation
             type: "separation",
             axis: "y",
@@ -128,15 +128,16 @@ function add_groups(svg, graph) {
         .call(cola.drag)
         .on("mouseup", d => { d.fixed = false });
 
-    var poisson_groups = svg.selectAll(".poissonGroup")
-        .data(graph.groups.filter(is_poisson))
+    var neuron_groups = svg.selectAll(".neuronGroup")
+        .data(graph.groups.filter(is_neuron))
         .enter().append("polygon")
-        .attr("class", "poissonGroup")
+        .attr("class", "neuronGroup")
+        .attr("class", d => "neuronGroup_" + d.comptype)
         .call(cola.drag);
 
     return {
         composite: composite_groups,
-        poisson: poisson_groups,
+        neuron: neuron_groups,
         generic: generic_groups
     }
 }
@@ -207,7 +208,7 @@ function update_groups(groups) {
         .attr("width", g => g.bounds.width() - 2 * GroupPadding)
         .attr("height", g => g.bounds.height());
 
-    groups.poisson
+    groups.neuron
         .attr("points", triangle_points);
 }
 
@@ -229,12 +230,12 @@ function is_composite(g) {
     return g.comptype === "CompositeComponent"
 }
 
-function is_poisson(g) {
-    return g.comptype === "OnOffPoissonNeuron"
+function is_neuron(g) {
+    return g.comptype === "OnOffPoissonNeuron" || g.comptype === "IntegratingPoisson"
 }
 
 function is_generic(g) {
-    return !is_composite(g) && !is_poisson(g);
+    return !is_composite(g) && !is_neuron(g);
 }
 
 function triangle_points(g) {

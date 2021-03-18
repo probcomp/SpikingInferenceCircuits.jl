@@ -43,8 +43,12 @@ body,
     cursor: move;
 }
 
-.poissonGroup {
+.neuronGroup_OnOffPoisson {
     fill: lightblue;
+}
+
+.neuronGroup_IntegratingPoisson {
+    fill: orange;
 }
 
 .link {
