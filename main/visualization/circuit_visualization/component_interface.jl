@@ -106,7 +106,7 @@ function _viz_graph(comp::CompositeComponent, start_node_idx, start_group_idx; c
     prepend!(vizgraph.nodes, io_nodes)
 
     @assert all(
-        vizgraph.nodes[idx + 1 - start_node_idx]["name"] == "$(valname(nodename))"
+        vizgraph.nodes[idx + 1 - start_node_idx]["name"] == "$(Circuits.valname(nodename))"
         for (nodename, idx) in name_to_nodeidx
     )
 
@@ -252,10 +252,10 @@ in a format ready to be JSON-ified and sent to the frontend.
 """
 make_links(comp, name_to_nodeidx) = [
         Dict(
-            "source" => name_to_nodeidx[comp.idx_to_node[e.src]],
-            "target" =>  name_to_nodeidx[comp.idx_to_node[e.dst]],
+            "source" => name_to_nodeidx[src],
+            "target" =>  name_to_nodeidx[dst],
         )
-        for e in edges(comp.graph)
+        for (src, dst) in Circuits.get_edges(comp)
     ]
 
 ################
