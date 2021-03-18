@@ -13,38 +13,44 @@ var svg = d3.select("#graph").append("svg")
     .attr("width", width)
     .attr("height", height);
 
-d3.json("renders/conc_samp.json", function(graph) {
-    make_initial_graph_modifications(graph)
-    console.log(graph);
+d3.select("#load_component").on("click", function() {
+    filename = d3.select("#component_filename").property("value");
+    d3.json("renders/" + filename, function(graph) {
+        make_initial_graph_modifications(graph)
+        console.log(graph);
 
-    // initialize cola
-    x = cola.nodes(graph.nodes)
-        .links(graph.links)
-        .groups(graph.groups)
-        .constraints(graph.constraints)
-        // .flowLayout("x")  // this doesn't seem to work.  But would it be better?
-        .symmetricDiffLinkLengths(20)
-        .start(10, 15, 10, 10);
+        // initialize cola
+        x = cola.nodes(graph.nodes)
+            .links(graph.links)
+            .groups(graph.groups)
+            .constraints(graph.constraints)
+            // .flowLayout("x")  // this doesn't seem to work.  But would it be better?
+            .symmetricDiffLinkLengths(20)
+            .start(10, 15, 10, 10);
 
-    var groups = add_groups(svg, graph)
-    var nodes = add_nodes(svg, graph)
-    var links = add_links(svg, graph)
-    var group_labels = add_group_labels(svg, graph)
-    var node_labels = add_node_labels(svg, graph)
+        // clear svg so we can put in new circuit
+        svg.selectAll("*").remove();
 
-    cola.on("tick", function() {
-        update_links(links)
-        update_nodes(nodes)
-        update_groups(groups)
-        update_node_labels(node_labels)
-        update_group_labels(group_labels)
-    })
+        var groups = add_groups(svg, graph)
+        var nodes = add_nodes(svg, graph)
+        var links = add_links(svg, graph)
+        var group_labels = add_group_labels(svg, graph)
+        var node_labels = add_node_labels(svg, graph)
 
-    setup_animation({
-        nodes: nodes,
-        links: links,
-        groups: groups.poisson,
-        graph: graph
+        cola.on("tick", function() {
+            update_links(links)
+            update_nodes(nodes)
+            update_groups(groups)
+            update_node_labels(node_labels)
+            update_group_labels(group_labels)
+        })
+
+        setup_animation({
+            nodes: nodes,
+            links: links,
+            groups: groups.poisson,
+            graph: graph
+        })
     })
 })
 
