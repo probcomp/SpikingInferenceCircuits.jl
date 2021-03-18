@@ -15,6 +15,7 @@ var svg = d3.select("#graph").append("svg")
 
 d3.select("#load_component").on("click", function() {
     filename = d3.select("#component_filename").property("value");
+    set_anim_filename();
     d3.json("renders/" + filename, function(graph) {
         make_initial_graph_modifications(graph)
         console.log(graph);

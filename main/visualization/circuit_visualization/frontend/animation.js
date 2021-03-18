@@ -1,8 +1,23 @@
 animationTimeout = undefined;
 
+// set anim_filename when `comp_filename` is changed
+function set_anim_filename() {
+    var comp_filename = d3.select("#component_filename").property("value")
+    var anim_filename = d3.select("#animation_filename").property("value")
+
+    var cpieces = comp_filename.split(".")
+    if (cpieces[cpieces.length - 1] === "json") {
+        cbeginning = cpieces.slice(0, cpieces.length - 1).join(".")
+        if (anim_filename.length == 0) {
+            new_animname = cbeginning + "_anim.json"
+            d3.select("#animation_filename").property("value", new_animname)
+        }
+    }
+}
+
 function setup_animation(viz) {
     d3.select("#play_animation").on("click", () => {
-        d3.json("renders/conc_samp_animation.json", animation => {
+        d3.json("renders/" + d3.select("#animation_filename").property("value"), animation => {
             if (animationTimeout) { // end old animation if one is running
                 clearTimeout(animationTimeout);
                 end_animation(viz);
