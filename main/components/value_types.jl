@@ -28,10 +28,23 @@ Circuits.abstract(v::SpikingCategoricalValue) = FiniteDomainValue(v.n)
 # performance TODO: can we avoid explicitely constructing a tuple?
 Circuits.implement(v::SpikingCategoricalValue, ::Spiking) = CompositeValue(Tuple(SpikeWire() for _=1:v.n), v)
 
-struct PositiveReal <: GenericValue end
-Circuits.implement(::PositiveReal, ::Spiking) = SpikeRateReal()
+"""
+    PositiveReal <: GenericValue
 
-struct SpikeRateReal <: GenericValue end
+A positive real number.
+"""
+struct PositiveReal <: GenericValue end
+
+"""
+    SpikeRateReal <: GenericValue
+    SpikeRateReal(reference_rate)
+
+A nonnegative real number encoded via the rate of spiking in a wire.  If the spike rate is `r`,
+the encoded real is `r/reference_rate`.
+"""
+struct SpikeRateReal <: GenericValue
+    reference_rate::Float64
+end
 Circuits.abstract(::SpikeRateReal) = PositiveReal()
 Circuits.target(::SpikeRateReal) = Spiking()
 Circuits.implement(::SpikeRateReal, ::Spiking) = SpikeWire()

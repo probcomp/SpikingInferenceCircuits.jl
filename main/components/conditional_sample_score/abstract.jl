@@ -16,21 +16,23 @@ struct ConditionalSampleScore <: GenericComponent
     P::Matrix{Float64}
     sample::Bool
     function ConditionalSampleScore(P, s)
-        @assert all(isapprox(x, 1.0) for x in sum(P, dims=1)) "∃ y s.t. ∑_x{P[x | y]} ≂̸ 1.0"
+        @assert all(isapprox(x, 1.0) for x in sum(P, dims=2)) "∃ y s.t. ∑_y{P[y | x]} ≂̸ 1.0"
         return new(P, s)
     end
 end
-ysize(c::ConditionalSampleScore) = size(c.P)[1]
-xsize(c::ConditionalSampleScore) = size(c.P)[2]
+
+in_domain_size(c::ConditionalSampleScore) = size(c.P)[1]
+out_domain_size(c::ConditionalSampleScore) = size(c.P)[2]
+prob_output_given_input(c::ConditionalSampleScore, outval) = c.P[:,outval]
 
 Circuits.inputs(c::ConditionalSampleScore) =
         NamedValues(
-            :in_val => FiniteDomainValue(xsize(c)),
+            :in_val => FiniteDomainValue(in_domain_size(c)),
             (c.sample ? () : :obs => FiniteDomainValue(ysize(c)))...
         )
 
 Circuits.outputs(c::ConditionalSampleScore) =
     NamedValues(
-        (c.sample ? (:sample => FiniteDomainValue(xsize(c)),) : ())...,
+        (c.sample ? (:sample => FiniteDomainValue(out_domain_size(c)),) : ())...,
         :prob => PositiveReal()
     )
