@@ -54,7 +54,7 @@
     },
     {
       "name": "out",
-      "time": 0.21383001135650118,
+      "time": 0.04418494159479239,
       "spiketype": "output",
       "type": "spike",
       "group": [
@@ -64,7 +64,7 @@
     },
     {
       "name": "1 => :out",
-      "time": 0.21383001135650118,
+      "time": 0.04418494159479239,
       "spiketype": "output",
       "type": "spike",
       "group": [
@@ -73,7 +73,7 @@
     },
     {
       "name": "1",
-      "time": 0.21383001135650118,
+      "time": 0.04418494159479239,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -86,7 +86,7 @@
     },
     {
       "name": "in",
-      "time": 0.21383001135650118,
+      "time": 0.04418494159479239,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -98,7 +98,7 @@
     },
     {
       "name": "1",
-      "time": 0.21383001135650118,
+      "time": 0.04418494159479239,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -110,7 +110,7 @@
     },
     {
       "name": "value",
-      "time": 0.21383001135650118,
+      "time": 0.04418494159479239,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -121,7 +121,7 @@
     },
     {
       "name": ":val => :value",
-      "time": 0.21383001135650118,
+      "time": 0.04418494159479239,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -131,7 +131,7 @@
     },
     {
       "name": ":values => (1 => :val)",
-      "time": 0.21383001135650118,
+      "time": 0.04418494159479239,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -140,7 +140,7 @@
     },
     {
       "name": "1",
-      "time": 0.21383001135650118,
+      "time": 0.04418494159479239,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -151,7 +151,7 @@
     },
     {
       "name": "in",
-      "time": 0.21383001135650118,
+      "time": 0.04418494159479239,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -161,7 +161,7 @@
     },
     {
       "name": "1",
-      "time": 0.21383001135650118,
+      "time": 0.04418494159479239,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -169,65 +169,8 @@
       ]
     },
     {
-      "name": "marginal_prob",
-      "time": 0.21383001135650118,
-      "spiketype": "output",
-      "type": "spike",
-      "group": []
-    },
-    {
       "name": "out",
-      "time": 0.21419813163146434,
-      "spiketype": "output",
-      "type": "spike",
-      "group": [
-        "mux",
-        1,
-        "val",
-        "inhibitor",
-        1
-      ]
-    },
-    {
-      "name": "2",
-      "time": 0.21419813163146434,
-      "spiketype": "input",
-      "type": "spike",
-      "group": [
-        "mux",
-        1,
-        "val",
-        "inhibitor",
-        1
-      ]
-    },
-    {
-      "name": "out",
-      "time": 0.21419813163146434,
-      "spiketype": "output",
-      "type": "spike",
-      "group": [
-        "mux",
-        1,
-        "val",
-        "inhibitor"
-      ]
-    },
-    {
-      "name": "2",
-      "time": 0.21419813163146434,
-      "spiketype": "input",
-      "type": "spike",
-      "group": [
-        "mux",
-        1,
-        "val",
-        "outputter"
-      ]
-    },
-    {
-      "name": "out",
-      "time": 0.21425094785917978,
+      "time": 0.044775651801280854,
       "spiketype": "output",
       "type": "spike",
       "group": [
@@ -238,7 +181,7 @@
     },
     {
       "name": "2",
-      "time": 0.21425094785917978,
+      "time": 0.044775651801280854,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -249,7 +192,7 @@
     },
     {
       "name": "out",
-      "time": 0.21425094785917978,
+      "time": 0.044775651801280854,
       "spiketype": "output",
       "type": "spike",
       "group": [
@@ -259,7 +202,7 @@
     },
     {
       "name": "3",
-      "time": 0.21425094785917978,
+      "time": 0.044775651801280854,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -270,7 +213,7 @@
     },
     {
       "name": "off",
-      "time": 0.21425094785917978,
+      "time": 0.044775651801280854,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -280,7 +223,7 @@
     },
     {
       "name": "3",
-      "time": 0.21425094785917978,
+      "time": 0.044775651801280854,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -291,7 +234,7 @@
     },
     {
       "name": "off",
-      "time": 0.21425094785917978,
+      "time": 0.044775651801280854,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -301,7 +244,7 @@
     },
     {
       "name": "1",
-      "time": 0.21425094785917978,
+      "time": 0.044775651801280854,
       "spiketype": "output",
       "type": "spike",
       "group": [
@@ -310,7 +253,7 @@
     },
     {
       "name": "3",
-      "time": 0.21425094785917978,
+      "time": 0.044775651801280854,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -323,7 +266,7 @@
     },
     {
       "name": "off",
-      "time": 0.21425094785917978,
+      "time": 0.044775651801280854,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -335,7 +278,7 @@
     },
     {
       "name": "sel",
-      "time": 0.21425094785917978,
+      "time": 0.044775651801280854,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -346,7 +289,7 @@
     },
     {
       "name": ":val => :sel",
-      "time": 0.21425094785917978,
+      "time": 0.044775651801280854,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -356,7 +299,7 @@
     },
     {
       "name": ":sel => 1",
-      "time": 0.21425094785917978,
+      "time": 0.044775651801280854,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -365,137 +308,14 @@
     },
     {
       "name": ":sample => 1",
-      "time": 0.21425094785917978,
+      "time": 0.044775651801280854,
       "spiketype": "output",
       "type": "spike",
       "group": []
     },
     {
       "name": "out",
-      "time": 0.7643303279885157,
-      "spiketype": "output",
-      "type": "spike",
-      "group": [
-        "spikers",
-        1
-      ]
-    },
-    {
-      "name": "1 => :out",
-      "time": 0.7643303279885157,
-      "spiketype": "output",
-      "type": "spike",
-      "group": [
-        "spikers"
-      ]
-    },
-    {
-      "name": "1",
-      "time": 0.7643303279885157,
-      "spiketype": "input",
-      "type": "spike",
-      "group": [
-        "mux",
-        1,
-        "val",
-        "inhibitor",
-        1
-      ]
-    },
-    {
-      "name": "in",
-      "time": 0.7643303279885157,
-      "spiketype": "input",
-      "type": "spike",
-      "group": [
-        "mux",
-        1,
-        "val",
-        "inhibitor"
-      ]
-    },
-    {
-      "name": "1",
-      "time": 0.7643303279885157,
-      "spiketype": "input",
-      "type": "spike",
-      "group": [
-        "mux",
-        1,
-        "val",
-        "outputter"
-      ]
-    },
-    {
-      "name": "value",
-      "time": 0.7643303279885157,
-      "spiketype": "input",
-      "type": "spike",
-      "group": [
-        "mux",
-        1,
-        "val"
-      ]
-    },
-    {
-      "name": ":val => :value",
-      "time": 0.7643303279885157,
-      "spiketype": "input",
-      "type": "spike",
-      "group": [
-        "mux",
-        1
-      ]
-    },
-    {
-      "name": ":values => (1 => :val)",
-      "time": 0.7643303279885157,
-      "spiketype": "input",
-      "type": "spike",
-      "group": [
-        "mux"
-      ]
-    },
-    {
-      "name": "1",
-      "time": 0.7643303279885157,
-      "spiketype": "input",
-      "type": "spike",
-      "group": [
-        "cvb",
-        1,
-        1
-      ]
-    },
-    {
-      "name": "in",
-      "time": 0.7643303279885157,
-      "spiketype": "input",
-      "type": "spike",
-      "group": [
-        "cvb",
-        1
-      ]
-    },
-    {
-      "name": "1",
-      "time": 0.7643303279885157,
-      "spiketype": "input",
-      "type": "spike",
-      "group": [
-        "cvb"
-      ]
-    },
-    {
-      "name": "marginal_prob",
-      "time": 0.7643303279885157,
-      "spiketype": "output",
-      "type": "spike",
-      "group": []
-    },
-    {
-      "name": "out",
-      "time": 0.9303315744153993,
+      "time": 0.2217156745116713,
       "spiketype": "output",
       "type": "spike",
       "group": [
@@ -507,7 +327,7 @@
     },
     {
       "name": "2",
-      "time": 0.9303315744153993,
+      "time": 0.2217156745116713,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -519,7 +339,7 @@
     },
     {
       "name": "out",
-      "time": 0.9303315744153993,
+      "time": 0.2217156745116713,
       "spiketype": "output",
       "type": "spike",
       "group": [
@@ -530,7 +350,7 @@
     },
     {
       "name": ":val => :out",
-      "time": 0.9303315744153993,
+      "time": 0.2217156745116713,
       "spiketype": "output",
       "type": "spike",
       "group": [
@@ -540,7 +360,7 @@
     },
     {
       "name": "val",
-      "time": 0.9303315744153993,
+      "time": 0.2217156745116713,
       "spiketype": "output",
       "type": "spike",
       "group": [
@@ -548,15 +368,15 @@
       ]
     },
     {
-      "name": "joint_prob",
-      "time": 0.9303315744153993,
+      "name": "prob",
+      "time": 0.2217156745116713,
       "spiketype": "output",
       "type": "spike",
       "group": []
     },
     {
       "name": "out",
-      "time": 0.9757058122155021,
+      "time": 0.256199542873365,
       "spiketype": "output",
       "type": "spike",
       "group": [
@@ -566,7 +386,7 @@
     },
     {
       "name": "1 => :out",
-      "time": 0.9757058122155021,
+      "time": 0.256199542873365,
       "spiketype": "output",
       "type": "spike",
       "group": [
@@ -575,7 +395,7 @@
     },
     {
       "name": "1",
-      "time": 0.9757058122155021,
+      "time": 0.256199542873365,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -588,7 +408,7 @@
     },
     {
       "name": "in",
-      "time": 0.9757058122155021,
+      "time": 0.256199542873365,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -600,7 +420,7 @@
     },
     {
       "name": "1",
-      "time": 0.9757058122155021,
+      "time": 0.256199542873365,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -612,7 +432,7 @@
     },
     {
       "name": "value",
-      "time": 0.9757058122155021,
+      "time": 0.256199542873365,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -623,7 +443,7 @@
     },
     {
       "name": ":val => :value",
-      "time": 0.9757058122155021,
+      "time": 0.256199542873365,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -633,7 +453,7 @@
     },
     {
       "name": ":values => (1 => :val)",
-      "time": 0.9757058122155021,
+      "time": 0.256199542873365,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -642,7 +462,7 @@
     },
     {
       "name": "1",
-      "time": 0.9757058122155021,
+      "time": 0.256199542873365,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -653,7 +473,7 @@
     },
     {
       "name": "in",
-      "time": 0.9757058122155021,
+      "time": 0.256199542873365,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -663,7 +483,7 @@
     },
     {
       "name": "1",
-      "time": 0.9757058122155021,
+      "time": 0.256199542873365,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -671,15 +491,8 @@
       ]
     },
     {
-      "name": "marginal_prob",
-      "time": 0.9757058122155021,
-      "spiketype": "output",
-      "type": "spike",
-      "group": []
-    },
-    {
       "name": "out",
-      "time": 1.0242268503106067,
+      "time": 0.4388829437752397,
       "spiketype": "output",
       "type": "spike",
       "group": [
@@ -691,7 +504,7 @@
     },
     {
       "name": "2",
-      "time": 1.0242268503106067,
+      "time": 0.4388829437752397,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -703,7 +516,7 @@
     },
     {
       "name": "out",
-      "time": 1.0242268503106067,
+      "time": 0.4388829437752397,
       "spiketype": "output",
       "type": "spike",
       "group": [
@@ -714,7 +527,7 @@
     },
     {
       "name": ":val => :out",
-      "time": 1.0242268503106067,
+      "time": 0.4388829437752397,
       "spiketype": "output",
       "type": "spike",
       "group": [
@@ -724,7 +537,7 @@
     },
     {
       "name": "val",
-      "time": 1.0242268503106067,
+      "time": 0.4388829437752397,
       "spiketype": "output",
       "type": "spike",
       "group": [
@@ -732,15 +545,181 @@
       ]
     },
     {
-      "name": "joint_prob",
-      "time": 1.0242268503106067,
+      "name": "prob",
+      "time": 0.4388829437752397,
       "spiketype": "output",
       "type": "spike",
       "group": []
     },
     {
       "name": "out",
-      "time": 4.518186073564131,
+      "time": 0.49966118487569,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "spikers",
+        2
+      ]
+    },
+    {
+      "name": "2 => :out",
+      "time": 0.49966118487569,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "spikers"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 0.49966118487569,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor",
+        1
+      ]
+    },
+    {
+      "name": "in",
+      "time": 0.49966118487569,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 0.49966118487569,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "value",
+      "time": 0.49966118487569,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val"
+      ]
+    },
+    {
+      "name": ":val => :value",
+      "time": 0.49966118487569,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2
+      ]
+    },
+    {
+      "name": ":values => (2 => :val)",
+      "time": 0.49966118487569,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 0.49966118487569,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb",
+        2,
+        1
+      ]
+    },
+    {
+      "name": "in",
+      "time": 0.49966118487569,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb",
+        2
+      ]
+    },
+    {
+      "name": "2",
+      "time": 0.49966118487569,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb"
+      ]
+    },
+    {
+      "name": "out",
+      "time": 0.5006140546134897,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor",
+        1
+      ]
+    },
+    {
+      "name": "2",
+      "time": 0.5006140546134897,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor",
+        1
+      ]
+    },
+    {
+      "name": "out",
+      "time": 0.5006140546134897,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor"
+      ]
+    },
+    {
+      "name": "2",
+      "time": 0.5006140546134897,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "out",
+      "time": 0.5887423680785433,
       "spiketype": "output",
       "type": "spike",
       "group": [
@@ -750,7 +729,7 @@
     },
     {
       "name": "1 => :out",
-      "time": 4.518186073564131,
+      "time": 0.5887423680785433,
       "spiketype": "output",
       "type": "spike",
       "group": [
@@ -759,7 +738,7 @@
     },
     {
       "name": "1",
-      "time": 4.518186073564131,
+      "time": 0.5887423680785433,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -772,7 +751,7 @@
     },
     {
       "name": "in",
-      "time": 4.518186073564131,
+      "time": 0.5887423680785433,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -784,7 +763,7 @@
     },
     {
       "name": "1",
-      "time": 4.518186073564131,
+      "time": 0.5887423680785433,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -796,7 +775,7 @@
     },
     {
       "name": "value",
-      "time": 4.518186073564131,
+      "time": 0.5887423680785433,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -807,7 +786,7 @@
     },
     {
       "name": ":val => :value",
-      "time": 4.518186073564131,
+      "time": 0.5887423680785433,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -817,7 +796,7 @@
     },
     {
       "name": ":values => (1 => :val)",
-      "time": 4.518186073564131,
+      "time": 0.5887423680785433,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -826,7 +805,7 @@
     },
     {
       "name": "1",
-      "time": 4.518186073564131,
+      "time": 0.5887423680785433,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -837,7 +816,7 @@
     },
     {
       "name": "in",
-      "time": 4.518186073564131,
+      "time": 0.5887423680785433,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -847,7 +826,7 @@
     },
     {
       "name": "1",
-      "time": 4.518186073564131,
+      "time": 0.5887423680785433,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -855,15 +834,8 @@
       ]
     },
     {
-      "name": "marginal_prob",
-      "time": 4.518186073564131,
-      "spiketype": "output",
-      "type": "spike",
-      "group": []
-    },
-    {
       "name": "out",
-      "time": 4.668107565948856,
+      "time": 0.6716474682129814,
       "spiketype": "output",
       "type": "spike",
       "group": [
@@ -873,7 +845,7 @@
     },
     {
       "name": "1 => :out",
-      "time": 4.668107565948856,
+      "time": 0.6716474682129814,
       "spiketype": "output",
       "type": "spike",
       "group": [
@@ -882,7 +854,7 @@
     },
     {
       "name": "1",
-      "time": 4.668107565948856,
+      "time": 0.6716474682129814,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -895,7 +867,7 @@
     },
     {
       "name": "in",
-      "time": 4.668107565948856,
+      "time": 0.6716474682129814,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -907,7 +879,7 @@
     },
     {
       "name": "1",
-      "time": 4.668107565948856,
+      "time": 0.6716474682129814,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -919,7 +891,7 @@
     },
     {
       "name": "value",
-      "time": 4.668107565948856,
+      "time": 0.6716474682129814,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -930,7 +902,7 @@
     },
     {
       "name": ":val => :value",
-      "time": 4.668107565948856,
+      "time": 0.6716474682129814,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -940,7 +912,7 @@
     },
     {
       "name": ":values => (1 => :val)",
-      "time": 4.668107565948856,
+      "time": 0.6716474682129814,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -949,7 +921,7 @@
     },
     {
       "name": "1",
-      "time": 4.668107565948856,
+      "time": 0.6716474682129814,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -960,7 +932,7 @@
     },
     {
       "name": "in",
-      "time": 4.668107565948856,
+      "time": 0.6716474682129814,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -970,7 +942,7 @@
     },
     {
       "name": "1",
-      "time": 4.668107565948856,
+      "time": 0.6716474682129814,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -978,15 +950,8 @@
       ]
     },
     {
-      "name": "marginal_prob",
-      "time": 4.668107565948856,
-      "spiketype": "output",
-      "type": "spike",
-      "group": []
-    },
-    {
       "name": "out",
-      "time": 4.694881030251891,
+      "time": 0.7008359287502312,
       "spiketype": "output",
       "type": "spike",
       "group": [
@@ -998,7 +963,7 @@
     },
     {
       "name": "2",
-      "time": 4.694881030251891,
+      "time": 0.7008359287502312,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -1010,7 +975,7 @@
     },
     {
       "name": "out",
-      "time": 4.694881030251891,
+      "time": 0.7008359287502312,
       "spiketype": "output",
       "type": "spike",
       "group": [
@@ -1021,7 +986,7 @@
     },
     {
       "name": ":val => :out",
-      "time": 4.694881030251891,
+      "time": 0.7008359287502312,
       "spiketype": "output",
       "type": "spike",
       "group": [
@@ -1031,7 +996,7 @@
     },
     {
       "name": "val",
-      "time": 4.694881030251891,
+      "time": 0.7008359287502312,
       "spiketype": "output",
       "type": "spike",
       "group": [
@@ -1039,15 +1004,242 @@
       ]
     },
     {
-      "name": "joint_prob",
-      "time": 4.694881030251891,
+      "name": "prob",
+      "time": 0.7008359287502312,
       "spiketype": "output",
       "type": "spike",
       "group": []
     },
     {
       "name": "out",
-      "time": 4.753945433660483,
+      "time": 0.773420848905287,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "2",
+      "time": 0.773420848905287,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "out",
+      "time": 0.773420848905287,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val"
+      ]
+    },
+    {
+      "name": ":val => :out",
+      "time": 0.773420848905287,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        1
+      ]
+    },
+    {
+      "name": "val",
+      "time": 0.773420848905287,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux"
+      ]
+    },
+    {
+      "name": "prob",
+      "time": 0.773420848905287,
+      "spiketype": "output",
+      "type": "spike",
+      "group": []
+    },
+    {
+      "name": "out",
+      "time": 1.6964496786987666,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "spikers",
+        2
+      ]
+    },
+    {
+      "name": "2 => :out",
+      "time": 1.6964496786987666,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "spikers"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 1.6964496786987666,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor",
+        1
+      ]
+    },
+    {
+      "name": "in",
+      "time": 1.6964496786987666,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 1.6964496786987666,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "value",
+      "time": 1.6964496786987666,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val"
+      ]
+    },
+    {
+      "name": ":val => :value",
+      "time": 1.6964496786987666,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2
+      ]
+    },
+    {
+      "name": ":values => (2 => :val)",
+      "time": 1.6964496786987666,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 1.6964496786987666,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb",
+        2,
+        1
+      ]
+    },
+    {
+      "name": "in",
+      "time": 1.6964496786987666,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb",
+        2
+      ]
+    },
+    {
+      "name": "2",
+      "time": 1.6964496786987666,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb"
+      ]
+    },
+    {
+      "name": "out",
+      "time": 1.6989686816185476,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor",
+        1
+      ]
+    },
+    {
+      "name": "2",
+      "time": 1.6989686816185476,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor",
+        1
+      ]
+    },
+    {
+      "name": "out",
+      "time": 1.6989686816185476,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor"
+      ]
+    },
+    {
+      "name": "2",
+      "time": 1.6989686816185476,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "out",
+      "time": 1.924411240434924,
       "spiketype": "output",
       "type": "spike",
       "group": [
@@ -1057,7 +1249,7 @@
     },
     {
       "name": "1 => :out",
-      "time": 4.753945433660483,
+      "time": 1.924411240434924,
       "spiketype": "output",
       "type": "spike",
       "group": [
@@ -1066,7 +1258,7 @@
     },
     {
       "name": "1",
-      "time": 4.753945433660483,
+      "time": 1.924411240434924,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -1079,7 +1271,7 @@
     },
     {
       "name": "in",
-      "time": 4.753945433660483,
+      "time": 1.924411240434924,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -1091,7 +1283,7 @@
     },
     {
       "name": "1",
-      "time": 4.753945433660483,
+      "time": 1.924411240434924,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -1103,7 +1295,7 @@
     },
     {
       "name": "value",
-      "time": 4.753945433660483,
+      "time": 1.924411240434924,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -1114,7 +1306,7 @@
     },
     {
       "name": ":val => :value",
-      "time": 4.753945433660483,
+      "time": 1.924411240434924,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -1124,7 +1316,7 @@
     },
     {
       "name": ":values => (1 => :val)",
-      "time": 4.753945433660483,
+      "time": 1.924411240434924,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -1133,7 +1325,7 @@
     },
     {
       "name": "1",
-      "time": 4.753945433660483,
+      "time": 1.924411240434924,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -1144,7 +1336,7 @@
     },
     {
       "name": "in",
-      "time": 4.753945433660483,
+      "time": 1.924411240434924,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -1154,7 +1346,7 @@
     },
     {
       "name": "1",
-      "time": 4.753945433660483,
+      "time": 1.924411240434924,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -1162,15 +1354,174 @@
       ]
     },
     {
-      "name": "marginal_prob",
-      "time": 4.753945433660483,
+      "name": "out",
+      "time": 1.9412040910948494,
       "spiketype": "output",
       "type": "spike",
-      "group": []
+      "group": [
+        "spikers",
+        2
+      ]
+    },
+    {
+      "name": "2 => :out",
+      "time": 1.9412040910948494,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "spikers"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 1.9412040910948494,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor",
+        1
+      ]
+    },
+    {
+      "name": "in",
+      "time": 1.9412040910948494,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 1.9412040910948494,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "value",
+      "time": 1.9412040910948494,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val"
+      ]
+    },
+    {
+      "name": ":val => :value",
+      "time": 1.9412040910948494,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2
+      ]
+    },
+    {
+      "name": ":values => (2 => :val)",
+      "time": 1.9412040910948494,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 1.9412040910948494,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb",
+        2,
+        1
+      ]
+    },
+    {
+      "name": "in",
+      "time": 1.9412040910948494,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb",
+        2
+      ]
+    },
+    {
+      "name": "2",
+      "time": 1.9412040910948494,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb"
+      ]
     },
     {
       "name": "out",
-      "time": 4.8122737854450115,
+      "time": 1.9412730070614874,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor",
+        1
+      ]
+    },
+    {
+      "name": "2",
+      "time": 1.9412730070614874,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor",
+        1
+      ]
+    },
+    {
+      "name": "out",
+      "time": 1.9412730070614874,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor"
+      ]
+    },
+    {
+      "name": "2",
+      "time": 1.9412730070614874,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "out",
+      "time": 2.015909997865781,
       "spiketype": "output",
       "type": "spike",
       "group": [
@@ -1182,7 +1533,7 @@
     },
     {
       "name": "2",
-      "time": 4.8122737854450115,
+      "time": 2.015909997865781,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -1194,7 +1545,7 @@
     },
     {
       "name": "out",
-      "time": 4.8122737854450115,
+      "time": 2.015909997865781,
       "spiketype": "output",
       "type": "spike",
       "group": [
@@ -1205,7 +1556,7 @@
     },
     {
       "name": ":val => :out",
-      "time": 4.8122737854450115,
+      "time": 2.015909997865781,
       "spiketype": "output",
       "type": "spike",
       "group": [
@@ -1215,7 +1566,7 @@
     },
     {
       "name": "val",
-      "time": 4.8122737854450115,
+      "time": 2.015909997865781,
       "spiketype": "output",
       "type": "spike",
       "group": [
@@ -1223,76 +1574,347 @@
       ]
     },
     {
-      "name": "joint_prob",
-      "time": 4.8122737854450115,
+      "name": "prob",
+      "time": 2.015909997865781,
       "spiketype": "output",
       "type": "spike",
       "group": []
     },
     {
       "name": "out",
-      "time": 4.817344216759904,
+      "time": 2.0482650050333033,
       "spiketype": "output",
       "type": "spike",
       "group": [
+        "spikers",
+        2
+      ]
+    },
+    {
+      "name": "2 => :out",
+      "time": 2.0482650050333033,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "spikers"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 2.0482650050333033,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
         "mux",
-        1,
+        2,
+        "val",
+        "inhibitor",
+        1
+      ]
+    },
+    {
+      "name": "in",
+      "time": 2.0482650050333033,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 2.0482650050333033,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
         "val",
         "outputter"
+      ]
+    },
+    {
+      "name": "value",
+      "time": 2.0482650050333033,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val"
+      ]
+    },
+    {
+      "name": ":val => :value",
+      "time": 2.0482650050333033,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2
+      ]
+    },
+    {
+      "name": ":values => (2 => :val)",
+      "time": 2.0482650050333033,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 2.0482650050333033,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb",
+        2,
+        1
+      ]
+    },
+    {
+      "name": "in",
+      "time": 2.0482650050333033,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb",
+        2
       ]
     },
     {
       "name": "2",
-      "time": 4.817344216759904,
+      "time": 2.0482650050333033,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb"
+      ]
+    },
+    {
+      "name": "out",
+      "time": 2.0492428681399737,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor",
+        1
+      ]
+    },
+    {
+      "name": "2",
+      "time": 2.0492428681399737,
       "spiketype": "input",
       "type": "spike",
       "group": [
         "mux",
-        1,
+        2,
+        "val",
+        "inhibitor",
+        1
+      ]
+    },
+    {
+      "name": "out",
+      "time": 2.0492428681399737,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor"
+      ]
+    },
+    {
+      "name": "2",
+      "time": 2.0492428681399737,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
         "val",
         "outputter"
       ]
     },
     {
       "name": "out",
-      "time": 4.817344216759904,
+      "time": 2.0945248753357313,
       "spiketype": "output",
       "type": "spike",
       "group": [
-        "mux",
-        1,
-        "val"
+        "spikers",
+        2
       ]
     },
     {
-      "name": ":val => :out",
-      "time": 4.817344216759904,
+      "name": "2 => :out",
+      "time": 2.0945248753357313,
       "spiketype": "output",
       "type": "spike",
       "group": [
+        "spikers"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 2.0945248753357313,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
         "mux",
+        2,
+        "val",
+        "inhibitor",
         1
       ]
     },
     {
-      "name": "val",
-      "time": 4.817344216759904,
-      "spiketype": "output",
+      "name": "in",
+      "time": 2.0945248753357313,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 2.0945248753357313,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "value",
+      "time": 2.0945248753357313,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val"
+      ]
+    },
+    {
+      "name": ":val => :value",
+      "time": 2.0945248753357313,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2
+      ]
+    },
+    {
+      "name": ":values => (2 => :val)",
+      "time": 2.0945248753357313,
+      "spiketype": "input",
       "type": "spike",
       "group": [
         "mux"
       ]
     },
     {
-      "name": "joint_prob",
-      "time": 4.817344216759904,
-      "spiketype": "output",
+      "name": "1",
+      "time": 2.0945248753357313,
+      "spiketype": "input",
       "type": "spike",
-      "group": []
+      "group": [
+        "cvb",
+        2,
+        1
+      ]
+    },
+    {
+      "name": "in",
+      "time": 2.0945248753357313,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb",
+        2
+      ]
+    },
+    {
+      "name": "2",
+      "time": 2.0945248753357313,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb"
+      ]
     },
     {
       "name": "out",
-      "time": 6.76923349991341,
+      "time": 2.095368092776207,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor",
+        1
+      ]
+    },
+    {
+      "name": "2",
+      "time": 2.095368092776207,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor",
+        1
+      ]
+    },
+    {
+      "name": "out",
+      "time": 2.095368092776207,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor"
+      ]
+    },
+    {
+      "name": "2",
+      "time": 2.095368092776207,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "out",
+      "time": 2.1972396586392886,
       "spiketype": "output",
       "type": "spike",
       "group": [
@@ -1302,7 +1924,7 @@
     },
     {
       "name": "1 => :out",
-      "time": 6.76923349991341,
+      "time": 2.1972396586392886,
       "spiketype": "output",
       "type": "spike",
       "group": [
@@ -1311,7 +1933,7 @@
     },
     {
       "name": "1",
-      "time": 6.76923349991341,
+      "time": 2.1972396586392886,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -1324,7 +1946,7 @@
     },
     {
       "name": "in",
-      "time": 6.76923349991341,
+      "time": 2.1972396586392886,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -1336,7 +1958,7 @@
     },
     {
       "name": "1",
-      "time": 6.76923349991341,
+      "time": 2.1972396586392886,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -1348,7 +1970,7 @@
     },
     {
       "name": "value",
-      "time": 6.76923349991341,
+      "time": 2.1972396586392886,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -1359,7 +1981,7 @@
     },
     {
       "name": ":val => :value",
-      "time": 6.76923349991341,
+      "time": 2.1972396586392886,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -1369,7 +1991,7 @@
     },
     {
       "name": ":values => (1 => :val)",
-      "time": 6.76923349991341,
+      "time": 2.1972396586392886,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -1378,7 +2000,7 @@
     },
     {
       "name": "1",
-      "time": 6.76923349991341,
+      "time": 2.1972396586392886,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -1389,7 +2011,7 @@
     },
     {
       "name": "in",
-      "time": 6.76923349991341,
+      "time": 2.1972396586392886,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -1399,7 +2021,7 @@
     },
     {
       "name": "1",
-      "time": 6.76923349991341,
+      "time": 2.1972396586392886,
       "spiketype": "input",
       "type": "spike",
       "group": [
@@ -1407,11 +2029,2593 @@
       ]
     },
     {
-      "name": "marginal_prob",
-      "time": 6.76923349991341,
+      "name": "out",
+      "time": 2.244523222566605,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "2",
+      "time": 2.244523222566605,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "out",
+      "time": 2.244523222566605,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val"
+      ]
+    },
+    {
+      "name": ":val => :out",
+      "time": 2.244523222566605,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        1
+      ]
+    },
+    {
+      "name": "val",
+      "time": 2.244523222566605,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux"
+      ]
+    },
+    {
+      "name": "prob",
+      "time": 2.244523222566605,
       "spiketype": "output",
       "type": "spike",
       "group": []
+    },
+    {
+      "name": "out",
+      "time": 2.479770416491358,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "spikers",
+        1
+      ]
+    },
+    {
+      "name": "1 => :out",
+      "time": 2.479770416491358,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "spikers"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 2.479770416491358,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "inhibitor",
+        1
+      ]
+    },
+    {
+      "name": "in",
+      "time": 2.479770416491358,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "inhibitor"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 2.479770416491358,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "value",
+      "time": 2.479770416491358,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val"
+      ]
+    },
+    {
+      "name": ":val => :value",
+      "time": 2.479770416491358,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1
+      ]
+    },
+    {
+      "name": ":values => (1 => :val)",
+      "time": 2.479770416491358,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 2.479770416491358,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb",
+        1,
+        1
+      ]
+    },
+    {
+      "name": "in",
+      "time": 2.479770416491358,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb",
+        1
+      ]
+    },
+    {
+      "name": "1",
+      "time": 2.479770416491358,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb"
+      ]
+    },
+    {
+      "name": "out",
+      "time": 2.493068481439315,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "2",
+      "time": 2.493068481439315,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "out",
+      "time": 2.493068481439315,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val"
+      ]
+    },
+    {
+      "name": ":val => :out",
+      "time": 2.493068481439315,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        1
+      ]
+    },
+    {
+      "name": "val",
+      "time": 2.493068481439315,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux"
+      ]
+    },
+    {
+      "name": "prob",
+      "time": 2.493068481439315,
+      "spiketype": "output",
+      "type": "spike",
+      "group": []
+    },
+    {
+      "name": "out",
+      "time": 2.5486291719136287,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "spikers",
+        1
+      ]
+    },
+    {
+      "name": "1 => :out",
+      "time": 2.5486291719136287,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "spikers"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 2.5486291719136287,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "inhibitor",
+        1
+      ]
+    },
+    {
+      "name": "in",
+      "time": 2.5486291719136287,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "inhibitor"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 2.5486291719136287,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "value",
+      "time": 2.5486291719136287,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val"
+      ]
+    },
+    {
+      "name": ":val => :value",
+      "time": 2.5486291719136287,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1
+      ]
+    },
+    {
+      "name": ":values => (1 => :val)",
+      "time": 2.5486291719136287,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 2.5486291719136287,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb",
+        1,
+        1
+      ]
+    },
+    {
+      "name": "in",
+      "time": 2.5486291719136287,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb",
+        1
+      ]
+    },
+    {
+      "name": "1",
+      "time": 2.5486291719136287,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb"
+      ]
+    },
+    {
+      "name": "out",
+      "time": 2.5983096489571595,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "2",
+      "time": 2.5983096489571595,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "out",
+      "time": 2.5983096489571595,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val"
+      ]
+    },
+    {
+      "name": ":val => :out",
+      "time": 2.5983096489571595,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        1
+      ]
+    },
+    {
+      "name": "val",
+      "time": 2.5983096489571595,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux"
+      ]
+    },
+    {
+      "name": "prob",
+      "time": 2.5983096489571595,
+      "spiketype": "output",
+      "type": "spike",
+      "group": []
+    },
+    {
+      "name": "out",
+      "time": 2.6048761346253606,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "spikers",
+        2
+      ]
+    },
+    {
+      "name": "2 => :out",
+      "time": 2.6048761346253606,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "spikers"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 2.6048761346253606,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor",
+        1
+      ]
+    },
+    {
+      "name": "in",
+      "time": 2.6048761346253606,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 2.6048761346253606,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "value",
+      "time": 2.6048761346253606,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val"
+      ]
+    },
+    {
+      "name": ":val => :value",
+      "time": 2.6048761346253606,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2
+      ]
+    },
+    {
+      "name": ":values => (2 => :val)",
+      "time": 2.6048761346253606,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 2.6048761346253606,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb",
+        2,
+        1
+      ]
+    },
+    {
+      "name": "in",
+      "time": 2.6048761346253606,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb",
+        2
+      ]
+    },
+    {
+      "name": "2",
+      "time": 2.6048761346253606,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb"
+      ]
+    },
+    {
+      "name": "out",
+      "time": 2.6049864320114975,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor",
+        1
+      ]
+    },
+    {
+      "name": "2",
+      "time": 2.6049864320114975,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor",
+        1
+      ]
+    },
+    {
+      "name": "out",
+      "time": 2.6049864320114975,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor"
+      ]
+    },
+    {
+      "name": "2",
+      "time": 2.6049864320114975,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "out",
+      "time": 2.898879157845892,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "spikers",
+        1
+      ]
+    },
+    {
+      "name": "1 => :out",
+      "time": 2.898879157845892,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "spikers"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 2.898879157845892,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "inhibitor",
+        1
+      ]
+    },
+    {
+      "name": "in",
+      "time": 2.898879157845892,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "inhibitor"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 2.898879157845892,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "value",
+      "time": 2.898879157845892,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val"
+      ]
+    },
+    {
+      "name": ":val => :value",
+      "time": 2.898879157845892,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1
+      ]
+    },
+    {
+      "name": ":values => (1 => :val)",
+      "time": 2.898879157845892,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 2.898879157845892,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb",
+        1,
+        1
+      ]
+    },
+    {
+      "name": "in",
+      "time": 2.898879157845892,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb",
+        1
+      ]
+    },
+    {
+      "name": "1",
+      "time": 2.898879157845892,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb"
+      ]
+    },
+    {
+      "name": "out",
+      "time": 3.028138255492939,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "2",
+      "time": 3.028138255492939,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "out",
+      "time": 3.028138255492939,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val"
+      ]
+    },
+    {
+      "name": ":val => :out",
+      "time": 3.028138255492939,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        1
+      ]
+    },
+    {
+      "name": "val",
+      "time": 3.028138255492939,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux"
+      ]
+    },
+    {
+      "name": "prob",
+      "time": 3.028138255492939,
+      "spiketype": "output",
+      "type": "spike",
+      "group": []
+    },
+    {
+      "name": "out",
+      "time": 3.0804320196252664,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "spikers",
+        1
+      ]
+    },
+    {
+      "name": "1 => :out",
+      "time": 3.0804320196252664,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "spikers"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 3.0804320196252664,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "inhibitor",
+        1
+      ]
+    },
+    {
+      "name": "in",
+      "time": 3.0804320196252664,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "inhibitor"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 3.0804320196252664,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "value",
+      "time": 3.0804320196252664,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val"
+      ]
+    },
+    {
+      "name": ":val => :value",
+      "time": 3.0804320196252664,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1
+      ]
+    },
+    {
+      "name": ":values => (1 => :val)",
+      "time": 3.0804320196252664,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 3.0804320196252664,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb",
+        1,
+        1
+      ]
+    },
+    {
+      "name": "in",
+      "time": 3.0804320196252664,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb",
+        1
+      ]
+    },
+    {
+      "name": "1",
+      "time": 3.0804320196252664,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb"
+      ]
+    },
+    {
+      "name": "out",
+      "time": 3.096972952488087,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "2",
+      "time": 3.096972952488087,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "out",
+      "time": 3.096972952488087,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val"
+      ]
+    },
+    {
+      "name": ":val => :out",
+      "time": 3.096972952488087,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        1
+      ]
+    },
+    {
+      "name": "val",
+      "time": 3.096972952488087,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux"
+      ]
+    },
+    {
+      "name": "prob",
+      "time": 3.096972952488087,
+      "spiketype": "output",
+      "type": "spike",
+      "group": []
+    },
+    {
+      "name": "out",
+      "time": 3.1017492291533646,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "spikers",
+        2
+      ]
+    },
+    {
+      "name": "2 => :out",
+      "time": 3.1017492291533646,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "spikers"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 3.1017492291533646,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor",
+        1
+      ]
+    },
+    {
+      "name": "in",
+      "time": 3.1017492291533646,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 3.1017492291533646,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "value",
+      "time": 3.1017492291533646,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val"
+      ]
+    },
+    {
+      "name": ":val => :value",
+      "time": 3.1017492291533646,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2
+      ]
+    },
+    {
+      "name": ":values => (2 => :val)",
+      "time": 3.1017492291533646,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 3.1017492291533646,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb",
+        2,
+        1
+      ]
+    },
+    {
+      "name": "in",
+      "time": 3.1017492291533646,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb",
+        2
+      ]
+    },
+    {
+      "name": "2",
+      "time": 3.1017492291533646,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb"
+      ]
+    },
+    {
+      "name": "out",
+      "time": 3.1026122725660774,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor",
+        1
+      ]
+    },
+    {
+      "name": "2",
+      "time": 3.1026122725660774,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor",
+        1
+      ]
+    },
+    {
+      "name": "out",
+      "time": 3.1026122725660774,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor"
+      ]
+    },
+    {
+      "name": "2",
+      "time": 3.1026122725660774,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "out",
+      "time": 3.1853049969772176,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "spikers",
+        1
+      ]
+    },
+    {
+      "name": "1 => :out",
+      "time": 3.1853049969772176,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "spikers"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 3.1853049969772176,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "inhibitor",
+        1
+      ]
+    },
+    {
+      "name": "in",
+      "time": 3.1853049969772176,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "inhibitor"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 3.1853049969772176,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "value",
+      "time": 3.1853049969772176,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val"
+      ]
+    },
+    {
+      "name": ":val => :value",
+      "time": 3.1853049969772176,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1
+      ]
+    },
+    {
+      "name": ":values => (1 => :val)",
+      "time": 3.1853049969772176,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 3.1853049969772176,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb",
+        1,
+        1
+      ]
+    },
+    {
+      "name": "in",
+      "time": 3.1853049969772176,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb",
+        1
+      ]
+    },
+    {
+      "name": "1",
+      "time": 3.1853049969772176,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb"
+      ]
+    },
+    {
+      "name": "out",
+      "time": 3.2439648748571837,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "2",
+      "time": 3.2439648748571837,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "out",
+      "time": 3.2439648748571837,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val"
+      ]
+    },
+    {
+      "name": ":val => :out",
+      "time": 3.2439648748571837,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        1
+      ]
+    },
+    {
+      "name": "val",
+      "time": 3.2439648748571837,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux"
+      ]
+    },
+    {
+      "name": "prob",
+      "time": 3.2439648748571837,
+      "spiketype": "output",
+      "type": "spike",
+      "group": []
+    },
+    {
+      "name": "out",
+      "time": 3.432269895949902,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "spikers",
+        2
+      ]
+    },
+    {
+      "name": "2 => :out",
+      "time": 3.432269895949902,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "spikers"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 3.432269895949902,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor",
+        1
+      ]
+    },
+    {
+      "name": "in",
+      "time": 3.432269895949902,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 3.432269895949902,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "value",
+      "time": 3.432269895949902,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val"
+      ]
+    },
+    {
+      "name": ":val => :value",
+      "time": 3.432269895949902,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2
+      ]
+    },
+    {
+      "name": ":values => (2 => :val)",
+      "time": 3.432269895949902,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 3.432269895949902,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb",
+        2,
+        1
+      ]
+    },
+    {
+      "name": "in",
+      "time": 3.432269895949902,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb",
+        2
+      ]
+    },
+    {
+      "name": "2",
+      "time": 3.432269895949902,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb"
+      ]
+    },
+    {
+      "name": "out",
+      "time": 3.433542822153125,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor",
+        1
+      ]
+    },
+    {
+      "name": "2",
+      "time": 3.433542822153125,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor",
+        1
+      ]
+    },
+    {
+      "name": "out",
+      "time": 3.433542822153125,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor"
+      ]
+    },
+    {
+      "name": "2",
+      "time": 3.433542822153125,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "out",
+      "time": 3.9440492457126863,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "spikers",
+        2
+      ]
+    },
+    {
+      "name": "2 => :out",
+      "time": 3.9440492457126863,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "spikers"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 3.9440492457126863,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor",
+        1
+      ]
+    },
+    {
+      "name": "in",
+      "time": 3.9440492457126863,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 3.9440492457126863,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "value",
+      "time": 3.9440492457126863,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val"
+      ]
+    },
+    {
+      "name": ":val => :value",
+      "time": 3.9440492457126863,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2
+      ]
+    },
+    {
+      "name": ":values => (2 => :val)",
+      "time": 3.9440492457126863,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 3.9440492457126863,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb",
+        2,
+        1
+      ]
+    },
+    {
+      "name": "in",
+      "time": 3.9440492457126863,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb",
+        2
+      ]
+    },
+    {
+      "name": "2",
+      "time": 3.9440492457126863,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb"
+      ]
+    },
+    {
+      "name": "out",
+      "time": 3.9446532359163338,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor",
+        1
+      ]
+    },
+    {
+      "name": "2",
+      "time": 3.9446532359163338,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor",
+        1
+      ]
+    },
+    {
+      "name": "out",
+      "time": 3.9446532359163338,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor"
+      ]
+    },
+    {
+      "name": "2",
+      "time": 3.9446532359163338,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "out",
+      "time": 4.088286203719296,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "spikers",
+        1
+      ]
+    },
+    {
+      "name": "1 => :out",
+      "time": 4.088286203719296,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "spikers"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 4.088286203719296,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "inhibitor",
+        1
+      ]
+    },
+    {
+      "name": "in",
+      "time": 4.088286203719296,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "inhibitor"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 4.088286203719296,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "value",
+      "time": 4.088286203719296,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val"
+      ]
+    },
+    {
+      "name": ":val => :value",
+      "time": 4.088286203719296,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1
+      ]
+    },
+    {
+      "name": ":values => (1 => :val)",
+      "time": 4.088286203719296,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 4.088286203719296,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb",
+        1,
+        1
+      ]
+    },
+    {
+      "name": "in",
+      "time": 4.088286203719296,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb",
+        1
+      ]
+    },
+    {
+      "name": "1",
+      "time": 4.088286203719296,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb"
+      ]
+    },
+    {
+      "name": "out",
+      "time": 4.221425589732252,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "spikers",
+        1
+      ]
+    },
+    {
+      "name": "1 => :out",
+      "time": 4.221425589732252,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "spikers"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 4.221425589732252,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "inhibitor",
+        1
+      ]
+    },
+    {
+      "name": "in",
+      "time": 4.221425589732252,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "inhibitor"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 4.221425589732252,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "value",
+      "time": 4.221425589732252,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val"
+      ]
+    },
+    {
+      "name": ":val => :value",
+      "time": 4.221425589732252,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1
+      ]
+    },
+    {
+      "name": ":values => (1 => :val)",
+      "time": 4.221425589732252,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 4.221425589732252,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb",
+        1,
+        1
+      ]
+    },
+    {
+      "name": "in",
+      "time": 4.221425589732252,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb",
+        1
+      ]
+    },
+    {
+      "name": "1",
+      "time": 4.221425589732252,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb"
+      ]
+    },
+    {
+      "name": "out",
+      "time": 4.234591525617692,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "2",
+      "time": 4.234591525617692,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "out",
+      "time": 4.234591525617692,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val"
+      ]
+    },
+    {
+      "name": ":val => :out",
+      "time": 4.234591525617692,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        1
+      ]
+    },
+    {
+      "name": "val",
+      "time": 4.234591525617692,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux"
+      ]
+    },
+    {
+      "name": "prob",
+      "time": 4.234591525617692,
+      "spiketype": "output",
+      "type": "spike",
+      "group": []
+    },
+    {
+      "name": "out",
+      "time": 4.309022595003915,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "spikers",
+        1
+      ]
+    },
+    {
+      "name": "1 => :out",
+      "time": 4.309022595003915,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "spikers"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 4.309022595003915,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "inhibitor",
+        1
+      ]
+    },
+    {
+      "name": "in",
+      "time": 4.309022595003915,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "inhibitor"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 4.309022595003915,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "value",
+      "time": 4.309022595003915,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val"
+      ]
+    },
+    {
+      "name": ":val => :value",
+      "time": 4.309022595003915,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1
+      ]
+    },
+    {
+      "name": ":values => (1 => :val)",
+      "time": 4.309022595003915,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 4.309022595003915,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb",
+        1,
+        1
+      ]
+    },
+    {
+      "name": "in",
+      "time": 4.309022595003915,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb",
+        1
+      ]
+    },
+    {
+      "name": "1",
+      "time": 4.309022595003915,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb"
+      ]
+    },
+    {
+      "name": "out",
+      "time": 4.309046154794075,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "2",
+      "time": 4.309046154794075,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "out",
+      "time": 4.309046154794075,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val"
+      ]
+    },
+    {
+      "name": ":val => :out",
+      "time": 4.309046154794075,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        1
+      ]
+    },
+    {
+      "name": "val",
+      "time": 4.309046154794075,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux"
+      ]
+    },
+    {
+      "name": "prob",
+      "time": 4.309046154794075,
+      "spiketype": "output",
+      "type": "spike",
+      "group": []
+    },
+    {
+      "name": "out",
+      "time": 4.619499974016975,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "spikers",
+        2
+      ]
+    },
+    {
+      "name": "2 => :out",
+      "time": 4.619499974016975,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "spikers"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 4.619499974016975,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor",
+        1
+      ]
+    },
+    {
+      "name": "in",
+      "time": 4.619499974016975,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 4.619499974016975,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "value",
+      "time": 4.619499974016975,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val"
+      ]
+    },
+    {
+      "name": ":val => :value",
+      "time": 4.619499974016975,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2
+      ]
+    },
+    {
+      "name": ":values => (2 => :val)",
+      "time": 4.619499974016975,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 4.619499974016975,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb",
+        2,
+        1
+      ]
+    },
+    {
+      "name": "in",
+      "time": 4.619499974016975,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb",
+        2
+      ]
+    },
+    {
+      "name": "2",
+      "time": 4.619499974016975,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb"
+      ]
+    },
+    {
+      "name": "out",
+      "time": 4.619580246861271,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor",
+        1
+      ]
+    },
+    {
+      "name": "2",
+      "time": 4.619580246861271,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor",
+        1
+      ]
+    },
+    {
+      "name": "out",
+      "time": 4.619580246861271,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor"
+      ]
+    },
+    {
+      "name": "2",
+      "time": 4.619580246861271,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "out",
+      "time": 4.693031670821541,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "2",
+      "time": 4.693031670821541,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "out",
+      "time": 4.693031670821541,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        1,
+        "val"
+      ]
+    },
+    {
+      "name": ":val => :out",
+      "time": 4.693031670821541,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        1
+      ]
+    },
+    {
+      "name": "val",
+      "time": 4.693031670821541,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux"
+      ]
+    },
+    {
+      "name": "prob",
+      "time": 4.693031670821541,
+      "spiketype": "output",
+      "type": "spike",
+      "group": []
+    },
+    {
+      "name": "out",
+      "time": 4.900477248519918,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "spikers",
+        2
+      ]
+    },
+    {
+      "name": "2 => :out",
+      "time": 4.900477248519918,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "spikers"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 4.900477248519918,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor",
+        1
+      ]
+    },
+    {
+      "name": "in",
+      "time": 4.900477248519918,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 4.900477248519918,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "value",
+      "time": 4.900477248519918,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val"
+      ]
+    },
+    {
+      "name": ":val => :value",
+      "time": 4.900477248519918,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2
+      ]
+    },
+    {
+      "name": ":values => (2 => :val)",
+      "time": 4.900477248519918,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 4.900477248519918,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb",
+        2,
+        1
+      ]
+    },
+    {
+      "name": "in",
+      "time": 4.900477248519918,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb",
+        2
+      ]
+    },
+    {
+      "name": "2",
+      "time": 4.900477248519918,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb"
+      ]
+    },
+    {
+      "name": "out",
+      "time": 4.900853587062442,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor",
+        1
+      ]
+    },
+    {
+      "name": "2",
+      "time": 4.900853587062442,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor",
+        1
+      ]
+    },
+    {
+      "name": "out",
+      "time": 4.900853587062442,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor"
+      ]
+    },
+    {
+      "name": "2",
+      "time": 4.900853587062442,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "out",
+      "time": 5.088274731528905,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "spikers",
+        2
+      ]
+    },
+    {
+      "name": "2 => :out",
+      "time": 5.088274731528905,
+      "spiketype": "output",
+      "type": "spike",
+      "group": [
+        "spikers"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 5.088274731528905,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor",
+        1
+      ]
+    },
+    {
+      "name": "in",
+      "time": 5.088274731528905,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "inhibitor"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 5.088274731528905,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val",
+        "outputter"
+      ]
+    },
+    {
+      "name": "value",
+      "time": 5.088274731528905,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2,
+        "val"
+      ]
+    },
+    {
+      "name": ":val => :value",
+      "time": 5.088274731528905,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux",
+        2
+      ]
+    },
+    {
+      "name": ":values => (2 => :val)",
+      "time": 5.088274731528905,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "mux"
+      ]
+    },
+    {
+      "name": "1",
+      "time": 5.088274731528905,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb",
+        2,
+        1
+      ]
+    },
+    {
+      "name": "in",
+      "time": 5.088274731528905,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb",
+        2
+      ]
+    },
+    {
+      "name": "2",
+      "time": 5.088274731528905,
+      "spiketype": "input",
+      "type": "spike",
+      "group": [
+        "cvb"
+      ]
     }
   ],
   "initial_states": []
