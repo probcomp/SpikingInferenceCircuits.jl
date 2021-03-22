@@ -1,4 +1,4 @@
-const IPOISSONGATE_REPEATING_RATE = 1000.0
+const IPOISSONGATE_REPEATING_RATE = 100000.0
 
 """
     IPoissonGatedRepeater <: GenericComponent

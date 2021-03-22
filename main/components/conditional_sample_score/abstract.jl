@@ -28,7 +28,7 @@ prob_output_given_input(c::ConditionalSampleScore, outval) = c.P[:,outval]
 Circuits.inputs(c::ConditionalSampleScore) =
         NamedValues(
             :in_val => FiniteDomainValue(in_domain_size(c)),
-            (c.sample ? () : :obs => FiniteDomainValue(ysize(c)))...
+            (c.sample ? () : (:obs => FiniteDomainValue(out_domain_size(c)),))...
         )
 
 Circuits.outputs(c::ConditionalSampleScore) =

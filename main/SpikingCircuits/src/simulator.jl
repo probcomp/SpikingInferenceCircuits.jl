@@ -317,10 +317,14 @@ function simulate_for_time(
     callback, c::Component, ΔT, s::State=initial_state(c), t::Trajectory=empty_trajectory(c);
     initial_inputs=(), event_filter=((compname, event)->true)
 )
-    filtered_callback(itr, dt) = callback(
-        Iterators.filter(args -> event_filter(args...), itr),
-        dt
-    )
+    function filtered_callback(itr, dt)
+        if dt <= ΔT # only track events before the time limit
+            callback(
+                Iterators.filter(args -> event_filter(args...), itr),
+                dt
+            )
+        end
+    end
 
     for input in initial_inputs
         (s, t, output_names) = receive_input_spike(c, s, t, input, itr -> filtered_callback(itr, 0.))

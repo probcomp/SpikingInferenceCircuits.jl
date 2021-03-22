@@ -19,31 +19,31 @@ unit = SpikingConditionalSampleScore(
         # [0.75 0.25;
         #  0.25  0.75],
         #  [0.2 0.8; 0.2 0.8],
-        [0.6 0.25 0.15;
-        0.05 0.75 0.20;
+        [#0.6 0.25 0.15;
+        #0.05 0.75 0.20;
         0.90 0.00 0.10;
         0.90 0.09 0.01],
-        true
+        false
     ),
-    0.01,
+    0.001,
     2.0
 )
 
 circuit = implement_deep(unit, Spiking())
 
-# events = Sim.simulate_for_time_and_get_events(circuit, 5.0;
-#     initial_inputs=(:in_val => 2,)
-# )
+events = Sim.simulate_for_time_and_get_events(circuit,  16.0;
+    initial_inputs=(:in_val => 2, :obs => 3)
+)
 
-# includet("../visualization/circuit_visualization/animation_interface.jl")
-# try
-#     open("visualization/circuit_visualization/frontend/renders/joint_anim.json", "w") do f
-#         JSON.print(f, animation_to_frontend_format(Sim.initial_state(circuit), events), 2)
-#     end
-#     println("Wrote animation file.")
-# catch e
-#     @warn "Failed to write animation file: $e"
-# end
+includet("../visualization/circuit_visualization/animation_interface.jl")
+try
+    open("visualization/circuit_visualization/frontend/renders/joint_anim.json", "w") do f
+        JSON.print(f, animation_to_frontend_format(Sim.initial_state(circuit), events), 2)
+    end
+    println("Wrote animation file.")
+catch e
+    @warn "Failed to write animation file: $e"
+end
 
 # ##############
 # # Spiketrain #
@@ -65,29 +65,29 @@ end
 # includet("../visualization/spiketrain.jl")
 # using .SpiketrainViz
 
-is_primary_output(compname, event) = (isnothing(compname) && event isa Sim.OutputSpike)
+# is_primary_output(compname, event) = (isnothing(compname) && event isa Sim.OutputSpike)
 # dict = spiketrain_dict(filter(((t,args...),) -> is_primary_output(args...), events))
 # draw_spiketrain_figure(
 #     collect(values(dict)); names=map(x->"$x", collect(keys(dict))), xmin=0
 # )
 
-# includet("../visualization/circuit_visualization/component_interface.jl")
+includet("../visualization/circuit_visualization/component_interface.jl")
 
-# open("visualization/circuit_visualization/frontend/renders/joint.json", "w") do f
-#     JSON.print(f, viz_graph(circuit), 2)
-# end
-# println("Wrote component viz file.")
+open("visualization/circuit_visualization/frontend/renders/joint.json", "w") do f
+    JSON.print(f, viz_graph(circuit), 2)
+end
+println("Wrote component viz file.")
 
 #####
 # Analysis to check sampling probabilities & outputted probabilities look right
 #####
 
-RUN_LEN() = 6.0
+RUN_LEN() = 16.0
 events_vecs = [
     Sim.simulate_for_time_and_get_events(circuit, RUN_LEN();
-        initial_inputs=(:in_val => 4,)
+        initial_inputs=(:in_val => 2, :obs => 3)
     )
-    for _=1:100
+    for _=1:1000
 ]
 spiketrain_dicts = [
     spiketrain_dict(
@@ -95,22 +95,25 @@ spiketrain_dicts = [
     ) for event_vec in events_vecs
 ]
 
-samples = map(spiketrain_dicts) do dict
-    [if key isa Pair && key.first == :sample
-        key.second
-    elseif key != :prob
-        error("unexpected: $key")
-    end
-    for key in keys(dict)][1]
-end
+# samples = map(spiketrain_dicts) do dict
+#     [if key isa Pair && key.first == :sample
+#         key.second
+#     elseif key != :prob
+#         error("unexpected: $key")
+#     end
+#     for key in keys(dict)][1]
+# end
 
-rates = map(spiketrain_dicts) do dict
+get_rate(dict) =
     if haskey(dict, :prob)
-        length(filter(x->x > RUN_LEN()/2, dict[:prob])) / (RUN_LEN()/2)
+        times = dict[:prob]
+        times_in_second_half = filter(x -> x > RUN_LEN() / 2, times)
+        length(times_in_second_half) / (RUN_LEN() / 2)
     else
         0
     end
-end
+
+rates = map(get_rate, spiketrain_dicts)
 
 function count(samples)
     cnts = Dict()
@@ -129,13 +132,18 @@ end
 
 # println("samples: $samples")
 # println("rates: $(rates ./ outputs(unit)[:prob].reference_rate)")
-println("sample counts: $(count(samples))")
+# println("sample counts: $(count(samples))")
 # println("average rates: $(avg_rates(samples, rates))")
 avg_probs = Dict(
-    n => r / outputs(unit)[:prob].reference_rate
-    for (n, r) in avg_rates(samples, rates)
+    n => (r / outputs(unit)[:prob].reference_rate)
+    for (n, r) in avg_rates([1 for _ in rates], rates)
 )
 println("average probs: $avg_probs")
 
+avg_nprobs = Dict(
+    n => (r / outputs(unit)[:prob].reference_rate)
+    for (n, r) in avg_rates([1 for _ in rates], nrates)
+)
+println("average neuron probs: $avg_nprobs")
 
 # end
