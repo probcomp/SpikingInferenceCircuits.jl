@@ -25,5 +25,6 @@ Circuits.implement(s::SpikingToAssmts, ::Spiking) =
                 ))
                 for (assmt, jointidx) in pairs(LinearIndices(s.size))
             ),
+            s
         )
-                end
+        end

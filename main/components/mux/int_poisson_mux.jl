@@ -21,7 +21,8 @@ Circuits.implement(m::BitMux, ::Spiking) = CompositeComponent(
             CompOut(:inhibitor, :out) => CompIn(:outputter, 2),
             CompOut(:outputter, :out) => CompIn(:outputter, 2),
             CompOut(:outputter, :out) => Output(:out)
-        )
+        ),
+        m
     )
 
 ReLU(x) = max(x, 0.)

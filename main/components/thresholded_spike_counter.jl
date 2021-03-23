@@ -19,7 +19,7 @@ Circuits.implement(t::ThresholdedCounter, ::Spiking) =
     CompositeComponent(
         inputs(t), outputs(t),
         (neuron=(
-            let weight = log(THRESHOLDED_COUNTER_ON_RATE) - log(THRESHOLDED_COUNTER_ON_RATE)
+            let weight = log(THRESHOLDED_COUNTER_ON_RATE) - log(THRESHOLDED_COUNTER_OFF_RATE)
                 IntegratingPoisson(
                     [weight, -(weight * t.threshold)],
                     log(THRESHOLDED_COUNTER_OFF_RATE) - (weight * (t.threshold - 1)),
@@ -31,5 +31,6 @@ Circuits.implement(t::ThresholdedCounter, ::Spiking) =
             Input(:in) => CompIn(:neuron, 1),
             CompOut(:neuron, :out) => CompIn(:neuron, 2),
             CompOut(:neuron, :out) => Output(:out)
-        )
+        ),
+        t
     )

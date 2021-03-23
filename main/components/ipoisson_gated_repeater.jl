@@ -23,7 +23,8 @@ Circuits.implement(r::IPoissonGatedRepeater, ::Spiking) =
             CompOut(1, :out) => CompIn(1, 2),
             CompOut(1, :out) => Output(:out),
             Input(:off) => CompIn(1, 3)
-        )
+        ),
+        r
     )
 
 ReLU(x) = max(x, 0.)

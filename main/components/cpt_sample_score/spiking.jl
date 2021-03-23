@@ -20,6 +20,7 @@ Circuits.outputs(s::SpikingCPTSampleScore) =
 Circuits.implement(s::SpikingCPTSampleScore, ::Spiking) =
     CompositeComponent(
         implement(abstract(s), Spiking());
+        input=implement(inputs(s), Spiking()),
         output=outputs(s),
         subcomponent_map=(c -> (
             if c isa ConditionalSampleScore
@@ -27,5 +28,6 @@ Circuits.implement(s::SpikingCPTSampleScore, ::Spiking) =
             else
                 c
             end
-        ))
+        )),
+        abstract=s
     )

@@ -16,7 +16,7 @@ Circuits.inputs(c::CPTSampleScore) = NamedValues(
         FiniteDomainValue(n)
         for n in input_ncategories(c.cpt)
     ),
-    (c.sample ? () : (:obs => FiniteDomainValue(ysize()),))...
+    (c.sample ? () : (:obs => FiniteDomainValue(ncategories(cpt)),))...
 )
 Circuits.outputs(c::CPTSampleScore) =
     NamedValues(
@@ -54,5 +54,6 @@ Circuits.implement(c::CPTSampleScore, ::Target) =
             (CompOut(:sample_score, :prob) => Output(:prob),),
             (c.sample ? (CompOut(:sample_score, :sample) => Output(:sample),) : ()),
             (!c.sample ? (Input(:obs) => CompIn(:sample_score, :obs),) : ())
-        ))
+        )),
+        c
     )
