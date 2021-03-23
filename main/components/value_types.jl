@@ -5,7 +5,7 @@
 """
     FiniteDomainValue(n)
 
-An `AbstractValue` with a finite domain of size `n`.
+An `Value` with a finite domain of size `n`.
 """
 struct FiniteDomainValue <: GenericValue
     n::UInt
@@ -23,7 +23,7 @@ struct SpikingCategoricalValue <: GenericValue
 end
 SpikingCategoricalValue(f::FiniteDomainValue) = SpikingCategoricalValue(f.n)
 FiniteDomainValue(f::SpikingCategoricalValue) = FiniteDomainValue(f.n)
-Circuits.target(::Type{SpikingCategoricalValue}) = Spiking()
+Circuits.target(::SpikingCategoricalValue) = Spiking()
 Circuits.abstract(v::SpikingCategoricalValue) = FiniteDomainValue(v.n)
 # performance TODO: can we avoid explicitely constructing a tuple?
 Circuits.implement(v::SpikingCategoricalValue, ::Spiking) = CompositeValue(Tuple(SpikeWire() for _=1:v.n), v)

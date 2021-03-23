@@ -10,12 +10,14 @@ Unit for sampling from a conditional distribution `P(Y | X)`, or observing
 If `draw_sample` is true, this will sample a value; otherwise it will observe
 a value.
 
-`P` should be a matrix where `P[y, x]` is `P(y | x)`.
+`P` should be a matrix where `P[x, y]` is `P(y | x)`.
 """
+# TODO: change what `P` should be?  Perhaps to a `Vector` of `Categorical`s?
+# Or perhaps switch what the rows vs columns mean?
 struct ConditionalSampleScore <: GenericComponent
     P::Matrix{Float64}
     sample::Bool
-    function ConditionalSampleScore(P, s)
+    function ConditionalSampleScore(P::Matrix{Float64}, s::Bool)
         @assert all(isapprox(x, 1.0) for x in sum(P, dims=2)) "∃ y s.t. ∑_y{P[y | x]} ≂̸ 1.0"
         return new(P, s)
     end

@@ -10,5 +10,5 @@ given by converting Julia's `CartesianIndices → LinearIndices`.)
 struct ToAssmts{n} <: GenericComponent
     size::NTuple{n, Int}
 end
-Circuits.inputs(a::ToAssmts) = IndexedValue(FiniteDomainValue(n) for n in a.size)
+Circuits.inputs(a::ToAssmts) = IndexedValues(FiniteDomainValue(n) for n in a.size)
 Circuits.outputs(a::ToAssmts) = CompositeValue((out=FiniteDomainValue(prod(a.size)),))
