@@ -20,7 +20,7 @@ Circuits.inputs(c::CPTSampleScore) = NamedValues(
 )
 Circuits.outputs(c::CPTSampleScore) =
     NamedValues(
-        (c.sample ? (:sample => FiniteDomainValue(ncategories(c.cpt)),) : ())...,
+        (c.sample ? (:value => FiniteDomainValue(ncategories(c.cpt)),) : ())...,
         :prob => PositiveReal()
     )
 
@@ -35,7 +35,7 @@ assmt_cond_prob_matrix(cpt::CPT) =
 # default implementation by using a `ToAssmts` to create a "variable"
 # with a different value for each assignment of the parent variables,
 # and a `ConditionalSampleScore` on this assignment variable
-Circuits.implement(c::CPTSampleScore, ::Target) =
+generic_implementation(c::CPTSampleScore) =
     CompositeComponent(
         inputs(c), outputs(c),
         (
@@ -52,7 +52,7 @@ Circuits.implement(c::CPTSampleScore, ::Target) =
             ),
             (CompOut(:assmts, :out) => CompIn(:sample_score, :in_val),),
             (CompOut(:sample_score, :prob) => Output(:prob),),
-            (c.sample ? (CompOut(:sample_score, :sample) => Output(:sample),) : ()),
+            (c.sample ? (CompOut(:sample_score, :value) => Output(:value),) : ()),
             (!c.sample ? (Input(:obs) => CompIn(:sample_score, :obs),) : ())
         )),
         c

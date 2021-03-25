@@ -81,30 +81,32 @@ function make_initial_graph_modifications(graph) {
 
     // add constraints to ensure the neurons triangles
     graph.groups.filter(is_neuron).forEach(function(g) {
-        graph.constraints.push({ // top and bottom y separation
-            type: "separation",
-            axis: "y",
-            left: g.leaves[0],
-            right: g.leaves[1],
-            gap: PoissonH,
-            equality: true
-        })
-        graph.constraints.push({ // left and right x separation
-            type: "separation",
-            axis: "x",
-            left: g.leaves[0],
-            right: g.leaves[2],
-            gap: PoissonW,
-            equality: true
-        })
-        graph.constraints.push({ // y position of output
-            type: "separation",
-            axis: "y",
-            left: g.leaves[0],
-            right: g.leaves[2],
-            gap: PoissonH / 2,
-            equality: true
-        })
+        if (g.leaves.length > 2) {
+            graph.constraints.push({ // top and bottom y separation
+                type: "separation",
+                axis: "y",
+                left: g.leaves[0],
+                right: g.leaves[1],
+                gap: PoissonH,
+                equality: true
+            })
+            graph.constraints.push({ // left and right x separation
+                type: "separation",
+                axis: "x",
+                left: g.leaves[0],
+                right: g.leaves[2],
+                gap: PoissonW,
+                equality: true
+            })
+            graph.constraints.push({ // y position of output
+                type: "separation",
+                axis: "y",
+                left: g.leaves[0],
+                right: g.leaves[2],
+                gap: PoissonH / 2,
+                equality: true
+            })
+        }
     })
 }
 

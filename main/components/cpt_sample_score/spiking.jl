@@ -19,7 +19,7 @@ Circuits.outputs(s::SpikingCPTSampleScore) =
 
 Circuits.implement(s::SpikingCPTSampleScore, ::Spiking) =
     CompositeComponent(
-        implement(abstract(s), Spiking());
+        generic_implementation(abstract(s)),
         input=implement(inputs(s), Spiking()),
         output=outputs(s),
         subcomponent_map=(c -> (

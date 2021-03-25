@@ -57,7 +57,7 @@ Circuits.implement(c::SpikingConditionalSampleScore, ::Spiking) =
 sampler_outval_connections(outval) = (
     (CompOut(:spikers => outval, :out) => CompIn(:cvb, outval)),
     (CompOut(:cvb, outval) => CompIn(:mux, :sel => outval)),
-    (CompOut(:cvb, outval) => Output(:sample => outval))
+    (CompOut(:cvb, outval) => Output(:value => outval))
 )
 obs_outval_connections(outval) = (
     (Input(:obs => outval) => CompIn(:mux, :sel => outval)),

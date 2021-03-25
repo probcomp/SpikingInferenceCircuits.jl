@@ -6,6 +6,7 @@ end
 RateMultiplier(memory::Float64, inputs::Tuple{Vararg{SpikeRateReal}}) =
     RateMultiplier(memory, prod(r.reference_rate for r in inputs), inputs)
 
+Circuits.abstract(r::RateMultiplier) = RealMultiplier(length(r.inputs))
 Circuits.target(::RateMultiplier) = Spiking()
 Circuits.inputs(m::RateMultiplier) = CompositeValue(m.inputs)
 

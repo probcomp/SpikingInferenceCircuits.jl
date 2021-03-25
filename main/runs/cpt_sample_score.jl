@@ -137,7 +137,7 @@ spiketrain_dicts = [
 ]
 
 samples = map(spiketrain_dicts) do dict
-    [if key isa Pair && key.first == :sample
+    [if key isa Pair && key.first == :value
         key.second
     elseif key != :prob
         error("unexpected: $key")

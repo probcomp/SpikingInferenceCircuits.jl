@@ -276,15 +276,17 @@ io_constraints(comp, startidx) =
         out_indices = out_inds(comp, in_indices, startidx)
             collect(Iterators.flatten((
                 (
-                    x_align_constraint(in_indices),
-                    x_align_constraint(out_indices),
-                    x_offset_constraint( # outputs to right of inputs
-                        first(in_indices),
-                        first(out_indices)
-                    )
+                    (isempty(in_indices) ? () : (x_align_constraint(in_indices),))...,
+                    (isempty(out_indices) ? () : (x_align_constraint(out_indices),))...,
+                    ((isempty(in_indices) || isempty(out_indices)) ? () : (
+                        x_offset_constraint( # outputs to right of inputs
+                            first(in_indices),
+                            first(out_indices)
+                        ),
+                    ))...
                 ),
-                y_order_constraints(in_indices),
-                y_order_constraints(out_indices)
+                isempty(in_indices) ? () : y_order_constraints(in_indices),
+                isempty(out_indices) ? () : y_order_constraints(out_indices)
             )))
     end
 
@@ -295,22 +297,19 @@ Constraints to ensure subcomponents are in between the inputs and outputs of `co
 
 In a format ready to be JSON-ified and sent to the frontend.
 """
-io_on_outside_constraints(comp, name_to_nodeidx, nodes, start_node_idx) = collect(
-        Iterators.flatten((
-            (
-                isempty(pairs(inputs(comp))) ? () : x_offset_constraint( # inputs left of subcomponent inputs
-                name_to_nodeidx[Input(first(keys_deep(inputs(comp))))],
-                name_to_nodeidx[CompIn(subname, first(keys_deep(inputs(subcomp))))]
-                ),
-                isempty(pairs(outputs(comp))) ? () : x_offset_constraint( # outputs right of subcomp outputs
+io_on_outside_constraints(comp, name_to_nodeidx, nodes, start_node_idx) =
+    collect(Iterators.flatten(
+        (
+            (isempty(pairs(inputs(comp))) ? () : (x_offset_constraint( # inputs left of subcomponent inputs
+                    name_to_nodeidx[Input(first(keys_deep(inputs(comp))))],
+                    name_to_nodeidx[CompIn(subname, first(keys_deep(inputs(subcomp))))]
+                ),))...,
+             (isempty(pairs(outputs(comp))) ? () : (x_offset_constraint( # outputs right of subcomp outputs
                     name_to_nodeidx[CompOut(subname, first(keys_deep(outputs(subcomp))))],
                     name_to_nodeidx[Output(first(keys_deep(outputs(comp))))]
-                )
-            )
-            for (subname, subcomp) in pairs(comp.subcomponents)
-        ))
-    )
-
+                ),))...
+        ) for (subname, subcomp) in pairs(comp.subcomponents)
+    ))
 
 """
     x_align_constraint(js_indices)

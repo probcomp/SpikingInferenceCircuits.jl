@@ -1,7 +1,8 @@
 using Distributions: Categorical, ncategories
 import Distributions
+import Gen
 
-struct ConditionalProbabilityTable{num_in_vars}
+struct ConditionalProbabilityTable{num_in_vars} <: Gen.Distribution{Int}
     dists::Array{<:Categorical, num_in_vars}
     num_output_categories::Int
 
@@ -12,6 +13,7 @@ struct ConditionalProbabilityTable{num_in_vars}
         return new{niv}(dists, num_cats)
     end
 end
+ConditionalProbabilityTable(dists::Array{<:Vector}) = ConditionalProbabilityTable(map(Categorical, dists))
 const CPT = ConditionalProbabilityTable
 
 Base.getindex(c::CPT, vals...) = c.dists[vals...]
@@ -20,3 +22,12 @@ input_ncategories(c::CPT) = size(c.dists)
 Distributions.ncategories(c::CPT) = c.num_output_categories
 
 assmts(c::CPT) = CartesianIndices(input_ncategories(c))
+
+Gen.logpdf(cpt::CPT, val, args...) = log(cpt[args...][val])
+Gen.random(cpt::CPT, args...) = rand(cpt[args...])
+Gen.is_discrete(::CPT) = true
+(c::CPT)(args...) = random(c, args...)
+Gen.has_output_grad(::CPT) = false
+Gen.has_argument_grads(::CPT) = (true,)
+
+get_cpt(cpt::CPT) = cpt

@@ -35,6 +35,6 @@ Circuits.inputs(c::ConditionalSampleScore) =
 
 Circuits.outputs(c::ConditionalSampleScore) =
     NamedValues(
-        (c.sample ? (:sample => FiniteDomainValue(out_domain_size(c)),) : ())...,
+        (c.sample ? (:value => FiniteDomainValue(out_domain_size(c)),) : ())...,
         :prob => PositiveReal()
     )
