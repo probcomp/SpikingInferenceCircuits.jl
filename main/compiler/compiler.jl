@@ -92,6 +92,9 @@ input_var_domain_sizes(g::GraphPropose) = g.input_var_domain_sizes
 output_var_domain_size(g::GraphPropose) =
     output_var_domain_size(g.idx_to_node[g.output_node_idx].propose)
 
+num_proposers(p::GraphPropose) = length(p.idx_to_node) - length(input_var_domain_sizes(p))
+proposer_idx(p::GraphPropose, idx) = idx - length(input_var_domain_sizes(p))
+
 # Question: is it better to have one big multiplier which multiplies everything,
 # or lots of pairwise multipliers?
 # This will depend on the implementation; for this abstract version, perhaps we want to leave this
@@ -100,35 +103,38 @@ Circuits.implement(p::GraphPropose, ::Target) =
     CompositeComponent(
         inputs(p), outputs(p),
         (
-            proposers=IndexedComponentGroup((v.propose for v in p.idx_to_node)),
+            proposers=IndexedComponentGroup((v.propose for v in p.idx_to_node if v isa ProposeGraphNode)),
             multipliers=IndexedComponentGroup(
-                PositiveRealMultiplier(2) for _=1:(length(p.idx_to_node) - 1)
+                PositiveRealMultiplier(2) for _=1:(num_proposers(p) - 1)
             )
         ),
         Iterators.flatten((
             Iterators.flatten((
-                parent_value_edges(p, idx, node)
+                parent_value_edges(p, proposer_idx(p, idx), node)
                 for (idx, node) in enumerate(p.idx_to_node)
             )),
             Iterators.flatten((
                 multiplier_edges(i)
-                for i=1:(length(p.idx_to_node) - 1)
+                for i=1:(num_proposers(p) - 1)
             )),
             (
-                CompOut(:multipliers => length(p.idx_to_node) - 1, :out) => Output(:prob),
-                CompOut(:proposers => p.output_node_idx, :value) => Output(:value)
+                CompOut(:multipliers => num_proposers(p) - 1, :out) => Output(:prob),
+                CompOut(:proposers => proposer_idx(p, p.output_node_idx), :value) => Output(:value)
             )
         )),
         p
     )
-parent_value_edges(p::GraphPropose, idx, node::ProposeGraphNode) = (
+
+# `idx` gives the index of the `:proposer` circuit
+parent_value_edges(p::GraphPropose, proposeridx, node::ProposeGraphNode) = (
         let parent = p.idx_to_node[parentidx]
-            let input_nodename = parent isa Input ? parent : CompOut(:proposers => parentidx, :value)
-                input_nodename => CompIn(:proposers => idx, parentidx)
+            let input_nodename = parent isa Input ? parent : CompOut(:proposers => proposer_idx(p, parentidx), :value)
+                input_nodename => CompIn(:proposers => proposeridx, compinidx)
             end
         end
-        for (parentidx, domain_size) in zip(node.parents, input_var_domain_sizes(node.propose))
+        for (compinidx, (parentidx, domain_size)) in enumerate(zip(node.parents, input_var_domain_sizes(node.propose)))
     )
+parent_value_edges(p::GraphPropose, _, node::Input) = ()
 
 multiplier_edges(i) =
     if i == 1
@@ -139,7 +145,7 @@ multiplier_edges(i) =
     else
         (
             CompOut(:multipliers => i - 1, :out) => CompIn(:multipliers => i, 1),
-            CompOut(:proposers => i + 1, :out) => CompIn(:multipliers => i, 2)
+            CompOut(:proposers => i + 1, :prob) => CompIn(:multipliers => i, 2)
         )
     end
 
@@ -165,7 +171,7 @@ function propose_circuit(ir::Gen.StaticIR, arg_domain_sizes::Tuple{Vararg{Int}})
 end
 function handle_node!(nodes, idx_to_domain_size, idx, ::Gen.ArgumentNode, arg_domain_sizes, name_to_idx)
     push!(nodes, Input(idx))
-    idx_to_domain_size[idx] = arg_domain_sizes[idx]
+    push!(idx_to_domain_size, arg_domain_sizes[idx])
 end
 function handle_node!(nodes, idx_to_domain_size, idx, node::Gen.StaticIRNode, _, name_to_idx)
     parent_indices = [name_to_idx[n.name] for n in node.inputs]

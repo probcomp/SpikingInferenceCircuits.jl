@@ -20,13 +20,13 @@ includet("../components/real_multiplication/abstract.jl")
 includet("../components/real_multiplication/rate_multiplier.jl")
 includet("../compiler/compiler.jl")
 
-@gen (static) function test()
-    x ~ CPT([[0.5, 0.5]])()
+@gen (static) function test(in)
+    x ~ CPT([[0.5, 0.5]])(in)
     y ~ CPT([[0.9, 0.1], [0.1, 0.9]])(x)
     return y
 end
 
-circuit = propose_circuit(test, ())
+circuit = propose_circuit(test, (1,))
 
 ### implement the circuit ###
 
@@ -54,34 +54,34 @@ println("Component implemented.")
 includet("../visualization/circuit_visualization/component_interface.jl")
 
 open("visualization/circuit_visualization/frontend/renders/gen_fn.json", "w") do f
-    JSON.print(f, viz_graph(implemented2), 2)
+    JSON.print(f, viz_graph(implemented1), 2)
 end
 println("Wrote component viz file.")
 
 # ### simulate ###
 
-# events = SpikingSimulator.simulate_for_time_and_get_events(implemented2, 20.0)
+events = SpikingSimulator.simulate_for_time_and_get_events(implemented2, 20.0; initial_inputs=(1 => 1,))
 
-# println("Simulation complete.")
+println("Simulation complete.")
 
 # ### spiketrain ###
-# function spiketrain_dict(event_vector)
-#     spiketrains = Dict()
-#     for (time, _, outspike) in event_vector
-#         if haskey(spiketrains, outspike.name)
-#             push!(spiketrains[outspike.name], time)
-#         else
-#             spiketrains[outspike.name] = [time]
-#         end
-#     end
-#     return spiketrains
-# end
+function spiketrain_dict(event_vector)
+    spiketrains = Dict()
+    for (time, _, outspike) in event_vector
+        if haskey(spiketrains, outspike.name)
+            push!(spiketrains[outspike.name], time)
+        else
+            spiketrains[outspike.name] = [time]
+        end
+    end
+    return spiketrains
+end
 
-# includet("../visualization/spiketrain.jl")
-# using .SpiketrainViz
+includet("../visualization/spiketrain.jl")
+using .SpiketrainViz
 
-# is_primary_output(compname, event) = (isnothing(compname) && event isa SpikingSimulator.OutputSpike)
-# dict = spiketrain_dict(filter(((t,args...),) -> is_primary_output(args...), events))
-# draw_spiketrain_figure(
-#     collect(values(dict)); names=map(x->"$x", collect(keys(dict))), xmin=0
-# )
+is_primary_output(compname, event) = (isnothing(compname) && event isa SpikingSimulator.OutputSpike)
+dict = spiketrain_dict(filter(((t,args...),) -> is_primary_output(args...), events))
+draw_spiketrain_figure(
+    collect(values(dict)); names=map(x->"$x", collect(keys(dict))), xmin=0
+)
