@@ -1,44 +1,84 @@
-#=
-Compiler from a subset of Gen generative functions to circuits
-which (roughly) implement GFI functions.
-
-First, we will just implement `propose`.  We will implement this for:
-- Sampling from finite-domain discrete distributions
-- Deterministic functions with finite domain
-- Static generative functions where all variables are discrete with finite domain
-
-This currently works when all of the following criteria are met:
-1. All distributions in a Gen model are `CPT`s.
-2. All nodes' inputs are integers in a range 1...n, where `n` is the domain size.
-=#
-
 using Gen
 using Circuits
 
-abstract type Propose <: GenericComponent end
-input_var_domain_sizes(::Propose)::Tuple{Vararg{Int}} = error("Not implemented.")
-output_var_domain_size(::Propose)::Int = error("Not implemented.")
-Circuits.inputs(p::Propose) = IndexedValues(FiniteDomainValue(n) for n in input_var_domain_sizes(p))
-Circuits.outputs(p::Propose) = NamedValues(:value => FiniteDomainValue(output_var_domain_size(p)), :prob => PositiveReal())
+############
+# Abstract #
+############
 
+"""
+    abstract type Propose <: GenericComponent end
+
+Component which implements the `Propose` operation
+to return a trace and the probability of sampling that trace.
+Outputs a return `:value`, the `:trace`, and the `:prob`.
+"""
+abstract type Propose <: GenericComponent end
+
+"""
+    input_domain_sizes(::Propose)
+
+A `Tuple` or `NamedTuple` giving the sizes of the domains
+for each input value to this `Propose`.
+"""
+input_domain_sizes(::Propose) = error("Not implemented.")
+"""
+    output_domain_size(::Propose)::Int
+
+The size of the output value of this `Propose`.
+"""
+output_domain_size(::Propose)::Int = error("Not implemented.")
+
+"""
+    trace_value(::Propose)
+
+The `Value` which is the `:trace` output for this `Propose`.
+"""
+trace_value(::Propose) = error("Not implemented.")
+
+"""
+    has_trace(::Propose)
+
+Whether the `Propose` outputs a trace (or just a value).
+(E.g. deterministic `Propose`s don't output a trace.)
+"""
+has_trace(::Propose) = error("Not implemented.")
+
+Circuits.inputs(p::Propose) = CompositeValue(
+        map(FiniteDomainValue, input_domain_sizes(p))
+    )
+Circuits.outputs(p::Propose) = NamedValues(
+        :value => FiniteDomainValue(output_domain_size(p)),
+        (has_trace(p) ? (:trace => trace_value(p),) : ())...,
+        :prob => PositiveReal()
+    )
+
+#################
+# Deterministic #
+#################
+
+"""
+    DeterministicPropose <: Propose
+    DeterministicPropose(input_domain_sizes::Tuple, fn::Function)
+
+`Propose` for a deterministic function `fn` accepting `length(input_domain_sizes)`
+arguments, from the sets
+`{1, ..., input_domain_sizes[1]}`, ..., `{1, ..., input_domain_sizes[end]}`.
+The output value is expected to be an integer from a set `{1, ..., out_domain_size}`.
+"""
 struct DeterministicPropose <: Propose
-    input_var_domain_sizes::Tuple
-    output_var_domain_size::Int
+    input_domain_sizes::Tuple
+    output_domain_size::Int
     fn::Function
 end
-function DeterministicPropose(input_var_domain_sizes::Tuple, fn::Function)
-    possible_outputs = Set()
-    for vals in Iterators.product(input_var_domain_sizes)
-        push!(possible_outputs, fn(vals...))
-    end
-    DeterministicPropose(input_var_domain_sizes, length(possible_outputs), fn)
+function DeterministicPropose(input_domain_sizes::Tuple, fn::Function)
+    output_domain_size = length(unique(fn(vals...) for vals in Iterators.product(input_var_domain_sizes)))
+    DeterministicPropose(input_domain_sizes, output_domain_size, fn)
 end
+input_domain_sizes(p::DeterministicPropose) = p.input_domain_sizes
+output_domain_size(p::DeterministicPropose) = p.output_domain_size
+has_trace(::DeterministicPropose) = false
 
-input_var_domain_sizes(d::DeterministicPropose) = d.input_var_domain_sizes
-output_var_domain_size(d::DeterministicPropose) = d.output_var_domain_size
-Circuits.implement(d::DeterministicPropose, ::Target) =
-    propose_wrapper(CPTSampleScore(deterministic_cpt(d), true), d)
-
+# CPT with deterministic outputs
 function deterministic_cpt(d::DeterministicPropose)
     output_vals = Set(fn(vals...) for vals in Iterators.product(input_var_domain_sizes(d)))
     n_o = length(output_vals)
@@ -51,145 +91,230 @@ function onehot(n, i)
     v[i] = 1
     return v
 end
-
-struct DistributionPropose <: Propose
-    cpt::CPT
-end
-input_var_domain_sizes(d::DistributionPropose) = input_ncategories(d.cpt)
-output_var_domain_size(d::DistributionPropose) = ncategories(d.cpt)
-
-Circuits.implement(d::DistributionPropose, ::Target) = propose_wrapper(CPTSampleScore(d.cpt, true), d)
-
-propose_wrapper(cpt_ss, d) = CompositeComponent(
-        inputs(d), outputs(cpt_ss),
-        (cpt_sample_score=cpt_ss,),
-        Iterators.flatten((
-            (Input(i) => CompIn(:cpt_sample_score, :in_vals => i) for i=1:length(inputs(d))),
-            (
-                CompOut(:cpt_sample_score, :value) => Output(:value),
-                CompOut(:cpt_sample_score, :prob) => Output(:prob)
-            )
-        )),
-        d
+Circuits.implement(p::DeterministicPropose, ::Target) =
+    propose_from_cpt_sample_score(
+        CPTSampleScore(deterministic_cpt(p), true),
+        p, false
     )
 
-### Propose from a graph of other propose circuits! ###
+"""
+    propose_from_cpt_sample_score(cpt_ss::CPTSampleScore, p::Propose, val_to_trace::Bool)
 
-struct ProposeGraphNode
-    propose::Propose
-    parents::Vector{Int}
-end
-
-# For now we assume only one output; later we should support having multiple outputs.
-struct GraphPropose <: Propose
-    input_var_domain_sizes::Tuple
-    output_node_idx::Int
-    idx_to_node::Vector{Union{ProposeGraphNode, Input}}
-end
-input_var_domain_sizes(g::GraphPropose) = g.input_var_domain_sizes
-
-# TODO: what if we just route an input through to the output?
-output_var_domain_size(g::GraphPropose) =
-    output_var_domain_size(g.idx_to_node[g.output_node_idx].propose)
-
-num_proposers(p::GraphPropose) = length(p.idx_to_node) - length(input_var_domain_sizes(p))
-proposer_idx(p::GraphPropose, idx) = idx - length(input_var_domain_sizes(p))
-
-# Question: is it better to have one big multiplier which multiplies everything,
-# or lots of pairwise multipliers?
-# This will depend on the implementation; for this abstract version, perhaps we want to leave this
-# as an option?
-Circuits.implement(p::GraphPropose, ::Target) =
-    CompositeComponent(
+A `CompositeComponent` which implements `p` using the given `cpt_ss`.  If `val_to_trace` is true,
+the value output from `cpt_ss` is both output as `:value` and `:trace`; if this is false, it is only
+output as `:value`.
+"""
+propose_from_cpt_sample_score(cpt_ss, p, val_to_trace) = CompositeComponent(
         inputs(p), outputs(p),
-        (
-            proposers=IndexedComponentGroup((v.propose for v in p.idx_to_node if v isa ProposeGraphNode)),
-            multipliers=IndexedComponentGroup(
-                PositiveRealMultiplier(2) for _=1:(num_proposers(p) - 1)
-            )
-        ),
+        (cpt_sample_score=cpt_ss,),
         Iterators.flatten((
-            Iterators.flatten((
-                parent_value_edges(p, proposer_idx(p, idx), node)
-                for (idx, node) in enumerate(p.idx_to_node)
-            )),
-            Iterators.flatten((
-                multiplier_edges(i)
-                for i=1:(num_proposers(p) - 1)
-            )),
+            (Input(i) => CompIn(:cpt_sample_score, :in_vals => i) for i=1:length(inputs(p))),
             (
-                CompOut(:multipliers => num_proposers(p) - 1, :out) => Output(:prob),
-                CompOut(:proposers => proposer_idx(p, p.output_node_idx), :value) => Output(:value)
+                CompOut(:cpt_sample_score, :value) => Output(:value),
+                CompOut(:cpt_sample_score, :prob) => Output(:prob),
+                (val_to_trace ? (CompOut(:cpt_sample_score, :value) => Output(:trace),) : ())...
             )
         )),
         p
     )
 
-# `idx` gives the index of the `:proposer` circuit
-parent_value_edges(p::GraphPropose, proposeridx, node::ProposeGraphNode) = (
-        let parent = p.idx_to_node[parentidx]
-            let input_nodename = parent isa Input ? parent : CompOut(:proposers => proposer_idx(p, parentidx), :value)
-                input_nodename => CompIn(:proposers => proposeridx, compinidx)
-            end
-        end
-        for (compinidx, (parentidx, domain_size)) in enumerate(zip(node.parents, input_var_domain_sizes(node.propose)))
+################
+# Distribution #
+################
+
+struct DistributionPropose <: Propose
+    cpt::CPT
+end
+input_domain_sizes(d::DistributionPropose) = input_ncategories(d.cpt)
+output_domain_size(d::DistributionPropose) = ncategories(d.cpt)
+has_trace(d::DistributionPropose) = true
+trace_value(d::DistributionPropose) = FiniteDomainValue(output_domain_size(d))
+Circuits.implement(d::DistributionPropose, ::Target) =
+    propose_from_cpt_sample_score(CPTSampleScore(d.cpt, true), d, true)
+
+
+#####################
+# Graph of Proposes #
+#####################
+
+"""
+    abstract type ProposeGraphNode end
+
+A node in a graph of `Propose` operations.
+An `InputNode` denotes an input value.
+A `ProposeNode` is an internal `Propose` operation.
+"""
+abstract type ProposeGraphNode end
+struct ProposeNode <: ProposeGraphNode
+    propose::Propose
+    parents::Vector{Symbol}
+end
+struct InputNode <: ProposeGraphNode
+    name::Symbol
+end
+output_domain_size(p::ProposeNode, _) = output_domain_size(p.propose)
+output_domain_size(i::InputNode, p) = input_domain_size(p)[i.name]
+
+"""
+    GraphPropose <: Propose
+
+A `Propose` operation implemented via other "sub-Propose" operations.
+(Eg. `Propose` for a static generative function which calls distributions
+or other static generative functions.)
+
+`nodes` should be a dictionary from node `name` to a `ProposeGraphNode`.
+`input_domain_sizes` should be a properly-ordered NamedTuple mapping the names of the inputs
+to their domain sizes.
+`output_node_name` should be the name of the node whose value should be output.
+(Currently, there must be an output value.)
+
+`addr_to_ame` is a dictionary which specifies which nodes contribute to the `:trace` and `:prob` output.
+For each sub-node with name `name whose value should be in the trace at address `addr`,
+a mapping `addr => name` should be in the dictionary,
+specifying that the trace for this subnode should appear at `:trace => :addr =>` in the output.
+This also specifies that the probability of this node should be factored into the output `:prob`.
+(Untraced values do not affect the `:prob`.)
+"""
+struct GraphPropose <: Propose
+    input_domain_sizes::NamedTuple
+    output_node_name::Symbol
+    nodes::Dict{Symbol, ProposeGraphNode}
+    addr_to_name::Dict{Symbol, Symbol}
+end
+input_domain_sizes(p::GraphPropose) = p.input_domain_sizes
+output_domain_size(p::GraphPropose) = output_domain_size(p.nodes[p.output_node_name], p)
+has_trace(p::GraphPropose) = true
+trace_value(p::GraphPropose) = NamedValues((
+        addr => trace_value(p.nodes[name].propose)
+        for (addr, name) in p.addr_to_name
+    )...)
+
+num_proposers(p::GraphPropose) = length(p.addr_to_name)
+
+### Implement ###
+Circuits.implement(p::GraphPropose, ::Target) =
+    CompositeComponent(
+        inputs(p), outputs(p),
+        (
+            proposers=proposers_group(p),
+            multipliers=multipliers_group(p)
+        ),
+        Iterators.flatten((
+            arg_value_edges(p),
+            multiplier_edges(p),
+            io_edges(p)
+        )),
+        p
     )
-parent_value_edges(p::GraphPropose, _, node::Input) = ()
 
-multiplier_edges(i) =
-    if i == 1
-        (
-            CompOut(:proposers => 1, :prob) => CompIn(:multipliers => 1, 1),
-            CompOut(:proposers => 2, :prob) => CompIn(:multipliers => 1, 2)
+proposers_group(p::GraphPropose) = NamedComponentGroup(
+        name => node.propose for (name, node) in p.nodes if node isa ProposeNode
+    )
+multipliers_group(p::GraphPropose) = IndexedComponentGroup(
+        PositiveRealMultiplier(2) for _=1:(num_proposers(p) - 1)
+    )
+
+# edges from argument values --> proposer input
+arg_value_edges(p::GraphPropose) = Iterators.flatten(
+        arg_value_edges(p, name, node) for (name, node) in p.nodes
+    )
+arg_value_edges(p::GraphPropose, name, node::ProposeNode) = (
+        arg_value_edge(p.nodes[parentname], parentname, comp_in_idx, name)
+        for (comp_in_idx, (parentname, domain_size)) in enumerate(
+            zip(node.parents, input_domain_sizes(node.propose))
         )
-    else
-        (
+    )
+arg_value_edges(::GraphPropose, _, ::InputNode) = ()
+arg_value_edge(parentnode::InputNode, _, comp_in_idx, proposer_name) =
+    Input(parentnode.name) => CompIn(:proposers => proposer_name, comp_in_idx)
+arg_value_edge(::ProposeNode, parentname, comp_in_idx, proposer_name) =
+    CompOut(:proposers => parentname, :value) => CompIn(:proposers => proposer_name, comp_in_idx)
+
+# edges to perform pairwise multiplication of all the tracked probs
+function multiplier_edges(p::GraphPropose)
+    firstname, rest = Iterators.peel(values(p.addr_to_name))
+    secondname, rest = Iterators.peel(rest)
+    edges = Pair{<:CompOut, <:CompIn}[
+        CompOut(:proposers => firstname, :prob) => CompIn(:multipliers => 1, 1),
+        CompOut(:proposers => secondname, :prob) => CompIn(:multipliers => 1, 2)
+    ]
+
+    for (i, name) in zip(2:(num_proposers(p) - 1), rest)
+        append!(edges, [
             CompOut(:multipliers => i - 1, :out) => CompIn(:multipliers => i, 1),
-            CompOut(:proposers => i + 1, :prob) => CompIn(:multipliers => i, 2)
-        )
+            CompOut(:proposers => name, :prob) => CompIn(:multipliers => i, 2)
+        ])
     end
+    return edges
+end
 
-####
-# From Gen
-####
-function propose_circuit(ir::Gen.StaticIR, arg_domain_sizes::Tuple{Vararg{Int}})
+# input/output edges
+io_edges(p::GraphPropose) = Iterators.flatten((
+        (
+            CompOut(:multipliers => num_proposers(p) - 1, :out) => Output(:prob),
+            CompOut(:proposers => p.output_node_name, :value) => Output(:value)
+        ),
+        trace_output_edges(p)
+    ))
+trace_output_edges(p::GraphPropose) = (
+        CompOut(:proposers => name, :trace) => Output(:trace => addr)
+        for (addr, name) in p.addr_to_name    
+    )
+
+############################################
+# Compilation Gen Static → Propose Circuit #
+############################################
+
+function propose_circuit(ir::Gen.StaticIR, arg_domain_sizes::NamedTuple)
     @assert isempty(ir.trainable_param_nodes)
     @assert length(arg_domain_sizes) == length(ir.arg_nodes)
 
-    nodes = []
-    idx_to_domain_size = []
-    name_to_idx = Dict(node.name => i for (i, node) in enumerate(ir.nodes))
-    for (i, node) in enumerate(ir.nodes)
-        handle_node!(nodes, idx_to_domain_size, i, node, arg_domain_sizes, name_to_idx)
+    nodes = Dict{Symbol, ProposeGraphNode}()
+    addr_to_name = Dict{Symbol, Symbol}()
+    domain_sizes = Dict{Symbol, Int}()
+    for node in ir.nodes
+        handle_node!(nodes, node, domain_sizes, addr_to_name, arg_domain_sizes)
     end
 
     GraphPropose(
         arg_domain_sizes,
-        name_to_idx[ir.return_node.name],
-        nodes
-    ) 
-end
-function handle_node!(nodes, idx_to_domain_size, idx, ::Gen.ArgumentNode, arg_domain_sizes, name_to_idx)
-    push!(nodes, Input(idx))
-    push!(idx_to_domain_size, arg_domain_sizes[idx])
-end
-function handle_node!(nodes, idx_to_domain_size, idx, node::Gen.StaticIRNode, _, name_to_idx)
-    parent_indices = [name_to_idx[n.name] for n in node.inputs]
-    parent_sizes = Tuple(idx_to_domain_size[i] for i in parent_indices)
-    proposer = propose_circuit(node, parent_sizes)
-    push!(nodes, ProposeGraphNode(proposer, parent_indices))
-    push!(idx_to_domain_size, output_var_domain_size(proposer))
+        ir.return_node.name,
+        nodes,
+        addr_to_name
+    )
 end
 
-propose_circuit(g::Gen.StaticIRGenerativeFunction, arg_domain_sizes) =
-    propose_circuit(Gen.get_ir(typeof(g)), arg_domain_sizes)
+function handle_node!(nodes, node::Gen.ArgumentNode, domain_sizes, _, arg_domain_sizes)
+    nodes[node.name] = InputNode(node.name)
+    domain_sizes[node.name] = arg_domain_sizes[node.name]
+end
+function handle_node!(nodes, node::Gen.StaticIRNode, domain_sizes, addr_to_name, _)
+    parent_names = [p.name for p in node.inputs]
+    proposer = propose_circuit(node, parent_sizes(node, parent_names, domain_sizes))
+    nodes[node.name] = ProposeNode(proposer, parent_names)
+    domain_sizes[node.name] = output_domain_size(proposer)
+    if has_trace(proposer)
+        addr_to_name[node.addr] = node.name
+    end
+end
+
+# RandomChoiceNode and JuliaNode have indexed parents, while
+# GenerativeFunctionCallNodes have named parents
+parent_sizes(::Union{Gen.RandomChoiceNode, Gen.JuliaNode}, parent_names, domain_sizes) =
+    Tuple(domain_sizes[name] for name in parent_names)
+parent_sizes(::Gen.GenerativeFunctionCallNode, parent_names, domain_sizes) =
+    (;(name => domain_sizes[name] for name in parent_names)...)
+
+# `propose_circuit` for `StaticIRNode`s
 propose_circuit(gn::Gen.GenerativeFunctionCallNode, ads) =
     propose_circuit(gn.generative_function, ads)
+propose_circuit(rcn::Gen.RandomChoiceNode, ads) = propose_circuit(rcn.dist, ads)
+propose_circuit(jn::Gen.JuliaNode, ads) = propose_circuit(jn.fn, ads)
 
+# `propose_circuit` for user-facing types
+propose_circuit(g::Gen.StaticIRGenerativeFunction, arg_domain_sizes) =
+    propose_circuit(Gen.get_ir(typeof(g)), arg_domain_sizes)
 propose_circuit(g::Gen.Distribution, _) =
     DistributionPropose(get_cpt(g))
-propose_circuit(rcn::Gen.RandomChoiceNode, ads) = propose_circuit(rcn.dist, ads)
-
 propose_circuit(f::Function, arg_domain_sizes) =
     DeterministicPropose(arg_domain_sizes, f)
-propose_circuit(jn::Gen.JuliaNode, ads) = propose_circuit(jn.fn, ads)
