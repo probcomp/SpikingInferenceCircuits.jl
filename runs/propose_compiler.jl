@@ -23,7 +23,7 @@ circuit = gen_fn_circuit(test, (input=2,), Propose())
 
 REF_RATE() = 1.0
 OFF_RATE() = 0.0001
-ON_RATE() = 2.0
+ON_RATE() = 2.0 * REF_RATE()
 
 Circuits.implement(::SIC.PositiveReal, ::Spiking) =
     SIC.SpikeRateReal(REF_RATE())

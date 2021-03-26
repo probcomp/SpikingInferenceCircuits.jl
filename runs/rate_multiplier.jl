@@ -8,9 +8,9 @@ using Distributions: Categorical
 includet("../src/value_types.jl")
 includet("../src/components/real_multiplication/rate_multiplier.jl")
 
-mult = RateMultiplier(4.0, 24.0, (SpikeRateReal(2.0), SpikeRateReal(3.0)))
-poisson2 = OnOffPoissonNeuron(2.0)
-poisson3 = OnOffPoissonNeuron(9.0)
+mult = RateMultiplier(4.0, 4.0, (SpikeRateReal(4.0), SpikeRateReal(4.0)))
+poisson2 = OnOffPoissonNeuron(8.0)
+poisson3 = OnOffPoissonNeuron(8.0)
 
 circuit = CompositeComponent(
     CompositeValue((on=SpikeWire(),)), CompositeValue((out=SpikeWire(),)),

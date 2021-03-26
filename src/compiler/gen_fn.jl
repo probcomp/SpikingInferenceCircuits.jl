@@ -9,12 +9,25 @@ so that the only leaf nodes are those at addresses selected in `sel`.
 """
 get_selected(val::FiniteDomainValue, ::AllSelection) = val
 get_selected(::FiniteDomainValue, ::EmptySelection) = error()
+function get_selected(val::FiniteDomainValue, s::ComplementSelection)
+    @assert s.complement == EmptySelection() "complement was $(s.complement)"
+    val
+end
 get_selected(val::CompositeValue, sel::Selection) = NamedValues((
-        addr => obs_input(subval, sel[addr])
+        addr => get_selected(subval, sel[addr])
         for (addr, subval) in pairs(val)
-        if !isempty(sel[addr])
+        if has_selected(subval, sel[addr])
     )...)
 
+function has_selected(::FiniteDomainValue, s::ComplementSelection)
+    if isempty(s.complement)
+        return true
+    elseif s.complement == AllSelection()
+        return false
+    else
+        error("unexpected")
+    end
+end
 has_selected(_, ::AllSelection) = true
 has_selected(_, ::EmptySelection) = false
 has_selected(v::CompositeValue, s::Selection) = any(
@@ -54,6 +67,17 @@ Also outputs the return value of this generative function execution.
 struct Generate <: GenFnOp
     observed_addrs::Selection
 end
+
+"""
+    Assess()
+
+[Assess](https://www.gen.dev/dev/ref/gfi/#Gen.assess) operation:
+given the value for each traceable choice, outputs the probability of sampling
+these values.
+Also outputs the return value of this generative function execution.
+(This is equivalent to, and implemented as, `Generate(AllSelection())`.)
+"""
+Assess() = Generate(AllSelection())
 
 """
     abstract type GenFn{Op} <: GenericComponent end
@@ -186,14 +210,21 @@ genfn_from_cpt_sample_score(cpt_ss, g, val_to_trace) = CompositeComponent(
 #################
 # Deterministic #
 #################
+"""
+    DeterministicGenFn{Op} <: GenFn{Op}
+    DreterministicDomainFn{Op}(input_domain_sizes::Tuple, fn::Function)
+
+Circuit to perform an operation for a deterministic generative function (given by function `fn`, where the arguments
+have the given input domain sizes).
+"""
 struct DeterministicGenFn{Op} <: GenFn{Op}
     input_domain_sizes::Tuple
     output_domain_size::Int
     fn::Function
 end
-function DeterministicGenFn(input_domain_sizes::Tuple, fn::Function)
+function DeterministicGenFn{Op}(input_domain_sizes::Tuple, fn::Function) where {Op <: GenFnOp}
     output_domain_size = length(unique(fn(vals...) for vals in Iterators.product(input_var_domain_sizes)))
-    DeterministicGenFn(input_domain_sizes, output_domain_size, fn)
+    DeterministicGenFn{Op}(input_domain_sizes, output_domain_size, fn)
 end
 input_domain_sizes(g::DeterministicGenFn) = g.input_domain_sizes
 output_domain_size(g::DeterministicGenFn) = g.output_domain_size
@@ -231,7 +262,7 @@ struct DistributionGenFn{Op} <: GenFn{Op}
     is_observed::Bool
     cpt::CPT
     DistributionGenFn{Propose}(cpt::CPT) = new{Propose}(false, cpt)
-    DistributionGenFn{Generate}(is_observed::Bool, cpt::CPT) = new{generate}(is_observed, cpt)
+    DistributionGenFn{Generate}(is_observed::Bool, cpt::CPT) = new{Generate}(is_observed, cpt)
 end
 DistributionGenFn(cpt::CPT, op::Propose) = DistributionGenFn{Propose}(cpt)
 DistributionGenFn(cpt::CPT, op::Generate) = DistributionGenFn{Generate}(op.observed_addrs == AllSelection(), cpt)
@@ -240,7 +271,7 @@ input_domain_sizes(d::DistributionGenFn) = input_ncategories(d.cpt)
 output_domain_size(d::DistributionGenFn) = ncategories(d.cpt)
 has_traceable_value(d::DistributionGenFn) = true
 traceable_value(d::DistributionGenFn) = FiniteDomainValue(output_domain_size(d))
-operation(d::DistributionGenFn{Generate}) = Generate(d.is_observed ? Set(nothing) : Set())
+operation(d::DistributionGenFn{Generate}) = Generate(d.is_observed ? AllSelection() : EmptySelection())
 Circuits.implement(d::DistributionGenFn, ::Target) =
     genfn_from_cpt_sample_score(CPTSampleScore(d.cpt, true), d, !d.is_observed)
 
@@ -266,14 +297,14 @@ output_domain_size(g::GenFnNode, _) = output_domain_size(g.gen_fn)
 output_domain_size(i::InputNode, g) = input_domain_size(g)[i.name]
 
 # TODO: docstring
-struct GraphGenFn{Op, O} <: GenFn{Op}
+struct GraphGenFn{Op} <: GenFn{Op}
     input_domain_sizes::NamedTuple
     output_node_name::Symbol
     nodes::Dict{Symbol, GenFnGraphNode}
     addr_to_name::Dict{Symbol, Symbol}
-    observed_addrs::O
-    GraphGenFn{Propose}(ids, ons, n, a) = new{Propose, Tuple{}}(ids, ons, n, a, ())
-    GraphGenFn{Generate}(ids, ons, n, a, oa::Selection) = new{Generate, Set}(ids, ons, n, a, oa)
+    observed_addrs::Selection
+    GraphGenFn{Propose}(ids, ons, n, a) = new{Propose}(ids, ons, n, a, EmptySelection())
+    GraphGenFn{Generate}(ids, ons, n, a, oa::Selection) = new{Generate}(ids, ons, n, a, oa)
 end
 GraphGenFn(ids, ons, n, a, ::Propose) = GraphGenFn{Propose}(ids, ons, n, a)
 GraphGenFn(ids, ons, n, a, op::Generate) = GraphGenFn{Generate}(ids, ons, n, a, op.observed_addrs)
@@ -285,6 +316,7 @@ traceable_value(g::GraphGenFn) = NamedValues((
         addr => traceable_value(g.nodes[name].gen_fn)
         for (addr, name) in g.addr_to_name
     )...)
+operation(g::GraphGenFn{Generate}) = Generate(g.observed_addrs)
 
 # during `propose`, we score every traceable sub-gen-fn;
 # during `generate`, we only score those traceable sub-gen-fns which we observe
@@ -293,7 +325,7 @@ prob_outputter_names(g::GraphGenFn{Generate}) = (
     n for (a, n) in g.addr_to_name
     if !isempty(operation(g).observed_addrs[a])
 )
-num_internal_prob_outputs(g::GraphGenFn) = length(prob_outputter_names(g))
+num_internal_prob_outputs(g::GraphGenFn) = length(collect(prob_outputter_names(g)))
 
 ### Implement ###
 Circuits.implement(g::GraphGenFn, ::Target) =
@@ -301,7 +333,9 @@ Circuits.implement(g::GraphGenFn, ::Target) =
         inputs(g), outputs(g),
         (
             sub_gen_fns=sub_gen_fns_group(g),
-            multipliers=multipliers_group(g)
+            (let multgroup = multipliers_group(g)
+                isempty(multgroup.subcomponents) ? () : (:multipliers => multgroup,)
+            end)...
         ),
         Iterators.flatten((
             arg_value_edges(g),
@@ -337,7 +371,12 @@ arg_value_edge(::GenFnNode, parentname, comp_in_idx, gen_fn_name) =
 
 # edges to perform pairwise multiplication of all the tracked probs
 function multiplier_edges(g::GraphGenFn)
-    firstname, rest = Iterators.peel(prob_outputter_names(g))
+    outputters = collect(prob_outputter_names(g))
+    if length(outputters) < 2
+        return ()
+    end
+
+    firstname, rest = Iterators.peel(outputters)
     secondname, rest = Iterators.peel(rest)
     edges = Pair{<:CompOut, <:CompIn}[
         CompOut(:sub_gen_fns => firstname, :prob) => CompIn(:multipliers => 1, 1),
@@ -356,7 +395,18 @@ end
 # input/output edges
 io_edges(g::GraphGenFn) = Iterators.flatten((
         (
-            CompOut(:multipliers => num_internal_prob_outputs(g) - 1, :out) => Output(:prob),
+            (
+                # probability output
+                if has_prob_output(g)
+                    if num_internal_prob_outputs(g) > 1
+                        (CompOut(:multipliers => num_internal_prob_outputs(g) - 1, :out) => Output(:prob),)
+                    else
+                        (CompOut(:sub_gen_fns => first(prob_outputter_names(g)), :prob) => Output(:prob),)
+                    end
+                else
+                    ()
+                end
+            )...,
             CompOut(:sub_gen_fns => g.output_node_name, :value) => Output(:value)
         ),
         trace_output_edges(g),
@@ -412,15 +462,9 @@ end
 
 # figure out the operation for a sub-generative-function, given the op for the top-level gen fn
 subop(_, ::Propose) = Propose()
-subop(::Gen.JuliaNode, ::Generate) = Generate(Set())
-subop(n::Gen.RandomChoiceNode, op::Generate) = Generate(n.addr in op.observed_addrs ? Set(nothing) : Set())
-subop(n::Gen.GenerativeFunctionCallNode, op::Generate) = Generate(Set(
-    remainder(addr) for addr in op.observed_addrs if addr_starts_with(addr, n.addr)
-))
-remainder(addr::Pair) = addr.second
-remainder(_) = nothing
-addr_starts_with(addr::Pair, start) = addr.first == start
-addr_starts_with(addr, start) = addr == start
+subop(::Gen.JuliaNode, ::Generate) = Generate(EmptySelection())
+subop(n::Gen.RandomChoiceNode, op::Generate) = Generate(n.addr in op.observed_addrs ? AllSelection() : EmptySelection())
+subop(n::Gen.GenerativeFunctionCallNode, op::Generate) = Generate(op.observed_addrs[n.addr])
 
 # RandomChoiceNode and JuliaNode have indexed parents, while
 # GenerativeFunctionCallNodes have named parents

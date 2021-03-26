@@ -22,6 +22,6 @@ include("components/real_multiplication/rate_multiplier.jl")
 
 include("compiler/gen_fn.jl")
 
-export CPT, gen_fn_circuit, Propose, Generate
+export CPT, gen_fn_circuit, Propose, Generate, Assess
 
 end
