@@ -4,14 +4,14 @@ using Circuits
 using SpikingCircuits
 const Sim = SpikingSimulator
 
-includet("../components/value_types.jl")
+includet("../src/value_types.jl")
 
-includet("../components/mux/mux.jl")
-includet("../components/ipoisson_gated_repeater.jl")
-includet("../components/mux/int_poisson_mux.jl")
-includet("../components/cvb.jl")
-includet("../components/conditional_sample_score/abstract.jl")
-includet("../components/conditional_sample_score/spiking.jl")
+includet("../src/components/mux/mux.jl")
+includet("../src/components/ipoisson_gated_repeater.jl")
+includet("../src/components/mux/int_poisson_mux.jl")
+includet("../src/components/cvb.jl")
+includet("../src/components/conditional_sample_score/abstract.jl")
+includet("../src/components/conditional_sample_score/spiking.jl")
 
 unit = SpikingConditionalSampleScore(
     ConditionalSampleScore(
@@ -35,9 +35,9 @@ events = Sim.simulate_for_time_and_get_events(circuit,  16.0;
     initial_inputs=(:in_val => 2, :obs => 3)
 )
 
-includet("../visualization/circuit_visualization/animation_interface.jl")
+includet("../visualization/animation_interface.jl")
 try
-    open("visualization/circuit_visualization/frontend/renders/joint_anim.json", "w") do f
+    open("visualization/frontend/renders/joint_anim.json", "w") do f
         JSON.print(f, animation_to_frontend_format(Sim.initial_state(circuit), events), 2)
     end
     println("Wrote animation file.")
@@ -62,18 +62,17 @@ function spiketrain_dict(event_vector)
     return spiketrains
 end
 
-# includet("../visualization/spiketrain.jl")
-# using .SpiketrainViz
+# using SpikingCircuits.SpiketrainViz
 
-# is_primary_output(compname, event) = (isnothing(compname) && event isa Sim.OutputSpike)
+is_primary_output(compname, event) = (isnothing(compname) && event isa Sim.OutputSpike)
 # dict = spiketrain_dict(filter(((t,args...),) -> is_primary_output(args...), events))
 # draw_spiketrain_figure(
 #     collect(values(dict)); names=map(x->"$x", collect(keys(dict))), xmin=0
 # )
 
-includet("../visualization/circuit_visualization/component_interface.jl")
+includet("../visualization/component_interface.jl")
 
-open("visualization/circuit_visualization/frontend/renders/joint.json", "w") do f
+open("visualization/frontend/renders/joint.json", "w") do f
     JSON.print(f, viz_graph(circuit), 2)
 end
 println("Wrote component viz file.")
@@ -139,11 +138,5 @@ avg_probs = Dict(
     for (n, r) in avg_rates([1 for _ in rates], rates)
 )
 println("average probs: $avg_probs")
-
-avg_nprobs = Dict(
-    n => (r / outputs(unit)[:prob].reference_rate)
-    for (n, r) in avg_rates([1 for _ in rates], nrates)
-)
-println("average neuron probs: $avg_nprobs")
 
 # end

@@ -5,8 +5,8 @@ using SpikingCircuits
 const Sim = SpikingSimulator
 using Distributions: Categorical
 
-includet("../components/value_types.jl")
-includet("../components/real_multiplication/rate_multiplier.jl")
+includet("../src/value_types.jl")
+includet("../src/components/real_multiplication/rate_multiplier.jl")
 
 mult = RateMultiplier(4.0, 24.0, (SpikeRateReal(2.0), SpikeRateReal(3.0)))
 poisson2 = OnOffPoissonNeuron(2.0)
@@ -41,8 +41,7 @@ function spiketrain_dict(event_vector)
     return spiketrains
 end
 
-includet("../visualization/spiketrain.jl")
-using .SpiketrainViz
+using SpikingCircuits.SpiketrainViz
 
 is_primitive_output(compname, event) = (
     event isa Sim.OutputSpike && compname in (:poisson2, :poisson3, :mult)

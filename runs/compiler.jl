@@ -2,23 +2,8 @@ import JSON
 using Gen
 using Circuits
 using SpikingCircuits
-
-includet("../components/value_types.jl")
-includet("../components/mux/mux.jl")
-includet("../components/ipoisson_gated_repeater.jl")
-includet("../components/mux/int_poisson_mux.jl")
-includet("../components/cvb.jl")
-includet("../components/conditional_sample_score/abstract.jl")
-includet("../components/conditional_sample_score/spiking.jl")
-includet("../components/thresholded_spike_counter.jl")
-includet("../components/to_assmts/abstract.jl")
-includet("../components/to_assmts/spiking.jl")
-includet("../components/cpt.jl")
-includet("../components/cpt_sample_score/abstract.jl")
-includet("../components/cpt_sample_score/spiking.jl")
-includet("../components/real_multiplication/abstract.jl")
-includet("../components/real_multiplication/rate_multiplier.jl")
-includet("../compiler/compiler.jl")
+using SpikingInferenceCircuits
+const SIC = SpikingInferenceCircuits
 
 @gen (static) function test(input)
     x ~ CPT([[0.5, 0.5], [0.2, 0.8]])(input)
@@ -34,30 +19,21 @@ end
 # We must tell it the number of possible values that `input` can take (here, 2)
 circuit = propose_circuit(test, (input=2,))
 
-# implement to neurons
-implemented = implement_deep(circuit, Spiking())
-
-# simulate for 20 ms, after giving it input value 1
-events = SpikingSimulator.simulate_for_time_and_get_events(
-    implemented, 20.0;
-    initial_inputs=(:input => 1,)
-)
-
 ### implement the circuit ###
 
 REF_RATE() = 1.0
 OFF_RATE() = 0.0001
 ON_RATE() = 2.0
 
-Circuits.implement(::PositiveReal, ::Spiking) =
-    SpikeRateReal(REF_RATE())
-Circuits.implement(p::PositiveRealMultiplier, ::Spiking) =
-    RateMultiplier(
+Circuits.implement(::SIC.PositiveReal, ::Spiking) =
+    SIC.SpikeRateReal(REF_RATE())
+Circuits.implement(p::SIC.PositiveRealMultiplier, ::Spiking) =
+    SIC.RateMultiplier(
         6.0, REF_RATE(),
-        Tuple(SpikeRateReal(REF_RATE()) for _=1:p.n_inputs)
+        Tuple(SIC.SpikeRateReal(REF_RATE()) for _=1:p.n_inputs)
     )
-Circuits.implement(c::CPTSampleScore, ::Spiking) =
-    SpikingCPTSampleScore(c, OFF_RATE(), ON_RATE())
+Circuits.implement(c::SIC.CPTSampleScore, ::Spiking) =
+    SIC.SpikingCPTSampleScore(c, OFF_RATE(), ON_RATE())
 
 implemented1 = implement(implement(circuit, Spiking()), Spiking())
 implemented2 = implement_deep(implemented1, Spiking())
@@ -66,9 +42,9 @@ println("Component implemented.")
 
 ### visualize ###
 
-includet("../visualization/circuit_visualization/component_interface.jl")
+includet("../visualization/component_interface.jl")
 
-open("visualization/circuit_visualization/frontend/renders/gen_fn.json", "w") do f
+open("visualization/frontend/renders/gen_fn.json", "w") do f
     JSON.print(f, viz_graph(implemented1), 2)
 end
 println("Wrote component viz file.")
@@ -92,12 +68,11 @@ function spiketrain_dict(event_vector)
     return spiketrains
 end
 
-includet("../visualization/spiketrain.jl")
-using .SpiketrainViz
+using SpikingCircuits.SpiketrainViz
 
 is_primary_output(compname, event) = (isnothing(compname) && event isa SpikingSimulator.OutputSpike)
 dict = spiketrain_dict(filter(((t,args...),) -> is_primary_output(args...), events))
-for name in keys_deep(outputs(implemented))
+for name in keys_deep(outputs(implemented2))
     if !haskey(dict, name)
         dict[name] = []
     end

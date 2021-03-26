@@ -5,19 +5,19 @@ using SpikingCircuits
 const Sim = SpikingSimulator
 using Distributions: Categorical
 
-includet("../components/value_types.jl")
-includet("../components/mux/mux.jl")
-includet("../components/ipoisson_gated_repeater.jl")
-includet("../components/mux/int_poisson_mux.jl")
-includet("../components/cvb.jl")
-includet("../components/conditional_sample_score/abstract.jl")
-includet("../components/conditional_sample_score/spiking.jl")
-includet("../components/thresholded_spike_counter.jl")
-includet("../components/to_assmts/abstract.jl")
-includet("../components/to_assmts/spiking.jl")
-includet("../components/cpt.jl")
-includet("../components/cpt_sample_score/abstract.jl")
-includet("../components/cpt_sample_score/spiking.jl")
+includet("../src/value_types.jl")
+includet("../src/components/mux/mux.jl")
+includet("../src/components/ipoisson_gated_repeater.jl")
+includet("../src/components/mux/int_poisson_mux.jl")
+includet("../src/components/cvb.jl")
+includet("../src/components/conditional_sample_score/abstract.jl")
+includet("../src/components/conditional_sample_score/spiking.jl")
+includet("../src/components/thresholded_spike_counter.jl")
+includet("../src/components/to_assmts/abstract.jl")
+includet("../src/components/to_assmts/spiking.jl")
+includet("../src/cpt.jl")
+includet("../src/components/cpt_sample_score/abstract.jl")
+includet("../src/components/cpt_sample_score/spiking.jl")
 
 cpt = CPT(
     map(Categorical, [
@@ -35,9 +35,9 @@ unit = SpikingCPTSampleScore(
 circuit = implement_deep(unit, Spiking())
 println("Circuit constructed.")
 
-includet("../visualization/circuit_visualization/component_interface.jl")
+includet("../visualization/component_interface.jl")
 
-open("visualization/circuit_visualization/frontend/renders/cpt.json", "w") do f
+open("visualization/frontend/renders/cpt.json", "w") do f
     JSON.print(f, viz_graph(circuit), 2)
 end
 println("Wrote component viz file.")
@@ -47,9 +47,9 @@ events = Sim.simulate_for_time_and_get_events(circuit,  16.0;
 )
 println("Simulation run.")
 
-includet("../visualization/circuit_visualization/animation_interface.jl")
+includet("../visualization/animation_interface.jl")
 try
-    open("visualization/circuit_visualization/frontend/renders/cpt_anim.json", "w") do f
+    open("visualization/frontend/renders/cpt_anim.json", "w") do f
         JSON.print(f, animation_to_frontend_format(Sim.initial_state(circuit), events), 2)
     end
     println("Wrote animation file.")
@@ -74,8 +74,7 @@ function spiketrain_dict(event_vector)
     return spiketrains
 end
 
-includet("../visualization/spiketrain.jl")
-using .SpiketrainViz
+using SpikingCircuits.SpiketrainViz
 
 is_primary_output(compname, event) = (isnothing(compname) && event isa Sim.OutputSpike)
 dict = spiketrain_dict(filter(((t,args...),) -> is_primary_output(args...), events))

@@ -71,6 +71,7 @@ open("visualization/frontend/renders/cpt_anim.json", "w") do f
 end
 println("Wrote animation file.")
 ```
+(For this to work, you will have to `mkdir renders` from within `visualization/frontend` first.)
 
 Then, from the website (http://localhost:8080), enter the name of the file (here, `cpt.json`)
 to load the visualization.

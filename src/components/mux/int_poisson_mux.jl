@@ -5,10 +5,12 @@ Implementation of `BitMux` for `Spiking` using an `IntegratingPoisson`.
 Once an input is selected, it is selected forever.
 """
 struct IPoissonBitMux <: GenericComponent end
-Circuits.inputs(::BitMux) = NamedValues(:value => SpikeWire(), :sel => SpikeWire())
-Circuits.outputs(::BitMux) = NamedValues(:out => SpikeWire())
+Circuits.inputs(::IPoissonBitMux) = NamedValues(:value => SpikeWire(), :sel => SpikeWire())
+Circuits.outputs(::IPoissonBitMux) = NamedValues(:out => SpikeWire())
+Circuits.implement(::BitMux, ::Spiking) = IPoissonBitMux()
+
 # TODO: Don't hardcode the rates here!
-Circuits.implement(m::BitMux, ::Spiking) = CompositeComponent(
+Circuits.implement(m::IPoissonBitMux, ::Spiking) = CompositeComponent(
         inputs(m), outputs(m),
         (
             inhibitor=IPoissonGatedRepeater(),
