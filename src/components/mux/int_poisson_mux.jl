@@ -14,7 +14,7 @@ Circuits.implement(m::IPoissonBitMux, ::Spiking) = CompositeComponent(
         inputs(m), outputs(m),
         (
             inhibitor=IPoissonGatedRepeater(),
-            outputter=IntegratingPoisson([+10., -10.], 0., ReLU)
+            outputter=IntegratingPoisson([+10., -10.], 0., x -> max(x, 0.))
         ),
         (
             Input(:sel) => CompIn(:inhibitor, :off),
@@ -27,7 +27,6 @@ Circuits.implement(m::IPoissonBitMux, ::Spiking) = CompositeComponent(
         m
     )
 
-ReLU(x) = max(x, 0.)
 # struct IPoissonMux <: GenericComponent
 #     mux::Mux
 # end
