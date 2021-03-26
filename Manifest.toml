@@ -70,9 +70,9 @@ version = "0.9.33"
 
 [[Circuits]]
 deps = ["Distributions", "LightGraphs"]
-git-tree-sha1 = "bc7050de0291ded64830b0ef25d7e058508096e7"
+git-tree-sha1 = "613a253f30de1e646350fe5c7b9582cca2c7dada"
 repo-rev = "main"
-repo-url = "git@github.com:probcomp/Circuits.jl.git"
+repo-url = "https://github.com/probcomp/Circuits.jl"
 uuid = "f5b243b3-c95b-4650-9ac7-659d8f0b0982"
 version = "0.1.0"
 
