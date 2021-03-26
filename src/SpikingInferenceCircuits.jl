@@ -20,8 +20,8 @@ include("components/cpt_sample_score/spiking.jl")
 include("components/real_multiplication/abstract.jl")
 include("components/real_multiplication/rate_multiplier.jl")
 
-include("compiler/compiler.jl")
+include("compiler/gen_fn.jl")
 
-export CPT, propose_circuit
+export CPT, gen_fn_circuit, Propose, Generate
 
 end
