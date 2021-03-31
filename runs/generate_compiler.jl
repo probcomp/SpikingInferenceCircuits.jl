@@ -15,7 +15,14 @@ const SIC = SpikingInferenceCircuits
     return z
 end
 
-circuit = gen_fn_circuit(test, (input=2,), Assess())
+# gen fn circuit for `generate(test, args, choicemap(:y=..., :z=...)`
+# ie. sample a value for `x`, and output `P_ancestral[y, z | x]`
+circuit = gen_fn_circuit(test, (input=2,), Generate(select(:y, :z)))
+
+# simulate for 100 ms, with input=2, and obs=choicemap((:y, 2), (:z, 2))
+events = SpikingSimulator.simulate_for_time_and_get_events(implemented2, 100.0;
+    initial_inputs=(:inputs => :input => 2, :obs => :y => 2, :obs => :z => 2)
+)
 
 ### implement the circuit ###
 
@@ -39,7 +46,7 @@ implemented2 = implement_deep(implemented1, Spiking())
 println("Component implemented.")
 
 events = SpikingSimulator.simulate_for_time_and_get_events(implemented2, 100.0;
-    initial_inputs=(:inputs => :input => 2, :obs => :y => 2, :obs => :z => 2, :obs => :x => 1),
+    initial_inputs=(:inputs => :input => 2, :obs => :y => 2, :obs => :z => 2),
 )
 
 println("Simulation complete.")
