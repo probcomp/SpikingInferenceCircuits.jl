@@ -3,8 +3,8 @@ using Bijections
 
 includet("../src/cpt.jl")
 includet("../src/labeled_cpt.jl")
-includet("../src/compiler/static_ir_transforms.jl")
-using .StaticIRTransforms
+includet("../src/compiler/ir_transforms/ir_transforms.jl")
+# using .IRTransforms
 
 @gen (static) function foo(x::Bool)
     y ~ bernoulli(x ? 0.2 : 0.8)
@@ -15,4 +15,4 @@ end
 # @pyimport graphviz
 # Gen.draw_graph(foo, graphviz, "test")
 
-with_cpts = StaticIRTransforms.to_labeled_cpts(foo, [[true, false]])
+(with_cpts, bijs) = to_indexed_cpts(Gen.get_ir(typeof(foo)), [[true, false]])

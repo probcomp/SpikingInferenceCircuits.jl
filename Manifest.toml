@@ -51,6 +51,11 @@ version = "1.0.0"
 [[Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
 
+[[Bijections]]
+git-tree-sha1 = "7fb3d90eaf4d2db323586896ee38f579814302b0"
+uuid = "e2ed5e7c-b2de-5872-ae92-c73ca462fb04"
+version = "0.1.2"
+
 [[Bzip2_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "c3598e525718abcc440f69cc6d5f60dda0a1b61e"
@@ -70,9 +75,7 @@ version = "0.9.33"
 
 [[Circuits]]
 deps = ["Distributions", "LightGraphs"]
-git-tree-sha1 = "613a253f30de1e646350fe5c7b9582cca2c7dada"
-repo-rev = "main"
-repo-url = "https://github.com/probcomp/Circuits.jl"
+path = "/Users/georgematheos/Developer/research/Circuits.jl/"
 uuid = "f5b243b3-c95b-4650-9ac7-659d8f0b0982"
 version = "0.1.0"
 
@@ -305,7 +308,9 @@ version = "0.2.2"
 
 [[Gen]]
 deps = ["Compat", "DataStructures", "Distributions", "ForwardDiff", "FunctionalCollections", "JSON", "LinearAlgebra", "MacroTools", "Parameters", "Random", "ReverseDiff", "SpecialFunctions"]
-git-tree-sha1 = "c205dc5cc2748fb7ded5deb82c0c73707fdd29f8"
+git-tree-sha1 = "f4ba0f04728bd887468814c6ee07718d9de3e64f"
+repo-rev = "master"
+repo-url = "https://github.com/probcomp/Gen.jl"
 uuid = "ea4f424c-a589-11e8-07c0-fd5c91b9da4a"
 version = "0.4.2"
 
@@ -771,9 +776,7 @@ version = "1.3.0"
 
 [[SpikingCircuits]]
 deps = ["AbstractPlotting", "Circuits", "Colors", "DataStructures", "Distributions", "GLMakie"]
-git-tree-sha1 = "55e0a3096d94932a04406e1f648db55fc21d8938"
-repo-rev = "main"
-repo-url = "https://github.com/probcomp/SpikingCircuits.jl"
+path = "/Users/georgematheos/Developer/research/SpikingCircuits.jl/"
 uuid = "549ce59a-75fd-4aaf-b0ba-30f73ee3de21"
 version = "0.1.0"
 
