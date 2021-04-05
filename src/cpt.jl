@@ -1,4 +1,4 @@
-using Distributions: Categorical, ncategories
+using Distributions: Categorical, ncategories, probs
 import Distributions
 import Gen
 
@@ -23,7 +23,7 @@ Distributions.ncategories(c::CPT) = c.num_output_categories
 
 assmts(c::CPT) = CartesianIndices(input_ncategories(c))
 
-Gen.logpdf(cpt::CPT, val, args...) = log(cpt[args...][val])
+Gen.logpdf(cpt::CPT, val, args...) = log(probs(cpt[args...])[val])
 Gen.random(cpt::CPT, args...) = rand(cpt[args...])
 Gen.is_discrete(::CPT) = true
 (c::CPT)(args...) = random(c, args...)

@@ -26,7 +26,8 @@ function LabeledCPT{Ret}(
     output_domain::Vector,
     assmt_to_probs
 ) where {Ret}
-    cartesian_parent_domains = CartesianIndices(map(length, parent_domains))
+    cartesian_parent_domains = CartesianIndices(Tuple(map(length, parent_domains)))
+
     assmts = (
         Tuple(
             parent_domains[i][v]
@@ -45,3 +46,7 @@ function LabeledCPT{Ret}(
         ]
     )
 end
+
+_args_to_inds(l, args) = (bij(arg) for (bij, arg) in zip(l.input_values, args))
+Gen.random(l::LabeledCPT, args...) = l.output_values[random(l.cpt, _args_to_inds(l, args)...)]
+Gen.logpdf(l::LabeledCPT, val, args...) = logpdf(l.cpt, l.output_values(val), _args_to_inds(l, args)...)

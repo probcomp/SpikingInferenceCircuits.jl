@@ -24,6 +24,18 @@ function to_indexed_cpts(ir::StaticIR, arg_domains)
     return (build_ir(builder), domain_bijections)
 end
 
+# TODO: we should ideally get `track_diffs` and `cache_julia_nodes` from the original `gf`!
+function to_indexed_cpts(gf::StaticIRGenerativeFunction, arg_domains)
+    (ir, bijs) = to_indexed_cpts(Gen.get_ir(typeof(gf)), arg_domains)
+    return (
+        eval(Gen.generate_generative_function(
+            ir,
+            Symbol("$(typeof(foo))__indexed"); track_diffs=false, cache_julia_nodes=true
+        )),
+        bijs
+    )
+end
+
 dom_bij(vec) =
     if vec == collect(1:length(vec))
         nothing
@@ -31,11 +43,15 @@ dom_bij(vec) =
         Bijection(Dict([i => val for (i, val) in enumerate(vec)]))
     end
 
-_node_for_indexed_cpt(node::ArgumentNode, domains) = (node, dom_bij(domains[node.name]))
+# Get a transformed node operating on indices instead of values,
+# and a bijection specification for how the indices correspond to the values.
+# The bijection will either be a `Bijection`, `nothing` (if no transformation is needed),
+# or a dictionary from addresses to sub-bijection-specifications
+_node_for_indexed_cpt(node::ArgumentNode, domains) = (@set(node.typ = :Int), dom_bij(domains[node.name]))
 function _node_for_indexed_cpt(node::GenerativeFunctionCallNode, domains)
     new_gf, bij = to_indexed_cpts(node.generative_function, [domains[n.name] for n in node.inputs])
     return (
-        @set(node.generative_function = new_gf),
+        setproperties(node, (generative_function = new_gf, typ=:Int)),
         bij
     )
 end
@@ -45,14 +61,16 @@ _node_for_indexed_cpt(node::RandomChoiceNode, _) =
         (node, nothing)
     else
         (
-            @set(node.dist = node.dist.cpt),
-            node.dist.output_values
+            setproperties(node, (dist = node.dist.cpt, typ=:Int)),
+            node.dist.output_values # **
         )
     end
 
 function _node_for_indexed_cpt(node::JuliaNode, domains)
+    out_domain = domains[node.name]
+
     in_domains = (domains[n.name] for n in node.inputs)
-    inds_to_original_val = Dict(
+    inds_to_original_val = Dict( # **
         Tuple(idx) => node.fn(assmt...)
         for (idx, assmt) in zip(
             CartesianIndices(Tuple(1:length(dom) for dom in in_domains)),
@@ -60,19 +78,15 @@ function _node_for_indexed_cpt(node::JuliaNode, domains)
         )
     )
     
-    og_val_to_idx = Dict()
-    for val in values(inds_to_original_val)
-        if !haskey(og_val_to_idx, val)
-            og_val_to_idx[val] = length(og_val_to_idx) + 1
-        end
-    end
+    og_val_to_idx = Dict(val => i for (i, val) in enumerate(out_domain))
+
     inds_to_idx = Dict(inds => og_val_to_idx[val] for (inds, val) in inds_to_original_val)
 
     indexed_fn(args...) = inds_to_idx[args]
     output_bijection = inv(Bijection(og_val_to_idx))
 
     return (
-        @set(node.fn = indexed_fn),
+        setproperties(node, (fn = indexed_fn, typ=:Int)),
         output_bijection
     )
 end

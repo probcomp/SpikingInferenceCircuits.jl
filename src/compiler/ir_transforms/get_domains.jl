@@ -10,7 +10,6 @@ function get_domains(nodes, arg_domains)
         handle_node!(node, name_to_domain)
     end
 
-    display(name_to_domain)
     return name_to_domain
 end
 
