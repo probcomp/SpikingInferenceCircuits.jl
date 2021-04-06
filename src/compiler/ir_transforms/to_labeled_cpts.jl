@@ -101,37 +101,3 @@ function get_labeled_cpt_node(node::RandomChoiceNode, name_to_domain)
 
     return RandomChoiceNode(lcpt, grandparent_nodes, node.addr, node.name, node.typ)
 end
-
-
-
-# Get a RandomChoiceNode with a LabeledCPT distribution equivalent to `node`'s distribution,
-# slurping in all the parents of the node (which are assumed to be JuliaNodes which produce
-# probabilities parametrizing the discrete distribution)
-# function get_labeled_cpt_node(node::RandomChoiceNode, name_to_domain)
-#     @assert all(n isa JuliaNode for n in node.inputs) "Assumptions about restrictions on IR violated for node $(node.name)!"
-
-#     parent_inputs = collect(Iterators.flatten(pa.inputs for pa in node.inputs))
-#     parent_input_domains = Tuple(name_to_domain[x.name] for x in parent_inputs)
-
-#     input_domains = Tuple(name_to_domain[x.name] for x in node.inputs)
-#     cpt = get_labeled_cpt(
-#         node.dist, map(n -> n.fn, node.inputs),
-#         parent_input_domains, input_domains
-#     )
-#     return RandomChoiceNode(cpt, parent_inputs, node.addr, node.name, node.typ)
-# end
-
-# function _labeled_cpt(rettype, parent_domains, output_domain, parent_fns, fns_out_to_prob)
-#     assmt_to_val(assmt) = fns_out_to_prob(
-#         Tuple(fn(v) for (fn, v) in zip(parent_fns, assmt))
-#     )
-#     LabeledCPT{rettype}(collect(parent_domains), collect(output_domain), assmt_to_val)
-# end
-# get_labeled_cpt(d::Distribution, parent_fns, parent_domains, input_domains) =
-#     _labeled_cpt(
-#         Gen.get_return_type(d),
-#         parent_domains,
-#         get_domain(d, input_domains),
-#         parent_fns,
-#         assmt_to_probs(d)
-#     )

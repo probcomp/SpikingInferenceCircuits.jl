@@ -46,15 +46,17 @@ function LabeledCPT{Ret}(
         return parentless_labeled_cpt(Ret, output_domain, assmt_to_probs)
     end
 
-    cartesian_parent_domains = CartesianIndices(Tuple(map(length, parent_domains)))
+    # cartesian_parent_domains = CartesianIndices(Tuple(map(length, parent_domains)))
 
-    assmts = (
-        Tuple(
-            parent_domains[i][v]
-            for (i, v) in enumerate(Tuple(idx))
-        )
-        for idx in cartesian_parent_domains
-    )
+    assmts = Iterators.product(parent_domains...)
+
+    # assmts = (
+    #     Tuple(
+    #         parent_domains[i][v]
+    #         for (i, v) in enumerate(Tuple(idx))
+    #     )
+    #     for idx in cartesian_parent_domains
+    # )
     probs = [assmt_to_probs(assmt) for assmt in assmts]
     @assert all(Distributions.isprobvec(v) for v in probs) "Not all probvecs are actually probvecs!"
 
