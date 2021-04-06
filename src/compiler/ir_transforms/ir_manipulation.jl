@@ -18,3 +18,11 @@ function node_specific_add!(builder, node::RandomChoiceNode)
     builder.addrs_to_choice_nodes[node.addr] = node
 end
 node_specific_add!(builder, node::JuliaNode) = push!(builder.julia_nodes, node)
+
+### `get_ir` util ###
+# to avoid the "world age" problem (https://discourse.julialang.org/t/world-age-problem-explanation/9714/3), 
+# we need to use `Base.invokelatest`.
+# `Gen.get_ir` only becomes defined when we create a new static Gen fn type,
+# so if we create a new generative function _within_ our transformation functions, and
+# we need to access its IR before we return to the top-level, the world age problem arises
+get_ir(gf) = Base.invokelatest(Gen.get_ir, gf)

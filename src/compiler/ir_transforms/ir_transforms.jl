@@ -16,11 +16,11 @@ includet("ir_manipulation.jl")
 get_domain(::Bernoulli, _) = [true, false]
 assmt_to_probs(::Bernoulli) = ((p,),) -> [p, 1 - p]
 
-get_domain(::Categorical, arg_domains) = 1:length(only(arg_domains))
-assmt_to_probs(::Categorical) = ((pvec,),) -> pvec
+get_domain(::Gen.Categorical, arg_domains) = 1:length(only(arg_domains))
+assmt_to_probs(::Gen.Categorical) = ((pvec,),) -> pvec
 
 get_domain(::UniformDiscrete, (start_dom, end_dom)) = minimum(start_dom):maximum(end_dom)
-assmt_to_probs(::UniformDiscrete) = ((min, max),) -> [1/(max - min) for _=min:max]
+assmt_to_probs(::UniformDiscrete) = ((min, max),) -> [1/(1 + max - min) for _=min:max]
 
 get_domain(c::LabeledCPT, _) = [c.output_values[i] for i=1:length(c.output_values)]
 

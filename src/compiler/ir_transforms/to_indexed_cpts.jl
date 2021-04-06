@@ -1,5 +1,7 @@
 function to_indexed_cpts(ir::StaticIR, arg_domains)
     ir = to_labeled_cpts(ir, arg_domains)
+    load_generated_functions()
+    
     domains = get_domains(ir.nodes, arg_domains)
 
     domain_bijections = Dict()
@@ -26,13 +28,21 @@ end
 
 # TODO: we should ideally get `track_diffs` and `cache_julia_nodes` from the original `gf`!
 function to_indexed_cpts(gf::StaticIRGenerativeFunction, arg_domains)
-    (ir, bijs) = to_indexed_cpts(Gen.get_ir(typeof(gf)), arg_domains)
-    return (
-        eval(Gen.generate_generative_function(
+    (ir, bijs) = to_indexed_cpts(get_ir(gf), arg_domains)
+    gf = eval(Gen.generate_generative_function(
             ir,
-            Symbol("$(typeof(foo))__indexed"); track_diffs=false, cache_julia_nodes=true
-        )),
-        bijs
+            Symbol("$(typeof(gf))__indexed"); track_diffs=false, cache_julia_nodes=true
+        ))
+    @load_generated_functions()
+    return (gf, bijs)
+end
+
+unzip(v) = Tuple(map(x -> x[i], v) for i=1:length(first(v)))
+function to_indexed_cpts(s::Switch, arg_domains)
+    (indexed_fns, bijs) = unzip([to_indexed_cpts(b, arg_domains[2:end]) for b in s.branches])
+    return (
+        Switch((indexed_fns)...),
+        Dict(i => b for (i, b) in enumerate(bijs))
     )
 end
 
