@@ -1,3 +1,7 @@
+## TODO: docstrings
+
+using Bijections
+
 struct LabeledCPT{Ret} <: Gen.Distribution{Ret}
     cpt::CPT
     output_values::Bijection{Int, Ret}
@@ -46,17 +50,8 @@ function LabeledCPT{Ret}(
         return parentless_labeled_cpt(Ret, output_domain, assmt_to_probs)
     end
 
-    # cartesian_parent_domains = CartesianIndices(Tuple(map(length, parent_domains)))
-
     assmts = Iterators.product(parent_domains...)
 
-    # assmts = (
-    #     Tuple(
-    #         parent_domains[i][v]
-    #         for (i, v) in enumerate(Tuple(idx))
-    #     )
-    #     for idx in cartesian_parent_domains
-    # )
     probs = [assmt_to_probs(assmt) for assmt in assmts]
     @assert all(Distributions.isprobvec(v) for v in probs) "Not all probvecs are actually probvecs!"
 
@@ -82,10 +77,11 @@ _args_to_inds(l, args) = (
 function Gen.random(l::LabeledCPT, args...)
     inds = _args_to_inds(l, args)
 
-    sampled_idx = random(l.cpt, inds...)
+    sampled_idx = Gen.random(l.cpt, inds...)
     if !(sampled_idx in domain(l.output_values))
         println("$sampled_idx not a key for $(l.output_values)!")
     end
     l.output_values[sampled_idx]
 end
 Gen.logpdf(l::LabeledCPT, val, args...) = logpdf(l.cpt, l.output_values(val), _args_to_inds(l, args)...)
+(l::LabeledCPT)(args...) = Gen.random(l, args...)

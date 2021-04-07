@@ -1,7 +1,3 @@
-using Distributions: Categorical, ncategories, probs
-import Distributions
-import Gen
-
 abstract type CPT{NumParents} <: Gen.Distribution{Int} end
 
 # TODO: it turns out we can have 0-dimensional arrays, so I think we shouldn't need an explicit ZeroParentCPT subtype!
@@ -44,7 +40,7 @@ assmts(c::CPTWithParents) = CartesianIndices(input_ncategories(c))
 Gen.logpdf(cpt::CPT, val, args...) = log(probs(cpt[args...])[val])
 Gen.random(cpt::CPT, args...) = rand(cpt[args...])
 Gen.is_discrete(::CPT) = true
-(c::CPT)(args...) = random(c, args...)
+(c::CPT)(args...) = Gen.random(c, args...)
 Gen.has_output_grad(::CPT) = false
 Gen.has_argument_grads(::CPT) = (true,)
 
