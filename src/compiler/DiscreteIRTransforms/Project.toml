@@ -1,0 +1,4 @@
+name = "DiscreteIRTransforms"
+uuid = "cd928ed5-b656-48f4-b878-e6af8c2e2ad2"
+authors = ["George Matheos <georgematheos@gmail.com>"]
+version = "0.1.0"
