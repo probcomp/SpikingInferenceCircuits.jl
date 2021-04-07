@@ -21,7 +21,7 @@ include("ir_manipulation.jl")
 get_domain(::Bernoulli, _) = EnumeratedDomain([true, false])
 assmt_to_probs(::Bernoulli) = ((p,),) -> [p, 1 - p]
 
-get_domain(::Gen.Categorical, arg_domains) = EnumeratedDomain(1:length(only(arg_domains)))
+get_domain(::Gen.Categorical, arg_domains) = EnumeratedDomain(1:length(first(only(arg_domains))))
 assmt_to_probs(::Gen.Categorical) = ((pvec,),) -> pvec
 
 get_domain(::UniformDiscrete, (start_dom, end_dom)) = EnumeratedDomain(minimum(start_dom):maximum(end_dom))

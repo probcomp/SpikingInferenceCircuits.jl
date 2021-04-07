@@ -19,14 +19,18 @@ struct ProductDomain{T <: Union{
 end
 vals(d::ProductDomain) = (
         d.vector_valued ? collect(v) : v
-        for v in Iterators.product(d.sub_domains)
+        for v in Iterators.product(d.sub_domains...)
     )
 
 Base.iterate(d::Domain) = Base.iterate(vals(d))
 Base.iterate(d::Domain, s) = Base.iterate(vals(d), s)
 Base.length(d::Domain) = length(vals(d))
+
+# Domain equality _with_ order
 Base.:(==)(a::Domain, b::Domain) = all(x == y for (x, y) in zip(a, b))
 Base.hash(d::Domain, h::UInt) = hash(collect(vals(d)), h)
+
+unordered_isequal(a::Domain, b::Domain) = Set(a) == Set(b)
 
 ### Indicator in Generative Function that we should use a ProductDomain ###
 # struct IndepDomainVector{V} <: AbstractVector

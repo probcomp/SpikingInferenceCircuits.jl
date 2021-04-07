@@ -1,19 +1,21 @@
 function unpack_map_domains(domains)
-    for dom in domains
+    for (i, dom) in enumerate(domains)
         @assert dom isa ProductDomain
-        @assert all(d == first(dom.sub_domains) for d in dom.sub_domains[2:end])
+        first_subdom, other_subdoms = Iterators.peel(dom.sub_domains)
+        @assert all(unordered_isequal(d, first_subdom) for d in other_subdoms) "Input $i to Map has different input domains at different positions!  Input domains: $(dom.sub_domains)."
     end
 
-    num_calls = length(first(arg_domains).sub_domains)
-    single_call_domains = [first(d.sub_domains) for d in arg_domains]
+    num_calls = length(first(domains).sub_domains)
+    single_call_domains = [first(d.sub_domains) for d in domains]
     return (single_call_domains, num_calls)
 end
 
 function get_ret_domain(m::Gen.Map, arg_domains)
     (single_call_domains, n_repetitions) = unpack_map_domains(arg_domains)
-    kernel_ret_dom = get_ret_dom(m.kernel, single_call_domains)
+    kernel_ret_dom = get_ret_domain(m.kernel, single_call_domains)
     return ProductDomain(
-        Iterators.repeated(kernel_ret_dom, n_repetitions) |> collect
+        Iterators.repeated(kernel_ret_dom, n_repetitions) |> collect,
+        true
     )
 end
 
