@@ -10,7 +10,10 @@ vals(d::EnumeratedDomain) = d.vals
 Product set of all tuples/vectors containing one object each subdomain.
 (`vector_valued` is true if the domain contains vectors, false otherwise.)
 """
-struct ProductDomain{T <: Tuple{Vararg{<:Domain}}} <: Domain
+struct ProductDomain{T <: Union{
+    Tuple{Vararg{<:Domain}},
+    Vector{<:Domain}
+}} <: Domain
     sub_domains::T
     vector_valued::Bool
 end

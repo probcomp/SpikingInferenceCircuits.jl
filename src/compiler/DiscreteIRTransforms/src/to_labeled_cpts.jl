@@ -6,19 +6,25 @@ function to_labeled_cpts(ir::StaticIR, arg_domains)
     if all(is_cpt(node.dist) for node in ir.choice_nodes)
         return ir
     end
-    
-    name_to_domain = get_domains(ir.nodes, arg_domains)
-    names_to_delete = Set{Symbol}()
-    to_replace = Dict{Symbol, StaticIRNode}()
 
-    ### Label which nodes we need to replace / delete ###
+    parents_of_dists = Set{Symbol}()
+    for node in ir.choice_nodes
+        if !is_cpt(node.dist)
+            for parent in node.inputs
+                push!(parents_of_dists, parent.name)
+            end
+        end
+    end
+
+    name_to_domain = get_domains(
+        ir.nodes, arg_domains;
+        domain_type_constraints=Dict(p => EnumeratedDomain for p in parents_of_dists)
+    )
+    to_replace = Dict{Symbol, StaticIRNode}()
 
     for node in ir.choice_nodes
         if !is_cpt(node.dist)
             to_replace[node.name] = get_labeled_cpt_node(node, name_to_domain)
-            for parent in node.inputs
-                push!(names_to_delete, parent.name)
-            end
         end
     end
     for node in ir.call_nodes
@@ -36,7 +42,7 @@ function to_labeled_cpts(ir::StaticIR, arg_domains)
     name_to_new_node = Dict{Symbol, StaticIRNode}()
     builder = StaticIRBuilder()
     for node in ir.nodes
-        if !(node.name in names_to_delete)
+        if !(node.name in parents_of_dists) # delete nodes which were direct arguments to a distribution node
             new_node = haskey(to_replace, node.name) ? to_replace[node.name] : node
             new_node = update_inputs(new_node, name_to_new_node)
             name_to_new_node[new_node.name] = new_node
@@ -62,8 +68,6 @@ function to_labeled_cpts(gf::StaticIRGenerativeFunction, arg_domains)
     @load_generated_functions()
     return gf
 end
-
-to_labeled_cpts(s::Switch, arg_domains) = Switch((to_labeled_cpts(b, arg_domains[2:end]) for b in s.branches)...)
 
 is_cpt(::CPT) = true
 is_cpt(::LabeledCPT) = true
@@ -97,7 +101,12 @@ function get_labeled_cpt_node(node::RandomChoiceNode, name_to_domain)
     grandparent_domains = [name_to_domain[x.name] for x in grandparent_nodes]
     output_domain = name_to_domain[node.name]
 
-    lcpt = LabeledCPT{rettype}(grandparent_domains, output_domain, grandparent_assmt_to_probs)
+    lcpt = try
+        LabeledCPT{rettype}(grandparent_domains, output_domain, grandparent_assmt_to_probs)
+    catch e
+        @error("Error while constructing labeled CPT for node $(node.name):")
+        throw(e)
+    end
 
     return RandomChoiceNode(lcpt, grandparent_nodes, node.addr, node.name, node.typ)
 end

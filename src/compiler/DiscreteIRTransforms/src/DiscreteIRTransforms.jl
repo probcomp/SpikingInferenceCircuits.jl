@@ -8,6 +8,12 @@ using Gen: Bernoulli, UniformDiscrete, Categorical
 using Bijections
 using Setfield: @set, setproperties
 
+# TODO: I could probably reorganize this module further.
+# I have the implementations for combinators in the `combinators` folder;
+# maybe I could also have the `StaticIRGenerativeFunction` ones be there,
+# then have a separate folder for handling the static IR?
+# Perhaps I should have a top-level file with docstrings for the methods we need to implement?
+
 include("ir_manipulation.jl")
 
 ## distribution specific: ##
@@ -35,5 +41,8 @@ export to_labeled_cpts
 
 include("to_indexed_cpts.jl")
 export to_indexed_cpts
+
+include("combinators/switch.jl")
+include("combinators/map.jl")
 
 end # module

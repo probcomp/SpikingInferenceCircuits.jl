@@ -12,7 +12,7 @@ struct LabeledCPT{Ret} <: Gen.Distribution{Ret}
 
     # constructor with some error checking to make sure domain sizes match CPT dimensions
     function LabeledCPT{Ret}(cpt::CPT, outvals::Bijection{Int, Ret}, invals::Vector{<:Bijection{Int}}) where {Ret}
-        @assert length(outvals) == ncategories(cpt) "CPT size is not the same as the number of output values! ncategories(cpt) = $(ncategories(cpt)) but outvals = $outvals (length = $(length(outvals)))"
+        @assert length(outvals) == ncategories(cpt) "CPT size is not the same as the number of output values! ncategories(cpt) = $(ncategories(cpt)) but outvals = $outvals"
         for (i, (cpt_size, domain_bij)) in enumerate(zip(input_ncategories(cpt), invals))
             @assert cpt_size == length(domain_bij) "The CPT input size does not match the domain bijection along the $(i)th input dimension!  CPT input dimension size: $cpt_size; Domain size: $(length(domain_bij))"
         end

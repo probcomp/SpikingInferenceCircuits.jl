@@ -1,3 +1,5 @@
+using DataStructures: DefaultDict
+
 ### Getting domains of nodes in generative functions ###
 
 # get the domain of the return value
@@ -5,17 +7,13 @@ function get_ret_domain(s::StaticIRGenerativeFunction, arg_domains)
     ir = get_ir(s)
     return get_domains(ir.nodes, arg_domains)[ir.return_node.name]
 end
-function get_ret_domain(s::Gen.Switch, arg_domains)
-    # first domain should be branch selection
-    @assert arg_domains[1] == EnumeratedDomain(1:length(arg_domains[1]))
-
-    ret_domains = [get_ret_domain(branch, arg_domains[2:end]) for branch in s.branches]
-    @assert all(d == first(ret_domains) for d in ret_domains[2:end]) "Different branches had different return domains! Domains for each branch: $ret_domains"
-    return first(ret_domains)
-end
 
 # get the domain for each node in a `nodes` list from a Static IR
-function get_domains(nodes, arg_domains)
+function get_domains(
+    nodes, arg_domains;
+    domain_type_constraints=Dict()
+)
+    domain_type_constraints = DefaultDict(() -> Domain, Dict{Symbol, Type{<:Domain}}(domain_type_constraints...))
     name_to_domain = Dict{Symbol, Domain}()
 
     # insert argument domains
@@ -24,29 +22,53 @@ function get_domains(nodes, arg_domains)
     end
 
     for node in nodes[(length(arg_domains) + 1):end]
-        handle_node!(node, name_to_domain)
+        handle_node!(node, name_to_domain, domain_type_constraints[node.name])
     end
 
     return name_to_domain
 end
 
-# handle_node!(::ArgumentNode, _) = nothing
-function handle_node!(node::JuliaNode, name_to_domain)
+## handle_node!(node::StaticIRNode, name_to_domain::Dict{Symbol, Domain}, domain_type_constraint::Type{<:Domain})
+## add an entry to `name_to_domain` for this node, where the domain must be of the type `domain_type_constraint`
+
+# handle_node!(::ArgumentNode, _, _) = nothing
+function handle_node!(node::JuliaNode, name_to_domain, domain_type_constraint)
     input_domains = (name_to_domain[parent.name] for parent in node.inputs)
     assmts = Iterators.product(input_domains...)
 
-    first_assmt = first(assmts)
-    first_val = node.fn(first_assmt...)
-    # if first_val isa SeparateValueVector
-    #     name_to_domain[node.name] = ProductDomain(Tuple(input_domains), true)
-    # else
-    name_to_domain[node.name] = EnumeratedDomain([node.fn(assmt...) for assmt in assmts])
-    # end
+    possible_outcomes = EnumeratedDomain([node.fn(assmt...) for assmt in assmts])
+
+    name_to_domain[node.name] =
+        if domain_type_constraint == EnumeratedDomain
+            possible_outcomes
+        elseif domain_type_constraint == ProductDomain
+            @assert valid_for_product_domain(possible_outcomes)
+            to_product_domain(possible_outcomes)
+        # else if no specific domain type is given (ie. domain_type_constraint == Domain)
+        elseif valid_for_product_domain(possible_outcomes)
+            to_product_domain(possible_outcomes)
+        else
+            possible_outcomes
+        end
 end
-function handle_node!(node::RandomChoiceNode, name_to_domain)
+valid_for_product_domain(d::EnumeratedDomain) = (
+    all(v isa Array for v in vals(d)) &&
+    let (first, rest) = Iterators.peel(vals(d))
+        all(size(v) == size(first) for v in rest)
+    end
+)
+# for now this always outputs vectors.  TODO: support tuples also
+to_product_domain(d::EnumeratedDomain) = ProductDomain(
+        [
+            map(x -> x[i], vals(d)) |> unique |> collect |> EnumeratedDomain
+            for i=1:length(first(vals(d)))
+        ], true
+    )
+
+function handle_node!(node::RandomChoiceNode, name_to_domain, ::Type{Domain})
     domain = get_domain(node.dist, [name_to_domain[x.name] for x in node.inputs])
     name_to_domain[node.name] = domain
 end
-function handle_node!(node::GenerativeFunctionCallNode, name_to_domain)
+function handle_node!(node::GenerativeFunctionCallNode, name_to_domain, ::Type{Domain})
     name_to_domain[node.name] = get_ret_domain(node.generative_function, [name_to_domain[n.name] for n in node.inputs])
 end
