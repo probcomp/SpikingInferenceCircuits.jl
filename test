@@ -1,7 +1,0 @@
-digraph {
-	x [label=x fillcolor=white shape=diamond style=filled]
-	"##if#574" [label="##if#574" fillcolor=white shape=box style=filled]
-	x -> "##if#574"
-	"Gen.Bernoulli() y ##y#571" [label="Gen.Bernoulli() y ##y#571" fillcolor=lightblue shape=ellipse style=filled]
-	"##if#574" -> "Gen.Bernoulli() y ##y#571"
-}

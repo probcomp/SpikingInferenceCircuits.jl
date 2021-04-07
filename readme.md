@@ -26,14 +26,20 @@ Circuits repository).
 ### `src`
 
 This is the main code for compiling inference circuits from Gen to hardware.
+- `CPTs` a Julia package exposing the `CPT` (conditional probability table)
+  and `LabeledCPT` Gen distributions.
 - `value_types.jl` defines `Value` types (from the Circuits library) used for the circuits
-- `cpt.jl` defines a conditional probability table
 - `components` defines various components used in inference circuits.  Most of these are defined
   as abstract components, with a `Spiking`-specific implementation which enables the abstract circuits
   to be compiled for `Spiking` hardware.  There are also a few Spiking-specific components.
-- `compiler` contains code to compile from Gen to circuits which implement
+- `compiler/gen_fn.jl` contains code to compile from Gen to circuits which implement
   some inference/sampling functionality (e.g. some [generative function interface](https://www.gen.dev/dev/ref/gfi/#Generative-function-interface-1) methods, like `propose`).  The circuits it compiles to are implemented
   using the components from the `components` directory.
+- `compiler/DiscreteIRTransforms` is a Julia package for transforming IRs for Gen models where
+  all variables are discrete and have finite domains.  In particular, it contains some
+  transformations to convert from Static IR (+ combinators) generative functions
+  to equivalent generative functions where all distributions are CPTs.
+
 
 ### Visualizations
 

@@ -26,12 +26,14 @@ get_domain(c::LabeledCPT, _) = EnumeratedDomain([c.output_values[i] for i=1:leng
 ### main functions ###
 
 include("domains.jl")
+export EnumeratedDomain, ProductDomain
+
 include("get_domains.jl")
 
-includet("to_labeled_cpts.jl")
+include("to_labeled_cpts.jl")
 export to_labeled_cpts
 
-includet("to_indexed_cpts.jl")
+include("to_indexed_cpts.jl")
 export to_indexed_cpts
 
 end # module

@@ -1,12 +1,3 @@
-using Test
-
-using Gen
-using Bijections
-
-includet("../../src/cpt.jl")
-includet("../../src/labeled_cpt.jl")
-includet("../../src/compiler/ir_transforms/ir_transforms.jl")
-
 up_down_stay_probs(max_idx, current_idx) =
     if current_idx == max_idx
         vcat(zeros(max_idx - 2), [.5, .5])

@@ -1,12 +1,3 @@
-using Test
-
-using Gen
-using Bijections
-
-includet("../../src/cpt.jl")
-includet("../../src/labeled_cpt.jl")
-includet("../../src/compiler/ir_transforms/ir_transforms.jl")
-
 @gen (static) function one_hot_add_noise()
     idx1 ~ uniform_discrete(1, 10)
     idx2 ~ uniform_discrete(1, 10)
