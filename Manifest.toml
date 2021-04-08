@@ -67,6 +67,12 @@ git-tree-sha1 = "215a9aa4a1f23fbd05b92769fdd62559488d70e9"
 uuid = "fa961155-64e5-5f13-b03f-caf6b980ea82"
 version = "0.4.1"
 
+[[CPTs]]
+deps = ["Bijections", "Distributions", "Gen"]
+path = "src/CPTs"
+uuid = "b537e094-b773-4c3d-913e-03cd2b143e52"
+version = "0.1.0"
+
 [[ChainRulesCore]]
 deps = ["Compat", "LinearAlgebra", "SparseArrays"]
 git-tree-sha1 = "0893f8d90331a0f5223c7ef2a8868464394a886c"

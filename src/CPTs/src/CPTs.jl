@@ -8,6 +8,6 @@ import Gen
 include("cpt.jl")
 include("labeled_cpt.jl")
 
-export CPT, LabeledCPT
+export CPT, LabeledCPT, input_ncategories, num_inputs, assmts
 
 end # module

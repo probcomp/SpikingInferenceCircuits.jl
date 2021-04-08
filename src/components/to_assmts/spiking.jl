@@ -6,7 +6,7 @@ Circuits.implement(a::ToAssmts, ::Spiking) = SpikingToAssmts(a.size)
 Circuits.target(::SpikingToAssmts) = Spiking()
 Circuits.inputs(s::SpikingToAssmts) = implement(inputs(abstract(s)), Spiking())
 Circuits.outputs(s::SpikingToAssmts) = implement(outputs(abstract(s)), Spiking())
-num_inputs(::SpikingToAssmts{n}) where {n} = n
+n_inputs(::SpikingToAssmts{n}) where {n} = n
 
 Circuits.implement(s::SpikingToAssmts, ::Spiking) =
     let output = implement_deep(outputs(s), Spiking())
@@ -14,7 +14,7 @@ Circuits.implement(s::SpikingToAssmts, ::Spiking) =
             implement_deep(inputs(s), Spiking()), output,
             # ThresholdedCounter spikes once it receives `n` input spikes; this acts as an AND
             # gate signifying that all inputs have spiked
-            Tuple(ThresholdedCounter(num_inputs(s)) for _=1:length(output[:out])),
+            Tuple(ThresholdedCounter(n_inputs(s)) for _=1:length(output[:out])),
             Iterators.flatten(
                 Iterators.flatten((
                     (

@@ -482,7 +482,13 @@ gen_fn_circuit(jn::Gen.JuliaNode, ads, op) = gen_fn_circuit(jn.fn, ads, op)
 # `gen_fn_circuit` for user-facing types
 gen_fn_circuit(g::Gen.StaticIRGenerativeFunction, arg_domain_sizes, op) =
     gen_fn_circuit(Gen.get_ir(typeof(g)), arg_domain_sizes, op)
-gen_fn_circuit(g::Gen.Distribution, _, op) =
-    DistributionGenFn(get_cpt(g), op)
+gen_fn_circuit(g::CPT, _, op) =
+    DistributionGenFn(g, op)
+gen_fn_circuit(::Gen.Distribution, _, _) = error("To be compiled to a circuit, all distributions must be CPTs.")
 gen_fn_circuit(f::Function, arg_domain_sizes, ::Op) where {Op <: GenFnOp} =
     DeterministicGenFn{Op}(arg_domain_sizes, f)
+
+#=
+gen_fn_circuit(m::Gen.Map, arg_domain_sizes, op)
+
+=#

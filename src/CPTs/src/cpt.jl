@@ -43,5 +43,3 @@ Gen.is_discrete(::CPT) = true
 (c::CPT)(args...) = Gen.random(c, args...)
 Gen.has_output_grad(::CPT) = false
 Gen.has_argument_grads(::CPT) = (true,)
-
-get_cpt(cpt::CPT) = cpt

@@ -2,8 +2,9 @@ module SpikingInferenceCircuits
 using Gen
 using Circuits
 using SpikingCircuits
+using CPTs
+using Distributions: ncategories
 
-include("cpt.jl")
 include("value_types.jl")
 
 include("components/mux/mux.jl")
