@@ -14,8 +14,7 @@ function get_ret_domain(m::Gen.Map, arg_domains)
     (single_call_domains, n_repetitions) = unpack_map_domains(arg_domains)
     kernel_ret_dom = get_ret_domain(m.kernel, single_call_domains)
     return ProductDomain(
-        Iterators.repeated(kernel_ret_dom, n_repetitions) |> collect,
-        true
+        Iterators.repeated(kernel_ret_dom, n_repetitions) |> collect
     )
 end
 
@@ -26,10 +25,11 @@ end
 
 function to_indexed_cpts(m::Map, arg_domains)
     (single_call_domains, num_calls) = unpack_map_domains(arg_domains)
-    (new_kernel, bijs) = to_indexed_cpts(m.kernel, single_call_domains)
+    (new_kernel, bijs, retbij) = to_indexed_cpts(m.kernel, single_call_domains)
 
     return (
         Gen.Map(new_kernel),
-        Dict(i => bijs for i=1:num_calls)
+        Dict(i => bijs for i=1:num_calls),
+        [retbij for _=1:num_calls]
     )
 end

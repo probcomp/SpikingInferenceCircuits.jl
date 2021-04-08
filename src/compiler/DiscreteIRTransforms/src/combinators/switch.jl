@@ -13,9 +13,10 @@ end
 
 unzip(v) = Tuple(map(x -> x[i], v) for i=1:length(first(v)))
 function to_indexed_cpts(s::Switch, arg_domains)
-    (indexed_fns, bijs) = unzip([to_indexed_cpts(b, arg_domains[2:end]) for b in s.branches])
+    (indexed_fns, bijs, retbijs) = unzip([to_indexed_cpts(b, arg_domains[2:end]) for b in s.branches])
     return (
         Switch((indexed_fns)...),
-        Dict(i => b for (i, b) in enumerate(bijs))
+        Dict(i => b for (i, b) in enumerate(bijs)),
+        only(unique(retbijs))
     )
 end

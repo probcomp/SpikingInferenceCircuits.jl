@@ -57,12 +57,11 @@ valid_for_product_domain(d::EnumeratedDomain) = (
         all(size(v) == size(first) for v in rest)
     end
 )
-# for now this always outputs vectors.  TODO: support tuples also
 to_product_domain(d::EnumeratedDomain) = ProductDomain(
         [
             map(x -> x[i], vals(d)) |> unique |> collect |> EnumeratedDomain
             for i=1:length(first(vals(d)))
-        ], true
+        ]
     )
 
 function handle_node!(node::RandomChoiceNode, name_to_domain, ::Type{Domain})

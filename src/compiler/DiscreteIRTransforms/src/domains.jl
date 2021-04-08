@@ -7,19 +7,17 @@ end
 vals(d::EnumeratedDomain) = d.vals
 
 """
-Product set of all tuples/vectors containing one object each subdomain.
-(`vector_valued` is true if the domain contains vectors, false otherwise.)
+Product set of all vectors containing one object each subdomain.
 """
 struct ProductDomain{T <: Union{
     Tuple{Vararg{<:Domain}},
     Vector{<:Domain}
 }} <: Domain
     sub_domains::T
-    vector_valued::Bool
 end
-vals(d::ProductDomain) = (
-        d.vector_valued ? collect(v) : v
-        for v in Iterators.product(d.sub_domains...)
+vals(d::ProductDomain) = Iterators.map(
+        collect,
+        Iterators.product(d.sub_domains...)
     )
 
 Base.iterate(d::Domain) = Base.iterate(vals(d))
