@@ -21,8 +21,9 @@ include("components/cpt_sample_score/spiking.jl")
 include("components/real_multiplication/abstract.jl")
 include("components/real_multiplication/rate_multiplier.jl")
 
-include("compiler/gen_fn.jl")
+include("compiler/gen_fn_circuits/gen_fn_circuits.jl")
 
 export CPT, gen_fn_circuit, Propose, Generate, Assess
+export FiniteDomain
 
 end
