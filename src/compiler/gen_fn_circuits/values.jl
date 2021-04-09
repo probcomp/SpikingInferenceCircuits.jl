@@ -49,6 +49,8 @@ abstract type Domain end
 struct FiniteDomain <: Domain
     n::Int
 end
+vals(f::FiniteDomain) = 1:f.n
+
 struct IndexedProductDomain{T} <: Domain
     subdomains::T
 end

@@ -30,7 +30,7 @@ function handle_node!(nodes, node::Gen.ArgumentNode, domains, _, arg_domains, ::
 end
 function handle_node!(nodes, node::Gen.StaticIRNode, domains, addr_to_name, _, op::Op) where {Op <: GenFnOp}
     parent_names = [p.name for p in node.inputs]
-    sub_gen_fn = gen_fn_circuit(node, parent_domains(node, parent_names, domains), static_ir_subop(node, op))
+    sub_gen_fn = gen_fn_circuit(node, parent_domains(parent_names, domains), static_ir_subop(node, op))
     nodes[node.name] = GenFnNode(sub_gen_fn, parent_names)
     domains[node.name] = output_domain(sub_gen_fn)
     if has_traceable_value(sub_gen_fn)
@@ -44,12 +44,7 @@ static_ir_subop(::Gen.JuliaNode, ::Generate) = Generate(EmptySelection())
 static_ir_subop(n::Gen.RandomChoiceNode, op::Generate) = Generate(n.addr in op.observed_addrs ? AllSelection() : EmptySelection())
 static_ir_subop(n::Gen.GenerativeFunctionCallNode, op::Generate) = Generate(op.observed_addrs[n.addr])
 
-# RandomChoiceNode and JuliaNode have indexed parents, while
-# GenerativeFunctionCallNodes have named parents
-parent_domains(::Union{Gen.RandomChoiceNode, Gen.JuliaNode}, parent_names, domains) =
-    Tuple(domains[name] for name in parent_names)
-parent_domains(::Gen.GenerativeFunctionCallNode, parent_names, domains) =
-    (;(name => domains[name] for name in parent_names)...)
+parent_domains(parent_names, domains) = Tuple(domains[name] for name in parent_names)
 
 # `gen_fn_circuit` for `StaticIRNode`s
 gen_fn_circuit(gn::Gen.GenerativeFunctionCallNode, ads, op) =

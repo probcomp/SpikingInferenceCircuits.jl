@@ -76,14 +76,17 @@ infer_domain(vals) =
     if all(v isa Vector for v in vals) && length(Set(Iterators.map(length, vals))) == 1
         IndexedProductDomain(Tuple(infer_domain([v[i] for v in vals]) for i=1:length(first(vals))))
     else
-        FiniteDomain(length(Set(outvals)))
+        FiniteDomain(length(Set(vals)))
     end
 
 # TODO: give a way for users to specify what the domains are, overriding the decision from `infer_domains`
 gen_fn_circuit(f::Function, arg_domains::Tuple{Vararg{FiniteDomain}}, ::Op) where {Op <: GenFnOp} =
     DeterministicGenFn{Op}(
         arg_domains,
-        Iterators.map(args -> f(args...), Iterators.product(arg_domains...)) |> collect |> infer_domain,
+        Iterators.map(
+            inputs -> f(inputs...),
+            Iterators.product(map(vals, arg_domains)...)
+        ) |> collect |> infer_domain,
         f
     )
 
