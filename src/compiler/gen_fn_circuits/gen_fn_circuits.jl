@@ -2,10 +2,11 @@ include("values.jl")
 
 include("gen_fn.jl")
 
-include("from_cpt_sample_score.jl")
-include("deterministic.jl")
-include("distribution.jl")
+include("leaf/from_cpt_sample_score.jl")
+include("leaf/deterministic.jl")
+include("leaf/distribution.jl")
 
-include("composite.jl")
-include("graph.jl")
-include("static.jl")
+include("composite/composite.jl")
+include("composite/graph.jl")
+include("composite/static.jl")
+include("composite/map.jl")
