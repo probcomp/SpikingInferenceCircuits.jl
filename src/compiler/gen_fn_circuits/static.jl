@@ -13,7 +13,7 @@ function gen_fn_circuit(ir::Gen.StaticIR, arg_domains::NamedTuple, op::Op) where
         handle_node!(nodes, node, domains, addr_to_name, arg_domains, op)
     end
 
-    GraphGenFn(
+    return GraphGenFn(
         arg_domains,
         ir.return_node.name,
         nodes,
@@ -28,7 +28,7 @@ function handle_node!(nodes, node::Gen.ArgumentNode, domains, _, arg_domains, ::
 end
 function handle_node!(nodes, node::Gen.StaticIRNode, domains, addr_to_name, _, op::Op) where {Op <: GenFnOp}
     parent_names = [p.name for p in node.inputs]
-    sub_gen_fn = gen_fn_circuit(node, parent_domains(node, parent_names, domains), subop(node, op))
+    sub_gen_fn = gen_fn_circuit(node, parent_domains(node, parent_names, domains), static_ir_subop(node, op))
     nodes[node.name] = GenFnNode(sub_gen_fn, parent_names)
     domains[node.name] = output_domain(sub_gen_fn)
     if has_traceable_value(sub_gen_fn)
@@ -37,10 +37,10 @@ function handle_node!(nodes, node::Gen.StaticIRNode, domains, addr_to_name, _, o
 end
 
 # figure out the operation for a sub-generative-function, given the op for the top-level gen fn
-subop(_, ::Propose) = Propose()
-subop(::Gen.JuliaNode, ::Generate) = Generate(EmptySelection())
-subop(n::Gen.RandomChoiceNode, op::Generate) = Generate(n.addr in op.observed_addrs ? AllSelection() : EmptySelection())
-subop(n::Gen.GenerativeFunctionCallNode, op::Generate) = Generate(op.observed_addrs[n.addr])
+static_ir_subop(_, ::Propose) = Propose()
+static_ir_subop(::Gen.JuliaNode, ::Generate) = Generate(EmptySelection())
+static_ir_subop(n::Gen.RandomChoiceNode, op::Generate) = Generate(n.addr in op.observed_addrs ? AllSelection() : EmptySelection())
+static_ir_subop(n::Gen.GenerativeFunctionCallNode, op::Generate) = Generate(op.observed_addrs[n.addr])
 
 # RandomChoiceNode and JuliaNode have indexed parents, while
 # GenerativeFunctionCallNodes have named parents

@@ -25,6 +25,8 @@ output_domain(i::InputNode, g) = input_domains(g)[i.name]
 A GenFn component analogous to a static generative function:
 it receives some number of input values, passes these values through
 a graph of sub-generative functions, and ultimately outputs a value.
+
+Any node which is traceable or outputs a probability must have an address.
 """
 struct GraphGenFn{Op} <: GenFn{Op}
     input_domains::NamedTuple
@@ -49,6 +51,7 @@ operation(g::GraphGenFn{Generate}) = Generate(g.observed_addrs)
 
 # during `propose`, we score every traceable sub-gen-fn;
 # during `generate`, we only score those traceable sub-gen-fns which we observe
+# (We assume any node with an address is sampled from and thus has a prob output!)
 prob_outputter_names(g::GraphGenFn{Propose}) = values(g.addr_to_name)
 prob_outputter_names(g::GraphGenFn{Generate}) = (
     n for (a, n) in g.addr_to_name
@@ -78,7 +81,7 @@ sub_gen_fns_group(g::GraphGenFn) = NamedComponentGroup(
         name => node.gen_fn for (name, node) in g.nodes if node isa GenFnNode
     )
 # TODO: explore design tradeoffs between using pairwise multiplication vs multiple-input multiplication
-multipliers_group(g::GraphGenFn) = IndexedComponentGroup(
+multipliers_group(g) = IndexedComponentGroup(
         PositiveRealMultiplier(2) for _=1:(num_internal_prob_outputs(g) - 1)
     )
 
@@ -97,7 +100,7 @@ arg_value_edge(::GenFnNode, parentname, comp_in_idx, gen_fn_name) =
     CompOut(:sub_gen_fns => parentname, :value) => CompIn(:sub_gen_fns => gen_fn_name, :inputs => comp_in_idx)
 
 # edges to perform pairwise multiplication of all the tracked probs
-function multiplier_edges(g::GraphGenFn)
+function multiplier_edges(g)
     outputters = collect(prob_outputter_names(g))
     if length(outputters) < 2
         return ()
