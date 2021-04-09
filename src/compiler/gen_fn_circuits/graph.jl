@@ -88,9 +88,7 @@ arg_value_edges(g::GraphGenFn) = Iterators.flatten(
 )
 arg_value_edges(g::GraphGenFn, name, node::GenFnNode) = (
     arg_value_edge(g.nodes[parentname], parentname, comp_in_idx, name)
-    for (comp_in_idx, (parentname, domain_size)) in enumerate(
-        zip(node.parents, input_domain_sizes(node.gen_fn))
-    )
+    for (comp_in_idx, parentname) in enumerate(node.parents)
 )
 arg_value_edges(::GraphGenFn, _, ::InputNode) = ()
 arg_value_edge(parentnode::InputNode, _, comp_in_idx, gen_fn_name) =

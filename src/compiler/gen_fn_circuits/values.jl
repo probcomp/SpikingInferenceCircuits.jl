@@ -53,6 +53,6 @@ struct IndexedProductDomain{T} <: Domain
     subdomains::T
 end
 
-to_value(f::FiniteDomain) = CompositeValue(Tuple(SpikeWire() for _=1:f.n))
+to_value(f::FiniteDomain) = FiniteDomainValue(f.n)
 to_value(p::IndexedProductDomain) = CompositeValue(Tuple(to_value(v) for v in p))
 
