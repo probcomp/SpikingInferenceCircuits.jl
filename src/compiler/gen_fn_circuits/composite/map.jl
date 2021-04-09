@@ -1,13 +1,14 @@
 struct MapGenFn{Op} <: CompositeGenFn{Op}
-    kernel_circuits::Vector{GenFn}
+    kernel_circuits::Vector{<:GenFn}
     input_domains::Tuple
-    kernel_output_domains::Vector{Domain}
+    kernel_output_domains::Vector{<:Domain}
     op::Op
 end
 input_domains(m::MapGenFn) = m.input_domains
 output_domain(m::MapGenFn) = IndexedProductDomain(m.kernel_output_domains)
 has_traceable_value(m::MapGenFn) = any(has_traceable_value(gf) for gf in m.kernel_circuits)
-traceable_value(m::MapGenFn) = IndexedValues(i => traceable_value(gf) for (i, gf) in enumerate(m.kernel_circuits))
+traceable_value(m::MapGenFn) = IndexedValues(traceable_value(gf) for gf in m.kernel_circuits)
+
 operation(m::MapGenFn) = m.op
 
 sub_gen_fns(m::MapGenFn) = Tuple(m.kernel_circuits)
@@ -18,18 +19,18 @@ _possible_prob_names(m::MapGenFn) = (
 )
 prob_outputter_names(m::MapGenFn{Propose}) = _possible_prob_names(m)
 prob_outputter_names(m::MapGenFn{Generate}) = (
-    i for i in _possible_prob_indices(m)
+    i for i in _possible_prob_names(m)
     if !isempty(operation(g).observed_addrs[i])
 )
 
 # arg values and return value mapping
 arg_edges(m::MapGenFn) = (
-    Input(i => j) => CompIn(j, i)
-    for i=1:length(input_domains(m))
-        for j=1:length(m.kernel_circuits)
+    Input(:inputs => i => j) => CompIn(:sub_gen_fns => j, :inputs => input_name)
+    for j=1:length(m.kernel_circuits)    
+        for (i, input_name) in enumerate(arg_names(m.kernel_circuits[j]))
 )
 ret_edges(m::MapGenFn) = (
-    CompOut(j, :value) => Output(:value => j) for j=1:length(m.kernel_circuits)
+    CompOut(:sub_gen_fns => j, :value) => Output(:value => j) for j=1:length(m.kernel_circuits)
 )
 
 addr_to_name(m::MapGenFn) = Dict(i => i for i=1:length(m.kernel_circuits))
@@ -44,14 +45,14 @@ function gen_fn_circuit(map::Gen.Map, arg_domains::Tuple, op::Op) where {Op <: G
     subdomains = [[dom.subdomains[i] for dom in arg_domains] for i=1:n_repetitions]
     
     kernel_circuits = [
-        gen_fn_circuit(map.kernel, doms, map_subop(i, op))
+        gen_fn_circuit(map.kernel, Tuple(doms), map_subop(i, op))
         for (i, doms) in enumerate(subdomains)
     ]
 
     return MapGenFn(
         kernel_circuits,
         arg_domains,
-        map(output_domain, kernel_circuits),
+        Base.map(output_domain, kernel_circuits),
         op
     )
 end

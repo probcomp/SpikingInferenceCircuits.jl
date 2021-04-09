@@ -24,6 +24,6 @@ include("components/real_multiplication/rate_multiplier.jl")
 include("compiler/gen_fn_circuits/gen_fn_circuits.jl")
 
 export CPT, gen_fn_circuit, Propose, Generate, Assess
-export FiniteDomain
+export FiniteDomain, IndexedProductDomain
 
 end

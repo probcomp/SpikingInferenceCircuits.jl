@@ -1,3 +1,7 @@
+# TODO: more explicitely document
+# 1. What functions must subtypes override
+# 2. That the input/output addresses are for each circuit
+
 """
     abstract type GenFnOp end
 
@@ -65,6 +69,14 @@ operation(::GenFn{Propose}) = Propose()
 A tuple of `Domain`s giving the domain for each input of the GenFn.
 """
 input_domains(::GenFn) = error("Not implemented.")
+
+"""
+    arg_names(g::GenFn)
+
+Iterator over the names of the arguments to the generative function, in order.
+(It will hold that `g` receives inputs at the names given by this function.)
+"""
+arg_names(g::GenFn) = keys(input_domains(g))
 
 """
     output_domain(::GenFn)::Int

@@ -21,6 +21,8 @@ function gen_fn_circuit(ir::Gen.StaticIR, arg_domains::NamedTuple, op::Op) where
         op
     )
 end
+gen_fn_circuit(ir::Gen.StaticIR, arg_domains::Tuple, op::GenFnOp) =
+    gen_fn_circuit(ir, (;(node.name => dom for (node, dom) in zip(ir.arg_nodes, arg_domains))...), op)
 
 function handle_node!(nodes, node::Gen.ArgumentNode, domains, _, arg_domains, ::Op) where {Op <: GenFnOp}
     nodes[node.name] = InputNode{Op}(node.name)

@@ -48,6 +48,7 @@ traceable_value(g::GraphGenFn) = NamedValues((
         for (addr, name) in g.addr_to_name
     )...)
 operation(g::GraphGenFn{Generate}) = Generate(g.observed_addrs)
+arg_names(g::GraphGenFn) = keys(g.input_domains)
 
 sub_gen_fns(g::GraphGenFn) = (;(name => node.gen_fn for (name, node) in g.nodes if node isa GenFnNode)...)
 addr_to_name(g::GraphGenFn) = g.addr_to_name
