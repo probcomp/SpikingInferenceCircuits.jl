@@ -120,10 +120,16 @@ io_edges(g::CompositeGenFn) = Iterators.flatten((
         trace_output_edges(g),
         obs_input_edges(g)
     ))
-trace_output_edges(g::CompositeGenFn) = (
-        CompOut(:sub_gen_fns => addr_to_name(g)[addr], :trace) => Output(:trace => addr)
-        for addr in keys(trace_value(g))
-    )
+trace_output_edges(g::CompositeGenFn) = 
+    if has_trace(g)
+        (
+            CompOut(:sub_gen_fns => addr_to_name(g)[addr], :trace) => Output(:trace => addr)
+            for addr in keys(trace_value(g))
+        )
+    else
+        ()
+    end
+    
 obs_input_edges(::CompositeGenFn{Propose}) = ()
 obs_input_edges(g::CompositeGenFn{Generate}) = (
     Input(:obs => addr) => CompIn(:sub_gen_fns => addr_to_name(g)[addr], :obs)

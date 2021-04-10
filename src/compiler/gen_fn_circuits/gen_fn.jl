@@ -120,8 +120,12 @@ has_trace(g::GenFn{Generate}) = (
 The `Value` at the `:trace` output for this circuit.  This should only be called
 if `has_trace(g)`.
 """
-trace_value(g::GenFn{Propose}) = traceable_value(g)
-trace_value(g::GenFn{Generate}) =
+function trace_value(g::GenFn)
+    @assert has_trace(g)
+    return _trace_value(g)
+end
+_trace_value(g::GenFn{Propose}) = traceable_value(g)
+_trace_value(g::GenFn{Generate}) =
     let tv = traceable_value(g)
         if tv isa FiniteDomainValue
             @assert isempty(operation(g).observed_addrs)
@@ -137,7 +141,7 @@ trace_value(g::GenFn{Generate}) =
 
 Whether this gen fn circuit outputs a probability (`:prob`).
 """
-has_prob_output(::GenFn{Propose}) = true
+has_prob_output(g::GenFn{Propose}) = has_traceable_value(g)
 # if there are traceable values whose probabilities we can access,
 # and any of these traceable values are observed, generate will output a prob
 # (if _all_ values are sampled and not observed, we don't output a score)

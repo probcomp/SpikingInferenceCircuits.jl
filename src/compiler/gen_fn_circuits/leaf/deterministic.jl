@@ -41,11 +41,11 @@ operation(::DeterministicGenFn{Generate}) = Generate(Set())
 # CPT with deterministic outputs
 deterministic_cpt(d::DeterministicGenFn) =
     CPT([
-        onehot(d.output_domain.n, fn(input_vals...)::Int)
-        for input_vals in Iterators.product((dom.n for dom in d.input_domains)...)
+        onehot(d.output_domain.n, d.fn(input_vals...)::Int)
+        for input_vals in Iterators.product((1:dom.n for dom in d.input_domains)...)
     ])
 function onehot(n, i)
-    @assert i <= n
+    @assert i <= n "i = $i; n = $n"
     v = zeros(n)
     v[i] = 1
     return v
@@ -59,12 +59,33 @@ determ_finite_domain_implementation(g::DeterministicGenFn) =
     )
 
 # TODO: implementation for ProductDomain output
+function determ_to_product_implementation(g::DeterministicGenFn, ::Spiking)
+    @assert length(g.input_domains) == 1 "In the current implementation, a deterministic function outputting a ProductDomain value may only have a single value as input!"
+    @assert all(d isa FiniteDomain for d in g.output_domain.subdomains) "Currently not implemented: outputting ProductDomain values where some subdomains are not FiniteDomains."
+    input_domain = only(g.input_domains)
 
-Circuits.implement(g::DeterministicGenFn, ::Target) =
+    return CompositeComponent(
+        # we need to route specific values from one to the other, so we need to implement the I/O twice:
+        # FiniteDomainValue --> SpikingCategoricalValue --> CompositeValue(SpikeWire() ...)
+        implement(implement(inputs(g), Spiking(), :inputs), Spiking(), :inputs),
+        implement(implement(outputs(g), Spiking(), :value), Spiking(), :value),
+        (),
+        (
+            let outval = g.fn(inval)
+                Input(:inputs => 1 => inval) => Output(:value => outidx => outval[outidx])
+            end
+            for inval=1:input_domain.n
+                for outidx=1:length(g.output_domain.subdomains)
+        ),
+        g
+    )
+end
+
+Circuits.implement(g::DeterministicGenFn, t::Target) =
     if g.output_domain isa FiniteDomain
         determ_finite_domain_implementation(g)
     elseif g.output_domain isa IndexedProductDomain
-        error("Not yet implemented: deterministic function from finite domains to product domain!")
+        determ_to_product_implementation(g, t)
     end
 
 ### Function --> DeterministicGenFn component ###
@@ -76,7 +97,7 @@ infer_domain(vals) =
     if all(v isa Vector for v in vals) && length(Set(Iterators.map(length, vals))) == 1
         IndexedProductDomain(Tuple(infer_domain([v[i] for v in vals]) for i=1:length(first(vals))))
     else
-        FiniteDomain(length(Set(vals)))
+        FiniteDomain(maximum(Set(vals)))
     end
 
 # TODO: give a way for users to specify what the domains are, overriding the decision from `infer_domains`

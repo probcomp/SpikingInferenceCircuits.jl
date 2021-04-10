@@ -10,22 +10,30 @@ const SIC = SpikingInferenceCircuits
     return x
 end
 
+@gen (static) function add_minus_1(x, y)
+    return x + y - 1
+end
 @gen (static) function outside(input)
     y1 ~ CPT([[0.9, 0.1], [0.1, 0.9]])(input)
     y2 ~ CPT([[0.9, 0.1], [0.1, 0.9]])(input)
 
-    vec = [y1, y2]
+    vec1 = [y1, 1]
+    vec2 = [1, y2]
+    
+    sumvec ~ Map(add_minus_1)(vec1, vec2)
 
-    output ~ Map(inside)(vec)
+    output ~ Map(inside)(sumvec)
 
     return output
 end
 
 circuit = gen_fn_circuit(
-    Map(inside),
-    (IndexedProductDomain((FiniteDomain(2), FiniteDomain(2))),),
+    outside,
+    (input=FiniteDomain(2),),
     Propose()
 )
+
+add_circuit = gen_fn_circuit(add_minus_1, (x=FiniteDomain(2), y=FiniteDomain(2)), Propose())
 
 ### implement the circuit ###
 
@@ -48,7 +56,7 @@ implemented = implement_deep(circuit, Spiking())
 println("Component implemented.")
 
 events = SpikingSimulator.simulate_for_time_and_get_events(implemented, 100.0;
-    initial_inputs=(:inputs => 1 => 1 => 1, :inputs => 1 => 2 => 2),
+    initial_inputs=(:inputs => :input => 2,),
 )
 
 println("Simulation complete.")
