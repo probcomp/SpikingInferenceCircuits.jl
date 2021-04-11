@@ -5,7 +5,7 @@ using SpikingInferenceCircuits
 const SIC = SpikingInferenceCircuits
 
 @gen (static) function inside(input)
-    x ~ CPT([[0.5, 0.5], [0.2, 0.8]])(input)
+    x ~ CPT([[0.5, 0.5], [0.2, 0.8]])(input) # 2, 2
     return x
 end
 
@@ -13,8 +13,8 @@ end
     return x + y - 1
 end
 @gen (static) function outside(input)
-    y1 ~ CPT([[0.9, 0.1], [0.1, 0.9]])(input)
-    y2 ~ CPT([[0.9, 0.1], [0.1, 0.9]])(input)
+    y1 ~ CPT([[0.9, 0.1], [0.1, 0.9]])(input) # 2
+    y2 ~ CPT([[0.9, 0.1], [0.1, 0.9]])(input) # 2
 
     vec1 = [y1, 1]
     vec2 = [1, y2]
@@ -25,6 +25,7 @@ end
 
     return output
 end
+@load_generated_functions()
 
 circuit = gen_fn_circuit(
     outside,
@@ -86,3 +87,33 @@ end
 draw_spiketrain_figure(
     collect(values(dict)); names=map(x->"$x", collect(keys(dict))), xmin=0, xmax=100.
 )
+
+### Check spike rates: ###
+probrate(dict, run_time) =
+    if haskey(dict, :prob)
+        length([x for x in dict[:prob] if x > 3/4 * run_time]) / (3/4 * run_time)
+    else
+        0.
+    end
+function do_run_and_check_spike_rate(run_length=100.0, input_val=2)
+    events = SpikingSimulator.simulate_for_time_and_get_events(implemented, run_length;
+        initial_inputs=(:inputs => :input => input_val,),
+    )
+    dict = spiketrain_dict(filter(((t,args...),) -> is_primary_output(args...), events))
+
+    y1 = haskey(dict, :trace => :y1 => 1) ? 1 : 2
+    y2 = haskey(dict, :trace => :y2 => 1) ? 1 : 2
+    x1 = haskey(dict, :trace => :output => 1 => :x => 1) ? 1 : 2
+    x2 = haskey(dict, :trace => :output => 2 => :x => 1) ? 1 : 2
+
+    true_prob = exp(assess(outside, (input_val,), choicemap(
+        (:y1, y1), (:y2, y2),
+        (:output => 1 => :x, x1),
+        (:output => 1 => :x, x2),
+    ))[1])
+
+    expected_rate = true_prob * REF_RATE()
+    actual_rate   = probrate(dict, run_length)
+
+    return (expected_rate, actual_rate)
+end
