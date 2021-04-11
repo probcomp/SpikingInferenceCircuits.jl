@@ -1,4 +1,3 @@
-import JSON
 using Gen
 using Circuits
 using SpikingCircuits
