@@ -1,6 +1,6 @@
 # TODO: more explicitely document
 # 1. What functions must subtypes override
-# 2. That the input/output addresses are for each circuit
+# 2. What the input/output addresses are for each circuit
 
 """
     abstract type GenFnOp end

@@ -1,7 +1,7 @@
 """
     genfn_from_cpt_sample_score(cpt_ss::CPTSampleScore, g::GenFn, val_to_trace::Bool)
 
-A `CompositeComponent` which implements `pg` using the given `cpt_ss`.  If `val_to_trace` is true,
+A `CompositeComponent` which implements `g` using the given `cpt_ss`.  If `val_to_trace` is true,
 the value output from `cpt_ss` is both output as `:value` and `:trace`; if this is false, it is only
 output as `:value`.
 """

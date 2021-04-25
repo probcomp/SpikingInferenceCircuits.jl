@@ -46,11 +46,17 @@ _has_selected_nontrivial(v, s) = any(
 # (A FiniteDomain(n) is equivalent to an DiscreteIRTransforms.EnumeratedDomain(1:n).)
 
 abstract type Domain end
+"""
+FiniteDomain(n) denotes `{1, ..., n}`.
+"""
 struct FiniteDomain <: Domain
     n::Int
 end
 vals(f::FiniteDomain) = 1:f.n
 
+"""
+IndexedProductDomain(doms) denotes ⨂_{D ∈ doms}{D}
+"""
 struct IndexedProductDomain{T} <: Domain
     subdomains::T
 end
