@@ -7,6 +7,8 @@ struct Window
     pre_hold::Float64 # do we know the pre_hold?  Or only track the post_hold?
     post_hold::Float64
 end
+start_of_pre_hold(w::Window) = w.interval.min - w.pre_hold
+end_of_post_hold(w::Window) = w.interval.max + w.post_hold
 
 abstract type TemporalInterface end
 struct CombinatoryInterface <: TemporalInterface
