@@ -9,6 +9,8 @@ struct Window
 end
 start_of_pre_hold(w::Window) = w.interval.min - w.pre_hold
 end_of_post_hold(w::Window) = w.interval.max + w.post_hold
+interval_length(i::Interval) = i.max - i.min
+interval_length(w::Window) = interval_length(w.interval)
 
 abstract type TemporalInterface end
 struct CombinatoryInterface <: TemporalInterface

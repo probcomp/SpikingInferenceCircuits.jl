@@ -1,6 +1,8 @@
 struct PoissonOffGate <: GenericComponent
     ΔT::Float64 # time it remembers an off input
-    R::Float64 # "off" rate will always be ≤ exp(-R/2)
+    # `R` controls the rate during ON and OFF modes.
+    # "off" rate will always be ≤ exp(-R/2); "on" rate will always be ≥ exp(R/2)
+    R::Float64
     M::Float64 # number of spikes which would have to be input to override an "OFF" signal
     p_F::Float64 # upper bound on probability of failing to satisfy interface
     function PoissonOffGate(args...)
@@ -59,7 +61,7 @@ can_support_inwindows(g::PoissonOffGate, d::Dict{Input, Window}) =
         # Total memory of IN and OFF ≤ Neuron memory
         d[Input(:in)].interval.max - d[Input(:off)].interval.min ≤ g.ΔT &&
         # OFF has a hold window through the full output window
-        d[Input(:in)].interval.max + maximum_delay(g) ≤ end_of_post_hold(d[Input(:off)]),
+        d[Input(:in)].interval.max + maximum_delay(g) ≤ end_of_post_hold(d[Input(:off)]) &&
         # IN has a hold window covering the `maximum_delay` before the output begins
         d[Input(:in)].pre_hold ≥ maximum_delay(g)
     )
@@ -69,7 +71,7 @@ output_windows(g::PoissonOffGate, d::Dict{Input, Window}) =
             d[Input(:in)].interval.min,
             d[Input(:in)].interval.max + maximum_delay(g)
         ),
-        0., 0.
+        0., 0. # TODO: if we have extra hold time in the inputs, we can probably do better
     ))
 failure_probability(g::PoissonOffGate) = g.p_F
 
