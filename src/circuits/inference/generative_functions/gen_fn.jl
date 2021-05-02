@@ -151,7 +151,7 @@ has_prob_output(g::GenFn{Generate}) = has_traceable_value(g) && !isempty(operati
     gen_fn_circuit(object_to_convert_to_circuit, arg_domains::Tuple{Vararg{<:Domain}}, op::Op)
     gen_fn_circuit(object_to_convert_to_circuit, arg_domains::NamedTuple{Vararg{<:Domain}}, op::Op)
 
-Get a GenFn component for the given `object_to_convert_to_circuit` running the operation `op`.
+Get a GenFn{Op} component for the given `object_to_convert_to_circuit` running the operation `op`.
 The circuit will expect input values to be in the given `arg_domain`s.
 
 (For static generative functions, `arg_domains` should be a NamedTuple using the argument names;

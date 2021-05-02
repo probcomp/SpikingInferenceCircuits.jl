@@ -61,7 +61,7 @@ num_internal_prob_outputs(g) = length(collect(prob_outputter_names(g)))
 Circuits.implement(g::CompositeGenFn, ::Target) =
     CompositeComponent(
         inputs(g), outputs(g),
-        (
+        ( # subcomponents
             sub_gen_fns=ComponentGroup(sub_gen_fns(g)),
             (let multgroup = multipliers_group(g)
                 isempty(multgroup.subcomponents) ? () : (:multipliers => multgroup,)
