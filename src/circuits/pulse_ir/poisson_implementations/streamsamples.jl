@@ -1,10 +1,12 @@
-struct PoissonStreamSamples <: GenericComponent
+struct PoissonStreamSamples <: ConcretePulseIRPrimitive
     P::Matrix{Float64}
     overall_on_rate::Float64
     overall_off_rate::Float64
     ΔT::Float64 # Neuron memory (time before neurons turn off)
 end
-Circuits.abstract(p::PoissonStreamSamples) = StreamSamples(p.P)
+Circuits.abstract(p::PoissonStreamSamples) = StreamSamples(p.P, p.ΔT,
+    t -> Distributions.Poisson(t * p.overall_on_rate)
+)
 
 for s in (:target, :inputs, :outputs)
     @eval (Circuits.$s(g::PoissonStreamSamples) = Circuits.$s(Circuits.abstract(g)))

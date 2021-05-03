@@ -1,9 +1,12 @@
-struct PulseConditionalScore <: GenericComponent
+"""
+Pulse IR implementation of a `ConditionalScore` with a concrete temporal interface.
+"""
+struct PulseConditionalScore <: ConcretePulseIRPrimitive
     P::Matrix{Float64}
-    streamsamples
-    mux
-    ti
-    offgate
+    streamsamples::ConcretePulseIRPrimitive
+    mux::ConcretePulseIRPrimitive
+    ti::ConcretePulseIRPrimitive
+    offgate::ConcretePulseIRPrimitive
 end
 
 Circuits.abstract(p::PulseConditionalScore) = ConditionalScore(p.P)
@@ -49,38 +52,9 @@ Circuits.implement(p::PulseConditionalScore) =
 ### Temporal Interface ###
 failure_probability_bound(p::PulseConditionalScore) =
     1 - (1 - p_subcomponent_fails(p))*(1 - p_insufficient_hold_for_gate(p))
-p_subcomponent_fails(p::PulseConditionalScore) = error("TODO")
+p_subcomponent_fails(p::PulseConditionalScore) = 1 - pnf(p.mux)*pnf(p.offgate)*pnf(p.streamsamples)*pnf(p.ti)
+pnf(c) #= probability of not failing =# = 1 - failure_probability_bound(c)
 p_insufficient_hold_for_gate(p::PulseConditionalScore) = error("TODO")
-
-# Shouldn't need these at all:
-# ss_outwindow(p::PulseConditionalScore, d::Dict{Input, Window}) =
-#     (output_windows(p.streamsamples, Dict(Input(:in) => d[Input(:in_val)]))
-#         |> values |> containing_window)
-
-# mux_outwindow(p::PulseConditionalScore, d::Dict{Input, Window}) =
-#     output_windows(p.mux, Dict(:))
-
-# ti_outwindow(p::PusleConditionalScore, d::Dict{Input, Window}) =
-#     output_windows(
-#         p.ti, Dict(Input(:in) => mux_outwindow(p, d))
-#     )[Output(:out)]
-
-# initial_off_gate_input(p, d) = Dict(
-#     Input(:off) => Window(
-#         Interval(ti_outwindow(p, d).interval.min, ti_outwindow(p, d).interval.min)
-#         Inf, Inf
-#     ),
-#     Input(:in) => ss_outwindow(p, d)
-# )
-# can_support_inwindows(p::PulseConditionalScore, d::Dict{Input, Window}) = (
-#     can_support_inwindows(p.streamsamples, Dict(Input(:in) => d[Input(:in_val)])) &&
-#     can_support_inwindows(p.mux, Dict(
-#         (Input(:in => i) => ss_outwindow(p, d) for i=1:out_domain_size(abstract(p)))...,
-#         (Input(:sel => i) => d[Input(:obs => i)] for i=1:out_domain_size(abstract(p)))...
-#     ) &&
-#     # make sure the gate could remember an OFF input through the whole interval
-#     initial_off_gate_input(p.gate, no_off_gate_input(p, d))
-# )
 
 output_windows(p::PulseConditionalScore, d::Dict{Input, Window}) = output_windows(implement(p, Spiking()), d)
 valid_strict_inwindows(::PulseConditionalScore, ::Dict{Input, Window}) = error("Not implemented.")

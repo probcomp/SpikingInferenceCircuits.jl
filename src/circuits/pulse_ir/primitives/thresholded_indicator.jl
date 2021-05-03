@@ -16,3 +16,33 @@ end
 Circuits.target(::ThresholdedIndicator) = Spiking()
 Circuits.inputs(::ThresholdedIndicator) = NamedValues(:in => SpikeWire())
 Circuits.outputs(::ThresholdedIndicator) = NamedValues(:out => SpikeWire())
+
+struct ConcreteThresholdedIndicator <: ConcretePulseIRPrimitive
+    threshold::Int
+    ΔT::Float64 # Neuron memory
+    M::Float64 # Number of spikes needed to override & produce another spike after first spike emitted
+    max_delay::Float64
+end
+Circuits.abstract(t::ConcreteThresholdedIndicator) = ThresholdedIndicator(t.threshold)
+for s in (:target, :inputs, :outputs)
+    @eval (Circuits.$s(t::PoissonThresholdedIndicator) = Circuits.$s(Circuits.abstract(t)))
+end
+
+valid_strict_inwindows(t::ConcreteThresholdedIndicator, d::Dict{Input, Window}) =
+    (
+        d[Input(:in)].pre_hold ≥ t.ΔT &&
+        interval_length(d[Input(:in)]) ≤ t.ΔT - t.max_delay
+    )
+output_windows(t::ConcreteThresholdedIndicator, d::Dict{Input, Window}) =
+    Dict(Output(:out) => Window(
+        Interval(
+            d[Input(:in)].interval.min,
+            d[Inpt(:in)].interval.max + t.max_delay
+        ),
+        0., 0. # TODO: if we have extra hold time in the inputs, we can probably do better
+    ))
+
+# The input is valid unless after passing the threshold, it was fed enough spikes
+# that it could override the indicator being OFF.
+is_valid_input(g::ConcreteThresholdedIndicator, d::Dict{Input, UInt}) =
+    d[Input(:in)] < g.threshold + g.M

@@ -1,4 +1,5 @@
-include("gated_repeater.jl")
+include("off_gate.jl")
+include("on_gate.jl")
 include("multiplier.jl")
 include("samplestream.jl")
 include("sync.jl")

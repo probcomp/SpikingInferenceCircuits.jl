@@ -18,7 +18,7 @@ intersect(a::Interval, b::Interval) =
 
 struct Window
     interval::ClosedInterval
-    pre_hold::Float64 # do we know the pre_hold?  Or only track the post_hold?
+    pre_hold::Float64
     post_hold::Float64
 end
 start_of_pre_hold(w::Window) = w.interval.min - w.pre_hold
@@ -58,39 +58,29 @@ struct SynchronousInterface <: TemporalInterface
     in_holds::Dict{Input, Interval}
 end
 
+#=
+TODO -- clarify --
+Is a hold on the output window the amount of time where we can guarantee no new output
+spikes will arise so long as no new input spikes arise?
+Or is it how long we can guarantee no output spikes will occur _even if_ input spikes arrive?
+
+I think _probably_ we want it to be how long given that no new inputs occur.
+=#
+
+"""
+Pulse IR primitive with concrete temporal interface (but not necessarily known failure probabilities
+or a fixed implementation strategy.)
+"""
+abstract type ConcretePulseIRPrimitive <: GenericComponent end
+
 """
 If a component has a concrete temporal interface, then
 we can ask whether it supports a set of input windows,
 and if so, ask for a corresponding output window.
 """
 has_concrete_temporal_interface(::Component) = false
-
-#=
-
-`Mux`, `OffGate`, `ConditionalScore`, etc. _do not_ have concrete temporal interface.
-
-If we know how long we may need to remember an `Off` input for, we should be able to ask
-for an `OffGate` which will have a sufficiently long memory (if it is possible to implement one).
-
-`OffGate` knows:
-- The interface will have `Off` end before `In`
-- The interface will have `Off` hold through `In`
-- The interface will have `Out` align with `In`, plus some delay (between min and max delay, which we don't know yet)
-`OffGate{ΔT}` knows:
-- The length of the `Off` + `In` windows
-`PoissonOffGate(ΔT, maxdelay, R, M)` knows:
-- The min and max delay
-- The pre-input hold
-- The probability of failing to satisfy the interface
-[- The valid input spike counts]       |> maybe this should go somewhere earler?
-
-One way to do this would be:
-`OffGate` → `OffGate(ΔT, M, maxdelay)` → `PoissonOffGate(ΔT, M, R, maxdelay)`
-The idea is:
-Component type → Concrete temporal interface → Concrete temporal interface + probability of failure
-
-
-=#
+has_concrete_temporal_interface(::ConcretePulseIRPrimitive) = true
+has_concrete_temporal_interface(c::CompositeComponent) = all(has_concrete_temporal_interface(sc) for sc in values(c.subcomponents))
 
 # returns `CombinatoryInterface` or `SynchronousInterface` (or maybe `nothing`)
 interface_type(::Component) = error("Not implemented.")
@@ -107,6 +97,7 @@ failure_probability_bound(::Component) = error("Not implemented.")
 Whether this spike-count assignment to the input lines is a valid input to a combinatory component.
 """
 is_valid_input(::Component, ::Dict{Input, UInt}) = error("Not implemented.")
+is_valid_input(c::ConcretePulseIRPrimitive, d::Dict{Input, UInt}) = is_valid_input(abstract(c), d)
 
 # """
 # Whether the component can support the given input windows.
@@ -120,6 +111,7 @@ for this component--ie. an interface where we can guarantee the distribution
 of outputs in an output window based upon the inputs in the given input windows.
 """
 valid_strict_inwindows(::Component, ::Dict{Input, Window}) = error("Not implemented.")
+valid_strict_inwindows(c::ConcretePulseIRPrimitive, d::Dict{Input, Window}) = valid_strict_inwindows(abstract(c), d)
 
 """
 The output windows for the composite component, given the windows in which inputs will arrive.
@@ -128,6 +120,7 @@ if the input windows are not strict, these outputs will be broad enough to cover
 all possible output windows for a strict input within the given loose input.)
 """
 output_windows(::Component, input_windows::Dict{Input, Window})::Dict{Output, Window} = error("Not implemented.")
+output_windows(c::ConcretePulseIRPrimitive, iw::Dict{Input, Window}) = output_windows(abstract(c), iw)
 
 """
 The output windows for a synchronous component after a transition occurs.
@@ -135,13 +128,13 @@ The output windows for a synchronous component after a transition occurs.
 output_windows(::Component) = error("Not implemented.")
 
 ### Interface for a CompositeComponent ###
-has_concrete_temporal_interface(c::CompositeComponent) = !isnothing(interface_type(c))
-interface_type(c::CompositeComponent) =
-    if !(all(has_concrete_temporal_interface(sc) for sc in values(c.subcomponents)))
-        nothing
-    else
-        length(Set(interface_type(sc)) for sc in c.subcomponents) == 1
-    end
+# TODO if we need it...
+# interface_type(c::CompositeComponent) =
+#     if !(all(has_concrete_temporal_interface(sc) for sc in values(c.subcomponents)))
+#         nothing
+#     else
+#         length(Set(interface_type(sc)) for sc in c.subcomponents) == 1
+#     end
 
 failure_probability_bound(c::CompositeComponent) =
     1 - prod((1 - failure_probability_bound(sc)) for sc in c.subcomponents)
