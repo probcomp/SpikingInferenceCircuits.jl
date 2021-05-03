@@ -35,7 +35,7 @@ Circuits.implement(t::PoissonThresholdedIndicator) =
 # So, by the math in the comments in that file:
 maximum_delay(g::ThresholdedIndicator) = exp(-g.R/2) × log(1 + (g.p_F - 1) × exp(-g.ΔT × exp(-g.R/2)))
 
-can_support_inwindows(t::ThresholdedIndicator, d::Dict{Input, Window}) =
+valid_strict_inwindows(t::ThresholdedIndicator, d::Dict{Input, Window}) =
     (
         d[Input(:in)].pre_hold ≥ t.ΔT &&
         interval_length(d[Input(:in)]) ≤ t.ΔT - t.max_delay

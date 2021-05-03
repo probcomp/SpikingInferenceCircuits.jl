@@ -44,7 +44,7 @@ p_doesnt_spike_by_delay_bound(g::PoissonAsyncOnGate) =
 
 is_valid_input(g::PoissonAsyncOnGate, d::Dict{Input, UInt}) = d[Input(:in)] < g.M
 
-can_support_inwindows(g::PoissonAsyncOnGate, d::Dict{Input, Window}) =
+valid_strict_inwindows(g::PoissonAsyncOnGate, d::Dict{Input, Window}) =
     (
        d[Input(:on)].pre_hold ≥ g.ΔT &&
        d[Input(:in)].pre_hold ≥ g.max_delay &&

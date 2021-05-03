@@ -38,7 +38,7 @@ p_doesnt_spike_by_delay_bound(g::PoissonOffGate) =
         1 - (1 - exp(-α × exp(-g.R/2)))^(g.M - 1)
     end
 
-can_support_inwindows(g::PoissonOffGate, d::Dict{Input, Window}) =
+valid_strict_inwindows(g::PoissonOffGate, d::Dict{Input, Window}) =
     (
         # OFF window ends before IN window
         d[Input(:in)].interval.min ≥ d[Input(:off)].interval.max &&

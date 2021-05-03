@@ -16,3 +16,6 @@ prob_output_given_input(c::StreamSamples, outval) = c.P[:,outval]
 Circuits.target(::StreamSamples) = Spiking()
 Circuits.inputs(s::StreamSamples) = implement_deep(FiniteDomainValue(in_domain_size(s)), Spiking())
 Circuits.outputs(s::StreamSamples) = implement_deep(FiniteDomainValue(out_domain_size(s)), Spiking())
+
+# TODO (maybe): a somewhat richer interface for obtaining the I/O interface for a single output
+# vs the interface for obtaining many outputs

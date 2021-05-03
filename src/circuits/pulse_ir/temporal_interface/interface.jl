@@ -71,6 +71,9 @@ interface_type(::Component) = error("Not implemented.")
 """
 An upper bound on the probability that a component fails to satisfy its interface when given valid inputs.
 """
+# TODO: this failure probability can vary depending on the input windows and output windows.
+# Could we have a function which reports the bound on a more case-by-case basis?
+# Currently it has to report the bound for the worst-case input and output windows.
 failure_probability_bound(::Component) = error("Not implemented.")
 
 """
@@ -78,13 +81,24 @@ Whether this spike-count assignment to the input lines is a valid input to a com
 """
 is_valid_input(::Component, ::Dict{Input, UInt}) = error("Not implemented.")
 
+# """
+# Whether the component can support the given input windows.
+# (TODO: what exactly does this mean?)
+# """
+# can_support_inwindows(::Component, ::Dict{Input, Window}) = error("Not implemented.")
+
 """
-Whether the component can support the given input windows.
+Whether the given input windows are valid for a _strict_ interface
+for this component--ie. an interface where we can guarantee the distribution
+of outputs in an output window based upon the inputs in the given input windows.
 """
-can_support_inwindows(::Component, ::Dict{Input, Window}) = error("Not implemented.")
+valid_strict_inwindows(::Component, ::Dict{Input, Window}) = error("Not implemented.")
 
 """
 The output windows for the composite component, given the windows in which inputs will arrive.
+(If the input windows are valid strict windows, this will be the strict output;
+if the input windows are not strict, these outputs will be broad enough to cover
+all possible output windows for a strict input within the given loose input.)
 """
 output_windows(::Component, input_windows::Dict{Input, Window})::Dict{Output, Window} = error("Not implemented.")
 
@@ -111,37 +125,50 @@ is_valid_input(::CompositeComponent, ::Dict{Input, UInt}) = error("Not implement
 can_support_inwindows(c::CompositeComponent, d::Dict{Input, Window}) =
     !isnothing(output_windows(c, d))
 
-function output_windows(circuit::CompositeComponent, input_windows)
-    windows = Dict{NodeName, Interval}(k => v for (k, v) in input_windows)
+# Windows for all the Input, CompIn, CompOut, and Output s, given the input windows.
+function nodename_windows(circuit::CompositeComponent, input_windows::Dict{Input, Window})
+    windows = Dict{NodeName, Window}(k => v for (k, v) in input_windows)
     for (name, subcomp) in topologically_ordered_subcomponents(circuit)
+        for input in keys(inputs(subcomp))
+            windows[CompIn(name, input)] = containing_window((
+                windows[inputter]
+                for inputter in inputters(circuit, CompIn(name, input))
+            ))
+        end
+
         in_windows = Dict(
             Input(input) => windows[CompIn(name, input)]
             for (input, _) in inputs(subcomp)
         )
 
-        if can_support_inwindows(subcomp, in_windows)
-            outwindows = output_windows(subcomp, in_windows)
-        else
-            return nothing
-        end
-
-        for (o, window) in output_windows
+        for (o, window) in output_windows(subcomp, in_windows)
             windows[CompOut(name, valname(o))] = window
         end
     end
-
-    return Dict(
-        let outwindow = containing_window(
+    
+    for outname in keys(outputs(circuit))
+        windows[Output(outname)] = containing_window(
             windows[compout]
             for compout in inputters(circuit, Output(outname))
         )
-            Output(outname) => outwindow
-        end
-        for outname in keys(outputs(circuit))
-    )
+    end
 
-    return filter(windows, ((k,_),) -> k isa Output)
+    return windows
 end
+
+output_windows(c::CompositeComponent, input_windows::Dict{Input, Window}) =
+    filter(nodename_windows(c, input_windows), ((name, _),) -> name isa Output)
+
+valid_strict_inwindows(c::CompositeComponent, input_windows) =
+    let windows = nodename_windows(c, input_windows)
+        all(
+            valid_strict_inwindows(subcomponent, Dict(
+                CompIn(subcomp_name, valname) => windows[CompIn(subcomp_name, valname)]
+                for valname in keys(inputs(subcomp))
+            ))
+            for (subcomp_name, subcomp) in c.subcomponents
+        )
+    end
 
 # TODO: other checks on the validity of a CompositeComponent
 # e.g. can we check whether the set of outputs from a component are all
