@@ -65,6 +65,33 @@ and if so, ask for a corresponding output window.
 """
 has_concrete_temporal_interface(::Component) = false
 
+#=
+
+`Mux`, `OffGate`, `ConditionalScore`, etc. _do not_ have concrete temporal interface.
+
+If we know how long we may need to remember an `Off` input for, we should be able to ask
+for an `OffGate` which will have a sufficiently long memory (if it is possible to implement one).
+
+`OffGate` knows:
+- The interface will have `Off` end before `In`
+- The interface will have `Off` hold through `In`
+- The interface will have `Out` align with `In`, plus some delay (between min and max delay, which we don't know yet)
+`OffGate{ΔT}` knows:
+- The length of the `Off` + `In` windows
+`PoissonOffGate(ΔT, maxdelay, R, M)` knows:
+- The min and max delay
+- The pre-input hold
+- The probability of failing to satisfy the interface
+[- The valid input spike counts]       |> maybe this should go somewhere earler?
+
+One way to do this would be:
+`OffGate` → `OffGate(ΔT, M, maxdelay)` → `PoissonOffGate(ΔT, M, R, maxdelay)`
+The idea is:
+Component type → Concrete temporal interface → Concrete temporal interface + probability of failure
+
+
+=#
+
 # returns `CombinatoryInterface` or `SynchronousInterface` (or maybe `nothing`)
 interface_type(::Component) = error("Not implemented.")
 
