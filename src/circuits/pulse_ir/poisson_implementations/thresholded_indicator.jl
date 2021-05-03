@@ -9,7 +9,7 @@ struct PoissonThresholdedIndicator <: GenericComponent
 end
 # TODO: constructor where we give a failure probability & it figures out the `max_delay`
 # we need to accomodate that
-Circuit.abstract(t::PoissonThresholdedIndicator) = ThresholdedIndicator(t.threshold)
+Circuits.abstract(t::PoissonThresholdedIndicator) = ThresholdedIndicator(t.threshold)
 
 for s in (:target, :inputs, :outputs)
     @eval (Circuits.$s(t::PoissonThresholdedIndicator) = Circuits.$s(Circuits.abstract(t)))

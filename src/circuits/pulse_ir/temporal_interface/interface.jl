@@ -9,6 +9,7 @@ struct ClosedInterval <: Interval
 end
 struct EmptyInterval <: Interval end
 closed_or_empty_interval(a, b) = a ≤ b ? ClosedInterval(a, b) : EmptyInterval()
+Interval(a, b) = closed_or_empty_interval(a, b)
 interval_length(i::ClosedInterval) = i.max - i.min
 interval_length(::EmptyInterval) = 0.
 union(a::Interval, b::Interval) = ClosedInterval(min(a.min, b.min), max(a.max, b.max))

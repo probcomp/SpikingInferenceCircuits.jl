@@ -30,10 +30,10 @@ failure_probability_bound(g::PoissonOffGate) =
     1 - (1 - p_spikes_while_off_bound(g))*(1 - p_doesnt_spike_by_delay_bound(g))
 
 p_spikes_while_off_bound(g::PoissonOffGate) =
-    1 - exp(-g.ΔT × exp(-g./R/2))
+    1 - exp(-g.ΔT × exp(-g.R/2))
 
 # Derived on page 76 of notebook
-p_doesnt_spike_by_delay_bound(g::PosisonOffGate) =
+p_doesnt_spike_by_delay_bound(g::PoissonOffGate) =
     let α = g.max_delay × (exp(g.R) - 1)
         1 - (1 - exp(-α × exp(-g.R/2)))^(g.M - 1)
     end
