@@ -27,8 +27,8 @@ Circuits.outputs(::Union{OnGate, AsyncOnGate}) = NamedValues(:out => SpikeWire()
 """
 struct ConcreteAsyncOnGate <: ConcretePulseIRPrimitive
     ΔT::Float64 # time it remembers an off input
-    M::Float64 # number of spikes which would have to be input to pass through without an `on` input
     max_delay::Float64
+    M::Float64 # number of spikes which would have to be input to pass through without an `on` input
 end
 Circuits.abstract(::ConcreteAsyncOnGate) = OnGate()
 for s in (:target, :inputs, :outputs)

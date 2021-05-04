@@ -6,7 +6,6 @@ using CPTs
 using Distributions: ncategories
 
 include("circuits/pulse_ir/pulse_ir.jl")
-println(PulseIR)
 include("circuits/stochastic_digital_circuits/SDCs.jl")
 
 export PulseIR, SDCs

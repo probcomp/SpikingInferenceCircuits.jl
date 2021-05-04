@@ -58,7 +58,7 @@ valid_strict_inwindows(::ConcreteStreamSamples, ::Dict{Input, Window}) = error("
 output_windows(ss::ConcreteStreamSamples, d::Dict{Input, Window}) =
     let inwindow = containing_window(values(d))
         outwindow = Window(
-        inwindow.interval, # TODO: add some delay!
+        Interval(inwindow.interval.min, inwindow.interval.max + ss.ΔT), # TODO: add some delay!
         inwindow.pre_hold, Inf
     )
         Dict(Output(i) => outwindow for i=1:out_domain_size(abstract(ss)))

@@ -20,8 +20,8 @@ Circuits.outputs(::ThresholdedIndicator) = NamedValues(:out => SpikeWire())
 struct ConcreteThresholdedIndicator <: ConcretePulseIRPrimitive
     threshold::Int
     ΔT::Float64 # Neuron memory
-    M::Float64 # Number of spikes needed to override & produce another spike after first spike emitted
     max_delay::Float64
+    M::Float64 # Number of spikes needed to override & produce another spike after first spike emitted
 end
 Circuits.abstract(t::ConcreteThresholdedIndicator) = ThresholdedIndicator(t.threshold)
 for s in (:target, :inputs, :outputs)
