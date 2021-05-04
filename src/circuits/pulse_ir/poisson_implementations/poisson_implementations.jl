@@ -4,3 +4,4 @@ PoissonNeuron(fs, ΔT::Real, λ) =
 include("off_gate.jl")
 include("async_on_gate.jl")
 include("thresholded_indicator.jl")
+include("streamsamples.jl")

@@ -5,7 +5,7 @@ Repeats spikes in the `:in` wire unless a spike has been received in the `:off` 
 """
 struct OffGate <: GenericComponent end
 Circuits.target(::OffGate) = Spiking()
-Circuits.inputs(::OffGate) = NamedValues(:in => SpikeWire(), :off => :SpikeWire())
+Circuits.inputs(::OffGate) = NamedValues(:in => SpikeWire(), :off => SpikeWire())
 Circuits.outputs(::OffGate) = NamedValues(:out => SpikeWire())
 
 """

@@ -9,7 +9,7 @@ for s in (:target, :inputs, :outputs)
     @eval (Circuits.$s(g::PoissonAsyncOnGate) = Circuits.$s(Circuits.abstract(g)))
 end
 
-Circuits.implement(g::PoissonOffGate) =
+Circuits.implement(g::PoissonAsyncOnGate) =
     CompositeComponent(
         inputs(g), outputs(g),
         (neuron=PoissonNeuron([

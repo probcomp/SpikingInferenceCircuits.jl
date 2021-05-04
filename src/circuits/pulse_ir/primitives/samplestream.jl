@@ -14,8 +14,8 @@ out_domain_size(c::StreamSamples) = size(c.P)[2]
 prob_output_given_input(c::StreamSamples, outval) = c.P[:,outval]
 
 Circuits.target(::StreamSamples) = Spiking()
-Circuits.inputs(s::StreamSamples) = implement_deep(FiniteDomainValue(in_domain_size(s)), Spiking())
-Circuits.outputs(s::StreamSamples) = implement_deep(FiniteDomainValue(out_domain_size(s)), Spiking())
+Circuits.inputs(s::StreamSamples) = IndexedValues(SpikeWire() for _=1:in_domain_size(s))
+Circuits.outputs(s::StreamSamples) = IndexedValues(SpikeWire() for _=1:out_domain_size(s))
 
 # TODO (maybe): a somewhat richer interface for obtaining the I/O interface for a single output
 # vs the interface for obtaining many outputs
@@ -40,14 +40,14 @@ struct ConcreteStreamSamples <: ConcretePulseIRPrimitive
     dist_on_num_samples::Function
     # TODO: max delay?
 end
-ConcreteStreamSamples(ss::SampleStream, args...) = ConcreteSampleStream(ss.P, args...)
+ConcreteStreamSamples(ss::StreamSamples, args...) = ConcreteSampleStream(ss.P, args...)
 Circuits.abstract(ss::ConcreteStreamSamples) = StreamSamples(ss.P)
 for s in (:target, :inputs, :outputs)
     @eval (Circuits.$s(g::ConcreteStreamSamples) = Circuits.$s(Circuits.abstract(g)))
 end
 
 is_valid_input(ss::ConcreteStreamSamples, d::Dict{Input, UInt}) = d[Input(:in)] ≤ 1
-valid_strict_inwindows(::ConcretePulseIRPrimitive, ::Dict{Input, Window}) = error("TODO")
+valid_strict_inwindows(::ConcreteStreamSamples, ::Dict{Input, Window}) = error("TODO")
 
 # This gives the largest possible output windows, ie. the output windows in which
 # the number of emitted samples is distributed according to dist_on_num_samples(ΔT).
@@ -55,11 +55,11 @@ valid_strict_inwindows(::ConcretePulseIRPrimitive, ::Dict{Input, Window}) = erro
 # arrives will be valid, with a possibly different number of expected output spikes!
 # TODO: is there a better way to deal with a component like this which can satisfy multiple
 # output interfaces?
-output_windows(ss::ConcreteSampleStream, d::Dict{Input, Window}) =
+output_windows(ss::ConcreteStreamSamples, d::Dict{Input, Window}) =
     let inwindow = containing_window(values(d))
         outwindow = Window(
         inwindow.interval, # TODO: add some delay!
         inwindow.pre_hold, Inf
     )
-        Dict(Output(i) => outwindow)
+        Dict(Output(i) => outwindow for i=1:out_domain_size(abstract(ss)))
     end

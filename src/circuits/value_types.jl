@@ -34,46 +34,60 @@ Circuits.implement(v::SpikingCategoricalValue, ::Spiking) = CompositeValue(Tuple
 A positive real number.
 """
 struct PositiveReal <: GenericValue end
+# TODO: rename to NonnegativeReal
+
+# """
+#     SpikeRateReal <: GenericValue
+#     SpikeRateReal(reference_rate)
+
+# A nonnegative real number encoded via the rate of spiking in a wire.  If the spike rate is `r`,
+# the encoded real is `r/reference_rate`.
+# """
+# struct SpikeRateReal <: GenericValue
+#     reference_rate::Float64
+# end
+# Circuits.abstract(::SpikeRateReal) = PositiveReal()
+# Circuits.target(::SpikeRateReal) = Spiking()
+# Circuits.implement(::SpikeRateReal, ::Spiking) = SpikeWire()
 
 """
-    SpikeRateReal <: GenericValue
-    SpikeRateReal(reference_rate)
+    UnbiasedSpikeCountReal(denominator)
 
-A nonnegative real number encoded via the rate of spiking in a wire.  If the spike rate is `r`,
-the encoded real is `r/reference_rate`.
+A nonnegative real number `r` encoded via `C` spikes in a wire such that
+`E[C/denominator] = r`.
 """
-struct SpikeRateReal <: GenericValue
-    reference_rate::Float64
+struct UnbiasedSpikeCountReal <: GenericValue
+    denominator::Float64
 end
-Circuits.abstract(::SpikeRateReal) = PositiveReal()
-Circuits.target(::SpikeRateReal) = Spiking()
-Circuits.implement(::SpikeRateReal, ::Spiking) = SpikeWire()
+Circuits.abstract(::UnbiasedSpikeCountReal) = PositiveReal()
+Circuits.target(::UnbiasedSpikeCountReal) = Spiking()
+Circuits.implement(::UnbiasedSpikeCountReal, ::Spiking) = SpikeWire()
 
 ####
 
 ####
 
-"""
-    UnbiasedPositiveReal <: GenericValue
+# """
+#     UnbiasedPositiveReal <: GenericValue
 
-An unbiased estimate of a positive real number.
-"""
-struct UnbiasedPositiveReal <: GenericValue end
+# An unbiased estimate of a positive real number.
+# """
+# struct UnbiasedPositiveReal <: GenericValue end
 
-"""
-    BinarySamplesUnbiasedPositiveReal <: GenericValue
-    BinarySamplesUnbiasedPositiveReal(n)
+# """
+#     BinarySamplesUnbiasedPositiveReal <: GenericValue
+#     BinarySamplesUnbiasedPositiveReal(n)
 
-An abstract implementation of a `UnbiasedPositiveReal`.
-Sends `n` binary "sample" values (as `FiniteDomainValue(2)`s).
-If `n1` samples of `1` and `n2` samples of `2` are sent,
-the transmitted value is `n1/(1 + n2)`.
+# An abstract implementation of a `UnbiasedPositiveReal`.
+# Sends `n` binary "sample" values (as `FiniteDomainValue(2)`s).
+# If `n1` samples of `1` and `n2` samples of `2` are sent,
+# the transmitted value is `n1/(1 + n2)`.
 
-If the probability of any sample being `1` is `p/(p + q)`, then in expectation
-the transmitted value is `p/q` (so this is an unbiased estimate of `p/q`).
-"""
-struct BinarySamplesUnbiasedPositiveReal <: GenericValue
-    num_samples::UInt
-end
-Circuits.abstract(::BinarySamplesUnbiasedPositiveReal) = UnbiasedPositiveReal()
-Circuits.implement(s::BinarySamplesUnbiasedPositiveReal, ::Target) = IndexedValues(FiniteDomainValue(2) for _=1:s.num_samples)
+# If the probability of any sample being `1` is `p/(p + q)`, then in expectation
+# the transmitted value is `p/q` (so this is an unbiased estimate of `p/q`).
+# """
+# struct BinarySamplesUnbiasedPositiveReal <: GenericValue
+#     num_samples::UInt
+# end
+# Circuits.abstract(::BinarySamplesUnbiasedPositiveReal) = UnbiasedPositiveReal()
+# Circuits.implement(s::BinarySamplesUnbiasedPositiveReal, ::Target) = IndexedValues(FiniteDomainValue(2) for _=1:s.num_samples)

@@ -16,7 +16,7 @@ struct AsyncOnGate <: GenericComponent end
 
 # TODO: update this!  Add `Concrete` version!
 
-Circuits.target(::GatedRepeater) = Spiking()
+Circuits.target(::Union{OnGate, AsyncOnGate}) = Spiking()
 Circuits.inputs(::Union{OnGate, AsyncOnGate}) = NamedValues(:in => SpikeWire(), :on => SpikeWire())
 Circuits.outputs(::Union{OnGate, AsyncOnGate}) = NamedValues(:out => SpikeWire())
 
@@ -38,7 +38,7 @@ end
 
 is_valid_input(g::ConcreteAsyncOnGate, d::Dict{Input, UInt}) = d[Input(:in)] < g.M
 
-valid_strict_inwindows(g::PoissonConcreteAsyncOnGateAsyncOnGate, d::Dict{Input, Window}) =
+valid_strict_inwindows(g::ConcreteAsyncOnGate, d::Dict{Input, Window}) =
     (
        d[Input(:on)].pre_hold ≥ g.ΔT &&
        d[Input(:in)].pre_hold ≥ g.max_delay &&

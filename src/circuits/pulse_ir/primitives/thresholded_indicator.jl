@@ -25,7 +25,7 @@ struct ConcreteThresholdedIndicator <: ConcretePulseIRPrimitive
 end
 Circuits.abstract(t::ConcreteThresholdedIndicator) = ThresholdedIndicator(t.threshold)
 for s in (:target, :inputs, :outputs)
-    @eval (Circuits.$s(t::PoissonThresholdedIndicator) = Circuits.$s(Circuits.abstract(t)))
+    @eval (Circuits.$s(t::ConcreteThresholdedIndicator) = Circuits.$s(Circuits.abstract(t)))
 end
 
 valid_strict_inwindows(t::ConcreteThresholdedIndicator, d::Dict{Input, Window}) =
@@ -37,7 +37,7 @@ output_windows(t::ConcreteThresholdedIndicator, d::Dict{Input, Window}) =
     Dict(Output(:out) => Window(
         Interval(
             d[Input(:in)].interval.min,
-            d[Inpt(:in)].interval.max + t.max_delay
+            d[Input(:in)].interval.max + t.max_delay
         ),
         0., 0. # TODO: if we have extra hold time in the inputs, we can probably do better
     ))

@@ -7,10 +7,10 @@ and a FiniteDomainValue `:sel`.  Outputs the selected input.
 """
 struct Mux <: GenericComponent
     n_possibilities::Int
-    out_value::CompositeValue
+    out_value::Value
 end
 
-Circuits.outputs(m::Mux) = m.out_value
+Circuits.outputs(m::Mux) = NamedValues(:out => m.out_value)
 Circuits.inputs(m::Mux) = NamedValues(
     :values => IndexedValues(m.out_value for _=1:m.n_possibilities),
     :sel => FiniteDomainValue(m.n_possibilities)
@@ -31,10 +31,10 @@ end
 Circuits.abstract(m::OneHotMux) = m.mux
 Circuits.outputs(m::OneHotMux) = outputs(abstract(m))
 Circuits.inputs(m::OneHotMux) = NamedValues(
-    :values => IndexedValues(m.out_value for _=1:m.n_possibilities),
-    :sel => IndexedValues((Binary() for _=1:m.n_possibilities), FiniteDomainValue(m.n_possibilities))
+    :values => inputs(abstract(m))[:values],
+    :sel => IndexedValues(Binary() for _=1:m.mux.n_possibilities)
 )
-Circuits.implement(m::OneHotMux, ::Target) =
+Circuits.implement(m::OneHotMux, t::Target) =
     let full_in = implement_deep(inputs(m), t),
         full_out = implement_deep(outputs(m), t)
             CompositeComponent(
@@ -42,13 +42,17 @@ Circuits.implement(m::OneHotMux, ::Target) =
                 map(v -> bit_muxes(m.bitmux, v), full_in[:values].vals),
                 Iterators.flatten(
                     (
-                        Input(:values => i => keyname) => CompIn(i => keyname, :value),
-                        Input(:sel => i) => CompIn(i => keyname, :sel),
-                        CompOut(i => keyname, :out) => Output(keyname)
-                    ) for i=1:m.n_possibilities for keyname in keys_deep(full_out)
+                        Input(:values => i_keyname) => CompIn(i_keyname, :value),
+                        Input(:sel => i) => CompIn(i_keyname, :sel),
+                        CompOut(i_keyname, :out) => Output(i_keyname == i ? :out : :out => keyname)
+                    ) for i=1:m.mux.n_possibilities for i_keyname in i_to_keynames(i, full_out[:out])
                 )
             )
     end
+
+# Either index at `i => keyname` if there are subkeys, or `i` if there are no subkeys.
+i_to_keynames(i, c::CompositeValue) = (i => keyname for keyname in keys_deep(c))
+i_to_keynames(i, ::Value) = (i,)
 
 bit_muxes(bm, v::CompositeValue) = ComponentGroup(map(v -> bit_muxes(bm, v), v.vals))
 bit_muxes(bm, ::Binary) = bm

@@ -40,7 +40,7 @@ _containing_window(window, windows) =
         first, rest = Iterators.peel(windows)
         _containing_window(
             Window(
-                union(w.interval, window.interval),
+                union(first.interval, window.interval),
                 interval_length(intersect(pre_hold_interval(window), pre_hold_interval(first))),
                 interval_length(intersect(post_hold_interval(window), post_hold_interval(first)))
             ),
@@ -149,24 +149,24 @@ can_support_inwindows(c::CompositeComponent, d::Dict{Input, Window}) =
 function nodename_windows(circuit::CompositeComponent, input_windows::Dict{Input, Window})
     windows = Dict{NodeName, Window}(k => v for (k, v) in input_windows)
     for (name, subcomp) in topologically_ordered_subcomponents(circuit)
-        for input in keys(inputs(subcomp))
+        for input in keys_deep(inputs(subcomp))
             windows[CompIn(name, input)] = containing_window((
                 windows[inputter]
                 for inputter in inputters(circuit, CompIn(name, input))
             ))
         end
 
-        in_windows = Dict(
+        in_windows = Dict{Input, Window}(
             Input(input) => windows[CompIn(name, input)]
-            for (input, _) in inputs(subcomp)
+            for input in keys_deep(inputs(subcomp))
         )
 
         for (o, window) in output_windows(subcomp, in_windows)
-            windows[CompOut(name, valname(o))] = window
+            windows[CompOut(name, Circuits.valname(o))] = window
         end
     end
     
-    for outname in keys(outputs(circuit))
+    for outname in keys_deep(outputs(circuit))
         windows[Output(outname)] = containing_window(
             windows[compout]
             for compout in inputters(circuit, Output(outname))
@@ -177,9 +177,9 @@ function nodename_windows(circuit::CompositeComponent, input_windows::Dict{Input
 end
 
 output_windows(c::CompositeComponent, input_windows::Dict{Input, Window}) =
-    filter(nodename_windows(c, input_windows), ((name, _),) -> name isa Output)
+    filter(nodename_windows(c, input_windows)) do (name, _); name isa Output; end;
 
-valid_strict_inwindows(c::CompositeComponent, input_windows) =
+valid_strict_inwindows(c::CompositeComponent, input_windows::Dict{Input, Window}) =
     let windows = nodename_windows(c, input_windows)
         all(
             valid_strict_inwindows(subcomponent, Dict(
