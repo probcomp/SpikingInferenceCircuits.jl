@@ -1,4 +1,4 @@
-struct PoissonAsyncOnGate <: GenericComponent
+struct PoissonAsyncOnGate <: ConcretePulseIRPrimitive
     gate::ConcreteAsyncOnGate
     # `R` controls the rate during ON and OFF modes.
     # "off" rate will always be ≤ exp(-R/2); "on" rate will always be ≥ exp(R/2)

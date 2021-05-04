@@ -1,5 +1,9 @@
-struct PulseBitMux <: ConcretePulseIRPrimitive
-    gate::PulseIR.ConcreteAsyncOnGate
+struct PulseBitMux{G} <: ConcretePulseIRPrimitive
+    gate::G
+    function PulseBitMux(gate::G) where {G}
+        @assert has_abstract_of_type(gate, PulseIR.ConcreteAsyncOnGate)
+        return new{G}(gate)
+    end
 end
 Circuits.abstract(::PulseBitMux) = BitMux()
 Circuits.target(::PulseBitMux) = Spiking()
@@ -18,9 +22,13 @@ PulseIR.output_windows(pbm::PulseBitMux, d::Dict{Input, Window}) =
 PulseIR.valid_strict_inwindows(pbm::PulseBitMux, d::Dict{Input, Window}) =
     PulseIR.valid_strict_inwindows(implement_twice(pbm), d)
 
-struct PulseMux <: ConcretePulseIRPrimitive
+struct PulseMux{G} <: ConcretePulseIRPrimitive
     mux::Mux
-    gate::PulseIR.ConcreteAsyncOnGate
+    gate::G
+    function PulseMux(mux::Mux, gate::G) where {G}
+        @assert has_abstract_of_type(gate, PulseIR.ConcreteAsyncOnGate)
+        new{G}(mux, gate)
+    end
 end
 Circuits.abstract(m::PulseMux) = m.mux
 Circuits.target(::PulseMux) = Spiking()

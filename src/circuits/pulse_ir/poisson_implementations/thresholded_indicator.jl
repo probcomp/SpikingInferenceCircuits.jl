@@ -11,6 +11,9 @@ for s in (:target, :inputs, :outputs)
     @eval (Circuits.$s(t::PoissonThresholdedIndicator) = Circuits.$s(Circuits.abstract(t)))
 end
 
+# Required method for an implementation of ThresholdedIndicator
+threshold(t::PoissonThresholdedIndicator) = threshold(t.ti)
+
 Circuits.implement(t::PoissonThresholdedIndicator) =
     CompositeComponent(
         inputs(t), outputs(t),

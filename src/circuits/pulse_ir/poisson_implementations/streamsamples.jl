@@ -1,15 +1,54 @@
 struct PoissonStreamSamples <: ConcretePulseIRPrimitive
     P::Matrix{Float64}
+    ΔT::Float64
     overall_on_rate::Float64
     overall_off_rate::Float64
-    ΔT::Float64 # Neuron memory (time before neurons turn off)
 end
-Circuits.abstract(p::PoissonStreamSamples) = StreamSamples(p.P, p.ΔT,
-    t -> Distributions.Poisson(t * p.overall_on_rate)
+Circuits.abstract(ss::PoissonStreamSamples) = ConcreteStreamSamples(
+    ss.P, ss.ΔT, T -> Distributions.Poisson(ss.overall_on_rate * T)
 )
+Circuits.target(ss::PoissonStreamSamples) = target(abstract(ss))
+Circuits.inputs(ss::PoissonStreamSamples) = inputs(abstract(ss))
+Circuits.outputs(ss::PoissonStreamSamples) = outputs(abstract(ss))
 
-for s in (:target, :inputs, :outputs)
-    @eval (Circuits.$s(g::PoissonStreamSamples) = Circuits.$s(Circuits.abstract(g)))
+### check whether a function looks like
+### T -> Distributions.Poisson(T * rate)
+### or T -> Distribuitons.Poisson(rate * T)
+function expected_lines_field()
+    rate = 1 + 5
+    f = (x -> Distributions.Poisson(x * rate))
+    return Base.uncompressed_ast(methods(f).ms[1]).code
+end
+function expected_lines_const()
+    f = (x -> Distribuitons.Poisson(x * 50))
+    return Base.uncompressed_ast(methods(f).ms[1]).code
+end
+is_valid_multline(line) = (
+    line isa Expr && line.head == :call &&
+    eval(line.args[1]) == (*) &&
+    (
+        line.args[2] == Core.SlotNumber(2) ||
+        line.args[3] == Core.SlotNumber(2)
+    ) && (line.args[2] != line.args[3])
+)
+is_poisson_lines(lines) = (
+    lines[1] in (expected_lines_field()[1], expected_lines_const()[1]) &&
+    lines[end-1] in (expected_lines_field()[end-1], expected_lines_const()[end-1]) &&
+    lines[end] in (expected_lines_field()[end], expected_lines_const()[end]) &&
+    is_valid_multline(lines[end-2])
+)
+is_poisson_fn(f) = is_poisson_lines(Base.uncompressed_ast(methods(f).ms[1]).code)
+@assert is_poisson_fn(x -> Distributions.Poisson(x * 50))
+@assert is_poisson_fn(x -> Distributions.Poisson(50 * x))
+@assert !is_poisson_fn(x -> Distributions.Poisson(x*x))
+@assert !is_poisson_fn(x -> x*50)
+# TODO: move these tests elsewhere
+
+function PoissonStreamSamples(ss::ConcreteStreamSamples, off_rate)
+    @assert ss.dist_on_num_samples(1) isa Distributions.Poisson "To have a Poisson implementation, ss.dist_on_num_samples(1) must be a `Distributions.Poisson` but instead it is $(ss.dist_on_num_samples(1))."
+    on_rate = ss.dist_on_num_samples(1).λ
+    @assert is_poisson_fn(ss.dist_on_num_samples) "To have a Poisson implementation, ss.dist_on_num_samples must look like `x -> Distributions.Poisson(x * rate)`, but instead it is $(ss.dist_on_num_samples)."
+    return PoissonStreamSamples(ss.P, ss.ΔT, on_rate, off_rate)
 end
 
 Circuits.implement(p::PoissonStreamSamples, ::Spiking) =
@@ -44,20 +83,5 @@ Circuits.implement(p::PoissonStreamSamples, ::Spiking) =
             )
     end
 
-### Temporal Interface ###
-
 # The only failure mode is emitting a spike before turned on.
 failure_probabability_bound(p::PoissonStreamSamples) = exp(-p.overall_off_rate)
-
-# can_support_inwindows(p::PoissonStreamSamples, d::Dict{Input, Window}) =
-
-valid_strict_inwindows(::PoissonStreamSamples, ::Dict{Input, Window}) = error("Not implemented.")
-
-output_windows(ss::PoissonStreamSamples, d::Dict{Input, Window}) =
-    let inw = d[Input(:in)],
-        outwindow = Window(
-        Interval(inw.interval.min, inw.interval.max + ss.ΔT),
-        inw.pre_hold, Inf
-    )
-        Dict(Output(i) => outwindow for i=1:out_domain_size(abstract(ss)))
-    end

@@ -17,6 +17,9 @@ Circuits.target(::ThresholdedIndicator) = Spiking()
 Circuits.inputs(::ThresholdedIndicator) = NamedValues(:in => SpikeWire())
 Circuits.outputs(::ThresholdedIndicator) = NamedValues(:out => SpikeWire())
 
+# Required method for an implementation of ThresholdedIndicator
+threshold(t::ThresholdedIndicator) = t.threshold
+
 struct ConcreteThresholdedIndicator <: ConcretePulseIRPrimitive
     threshold::Int
     ΔT::Float64 # Neuron memory
@@ -27,6 +30,9 @@ Circuits.abstract(t::ConcreteThresholdedIndicator) = ThresholdedIndicator(t.thre
 for s in (:target, :inputs, :outputs)
     @eval (Circuits.$s(t::ConcreteThresholdedIndicator) = Circuits.$s(Circuits.abstract(t)))
 end
+
+# Required method for an implementation of ThresholdedIndicator
+threshold(t::ConcreteThresholdedIndicator) = t.threshold
 
 valid_strict_inwindows(t::ConcreteThresholdedIndicator, d::Dict{Input, Window}) =
     (

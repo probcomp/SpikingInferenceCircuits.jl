@@ -6,8 +6,12 @@ struct PulseConditionalScore{SS, MOG, TI, OG} <: ConcretePulseIRPrimitive
     mux_on_gate::MOG
     ti::TI
     offgate::OG
-    function PulseConditionalScore(P::Matrix{Float64}, s::S,m::M,t::T,o::O) where {S,M,T,O}
-        @assert all(PulseIR.has_concrete_temporal_interface(comp) for comp in (s,m,t,o))
+    function PulseConditionalScore(s::S,m::M,t::T,o::O) where {S,M,T,O}
+        @assert has_abstract_of_type(s, PulseIR.ConcreteStreamSamples)
+        @assert has_abstract_of_type(m, PulseIR.ConcreteAsyncOnGate)
+        @assert has_abstract_of_type(t, PulseIR.ConcreteThresholdedIndicator)
+        @assert has_abstract_of_type(o, PulseIR.ConcreteOffGate)
+
         new{S,M,T,O}(s,m,t,o)
     end
 end
@@ -17,7 +21,7 @@ Circuits.abstract(p::PulseConditionalScore) = ConditionalScore(p.streamsamples.P
 Circuits.inputs(c::PulseConditionalScore) =
     implement_deep(inputs(abstract(c)), Spiking())
 Circuits.outputs(c::PulseConditionalScore) =
-    NamedValues(:prob => UnbiasedSpikeCountReal(c.ti.threshold))
+    NamedValues(:prob => UnbiasedSpikeCountReal(PulseIR.threshold(c.ti)))
 
 Circuits.implement(p::PulseConditionalScore, ::Spiking) =
     CompositeComponent(

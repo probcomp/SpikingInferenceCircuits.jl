@@ -1,6 +1,7 @@
 module PulseIR
 using Circuits
 using SpikingCircuits
+import Distributions
 
 const × = *
 
