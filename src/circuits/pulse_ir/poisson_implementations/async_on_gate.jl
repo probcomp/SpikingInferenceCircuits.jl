@@ -14,7 +14,7 @@ Circuits.implement(g::PoissonAsyncOnGate, ::Spiking) =
         inputs(g), outputs(g),
         (neuron=PoissonNeuron([
             x -> x, x -> g.gate.M*min(x, 1), x -> -x
-        ], g.gate.ΔT, u -> exp(g.R*(u - g.gate.M + 1/2))),),
+        ], g.gate.ΔT, u -> exp(g.R*(u - g.gate.M - 1/2))),),
         (
             Input(:in) => CompIn(:neuron, 1),
             Input(:on) => CompIn(:neuron, 2),
