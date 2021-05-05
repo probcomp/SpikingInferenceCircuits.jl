@@ -9,28 +9,29 @@ for s in (:target, :inputs, :outputs)
     @eval (Circuits.$s(g::PoissonAsyncOnGate) = Circuits.$s(Circuits.abstract(g)))
 end
 
-Circuits.implement(g::PoissonAsyncOnGate) =
+Circuits.implement(g::PoissonAsyncOnGate, ::Spiking) =
     CompositeComponent(
         inputs(g), outputs(g),
         (neuron=PoissonNeuron([
             x -> x, x -> g.gate.M*min(x, 1), x -> -x
-        ], g.gate.ΔT, u -> exp(g.gate.R*(u - g.gate.M + 1/2))),),
+        ], g.gate.ΔT, u -> exp(g.R*(u - g.gate.M + 1/2))),),
         (
             Input(:in) => CompIn(:neuron, 1),
             Input(:on) => CompIn(:neuron, 2),
             CompOut(:neuron, :out) => CompIn(:neuron, 3),
             CompOut(:neuron, :out) => Output(:out)
-        )
+        ),
+        g
     )
 
 failure_probability_bound(g::PoissonAsyncOnGate) =
     1 - (1 - p_spikes_while_off_bound(g))*(1 - p_doesnt_spike_by_delay_bound(g))
 
 p_spikes_while_off_bound(g::PoissonAsyncOnGate) =
-    1 - exp(-g.gate.ΔT × exp(-g.gate.R/2))
+    1 - exp(-g.gate.ΔT × exp(-g.R/2))
 
 # Derived on page 76 of notebook
 p_doesnt_spike_by_delay_bound(g::PoissonAsyncOnGate) =
-    let α = g.gate.max_delay × (exp(g.gate.R) - 1)
-        1 - (1 - exp(-α × exp(-g.gate.R/2)))^(g.gate.M - 1)
+    let α = g.gate.max_delay × (exp(g.R) - 1)
+        1 - (1 - exp(-α × exp(-g.R/2)))^(g.gate.M - 1)
     end

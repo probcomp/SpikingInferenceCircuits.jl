@@ -7,7 +7,7 @@ for s in (:target, :inputs, :outputs)
     @eval (Circuits.$s(g::PoissonOffGate) = Circuits.$s(Circuits.abstract(g)))
 end
 
-Circuits.implement(g::PoissonOffGate) =
+Circuits.implement(g::PoissonOffGate, ::Spiking) =
     CompositeComponent(
         inputs(g), outputs(g),
         (neuron=PoissonNeuron([
@@ -18,7 +18,8 @@ Circuits.implement(g::PoissonOffGate) =
             Input(:off) => CompIn(:neuron, 2),
             CompOut(:neuron, :out) => CompIn(:neuron, 3),
             CompOut(:neuron, :out) => Output(:out)
-        )
+        ),
+        g
     )
 
 failure_probability_bound(g::PoissonOffGate) =

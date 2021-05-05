@@ -11,6 +11,10 @@ Circuits.target(ss::PoissonStreamSamples) = target(abstract(ss))
 Circuits.inputs(ss::PoissonStreamSamples) = inputs(abstract(ss))
 Circuits.outputs(ss::PoissonStreamSamples) = outputs(abstract(ss))
 
+out_domain_size(p::PoissonStreamSamples) = out_domain_size(abstract(abstract(p)))
+in_domain_size(p::PoissonStreamSamples) = in_domain_size(abstract(abstract(p)))
+prob_output_given_input(p::PoissonStreamSamples, outval) = prob_output_given_input(abstract(abstract(p)), outval)
+
 ### check whether a function looks like
 ### T -> Distributions.Poisson(T * rate)
 ### or T -> Distribuitons.Poisson(rate * T)
@@ -53,33 +57,35 @@ end
 
 Circuits.implement(p::PoissonStreamSamples, ::Spiking) =
     let bias = log(p.overall_off_rate),
-        base_weight = log(c.overall_on_rate) - bias
+        base_weight = log(p.overall_on_rate) - bias
             CompositeComponent(
                 inputs(p), outputs(p),
                 Tuple(
                     PoissonNeuron(
                         [
                             x -> min(1, x) × (
-                                prob_output_given_input(
-                                    abstract(c), outval
-                                ) .+ base_weight
+                                log(prob_output_given_input(
+                                    p, outval
+                                )[inval]) .+ base_weight
                             )
+                            for inval=1:in_domain_size(p)
                         ],
-                        ΔT, u -> exp(u - bias)
+                        p.ΔT, u -> exp(u + bias)
                     )
-                    for outval = 1:out_domain_size(abstract(p))
+                    for outval = 1:out_domain_size(p)
                 ),
                 Iterators.flatten((
                     (
-                        Input(inval) => CompIn(outval, 1)
-                        for outval=1:out_domain_size(abstract(p))
-                            for inval=1:in_domain_size(abstract(p))
+                        Input(inval) => CompIn(outval, inval)
+                        for outval=1:out_domain_size(p)
+                            for inval=1:in_domain_size(p)
                     ),
                     (
                         CompOut(outval, :out) => Output(outval)
-                        for outval=1:out_domain_size(abstract(p))
+                        for outval=1:out_domain_size(p)
                     )
-                ))
+                )),
+                p
             )
     end
 

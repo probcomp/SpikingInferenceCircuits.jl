@@ -14,7 +14,7 @@ end
 # Required method for an implementation of ThresholdedIndicator
 threshold(t::PoissonThresholdedIndicator) = threshold(t.ti)
 
-Circuits.implement(t::PoissonThresholdedIndicator) =
+Circuits.implement(t::PoissonThresholdedIndicator, ::Spiking) =
     CompositeComponent(
         inputs(t), outputs(t),
         (neuron=PoissonNeuron(
@@ -25,7 +25,8 @@ Circuits.implement(t::PoissonThresholdedIndicator) =
             Input(:in) => CompIn(:neuron, 1),
             CompOut(:neuron, :out) => CompIn(:neuron, 2),
             CompOut(:neuron, :out) => Output(:out)
-        )
+        ),
+        t
     )
 
 failure_probability_bound(g::ThresholdedIndicator) =
