@@ -9,8 +9,11 @@ include("../value_types.jl")
 
 include("primitives/mux.jl")
 include("primitives/conditional_score.jl")
-@assert ConditionalScore !== nothing
+include("primitives/conditional_sample.jl")
+
 include("pulse_ir_implementation/mux.jl")
+include("pulse_ir_implementation/prob_counter.jl")
 include("pulse_ir_implementation/conditional_score.jl")
+# include("pulse_ir_implementation/conditional_sample.jl")
 
 end
