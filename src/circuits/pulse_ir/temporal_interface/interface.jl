@@ -20,6 +20,11 @@ struct Window
     interval::ClosedInterval
     pre_hold::Float64
     post_hold::Float64
+    function Window(i::ClosedInterval, pre::Float64, post::Float64)
+        @assert pre ≥ 0
+        @assert post ≥ 0
+        new(i, pre, post)
+    end
 end
 start_of_pre_hold(w::Window) = w.interval.min - w.pre_hold
 end_of_post_hold(w::Window) = w.interval.max + w.post_hold
@@ -145,15 +150,16 @@ is_valid_input(::CompositeComponent, ::Dict{Input, UInt}) = error("Not implement
 can_support_inwindows(c::CompositeComponent, d::Dict{Input, Window}) =
     !isnothing(output_windows(c, d))
 
-# Windows for all the Input, CompIn, CompOut, and Output s, given the input windows.
+# Windows for all the Inputs, CompIns, CompOuts, and Outputs which recieve inputs, given the input windows
+# for the Inputs.
 function nodename_windows(circuit::CompositeComponent, input_windows::Dict{Input, Window})
     windows = Dict{NodeName, Window}(k => v for (k, v) in input_windows)
     for (name, subcomp) in topologically_ordered_subcomponents(circuit)
         for input in keys_deep(inputs(subcomp))
-            windows[CompIn(name, input)] = containing_window((
-                windows[inputter]
-                for inputter in inputters(circuit, CompIn(name, input))
-            ))
+            inwinds = (windows[inputter] for inputter in inputters(circuit, CompIn(name, input)))
+            if !isempty(inwinds)
+                windows[CompIn(name, input)] = containing_window(inwinds)
+            end
         end
 
         in_windows = Dict{Input, Window}(

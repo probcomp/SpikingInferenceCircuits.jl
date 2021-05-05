@@ -84,15 +84,15 @@ function PulseIR.output_windows(p::PulseConditionalSample, d::Dict{Input, Window
         Input(i) => d[Input(:in_val => i)]
         for i=1:out_domain_size(abstract(p))
     ))
-    sample_output_window = PulseIR.containing_window(values(sample_outs))
-    earliest_sample_output = sample_output_window.interval.min
-
+    
+    # TODO: If there can be delay on the sample output windows, we will need to account for it
+    inwindow = PulseIR.containing_window(values(d))
     first_sample_window = Window(
         Interval(
-            earliest_sample_output,
-            earliest_sample_output + p.time_to_first_sample
+            inwindow.interval.min,
+            inwindow.interval.max + p.time_to_first_sample
         ),
-        sample_output_window.pre_hold,
+        inwindow.pre_hold,
         p.intersample_hold
     )
 

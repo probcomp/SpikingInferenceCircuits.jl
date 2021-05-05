@@ -73,22 +73,22 @@ valid_strict_inwindows(w::ConcreteWTA, d::Dict{Input, Window}) =
         # TODO
     end
 
-output_windows(w::ConcreteWTA, d::Dict{Input, Window}) =
-    let inwindow = containing_window(d[Input(i)] for i=1:length(inputs(w))),
-        conc_off = abstract_to_type(w.offgate, ConcreteOffGate),
-        out_interval = Interval( # outputs 
-            inwindow.interval.min,
-            inwindow.interval.max + conc_off.max_delay
-        ),
-        outwindow = Window(
-            out_interval, Inf,
-            conc_off.ΔT - interval_length(out_interval)
-        )
-            Dict{Output, Window}(
-                Output(i) => outwindow
-                for i=1:length(outputs(w))
-            )
-    end
+function output_windows(w::ConcreteWTA, d::Dict{Input, Window})
+    inwindow = containing_window(d[Input(i)] for i=1:length(inputs(w)))
+    conc_off = abstract_to_type(w.offgate, ConcreteOffGate)
+    out_interval = Interval( # outputs 
+        inwindow.interval.min,
+        inwindow.interval.max + conc_off.max_delay
+    )
+    outwindow = Window(
+        out_interval, Inf,
+        max(0, conc_off.ΔT - interval_length(out_interval))
+    )
+    return Dict{Output, Window}(
+        Output(i) => outwindow
+        for i=1:length(outputs(w))
+    )
+end
 
 # An input to a WTA is only considered valid if there is exactly 1 input.
 is_valid_input(::ConcreteWTA, d::Dict{Input, UInt}) = sum(values(d)) == 1

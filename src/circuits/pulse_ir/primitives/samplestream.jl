@@ -35,6 +35,9 @@ Won't output anything if no input spike has been received recently.
 
 Behavior is undefined for more than 1 input spike.
 """
+# If we change this to include a possible delay before samples begin to be output,
+# that would be a breaking change and would require (e.g.) changing
+# the output_window implementation for `conditional_sample`.
 struct ConcreteStreamSamples <: ConcretePulseIRPrimitive
     P::Matrix{Float64}
     ΔT::Float64
