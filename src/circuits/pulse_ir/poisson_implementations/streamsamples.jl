@@ -66,7 +66,7 @@ Circuits.implement(p::PoissonStreamSamples, ::Spiking) =
                             x -> min(1, x) × (
                                 log(prob_output_given_input(
                                     p, outval
-                                )[inval]) .+ base_weight
+                                )[inval]) + base_weight
                             )
                             for inval=1:in_domain_size(p)
                         ],

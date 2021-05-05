@@ -9,7 +9,7 @@ Unit to sample `y ~ P(Y ; x)` and output `1/P(y ; x)`.
 # Or perhaps switch what the rows vs columns mean?
 struct ConditionalSample <: GenericComponent
     P::Matrix{Float64}
-    function ConditionalSampleScore(P::Matrix{Float64})
+    function ConditionalSample(P::Matrix{Float64})
         @assert all(isapprox(x, 1.0) for x in sum(P, dims=2)) "∃ x s.t. ∑_y{P[y ; x]} ≂̸ 1.0"
         return new(P)
     end

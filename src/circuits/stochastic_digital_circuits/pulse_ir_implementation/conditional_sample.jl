@@ -1,13 +1,22 @@
-struct PulseConditionalSample <: ConcretePulseIRPrimitive
-    streamsamples
-    wta_offgate
-    ti
-    offgate
+struct PulseConditionalSample{S,G,W,T,O} <: ConcretePulseIRPrimitive
+    streamsamples::S
+    mux_on_gate::G
+    wta_offgate::W
+    ti::T
+    offgate::O
     time_to_first_sample::Float64
     intersample_hold::Float64
-    # TODO: constructor; types
+    function PulseConditionalSample(s::S, g::G, w::W, t::T, o::O, ttfs::Float64, ih::Float64) where {S,G,W,T,O}
+        @assert has_abstract_of_type(s, PulseIR.ConcreteStreamSamples)
+        @assert has_abstract_of_type(g, PulseIR.ConcreteAsyncOnGate)
+        @assert has_abstract_of_type(w, PulseIR.ConcreteOffGate)
+        @assert has_abstract_of_type(t, PulseIR.ConcreteThresholdedIndicator)
+        @assert has_abstract_of_type(o, PulseIR.ConcreteOffGate)
+
+        return new{S,G,W,T,O}(s, g, w, t, o, ttfs, ih)
+    end
 end
-Circuits.abstract(c::PulseConditionalSample) = ConditionalSample(#=TODO=#)
+Circuits.abstract(c::PulseConditionalSample) = ConditionalSample(abstract_to_type(c.streamsamples, PulseIR.StreamSamples).P)
 Circuits.inputs(c::PulseConditionalSample) =
     implement_deep(inputs(abstract(c)), Spiking())
 Circuits.outputs(c::PulseConditionalSample) =
@@ -22,8 +31,12 @@ probcounter(c::PulseConditionalSample) = ProbCounter(
             Mux(out_domain_size(abstract(c)), SpikeWire()),
             c.mux_on_gate
         ),
-        p.ti,
-        p.offgate
+        c.ti,
+        c.offgate
+    )
+wta(c::PulseConditionalSample) = PulseIR.ConcreteWTA(
+        out_domain_size(abstract(c)),
+        c.wta_offgate
     )
 
 Circuits.implement(c::PulseConditionalSample, ::Spiking) =
@@ -31,34 +44,32 @@ Circuits.implement(c::PulseConditionalSample, ::Spiking) =
         inputs(c), outputs(c),
         (
             ss = c.streamsamples,
-            wta = ConcreteWTA(
-                output_domain_size(abstract(c)),
-                c.wta_offgate
-            ),
+            wta = wta(c),
             counter = probcounter(c)
         ),
         (
             (
                 Input(:in_val => i) => CompIn(:ss, i)
-                for i=1:in_domain_size(abstract(p))
+                for i=1:in_domain_size(abstract(c))
             )...,
             (
                 CompOut(:ss, i) => CompIn(:wta, i)
-                for i=1:out_domain_size(abstract(p))
+                for i=1:out_domain_size(abstract(c))
             )...,
             Iterators.flatten(
                 (
                     CompOut(:wta, i) => CompIn(:counter, :sel => i),
                     CompOut(:ss, i) => CompIn(:counter, :samples => i)
                 )
-                for i=1:out_domain_size(abstract(p))
+                for i=1:out_domain_size(abstract(c))
             )...,
             (
                 CompOut(:wta, i) => Output(:value => i)
-                for i=1:out_domain_size(abstract(p))
+                for i=1:out_domain_size(abstract(c))
             )...,
-            CompOut(:counter, :out) => Output(:inverse_prob)
-        )
+            CompOut(:counter, :count) => Output(:inverse_prob)
+        ),
+        c
     )
 
 ### Temporal Interface ###
@@ -68,30 +79,29 @@ PulseIR.failure_probability_bound(::PulseConditionalSample) = error("TODO")
 - Getting a sample within p.intersample_hold
 =#
 
-# TODO: I will probably need to manually input a shorter output window for `val`.
 function PulseIR.output_windows(p::PulseConditionalSample, d::Dict{Input, Window})
-    sample_outs = output_windows(p.streamsamples, Dict{Input, Window}(
+    sample_outs = PulseIR.output_windows(p.streamsamples, Dict{Input, Window}(
         Input(i) => d[Input(:in_val => i)]
         for i=1:out_domain_size(abstract(p))
     ))
-    sample_output_window = containing_window(values(sample_outs))
+    sample_output_window = PulseIR.containing_window(values(sample_outs))
     earliest_sample_output = sample_output_window.interval.min
 
     first_sample_window = Window(
         Interval(
-            searliest_sample_output,
+            earliest_sample_output,
             earliest_sample_output + p.time_to_first_sample
         ),
         sample_output_window.pre_hold,
         p.intersample_hold
     )
 
-    val_outs = output_windows(p.wta, Dict{Input, Window}(
+    val_outs = PulseIR.output_windows(wta(p), Dict{Input, Window}(
         Input(i) => first_sample_window
         for i=1:out_domain_size(abstract(p))
     ))
 
-    counter_window = output_windows(
+    counter_window = PulseIR.output_windows(
         probcounter(p),
         Dict{Input, Window}(Iterators.flatten(
             (
@@ -105,7 +115,7 @@ function PulseIR.output_windows(p::PulseConditionalSample, d::Dict{Input, Window
     return Dict{Output, Window}(
         Output(:inverse_prob) => counter_window,
         (
-            Output(:sel => i) => val_outs[Output(i)]
+            Output(:value => i) => val_outs[Output(i)]
             for i=1:out_domain_size(abstract(p))
         )...
     )

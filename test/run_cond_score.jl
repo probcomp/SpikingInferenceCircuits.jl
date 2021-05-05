@@ -45,10 +45,12 @@ println(PulseIR.output_windows(pcs, Dict{Input, PulseIR.Window}(
 )))
 
 with_implemented_subcomponents = SDCs.PulseConditionalScore(
-    PoissonStreamSamples(pcs.streamsamples, 1/10_000),
-    PoissonAsyncOnGate(pcs.mux_on_gate, 12),
-    PoissonThresholdedIndicator(pcs.ti, 12),
-    PoissonOffGate(pcs.offgate, 12)
+    PoissonStreamSamples(pcs.streamsamples, 10^(-10)),
+    PoissonAsyncOnGate(pcs.mux_on_gate, 30),
+    # Note how there is a slower rate on the TI.  I _think_ this is important for scoring precisely,
+    # so that spikes will pass through the output before turning off the unit.
+    PoissonThresholdedIndicator(pcs.ti, 10),
+    PoissonOffGate(pcs.offgate, 30)
 )
 println(PulseIR.output_windows(with_implemented_subcomponents, Dict{Input, PulseIR.Window}(
     (Input(:in_val => i) => inwindow for i=1:2)...,
@@ -56,47 +58,6 @@ println(PulseIR.output_windows(with_implemented_subcomponents, Dict{Input, Pulse
 )))
 
 circuit = implement_deep(with_implemented_subcomponents, Spiking())
-nothing
-
-###
-
-# ss_events = SpikingSimulator.simulate_for_time_and_get_events(
-#     implement_deep(with_implemented_subcomponents.streamsamples, Spiking()),
-#     50;
-#     initial_inputs=(1,)
-# )
-
-# SpikingSimulator.simulate_for_time(
-#     function (itr, time)
-#        for (name, evt) in itr
-#             println("$time | $evt")
-#        end
-#     end,
-#     #implement_deep(with_implemented_subcomponents.streamsamples, Spiking()),
-#     circuit,
-#     50;
-#     initial_inputs=(:in_val => 1, :obs => 1),
-#     # initial_inputs=(1,),
-#     event_filter=((compname, event)->event isa SpikingSimulator.Spike)
-# )
-
-# indicating_ti_events = SpikingSimulator.simulate_for_time_and_get_events(
-#     implement_deep(with_implemented_subcomponents.ti, Spiking()),
-#     50;
-#     initial_inputs=Tuple(:in for _=1:16)
-# )
-
-# off_ti_events = SpikingSimulator.simulate_for_time_and_get_events(
-#     implement_deep(with_implemented_subcomponents.ti, Spiking()),
-#     50;
-#     initial_inputs=Tuple(:in for _=1:14)
-# )
-
-# offgate
-
-# ongate
-
-# mux
 
 events = SpikingSimulator.simulate_for_time_and_get_events(circuit, 50;
     initial_inputs=(:in_val => 1, :obs => 1)
@@ -119,6 +80,50 @@ dict = spiketrain_dict(
     )
 
 using SpikingCircuits.SpiketrainViz
-draw_spiketrain_figure(
-    collect(values(dict)); names=map(x->"$x", collect(keys(dict))), xmin=0
-)
+# draw_spiketrain_figure(
+#     collect(values(dict)); names=map(x->"$x", collect(keys(dict))), xmin=0
+# )
+
+### Below here is some testing that outputted spike counts look right
+
+event_vecs = [
+    SpikingSimulator.simulate_for_time_and_get_events(circuit, 50;
+        initial_inputs=(:in_val => 1, :obs => 1)
+    )
+    for _=1:1000
+]
+
+dicts = [
+    spiketrain_dict(
+        filter(ev) do (t, compname, event)
+            (compname === :ss || compname === nothing) && event isa Sim.OutputSpike
+        end
+    ) for ev in event_vecs
+]
+
+lens = [
+    haskey(dict, :prob) ? length(dict[:prob]) : nothing for dict in dicts
+]
+
+function score_manual_count(dict::Dict, sample)
+    i1 = 1
+    i2 = 1
+    total = 0
+    cnt = 0
+    while total < K
+        i = length(dict[1]) ≥ i1 ? (length(dict[2]) ≥ i2 ? argmin([dict[1][i1], dict[2][i2]]) : 1) : 2
+        if i == 1
+            i1 += 1
+        else
+            i2 += 1
+        end
+        if sample == i
+            cnt += 1
+        end
+        total += 1
+    end
+    return cnt
+end
+score_manually_count(dicts::Vector{<:Dict}, sample) = [score_manual_count(dict, sample) for dict in dicts]
+mcnts = score_manually_count(dicts, 1)
+sum(lens)

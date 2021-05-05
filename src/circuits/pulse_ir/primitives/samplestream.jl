@@ -27,7 +27,8 @@ Implementation of `StreamSamples` `ss` with a concrete Pulse IR interface.
 
 For ΔT after receiving an input spike, will stream samples.  The distribution over the number
 of samples emitted in time `t ≤ ΔT` since the input spike arrives is given by
-dist_on_num_samples(t).  Each sample will be indicated by one output spike
+dist_on_num_samples(t), which should be a distribution from
+`Distributions.jl`.  Each sample will be indicated by one output spike
 in one of the output lines, and will be sampled from P(y ; x) (= `P[x, y]`).
 
 Won't output anything if no input spike has been received recently.
