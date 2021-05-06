@@ -19,6 +19,8 @@ end
 # We must tell it the number of possible values that `input` can take (here, 2)
 circuit = gen_fn_circuit(test, (input=2,), Propose())
 
+smc_circuit(...)
+
 ### implement the circuit ###
 
 REF_RATE() = 1.0
@@ -35,9 +37,9 @@ Circuits.implement(p::SIC.PositiveRealMultiplier, ::Spiking) =
 Circuits.implement(c::SIC.CPTSampleScore, ::Spiking) =
     SIC.SpikingCPTSampleScore(c, OFF_RATE(), ON_RATE())
 
-implemented1 = implement(implement(circuit, Spiking()), Spiking())
-# implemented15 = implement(implement(implemented1.subcomponents[:sub_gen_fns], Spiking()), Spiking())
-implemented2 = implement_deep(implemented1, Spiking())
+# implemented1 = implement(implement(circuit, Spiking()), Spiking())
+# # implemented15 = implement(implement(implemented1.subcomponents[:sub_gen_fns], Spiking()), Spiking())
+implemented2 = implement_deep(circuit, Spiking())
 
 println("Component implemented.")
 
