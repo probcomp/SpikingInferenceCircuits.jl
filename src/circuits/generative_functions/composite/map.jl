@@ -15,7 +15,7 @@ sub_gen_fns(m::MapGenFn) = Tuple(m.kernel_circuits)
 
 _possible_prob_names(m::MapGenFn) = (
     i for (i, gf) in enumerate(m.kernel_circuits)
-    if has_prob_output(gf)
+    if has_score_output(gf)
 )
 prob_outputter_names(m::MapGenFn{Propose}) = _possible_prob_names(m)
 prob_outputter_names(m::MapGenFn{Generate}) = (

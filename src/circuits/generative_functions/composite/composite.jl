@@ -91,14 +91,14 @@ function multiplier_edges(g)
     firstname, rest = Iterators.peel(outputters)
     secondname, rest = Iterators.peel(rest)
     edges = Pair{<:CompOut, <:CompIn}[
-        CompOut(:sub_gen_fns => firstname, :prob) => CompIn(:multipliers => 1, 1),
-        CompOut(:sub_gen_fns => secondname, :prob) => CompIn(:multipliers => 1, 2)
+        CompOut(:sub_gen_fns => firstname, :score) => CompIn(:multipliers => 1, 1),
+        CompOut(:sub_gen_fns => secondname, :score) => CompIn(:multipliers => 1, 2)
     ]
 
     for (i, name) in zip(2:(num_internal_prob_outputs(g) - 1), rest)
         append!(edges, [
             CompOut(:multipliers => i - 1, :out) => CompIn(:multipliers => i, 1),
-            CompOut(:sub_gen_fns => name, :prob) => CompIn(:multipliers => i, 2)
+            CompOut(:sub_gen_fns => name, :score) => CompIn(:multipliers => i, 2)
         ])
     end
     return edges
@@ -107,11 +107,11 @@ end
 # input/output edges
 io_edges(g::CompositeGenFn) = Iterators.flatten((
         (   # probability output
-            if has_prob_output(g)
+            if has_score_output(g)
                 if num_internal_prob_outputs(g) > 1
-                    (CompOut(:multipliers => num_internal_prob_outputs(g) - 1, :out) => Output(:prob),)
+                    (CompOut(:multipliers => num_internal_prob_outputs(g) - 1, :out) => Output(:score),)
                 else
-                    (CompOut(:sub_gen_fns => first(prob_outputter_names(g)), :prob) => Output(:prob),)
+                    (CompOut(:sub_gen_fns => first(prob_outputter_names(g)), :score) => Output(:score),)
                 end
             else
                 ()

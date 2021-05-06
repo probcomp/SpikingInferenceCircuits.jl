@@ -14,8 +14,9 @@ abstract type GenFnOp end
     Propose()
 
 [Propose](https://www.gen.dev/dev/ref/gfi/#Gen.propose) operation:
-sample a trace and output the probability
-of having sampled that trace.
+sample a trace and output the `1/P` where `P` is the probability
+of having sampled that trace.  (Note that this returns `1/P`, whereas
+in Gen Propose returns `P`.)
 (No probability is output for a deterministic generative function.)
 Also outputs the return value of this generative function execution.
 """
@@ -137,15 +138,15 @@ _trace_value(g::GenFn{Generate}) =
     end
 
 """
-    has_prob_output(::GenFn)::Bool
+    has_score_output(::GenFn)::Bool
 
-Whether this gen fn circuit outputs a probability (`:prob`).
+Whether this gen fn circuit outputs a score (probability or reciprocal probability) (`:score`).
 """
-has_prob_output(g::GenFn{Propose}) = has_traceable_value(g)
+has_score_output(g::GenFn{Propose}) = has_traceable_value(g)
 # if there are traceable values whose probabilities we can access,
 # and any of these traceable values are observed, generate will output a prob
 # (if _all_ values are sampled and not observed, we don't output a score)
-has_prob_output(g::GenFn{Generate}) = has_traceable_value(g) && !isempty(operation(g).observed_addrs)
+has_score_output(g::GenFn{Generate}) = has_traceable_value(g) && !isempty(operation(g).observed_addrs)
 
 """
     gen_fn_circuit(object_to_convert_to_circuit, arg_domains::Tuple{Vararg{<:Domain}}, op::Op)
@@ -174,5 +175,5 @@ Circuits.inputs(g::GenFn{Generate}) = NamedValues(
 Circuits.outputs(g::GenFn) = NamedValues(
     :value => to_value(output_domain(g)),
     (has_trace(g) ? (:trace => trace_value(g),) : ())...,
-    (has_prob_output(g) ? (:prob => PositiveReal(),) : ())...
+    (has_score_output(g) ? (:score => PositiveReal(),) : ())...
 )

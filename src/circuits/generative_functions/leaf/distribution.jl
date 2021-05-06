@@ -16,8 +16,26 @@ output_domain(d::DistributionGenFn) = FiniteDomain(ncategories(d.cpt))
 has_traceable_value(d::DistributionGenFn) = true
 traceable_value(d::DistributionGenFn) = to_value(output_domain(d))
 operation(d::DistributionGenFn{Generate}) = Generate(d.is_observed ? AllSelection() : EmptySelection())
-Circuits.implement(d::DistributionGenFn, ::Target) =
-    genfn_from_cpt_sample_score(CPTSampleScore(d.cpt, true), d, !d.is_observed)
+Circuits.implement(d::DistributionGenFn{Propose}, ::Target) =
+    sample_distribution_implementation(d; output_inverse_prob=true)
+Circuits.implement(d::DistributionGenFn{Generate}, ::Target) =  
+    if d.is_observed
+        sample_distribution_implementation(d; output_inverse_prob=false)
+    else
+        score_distribution_implementation(d)
+    end
+
+sample_distribution_implementation(d; output_inverse_prob) =
+    RelabeledIOComponent(
+        CPTSample(d.cpt),
+        (:in_vals => :inputs,),
+        (:value => :value, :inverse_prob => output_inverse_prob ? :score : nothing)
+    )
+score_distribution_implementation(d) =
+    RelabeledIOComponent(
+        CPTScore(d.cpt),
+        (:in_vals => :inputs, :obs => :obs), (:prob => :score)
+    )
 
 gen_fn_circuit(g::CPT, _, op) = DistributionGenFn(g, op)
 gen_fn_circuit(::Gen.Distribution, _, _) = error("To be compiled to a circuit, all distributions must be CPTs.")
