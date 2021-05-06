@@ -38,25 +38,14 @@ operation(::DeterministicGenFn{Generate}) = Generate(Set())
 
 ### implementation ###
 
-# CPT with deterministic outputs
-deterministic_cpt(d::DeterministicGenFn) =
-    CPT([
-        onehot(d.output_domain.n, d.fn(input_vals...)::Int)
-        for input_vals in Iterators.product((1:dom.n for dom in d.input_domains)...)
-    ])
-function onehot(n, i)
-    @assert i <= n "i = $i; n = $n"
-    v = zeros(n)
-    v[i] = 1
-    return v
-end
-
 # implementation for FiniteDomain output
 determ_finite_domain_implementation(g::DeterministicGenFn) =
-    genfn_from_cpt_sample_score(
-        CPTSampleScore(deterministic_cpt(g), true),
-        g, false
-    )
+    RelabeledIOComponent(
+        MultiInputLookupTable(
+            Tuple(d.n for d in g.input_domains),
+            g.output_domain.n, g.fn
+        ), (), (:out => :value,)
+    ) # TODO: double check that this is right
 
 # TODO: implementation for ProductDomain output
 function determ_to_product_implementation(g::DeterministicGenFn, ::Spiking)
