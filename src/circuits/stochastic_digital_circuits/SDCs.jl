@@ -16,4 +16,7 @@ include("pulse_ir_implementation/prob_counter.jl")
 include("pulse_ir_implementation/conditional_score.jl")
 include("pulse_ir_implementation/conditional_sample.jl")
 
+include("nonprimitives/cpt_sample.jl")
+include("nonprimitives/cpt_score.jl")
+
 end
