@@ -5,7 +5,6 @@ Unit to sample from a CPT and output the sample and `1/P[sample ; inputs]`.
 """
 struct CPTSample <: GenericComponent
     cpt::CPT
-    sample::Bool
 end
 
 Circuits.inputs(c::CPTSample) = NamedValues(
@@ -19,14 +18,6 @@ Circuits.outputs(c::CPTSample) =
         :value => FiniteDomainValue(ncategories(c.cpt)),
         :inverse_prob => PositiveReal()
     )
-
-assmt_cond_prob_matrix(cpt::CPT) =
-    let a = assmts(cpt)
-        (collect ∘ transpose)(hcat([
-            probs(cpt[a[i]])
-            for i=1:length(a)
-        ]...))
-    end
 
 Circuits.implement(c::CPTSample, ::Target) =
     CompositeComponent(
@@ -43,6 +34,6 @@ Circuits.implement(c::CPTSample, ::Target) =
             CompOut(:assmts, :out) => CompIn(:sample, :in_val),
             CompOut(:sample, :inverse_prob) => Output(:inverse_prob),
             CompOut(:sample, :value) => Output(:value),
-        )),
+        ),
         c
     )

@@ -1,8 +1,9 @@
 - [x] Implement `CPTSample` and `CPTScore`
 - [x] `DistributionGenFn` should use `CPTSample` and `CPTScore`
 - [x] Change `:prob` output to `:score`
-- [ ] `DeterministicGenFn` should use `LookupTable`
 - [ ] Test DistGenFn
+- [ ] `MultiInputLookupTable`
+- [ ] `DeterministicGenFn` should use `MultiInputLookupTable`
 - [ ] Test DetGenFn
 - [ ] `MultiLineProductPositiveReal` type for the GF output (or should the official abstract type still be `PositiveReal`, and the implementations just use `MultiLine...`?)
 - [ ] Composite Generative Functions should not multiply together the prob outputs

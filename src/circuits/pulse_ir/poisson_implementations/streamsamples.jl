@@ -24,7 +24,7 @@ function expected_lines_field()
     return Base.uncompressed_ast(methods(f).ms[1]).code
 end
 function expected_lines_const()
-    f = (x -> Distribuitons.Poisson(x * 50))
+    f = (x -> Distributions.Poisson(x * 50))
     return Base.uncompressed_ast(methods(f).ms[1]).code
 end
 is_valid_multline(line) = (
@@ -36,11 +36,15 @@ is_valid_multline(line) = (
     ) && (line.args[2] != line.args[3])
 )
 is_poisson_lines(lines) = (
-    lines[1] in (expected_lines_field()[1], expected_lines_const()[1]) &&
-    lines[end-1] in (expected_lines_field()[end-1], expected_lines_const()[end-1]) &&
-    lines[end] in (expected_lines_field()[end], expected_lines_const()[end]) &&
-    is_valid_multline(lines[end-2])
-)
+        (try
+            eval(lines[1]) in map(eval, (expected_lines_field()[1], expected_lines_const()[1]))
+        catch e
+            false
+        end) &&
+        lines[end-1] in (expected_lines_field()[end-1], expected_lines_const()[end-1]) &&
+        lines[end] in (expected_lines_field()[end], expected_lines_const()[end]) &&
+        is_valid_multline(lines[end-2])
+    )
 is_poisson_fn(f) = is_poisson_lines(Base.uncompressed_ast(methods(f).ms[1]).code)
 @assert is_poisson_fn(x -> Distributions.Poisson(x * 50))
 @assert is_poisson_fn(x -> Distributions.Poisson(50 * x))
@@ -51,7 +55,7 @@ is_poisson_fn(f) = is_poisson_lines(Base.uncompressed_ast(methods(f).ms[1]).code
 function PoissonStreamSamples(ss::ConcreteStreamSamples, off_rate)
     @assert ss.dist_on_num_samples(1) isa Distributions.Poisson "To have a Poisson implementation, ss.dist_on_num_samples(1) must be a `Distributions.Poisson` but instead it is $(ss.dist_on_num_samples(1))."
     on_rate = ss.dist_on_num_samples(1).λ
-    @assert is_poisson_fn(ss.dist_on_num_samples) "To have a Poisson implementation, ss.dist_on_num_samples must look like `x -> Distributions.Poisson(x * rate)`, but instead it is $(ss.dist_on_num_samples)."
+    @assert is_poisson_fn(ss.dist_on_num_samples) "To have a Poisson implementation, ss.dist_on_num_samples must look like `x -> Distributions.Poisson(x * rate)`, but instead it looks like $(Base.uncompressed_ast(methods(ss.dist_on_num_samples).ms[1]).code)."
     return PoissonStreamSamples(ss.P, ss.ΔT, on_rate, off_rate)
 end
 

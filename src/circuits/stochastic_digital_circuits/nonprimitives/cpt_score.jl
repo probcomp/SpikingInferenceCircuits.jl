@@ -5,7 +5,6 @@ Unit to output `P[value ; parent_values]` for a CPT.
 """
 struct CPTScore <: GenericComponent
     cpt::CPT
-    sample::Bool
 end
 
 Circuits.inputs(c::CPTScore) = NamedValues(
@@ -16,14 +15,6 @@ Circuits.inputs(c::CPTScore) = NamedValues(
     :obs => FiniteDomainValue(ncategories(cpt))
 )
 Circuits.outputs(::CPTScore) = NamedValues(:prob => PositiveReal())
-
-assmt_cond_prob_matrix(cpt::CPT) =
-    let a = assmts(cpt)
-        (collect ∘ transpose)(hcat([
-            probs(cpt[a[i]])
-            for i=1:length(a)
-        ]...))
-    end
 
 Circuits.implement(c::CPTScore, ::Target) =
     CompositeComponent(
@@ -40,6 +31,6 @@ Circuits.implement(c::CPTScore, ::Target) =
             Input(:obs) => CompIn(:score, :obs),
             CompOut(:assmts, :out) => CompIn(:score, :in_val),
             CompOut(:score, :prob) => Output(:prob)
-        )),
+        ),
         c
     )

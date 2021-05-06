@@ -1,9 +1,15 @@
+"""
+    PoissonThresholdedIndicator(ti::ConcreteThresholdedIndicator, R::Float64)
+    PoissonThresholdedIndicator(threshold, ΔT, max_delay, M, R)
+"""
 struct PoissonThresholdedIndicator <: ConcretePulseIRPrimitive
     ti::ConcreteThresholdedIndicator
     # `R` controls the rate during ON and OFF modes.
     # "off" rate will always be ≤ exp(-R/2); "on" rate will always be ≥ exp(R/2)
     R::Float64
 end
+PoissonThresholdedIndicator(threshold, ΔT, max_delay, M, R) =
+    PoissonThresholdedIndicator(ConcreteThresholdedIndicator(threshold, ΔT, max_delay, M), R)
 # TODO: constructor where we give a failure probability & it figures out the `max_delay`
 # we need to accomodate that
 Circuits.abstract(t::PoissonThresholdedIndicator) = t.ti

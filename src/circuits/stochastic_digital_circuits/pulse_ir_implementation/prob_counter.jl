@@ -11,7 +11,7 @@ Circuits.inputs(c::ProbCounter) = NamedValues(
 Circuits.outputs(c::ProbCounter) =
     let K = PulseIR.threshold(c.ti)
         NamedValues(
-            :count => UnbiasedSpikeCountReal(c.output_inverse_prob ? K + 1 : K)
+            :count => UnbiasedSpikeCountReal(c.output_inverse_prob ? K - 1 : K)
         )
     end
 Circuits.target(::ProbCounter) = Spiking()
