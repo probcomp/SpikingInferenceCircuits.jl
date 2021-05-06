@@ -1,3 +1,8 @@
+# Currently this file isn't being used.
+# This is the start of some code to test that the
+# temporal interfaces components is satisfied by their
+# behavior in simulation.
+
 produce_spiketrains(comp::Component, input_count_assignments,  int::CombinatoryInterface; n_cycles) =
     [
         let input_spiketrain = random_input_timings(input_count_assignments, int.input_windows)

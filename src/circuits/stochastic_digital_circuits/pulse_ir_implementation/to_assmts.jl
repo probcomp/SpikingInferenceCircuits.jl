@@ -36,7 +36,3 @@ Circuits.implement(a::PulseToAssmts) =
         ),
         a
     )
-
-### Pulse IR
-PulseIR.output_windows(a::PulseToAssmts, d::Dict{Input, Window}) =
-    PulseIR.output_windows(implement(a, Spiking()), d)

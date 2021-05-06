@@ -36,6 +36,8 @@ Circuits.inputs(m::PulseMux) = implement_deep(inputs(implement(m, Spiking())), S
 Circuits.outputs(m::PulseMux) = implement_deep(outputs(implement(m, Spiking())), Spiking())
 Circuits.implement(m::PulseMux, ::Spiking) = OneHotMux(m.mux, PulseBitMux(m.gate))
 
+# TODO: improve the automatic `output_windows` implementation so that this definition can be
+# produced automatically.
 PulseIR.output_windows(m::PulseMux, d::Dict{Input, Window}) =
     PulseIR.output_windows(implement_twice(m), d)
 PulseIR.valid_strict_inwindows(m::PulseMux, d::Dict{Input, Window}) =

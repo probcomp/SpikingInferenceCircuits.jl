@@ -59,14 +59,8 @@ Circuits.implement(p::PulseConditionalScore, ::Spiking) =
         p
     )
 
-### Temporal Interface ###
-# TODO: for failure probability, also factor in possibility that we haven't gotten K
-# spikes by the end of ΔT
-# PulseIR.failure_probability_bound(p::PulseConditionalScore) =
-    # 1 - (1 - p_subcomponent_fails(p))*(1 - p_insufficient_hold_for_gate(p))
-# p_subcomponent_fails(p::PulseConditionalScore) = 1 - pnf(p.mux)*pnf(p.offgate)*pnf(p.streamsamples)*pnf(p.ti)
-# pnf(c) #= probability of not failing =# = 1 - PulseIR.failure_probability_bound(c)
-# p_insufficient_hold_for_gate(p::PulseConditionalScore) = error("TODO")
+#=
+Temporal Interface automatically inferred from implementation is correct.
 
-PulseIR.output_windows(p::PulseConditionalScore, d::Dict{Input, Window}) = PulseIR.output_windows(implement(p, Spiking()), d)
-PulseIR.valid_strict_inwindows(::PulseConditionalScore, ::Dict{Input, Window}) = error("Not implemented.")
+However, we will have to manually override `failure_probability_bound` for this component.
+=#

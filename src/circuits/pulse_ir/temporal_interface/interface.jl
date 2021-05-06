@@ -1,3 +1,5 @@
+import InteractiveUtils: @which
+
 abstract type Interval end
 struct ClosedInterval <: Interval
     min::Float64
@@ -69,7 +71,12 @@ Is a hold on the output window the amount of time where we can guarantee no new 
 spikes will arise so long as no new input spikes arise?
 Or is it how long we can guarantee no output spikes will occur _even if_ input spikes arrive?
 
-I think _probably_ we want it to be how long given that no new inputs occur.
+I think we want it to be the guarantee, period.  We can use the input post-hold windows
+to have some period where we're guaranteed that no new inputs arrive, but we should not assume
+more than that.
+In the future, we may want some way to (e.g.) limit the rate at which incoming spikes can be arriving,
+so that we can have output-hold even if there is no input-hold, and there is a threshold above which
+there are enough input spikes to override the input hold.
 =#
 
 """
@@ -84,6 +91,7 @@ we can ask whether it supports a set of input windows,
 and if so, ask for a corresponding output window.
 """
 has_concrete_temporal_interface(::Component) = false
+has_concrete_temporal_interface(::Nothing) = false
 has_concrete_temporal_interface(::ConcretePulseIRPrimitive) = true
 has_concrete_temporal_interface(c::CompositeComponent) = all(has_concrete_temporal_interface(sc) for sc in values(c.subcomponents))
 
@@ -125,7 +133,30 @@ if the input windows are not strict, these outputs will be broad enough to cover
 all possible output windows for a strict input within the given loose input.)
 """
 output_windows(::Component, input_windows::Dict{Input, Window})::Dict{Output, Window} = error("Not implemented.")
-output_windows(c::ConcretePulseIRPrimitive, iw::Dict{Input, Window}) = output_windows(abstract(c), iw)
+
+#=
+For a component which doesn's provide an `output_windows` method, we can try to
+automatically determine the windows by
+1. Seeing if any abstract version of `c` has `output_windows`, and if so returning those windows
+2. If no abstract version of `c` has `output_windows`, implement `c` and use the output windows
+for that.
+=#
+function output_windows(c::ConcretePulseIRPrimitive, iw::Dict{Input, Window})
+    most_abstract = abstract(c)
+    this_method = @which output_windows(c, iw)
+    while has_concrete_temporal_interface(most_abstract) && @which(output_windows(most_abstract, iw)) == this_method
+        most_abstract = abstract(c)
+    end
+    if has_concrete_temporal_interface(most_abstract)
+        return output_windows(most_abstract, iw)
+    else
+        # TODO: in some cases it might be _much_ more efficient to manually
+        # iterate down the implementation tree here, rather than just making a shallow call
+        # which may then call this recursively.  (Since recursive calls
+        # may end up walking up the whole abstract tree!)
+        return output_windows(implement(c, Spiking()), iw)
+    end
+end
 
 """
 The output windows for a synchronous component after a transition occurs.

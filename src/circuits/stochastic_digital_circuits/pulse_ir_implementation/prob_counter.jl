@@ -47,6 +47,3 @@ prob_edges(c) = (
     CompOut(:mux, :out) => CompIn(:gate, :in),
     CompOut(:ti, :out) => CompIn(:gate, :off)
 )
-
-PulseIR.output_windows(c::ProbCounter, d::Dict{Input, Window}) =
-    PulseIR.output_windows(implement(c, Spiking()), d)
