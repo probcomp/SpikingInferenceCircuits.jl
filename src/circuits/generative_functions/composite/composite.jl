@@ -78,7 +78,7 @@ Circuits.implement(g::CompositeGenFn, ::Target) =
 
 # TODO: explore design tradeoffs between using pairwise multiplication vs multiple-input multiplication
 multipliers_group(g) = IndexedComponentGroup(
-    PositiveRealMultiplier(2) for _=1:(num_internal_prob_outputs(g) - 1)
+    NonnegativeRealMultiplier(2) for _=1:(num_internal_prob_outputs(g) - 1)
 )
 
 # edges to perform pairwise multiplication of all the tracked probs

@@ -29,7 +29,7 @@ Circuits.implement(c::ProbCounter, ::Spiking) =
             Input(:samples) => CompIn(:mux, :values),
             CompOut(:gate, :out) => Output(:count),
             (c.output_inverse_prob ? inv_prob_edges(c) : prob_edges(c))...
-        ), p
+        ), c
     )
 inv_prob_edges(c) = (
     (

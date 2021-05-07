@@ -16,6 +16,8 @@ output_domain(d::DistributionGenFn) = FiniteDomain(ncategories(d.cpt))
 has_traceable_value(d::DistributionGenFn) = true
 traceable_value(d::DistributionGenFn) = to_value(output_domain(d))
 operation(d::DistributionGenFn{Generate}) = Generate(d.is_observed ? AllSelection() : EmptySelection())
+score_value(::DistributionGenFn) = SingleNonnegativeReal()
+
 Circuits.implement(d::DistributionGenFn{Propose}, ::Target) =
     sample_distribution_implementation(d; output_inverse_prob=true)
 Circuits.implement(d::DistributionGenFn{Generate}, ::Target) =  

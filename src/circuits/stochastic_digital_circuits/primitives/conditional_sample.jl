@@ -27,5 +27,5 @@ Circuits.inputs(c::ConditionalSample) =
 Circuits.outputs(c::ConditionalSample) =
     NamedValues(
         :value => FiniteDomainValue(out_domain_size(c)),
-        :inverse_prob => PositiveReal()
+        :inverse_prob => NonnegativeReal()
     )

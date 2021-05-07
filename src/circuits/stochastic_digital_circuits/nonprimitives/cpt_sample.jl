@@ -16,7 +16,7 @@ Circuits.inputs(c::CPTSample) = NamedValues(
 Circuits.outputs(c::CPTSample) =
     NamedValues(
         :value => FiniteDomainValue(ncategories(c.cpt)),
-        :inverse_prob => PositiveReal()
+        :inverse_prob => NonnegativeReal()
     )
 
 Circuits.implement(c::CPTSample, ::Target) =

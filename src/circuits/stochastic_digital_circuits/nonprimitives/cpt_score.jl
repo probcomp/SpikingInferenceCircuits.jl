@@ -14,7 +14,7 @@ Circuits.inputs(c::CPTScore) = NamedValues(
     ),
     :obs => FiniteDomainValue(ncategories(c.cpt))
 )
-Circuits.outputs(::CPTScore) = NamedValues(:prob => PositiveReal())
+Circuits.outputs(::CPTScore) = NamedValues(:prob => NonnegativeReal())
 
 Circuits.implement(c::CPTScore, ::Target) =
     CompositeComponent(

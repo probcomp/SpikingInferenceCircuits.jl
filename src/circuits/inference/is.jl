@@ -59,7 +59,7 @@ Circuits.inputs(p::ProposalISParticle) = NamedValues(
     :obs => inputs(p.model)[:obs],
 )
 Circuits.outputs(p::ProposalISParticle) = NamedValues(
-    :weight => PositiveReal(),
+    :weight => NonnegativeReal(),
     :trace => trace_output(p)
 )
 trace_output(p::ProposalISParticle) =
@@ -71,7 +71,7 @@ trace_output(p::ProposalISParticle) =
 
 Circuits.implement(p::ProposalISParticle) = CompositeComponent(
     inputs(p), outputs(p),
-    (model=p.model, proposal=p.proposal, divider=PositiveRealDivider()),
+    (model=p.model, proposal=p.proposal, divider=NonnegativeRealDivider()),
     Iterators.flatten((
         ( # inputs: observation, model args, proposal args
             Input(:obs) => CompIn(:model, :obs),

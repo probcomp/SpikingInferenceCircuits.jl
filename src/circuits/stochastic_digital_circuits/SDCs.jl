@@ -25,6 +25,6 @@ include("pulse_ir_implementation/to_assmts.jl")
 include("nonprimitives/cpt_sample_score.jl")
 include("nonprimitives/multi_input_lookup_table.jl")
 
-export FiniteDomainValue, PositiveReal
+export FiniteDomainValue, NonnegativeReal
 
 end

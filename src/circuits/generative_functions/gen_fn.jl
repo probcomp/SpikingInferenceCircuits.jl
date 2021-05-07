@@ -1,6 +1,5 @@
 # TODO: more explicitely document
-# 1. What functions must subtypes override
-# 2. What the input/output addresses are for each circuit
+# what the input/output addresses are for each circuit
 
 """
     abstract type GenFnOp end
@@ -56,6 +55,8 @@ The specific operation is given by `operation(::GenFn)`.
 """
 abstract type GenFn{Op} <: GenericComponent end
 
+### Methods which GenFn sub-types should implement ###
+
 """
     operation(::GenFn)
 
@@ -70,14 +71,6 @@ operation(::GenFn{Propose}) = Propose()
 A tuple of `Domain`s giving the domain for each input of the GenFn.
 """
 input_domains(::GenFn) = error("Not implemented.")
-
-"""
-    arg_names(g::GenFn)
-
-Iterator over the names of the arguments to the generative function, in order.
-(It will hold that `g` receives inputs at the names given by this function.)
-"""
-arg_names(g::GenFn) = keys(input_domains(g))
 
 """
     output_domain(::GenFn)::Int
@@ -105,7 +98,29 @@ for a top-level value, or a `CompositeValue` with sub-values at addresses.
 """
 traceable_value(::GenFn) = error("Not implemented.")
 
-### trace & prob output ###
+"""
+    score_value(::GenFn)
+
+The `Value` which will be be output by this GenFn circuit _if_ there is a score output.
+(If there is no score output, the output from this function does not matter [and
+the function need not be implemented].)
+Should have `NonnegativeReal` as an abstract version.
+
+(E.g. this might be `SingleNonnegativeReal()` or a `ProductNonnegativeReal`.)
+"""
+score_value(::GenFn) = error("Not implemented.")
+
+### Methods which are automatically implemented using the above ###
+
+"""
+    arg_names(g::GenFn)
+
+Iterator over the names of the arguments to the generative function, in order.
+(It will hold that `g` receives inputs at the names given by this function.)
+"""
+arg_names(g::GenFn) = keys(input_domains(g))
+
+## trace & prob output ##
 """
     has_trace(::GenFn)::Bool
 
@@ -148,19 +163,7 @@ has_score_output(g::GenFn{Propose}) = has_traceable_value(g)
 # (if _all_ values are sampled and not observed, we don't output a score)
 has_score_output(g::GenFn{Generate}) = has_traceable_value(g) && !isempty(operation(g).observed_addrs)
 
-"""
-    gen_fn_circuit(object_to_convert_to_circuit, arg_domains::Tuple{Vararg{<:Domain}}, op::Op)
-    gen_fn_circuit(object_to_convert_to_circuit, arg_domains::NamedTuple{Vararg{<:Domain}}, op::Op)
-
-Get a GenFn component for the given `object_to_convert_to_circuit` running the operation `op`.
-The circuit will expect input values to be in the given `arg_domain`s.
-
-(For static generative functions, `arg_domains` should be a NamedTuple using the argument names;
-for other objects, `arg_domains` should just be a tuple.)
-"""
-gen_fn_circuit(_, _, _) = error("Not implemented")
-
-### GenFn input/output ###
+## GenFn input/output ##
 _input_val(g) = CompositeValue(map(to_value, input_domains(g)))
 Circuits.inputs(g::GenFn{Propose}) = NamedValues(
     :inputs => _input_val(g)
@@ -175,5 +178,19 @@ Circuits.inputs(g::GenFn{Generate}) = NamedValues(
 Circuits.outputs(g::GenFn) = NamedValues(
     :value => to_value(output_domain(g)),
     (has_trace(g) ? (:trace => trace_value(g),) : ())...,
-    (has_score_output(g) ? (:score => PositiveReal(),) : ())...
+    (has_score_output(g) ? (:score => score_value(g),) : ())...
 )
+
+### Construct GenFn circuit from a Gen/Julia object ###
+
+"""
+    gen_fn_circuit(object_to_convert_to_circuit, arg_domains::Tuple{Vararg{<:Domain}}, op::Op)
+    gen_fn_circuit(object_to_convert_to_circuit, arg_domains::NamedTuple{Vararg{<:Domain}}, op::Op)
+
+Get a GenFn component for the given `object_to_convert_to_circuit` running the operation `op`.
+The circuit will expect input values to be in the given `arg_domain`s.
+
+(For static generative functions, `arg_domains` should be a NamedTuple using the argument names;
+for other objects, `arg_domains` should just be a tuple.)
+"""
+gen_fn_circuit(_, _, _) = error("Not implemented")

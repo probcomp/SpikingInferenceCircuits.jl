@@ -1,11 +1,11 @@
 """
-    PositiveRealMultiplier <: GenericComponent
-    PositiveRealMultiplier(n)
+    NonnegativeRealMultiplier <: GenericComponent
+    NonnegativeRealMultiplier(n)
 
-Multiplies `n` `PositiveReal`s together.
+Multiplies `n` `NonnegativeReal`s together.
 """
-struct PositiveRealMultiplier <: GenericComponent
+struct NonnegativeRealMultiplier <: GenericComponent
     n_inputs::Int
 end
-Circuits.inputs(r::PositiveRealMultiplier) = IndexedValues(PositiveReal() for _=1:r.n_inputs)
-Circuits.outputs(r::PositiveRealMultiplier) = NamedValues(:out => PositiveReal())
+Circuits.inputs(r::NonnegativeRealMultiplier) = IndexedValues(NonnegativeReal() for _=1:r.n_inputs)
+Circuits.outputs(r::NonnegativeRealMultiplier) = NamedValues(:out => NonnegativeReal())
