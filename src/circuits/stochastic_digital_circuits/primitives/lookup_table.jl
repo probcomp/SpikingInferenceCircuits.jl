@@ -19,8 +19,12 @@ struct OneHotLookupTable <: GenericComponent
     lt::LookupTable
 end
 Circuits.abstract(lt::OneHotLookupTable) = lt.lt
-Circuits.inputs(lt::OneHotLookupTable) = NamedValues(:in => IndexedValues(Binary() for _=1:lt.lt.input_domain_size))
-Circuits.outputs(lt::OneHotLookupTable) = NamedValues(:out => IndexedValues(Binary() for _=1:lt.lt.output_domain_size))
+Circuits.inputs(lt::OneHotLookupTable) = NamedValues(:in => 
+    CompositeValue(Tuple(Binary() for _=1:lt.lt.input_domain_size), FiniteDomainValue(lt.lt.input_domain_size))
+)
+Circuits.outputs(lt::OneHotLookupTable) = NamedValues(:out => 
+CompositeValue(Tuple(Binary() for _=1:lt.lt.output_domain_size), FiniteDomainValue(lt.lt.output_domain_size))
+)
 Circuits.implement(lt::OneHotLookupTable, ::Target) = CompositeComponent(
         inputs(lt), outputs(lt), (), (
             Input(:in => inval) => Output(:out => lt.lt.f(inval))

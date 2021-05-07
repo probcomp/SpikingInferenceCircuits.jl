@@ -41,7 +41,7 @@ operation(::DeterministicGenFn{Generate}) = Generate(Set())
 # implementation for FiniteDomain output
 determ_finite_domain_implementation(g::DeterministicGenFn) =
     RelabeledIOComponent(
-        MultiInputLookupTable(
+        SDCs.MultiInputLookupTable(
             Tuple(d.n for d in g.input_domains),
             g.output_domain.n, g.fn
         ), (), (:out => :value,)

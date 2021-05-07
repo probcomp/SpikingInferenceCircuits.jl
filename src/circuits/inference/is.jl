@@ -95,5 +95,6 @@ Circuits.implement(p::ProposalISParticle) = CompositeComponent(
             CompOut(:proposal, :prob) => CompIn(:divider, :denominator),
             CompOut(:divider, :out) => Output(:weight)
         )
-    ))
+    )),
+    p
 )

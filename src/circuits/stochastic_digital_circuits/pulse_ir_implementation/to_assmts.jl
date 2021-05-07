@@ -32,7 +32,7 @@ Circuits.implement(a::PulseToAssmts, ::Spiking) =
             (
                 (
                     Input(i => val) => CompIn(jointidx, :in)
-                    for (i, val) in enumerate(tuple(assmt))
+                    for (i, val) in enumerate(Tuple(assmt))
                 )...,
                 CompOut(jointidx, :out) => Output(:out => jointidx)
             )

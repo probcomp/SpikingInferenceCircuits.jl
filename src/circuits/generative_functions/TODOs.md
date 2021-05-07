@@ -4,6 +4,6 @@
 - [x] Test DistGenFn
 - [x] `MultiInputLookupTable`
 - [x] `DeterministicGenFn` should use `MultiInputLookupTable`
-- [ ] Test DetGenFn
+- [x] Test DetGenFn
 - [ ] `MultiLineProductPositiveReal` type for the GF output (or should the official abstract type still be `PositiveReal`, and the implementations just use `MultiLine...`?)
 - [ ] Composite Generative Functions should not multiply together the prob outputs

@@ -2,7 +2,7 @@ include("values.jl")
 
 include("gen_fn.jl")
 
-# include("leaf/deterministic.jl")
+include("leaf/deterministic.jl")
 include("leaf/distribution.jl")
 
 # include("composite/composite.jl")
