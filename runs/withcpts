@@ -1,5 +1,0 @@
-digraph {
-	x [label=x fillcolor=white shape=diamond style=filled]
-	"LabeledCPT{Bool}(ConditionalProbabilityTable{1}(Categorical{Float64, Vector{Float64}}[Categorical{Float64, Vector{Float64}}(support=Base.OneTo(2), p=[0.2, 0.8])], 2), Bijection{Int64,Bool} (with 2 pairs), Bijection{Int64, Bool}[Bijection{Int64,Bool} (with 2 pairs)]) y ##y#270" [label="LabeledCPT{Bool}(ConditionalProbabilityTable{1}(Categorical{Float64, Vector{Float64}}[Categorical{Float64, Vector{Float64}}(support=Base.OneTo(2), p=[0.2, 0.8])], 2), Bijection{Int64,Bool} (with 2 pairs), Bijection{Int64, Bool}[Bijection{Int64,Bool} (with 2 pairs)]) y ##y#270" fillcolor=lightblue shape=ellipse style=filled]
-	x -> "LabeledCPT{Bool}(ConditionalProbabilityTable{1}(Categorical{Float64, Vector{Float64}}[Categorical{Float64, Vector{Float64}}(support=Base.OneTo(2), p=[0.2, 0.8])], 2), Bijection{Int64,Bool} (with 2 pairs), Bijection{Int64, Bool}[Bijection{Int64,Bool} (with 2 pairs)]) y ##y#270"
-}

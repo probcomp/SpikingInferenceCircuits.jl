@@ -23,23 +23,59 @@ There are 3 main parts:
 be replaced with a better visualizer, and perhaps factored into its own repository (or made part of the
 Circuits repository).
 
+I'm currently reorganizing and rewriting large parts of `src`, so the imports in `runs` will mostly be wrong
+(and some of the runs may become irrelevent / used foor outdated components.)
+
 ### `src`
 
-This is the main code for compiling inference circuits from Gen to hardware.
+(This is currently WIP.)
+
+I would like to end up with the directory structure looking something like
+```
+src/
+    CPTs/
+    DiscreteIRTransforms/
+    circuits/
+        value_types.jl
+        pulse_ir/
+            primitives/
+            poisson_implementations/
+        stochastic_digital_circuits/
+            primitives/
+            pulse_ir_implementations/
+        generative_functions/
+            interface.jl
+            sdc_implementation/
+                composite/
+                leaf/
+        inference/
+```
+though it doesn't quite match this yet.
+
+I'm also not totally sure about what subdirectory structure for `generative_functions/` and `inference/` will
+make the most sense.
+
 - `CPTs` a Julia package exposing the `CPT` (conditional probability table)
   and `LabeledCPT` Gen distributions.
-- `value_types.jl` defines `Value` types (from the Circuits library) used for the circuits
-- `components` defines various components used in inference circuits.  Most of these are defined
-  as abstract components, with a `Spiking`-specific implementation which enables the abstract circuits
-  to be compiled for `Spiking` hardware.  There are also a few Spiking-specific components.
-- `compiler/gen_fn.jl` contains code to compile from Gen to circuits which implement
-  some inference/sampling functionality (e.g. some [generative function interface](https://www.gen.dev/dev/ref/gfi/#Generative-function-interface-1) methods, like `propose`).  The circuits it compiles to are implemented
-  using the components from the `components` directory.
-- `compiler/DiscreteIRTransforms` is a Julia package for transforming IRs for Gen models where
+- `DiscreteIRTransforms` is a Julia package for transforming IRs for Gen models where
   all variables are discrete and have finite domains.  In particular, it contains some
   transformations to convert from Static IR (+ combinators) generative functions
   to equivalent generative functions where all distributions are CPTs.
+- `circuits/value_types.jl` defines `Value` types (from the Circuits library) used for the circuits
+- `circuits/generative_functions` contains generative function PROPOSE and ASSESS circuits.
+  - Eventually, I would like to have an externally-facing interface for these circuits in `interface.jl`
+    and then implementations in terms of stochastic digital circuits in `sdc_implementation/`.
+    (Currently, it isn't structured quite like this; I haven't thought through what the external vs internal
+    interface for this code should be.)
+- `circuits/inference` will contain code for producing inference circuits.  I haven't thought through
+  what this should look like.
+- `circuits/stochastic_digital_circuits/` and `circuits/pulse_ir/` will define the stochastic digital circuits
+  and Pulse IR primitive components (and maybe some non-primitive components too.  Eventually
+  they will also include SDC --> Pulse IR implementations, and Pulse IR --> Poisson neuron implementations.
+  `pulse_ir/` will also contain code for satisfying the temporal interfaces of the Pulse IR.
 
+`old_src` contains some component implementations from a previous draft; I haven't sifted through
+which of these I want to keep yet.
 
 ### Visualizations
 

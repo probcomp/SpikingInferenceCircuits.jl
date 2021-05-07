@@ -1,2 +1,0 @@
-struct RateDivider <: GenericComponent
-    # TODO

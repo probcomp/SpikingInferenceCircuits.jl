@@ -1,0 +1,8 @@
+include("off_gate.jl")
+include("on_gate.jl")
+include("multiplier.jl")
+include("samplestream.jl")
+include("sync.jl")
+include("theta.jl")
+include("thresholded_indicator.jl")
+include("wta.jl")
