@@ -13,7 +13,7 @@ function spiketrain_dict(event_vector)
 end
 
 out_st_dict(events) = filter(events) do (t, compname, event)
-    (compname === :ss || compname === nothing) && event isa SpikingSimulator.OutputSpike
+    compname === nothing && event isa SpikingSimulator.OutputSpike
 end |> spiketrain_dict
 
 function draw_fig(events)
