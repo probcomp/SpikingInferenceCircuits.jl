@@ -32,10 +32,13 @@ Circuits.implement(cs::SIC.SDCs.ConditionalSample, ::Spiking) =
         ),
         10^(-10), 12
     )
-
-# TODO: ConditionalScore
+Circuits.implement(cs::SIC.SDCs.ConditionalScore, ::Spiking) =
+    SDCs.PoissonPulseConditionalScore((cs, K, ONRATE, 500, 0.2, 1000), 10^(-10), 12)
 
 ### Tests ###
+
+println("TESTS FOR PROPOSE")
+println()
 
 cpt = CPT([[0.5, 0.5], [0.2, 0.8]])
 circuit = gen_fn_circuit(cpt, (FiniteDomain(2),), Propose())
@@ -63,7 +66,7 @@ deep_implemented = implement_deep(impl4, Spiking())
 println("Circuit implemented deeply.")
 
 # Simulation #
-get_events() = SpikingSimulator.simulate_for_time_and_get_events(deep_implemented, 500;
+get_events(impl) = SpikingSimulator.simulate_for_time_and_get_events(impl, 500;
     initial_inputs=(:inputs => 1 => 1,)
 )
 
@@ -114,7 +117,46 @@ function simulate_and_log_to_file(filename)
     end
 end
 
-events = get_events()
+events = get_events(deep_implemented)
 println("Simulation completed.")
-draw_fig(events)
-println("Figure drawn")
+# draw_fig(events)
+# println("Figure drawn")
+
+### assess ###
+
+println()
+println()
+println("TESTS FOR ASSESS")
+println()
+
+circuit = gen_fn_circuit(cpt, (FiniteDomain(2),), Assess())
+
+println("Circuit constructed.")
+
+shallow_implemented = implement(circuit, Spiking())
+
+println("Circuit implemented.")
+
+impl2 = implement(shallow_implemented, Spiking())
+
+println("Implemented another level.")
+
+impl3 = implement(impl2, Spiking())
+
+println("Implemented another level.")
+
+impl4 = implement(impl3, Spiking())
+
+println("Implemented another level.")
+
+deep_implemented = implement_deep(impl4, Spiking())
+
+println("Circuit implemented deeply.")
+
+get_events_assess(impl) = SpikingSimulator.simulate_for_time_and_get_events(impl, 500;
+    initial_inputs=(:inputs => 1 => 1, :obs => 2)
+)
+assess_events = get_events_assess(deep_implemented)
+println("Simulation completed.")
+draw_fig(assess_events)
+println("Figure drawn.")

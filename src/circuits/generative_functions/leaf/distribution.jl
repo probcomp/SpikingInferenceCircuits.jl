@@ -20,9 +20,10 @@ Circuits.implement(d::DistributionGenFn{Propose}, ::Target) =
     sample_distribution_implementation(d; output_inverse_prob=true)
 Circuits.implement(d::DistributionGenFn{Generate}, ::Target) =  
     if d.is_observed
-        sample_distribution_implementation(d; output_inverse_prob=false)
-    else
         score_distribution_implementation(d)
+    else
+        # TODO: I have not tested this yet
+        sample_distribution_implementation(d; output_inverse_prob=false)
     end
 
 sample_distribution_implementation(d; output_inverse_prob) =
@@ -34,7 +35,7 @@ sample_distribution_implementation(d; output_inverse_prob) =
 score_distribution_implementation(d) =
     RelabeledIOComponent(
         CPTScore(d.cpt),
-        (:in_vals => :inputs, :obs => :obs), (:prob => :score)
+        (:in_vals => :inputs,), (:prob => :score,)
     )
 
 gen_fn_circuit(g::CPT, _, op) = DistributionGenFn(g, op)

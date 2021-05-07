@@ -1,7 +1,7 @@
 - [x] Implement `CPTSample` and `CPTScore`
 - [x] `DistributionGenFn` should use `CPTSample` and `CPTScore`
 - [x] Change `:prob` output to `:score`
-- [ ] Test DistGenFn
+- [x] Test DistGenFn
 - [x] `MultiInputLookupTable`
 - [x] `DeterministicGenFn` should use `MultiInputLookupTable`
 - [ ] Test DetGenFn

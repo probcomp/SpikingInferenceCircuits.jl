@@ -31,7 +31,6 @@ pcs = SDCs.PulseConditionalSample(
     ConcreteOffGate(300, 0.1, 50),
     50.0, .1
 )
-# TODO: more convenient constructor
 
 inwindow = PulseIR.Window(
     PulseIR.Interval(0., 0.),

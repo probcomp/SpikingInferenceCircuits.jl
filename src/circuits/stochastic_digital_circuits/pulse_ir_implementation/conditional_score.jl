@@ -16,6 +16,60 @@ struct PulseConditionalScore{SS, MOG, TI, OG} <: ConcretePulseIRPrimitive
     end
 end
 
+### Constructors ###
+ 
+ConcretePulseConditionalScore(
+    P::Matrix{Float64},
+    K::Int,
+    ss_params::Tuple{Int, Function},
+    mux_on_params::Tuple{Int, Real, Int},
+    ti_params::Tuple{Int, Real, Int},
+    off_params::Tuple{Int, Real, Int},
+) = SDCs.PulseConditionalScore(
+        PulseIR.ConcreteStreamSamples(P, ss_params...),
+        PulseIR.ConcreteAsyncOnGate(mux_on_params...),
+        PulseIR.ConcreteThresholdedIndicator(K, ti_params...),
+        PulseIR.ConcreteOffGate(off_params...)
+    )
+ConcretePulseConditionalScore(
+    P::Matrix{Float64}, K::Int, ss_samplecount_dist::Function, ΔT::Real, max_delay::Real, M::Int
+) = ConcretePulseConditionalScore(
+        P, K, (ΔT, ss_samplecount_dist), (ΔT, max_delay, M), (ΔT, max_delay, M), (ΔT, max_delay, M)
+    )
+    ConcretePulseConditionalScore(
+    P::Matrix{Float64}, K::Int, ss_samplecount_rate::Real, args...
+) = ConcretePulseConditionalScore(
+        P, K, (T -> Distributions.Poisson(T * ss_samplecount_rate)), args...
+    )
+ConcretePulseConditionalScore(cs::ConditionalScore, args...) =
+    ConcretePulseConditionalScore(cs.P, args...)  
+
+PoissonPulseConditionalScore(
+    concrete_pcs::PulseConditionalScore,
+    ss_off_rate::Real, mux_on_R::Real, ti_R::Real, off_R::Real
+) = SDCs.PulseConditionalScore(
+        PulseIR.PoissonStreamSamples(concrete_pcs.streamsamples, ss_off_rate),
+        PulseIR.PoissonAsyncOnGate(concrete_pcs.mux_on_gate, mux_on_R),
+        PulseIR.PoissonThresholdedIndicator(concrete_pcs.ti, ti_R),
+        PulseIR.PoissonOffGate(concrete_pcs.offgate, off_R)
+    )
+
+# Constructor to set the TI's `R` value to the given quantity,
+# and set the others to be larger.
+# This will ensure that the gate outputs spikes before
+# it is turned off.
+PoissonPulseConditionalScore(
+    concrete_pcs::PulseConditionalScore,
+    off_rate::Real,
+    ti_R::Real
+) = PoissonPulseConditionalScore(
+        concrete_pcs, off_rate, ti_R + 10, ti_R, ti_R + 10
+    )
+PoissonPulseConditionalScore(concrete_pcs_args::Tuple, args...) =
+    PoissonPulseConditionalScore(ConcretePulseConditionalScore(concrete_pcs_args...), args...)
+
+### Circuits methods ###
+
 Circuits.abstract(p::PulseConditionalScore) = ConditionalScore(p.streamsamples.P)
 
 Circuits.inputs(c::PulseConditionalScore) =

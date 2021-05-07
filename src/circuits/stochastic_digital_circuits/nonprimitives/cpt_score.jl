@@ -12,7 +12,7 @@ Circuits.inputs(c::CPTScore) = NamedValues(
         FiniteDomainValue(n)
         for n in input_ncategories(c.cpt)
     ),
-    :obs => FiniteDomainValue(ncategories(cpt))
+    :obs => FiniteDomainValue(ncategories(c.cpt))
 )
 Circuits.outputs(::CPTScore) = NamedValues(:prob => PositiveReal())
 
