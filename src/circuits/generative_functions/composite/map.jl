@@ -17,8 +17,8 @@ _possible_prob_names(m::MapGenFn) = (
     i for (i, gf) in enumerate(m.kernel_circuits)
     if has_score_output(gf)
 )
-prob_outputter_names(m::MapGenFn{Propose}) = _possible_prob_names(m)
-prob_outputter_names(m::MapGenFn{Generate}) = (
+score_outputter_names(m::MapGenFn{Propose}) = _possible_prob_names(m)
+score_outputter_names(m::MapGenFn{Generate}) = (
     i for i in _possible_prob_names(m)
     if !isempty(operation(g).observed_addrs[i])
 )

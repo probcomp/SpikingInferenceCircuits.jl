@@ -47,14 +47,14 @@ separate NonnegativeReal values, which should be multiplied together
 to obtain the represented value.
 """
 struct ProductNonnegativeReal <: GenericValue
-    factors::Vararg{Tuple{<:Value}}
-    function ProductNonnegativeReal(factors)
+    factors
+    function ProductNonnegativeReal(factors::Union{<:Tuple, <:NamedTuple})
         @assert all(has_abstract_of_type(factor, NonnegativeReal) for factor in factors)
         return new(factors)
     end
 end
 Circuits.abstract(::ProductNonnegativeReal) = NonnegativeReal()
-Circuits.implement(r::ProductNonnegativeReal, ::Target) = IndexedValues(r.factors)
+Circuits.implement(r::ProductNonnegativeReal, ::Target) = CompositeValue(r.factors, r)
 
 """
     UnbiasedSpikeCountReal(denominator)

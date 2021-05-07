@@ -51,7 +51,7 @@ Circuits.inputs(p::PriorISParticle) = inputs(p.model)
 Circuits.outputs(p::PriorISParticle) = outputs(p.model)
 # IS from the prior is just `generate`, where the prob output is labeled as the `:weight`
 # TODO: change gen_fn_circuits so their output is called `:weight`
-Circuits.implement(p::PriorISParticle, ::Target) = RelabeledIOComponent(p.model, (), (:prob => :weight,), p)
+Circuits.implement(p::PriorISParticle, ::Target) = RelabeledIOComponent(p.model, (), (:score => :weight,); abstract=p)
 
 Circuits.inputs(p::ProposalISParticle) = NamedValues(
     :proposal_args => inputs(p.proposal)[:inputs],

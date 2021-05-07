@@ -56,8 +56,8 @@ addr_to_name(g::GraphGenFn) = g.addr_to_name
 # during `propose`, we score every traceable sub-gen-fn;
 # during `generate`, we only score those traceable sub-gen-fns which we observe
 # (We assume any node with an address is sampled from and thus has a prob output!)
-prob_outputter_names(g::GraphGenFn{Propose}) = values(g.addr_to_name)
-prob_outputter_names(g::GraphGenFn{Generate}) = (
+score_outputter_names(g::GraphGenFn{Propose}) = values(g.addr_to_name)
+score_outputter_names(g::GraphGenFn{Generate}) = (
     n for (a, n) in g.addr_to_name
     if !isempty(operation(g).observed_addrs[a])
 )

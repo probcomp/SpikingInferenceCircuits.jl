@@ -13,7 +13,7 @@ Circuits.inputs(::PulseBitMux) = NamedValues(
 Circuits.outputs(::PulseBitMux) = NamedValues(:out => SpikeWire())
 
 Circuits.implement(pbm::PulseBitMux, ::Spiking) =
-    RelabeledIOComponent(pbm.gate, (:in => :value, :on => :sel), (), BitMux())
+    RelabeledIOComponent(pbm.gate, (:in => :value, :on => :sel), (); abstract=BitMux())
 
 implement_twice(c) = implement(implement(c, Spiking()), Spiking())
 

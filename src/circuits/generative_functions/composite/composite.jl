@@ -4,8 +4,13 @@
 A GenFn circuit built out of other gen fn circuits.
 
 To use the `CompositeGenFn` `Circuits.implement`, a subtype must implement
-`sub_gen_fns`, `prob_outputter_names`, `arg_edges`, `ret_edges`, and `addr_to_name`,
-in addition to the required methods for a `GenFn`.
+`sub_gen_fns`, `score_outputter_names`, `arg_edges`, `ret_edges`, and `addr_to_name`,
+in addition to the required methods for a `GenFn` which are not automatically implemented
+for a CompositeGenFn.
+
+The automatically implemented methods for a CompositeGenFn are
+- `Circuits.implement`
+- `score_value`
 """
 abstract type CompositeGenFn{Op} <: GenFn{Op} end
 
@@ -17,12 +22,12 @@ Tuple or NamedTuple of subsidiary generative functions.
 sub_gen_fns(::CompositeGenFn) = error("Not implemented.")
 
 """
-    prob_outputter_names(g::CompositeGenFn)
+    score_outputter_names(g::CompositeGenFn)
 
 Iterator over indices or names of the sub gen fns in `sub_gen_fns(g)`
 which output a probability.
 """
-prob_outputter_names(::CompositeGenFn) = error("Not implemented.")
+score_outputter_names(::CompositeGenFn) = error("Not implemented.")
 
 """
     arg_edges(::CompositeGenFn)
@@ -56,70 +61,35 @@ to the name or index in `sub_gen_fns(g)` of the gen fn with that address.
 """
 addr_to_name(::CompositeGenFn) = error("Not implemented")
 
-num_internal_prob_outputs(g) = length(collect(prob_outputter_names(g)))
+num_internal_score_outputs(g) = length(collect(score_outputter_names(g)))
 
 Circuits.implement(g::CompositeGenFn, ::Target) =
     CompositeComponent(
-        inputs(g), outputs(g),
+        inputs(g),
+        # implement the `score` output so we can output factors
+        # to the sub-score for each factors
+        implement(outputs(g), Spiking(), :score),
         (
             sub_gen_fns=ComponentGroup(sub_gen_fns(g)),
-            (let multgroup = multipliers_group(g)
-                isempty(multgroup.subcomponents) ? () : (:multipliers => multgroup,)
-            end)...
         ),
         Iterators.flatten((
+            # implemented by sub-type of CompositeGenFn:
             arg_edges(g),
             ret_edges(g),
-            multiplier_edges(g),
-            io_edges(g)
+            # implemented for all CompositeGenFn (using other methods defined for the sub-types):
+            obs_input_edges(g),
+            score_output_edges(g),
+            trace_output_edges(g)
         )),
         g
     )
 
-# TODO: explore design tradeoffs between using pairwise multiplication vs multiple-input multiplication
-multipliers_group(g) = IndexedComponentGroup(
-    NonnegativeRealMultiplier(2) for _=1:(num_internal_prob_outputs(g) - 1)
+obs_input_edges(::CompositeGenFn{Propose}) = ()
+obs_input_edges(g::CompositeGenFn{Generate}) = (
+    Input(:obs => addr) => CompIn(:sub_gen_fns => addr_to_name(g)[addr], :obs)
+    for (addr, _) in addr_to_name(g) if !isempty(operation(g).observed_addrs[addr])
 )
 
-# edges to perform pairwise multiplication of all the tracked probs
-function multiplier_edges(g)
-    outputters = collect(prob_outputter_names(g))
-    if length(outputters) < 2
-        return ()
-    end
-
-    firstname, rest = Iterators.peel(outputters)
-    secondname, rest = Iterators.peel(rest)
-    edges = Pair{<:CompOut, <:CompIn}[
-        CompOut(:sub_gen_fns => firstname, :score) => CompIn(:multipliers => 1, 1),
-        CompOut(:sub_gen_fns => secondname, :score) => CompIn(:multipliers => 1, 2)
-    ]
-
-    for (i, name) in zip(2:(num_internal_prob_outputs(g) - 1), rest)
-        append!(edges, [
-            CompOut(:multipliers => i - 1, :out) => CompIn(:multipliers => i, 1),
-            CompOut(:sub_gen_fns => name, :score) => CompIn(:multipliers => i, 2)
-        ])
-    end
-    return edges
-end
-
-# input/output edges
-io_edges(g::CompositeGenFn) = Iterators.flatten((
-        (   # probability output
-            if has_score_output(g)
-                if num_internal_prob_outputs(g) > 1
-                    (CompOut(:multipliers => num_internal_prob_outputs(g) - 1, :out) => Output(:score),)
-                else
-                    (CompOut(:sub_gen_fns => first(prob_outputter_names(g)), :score) => Output(:score),)
-                end
-            else
-                ()
-            end
-        ),
-        trace_output_edges(g),
-        obs_input_edges(g)
-    ))
 trace_output_edges(g::CompositeGenFn) = 
     if has_trace(g)
         (
@@ -129,9 +99,31 @@ trace_output_edges(g::CompositeGenFn) =
     else
         ()
     end
-    
-obs_input_edges(::CompositeGenFn{Propose}) = ()
-obs_input_edges(g::CompositeGenFn{Generate}) = (
-    Input(:obs => addr) => CompIn(:sub_gen_fns => addr_to_name(g)[addr], :obs)
-    for (addr, _) in addr_to_name(g) if !isempty(operation(g).observed_addrs[addr])
-)
+
+score_output_edges(g::CompositeGenFn) = (
+        CompOut(:sub_gen_fns => name, :score) => Output(:score => name)
+        for name in score_outputter_names(g)
+    )
+
+# Part of `GenFn` interface (not used for `implement`):
+score_value(g::CompositeGenFn) = ProductNonnegativeReal(
+        tuple_or_namedtuple(
+            name => score_value(sub_gen_fns(g)[name])
+            for name in score_outputter_names(g)
+        )
+    )
+
+# internal utility function:
+"""
+Given an iterator over `key => value` pairs, if all keys are integers,
+returns a Tuple of the values, and if all keys are Symbols, returns
+a NamedTuple from the keys to the values.
+(Errors if the keys are not either all Ints or all Symbols.)
+"""
+tuple_or_namedtuple(itr) =
+    if all(name_val[1] isa Int for name_val in itr)
+        (Iterators.map(name_val -> name_val[2], itr)...,)
+    else
+        @assert all(name_val[1] isa Symbol for name_val in itr)
+        (;itr...)
+    end

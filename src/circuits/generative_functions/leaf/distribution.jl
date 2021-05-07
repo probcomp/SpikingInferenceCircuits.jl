@@ -32,12 +32,15 @@ sample_distribution_implementation(d; output_inverse_prob) =
     RelabeledIOComponent(
         CPTSample(d.cpt),
         (:in_vals => :inputs,),
-        (:value => :value, :inverse_prob => output_inverse_prob ? :score : nothing)
+        (
+            :value => (:trace, :value),
+            :inverse_prob => output_inverse_prob ? :score : nothing
+        ); abstract=d
     )
 score_distribution_implementation(d) =
     RelabeledIOComponent(
         CPTScore(d.cpt),
-        (:in_vals => :inputs,), (:prob => :score,)
+        (:in_vals => :inputs,), (:prob => :score,), (:obs => :value,); abstract=d
     )
 
 gen_fn_circuit(g::CPT, _, op) = DistributionGenFn(g, op)

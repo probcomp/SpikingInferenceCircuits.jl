@@ -53,15 +53,15 @@ impl2 = implement(shallow_implemented, Spiking())
 
 println("Implemented another level.")
 
-impl3 = implement(impl2, Spiking())
+# impl3 = implement(impl2, Spiking())
 
-println("Implemented another level.")
+# println("Implemented another level.")
 
-impl4 = implement(impl3, Spiking())
+# impl4 = implement(impl3, Spiking())
 
-println("Implemented another level.")
+# println("Implemented another level.")
 
-deep_implemented = implement_deep(impl4, Spiking())
+deep_implemented = implement_deep(impl2, Spiking())
 
 println("Circuit implemented deeply.")
 

@@ -19,8 +19,6 @@ end
 # We must tell it the number of possible values that `input` can take (here, 2)
 circuit = gen_fn_circuit(test, (input=2,), Propose())
 
-smc_circuit(...)
-
 ### implement the circuit ###
 
 REF_RATE() = 1.0
