@@ -92,5 +92,3 @@ get_events2(impl) = SpikingSimulator.simulate_for_time_and_get_events(
 events2 = get_events2(implemented2)
 println("Simulation completed.")
 println(out_st_dict(events2))
-
-# This looks right, I think--except that the `:value` output appeared to spike twice?
