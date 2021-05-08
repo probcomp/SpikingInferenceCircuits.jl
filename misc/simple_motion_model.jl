@@ -70,3 +70,22 @@ end
 # Idea is:
 # - An `@particle` circuit returns a `(trace, weight)` pair
 # - An `@particles` circuit returns a vector of `(trace, weight)` pairs
+
+
+### Draft 2 ###
+maybe_one_off(i, p, d) = ((1 - p) * onehot(i, d) +
+    p/2 * onehot(i - 1, d) + p/2 * onehot(i + 1, d) )
+XDOMAIN = 1:20 # = [1, 2, ..., 20]
+@gen (static) function object_motion_step(
+        xₜ₋₁::XDOMAIN, velₜ₋₁::[-1, 0, 1]   )
+    # change velocity with small probability
+    velₜ ~ LabeledCategorical(-1, 0, 1)(
+        velₜ₋₁ == -1 ? [.8, .2, .0] :
+        velₜ₋₁ ==  0 ? [.2, .6, .2] :
+                       [.0, .2, .8] )
+    # w.p. 0.9, xₜ = xₜ₋₁ + velₜ ; otherwise it will be 1 off
+    xₜ ~ categorical(maybe_one_off(xₜ₋₁ + velₜ, 0.1, XDOMAIN))
+    # w.p. 0.7, obsₜ = xₜ ; otherwise it will be 1 off
+    obsₜ ~ categorical(maybe_one_off(xₜ, 0.3, XDOMAIN))
+    return obsₜ
+end
