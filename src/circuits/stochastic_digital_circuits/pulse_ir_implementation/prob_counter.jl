@@ -11,7 +11,9 @@ Circuits.inputs(c::ProbCounter) = NamedValues(
 Circuits.outputs(c::ProbCounter) =
     let K = PulseIR.threshold(c.ti)
         NamedValues(
-            :count => UnbiasedSpikeCountReal(c.output_inverse_prob ? K - 1 : K)
+            :count => IndicatedSpikeCountReal(
+                UnbiasedSpikeCountReal(c.output_inverse_prob ? K - 1 : K)
+            )
         )
     end
 Circuits.target(::ProbCounter) = Spiking()
@@ -19,6 +21,7 @@ Circuits.target(::ProbCounter) = Spiking()
 # TODO: move the logic about K vs K + 1, and the relative rates of the TI vs the Mux,
 # to this file!
 # Can we have more convenient constructors which let us handle that all automatically?
+# Update -- I think this is mostly done?  But I should document it better.
 
 Circuits.implement(c::ProbCounter, ::Spiking) =
     CompositeComponent(
@@ -27,7 +30,8 @@ Circuits.implement(c::ProbCounter, ::Spiking) =
         (
             Input(:sel) => CompIn(:mux, :sel),
             Input(:samples) => CompIn(:mux, :values),
-            CompOut(:gate, :out) => Output(:count),
+            CompOut(:gate, :out) => Output(:count => :count),
+            CompOut(:ti, :out) => Output(:count => :ind), # indicate when the count is done being emitted
             (c.output_inverse_prob ? inv_prob_edges(c) : prob_edges(c))...
         ), c
     )
