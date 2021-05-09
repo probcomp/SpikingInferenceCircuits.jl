@@ -2,11 +2,12 @@ using SpikingCircuits.SpiketrainViz
 
 function spiketrain_dict(event_vector)
     spiketrains = Dict()
-    for (time, _, outspike) in event_vector
-        if haskey(spiketrains, outspike.name)
-            push!(spiketrains[outspike.name], time)
+    for (time, compname, outspike) in event_vector
+        key = "$compname: $(outspike.name)"
+        if haskey(spiketrains, key)
+            push!(spiketrains[key], time)
         else
-            spiketrains[outspike.name] = [time]
+            spiketrains[key] = [time]
         end
     end
     return spiketrains
@@ -16,9 +17,7 @@ out_st_dict(events) = filter(events) do (t, compname, event)
     compname === nothing && event isa SpikingSimulator.OutputSpike
 end |> spiketrain_dict
 
-function draw_fig(events)
-    dict = out_st_dict(events)
-    draw_spiketrain_figure(
-        collect(values(dict)); names=map(x->"$x", collect(keys(dict))), xmin=0
-    )
-end
+draw_fig(events::Vector) = draw_fig(out_st_dict(events))
+draw_fig(dict::Dict) = draw_spiketrain_figure(
+    collect(values(dict)); names=map(x->"$x", collect(keys(dict))), xmin=0
+)

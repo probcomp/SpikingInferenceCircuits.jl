@@ -11,7 +11,7 @@ mult = PulseIR.PoissonSpikeCountMultiplier(
     out_denom,
     10,
     50.,
-    100.,
+    300.,
     0.5,
     ((500, 12), 0.), #(ti_params, offrate)
     (500, 12)
@@ -43,15 +43,16 @@ draw_fig(events)
 
 # Do a bunch of runs and check whether the expected count looks right.
 
-dicts = [out_st_dict(get_events()) for _=1:1500]
-bad_apples = findall([!haskey(d, :ind) for d in dicts])
+function check_spike_count_deleting_noind_runs()
+    dicts = [out_st_dict(get_events()) for _=1:1500]
+    bad_apples = findall([!haskey(d, :ind) for d in dicts])
 
-for i in reverse(bad_apples)
-    deleteat!(dicts, i)
+    for i in reverse(bad_apples)
+        deleteat!(dicts, i)
+    end
+
+    return sum(haskey(d, :count) ? length(d[:count]) : 0 for d in dicts) / length(dicts)
 end
-
-sum(haskey(d, :count) ? length(d[:count]) : 0 for d in dicts) / length(dicts)
-
 #=
 This experiment seems to indicate that the circuit is overshooting and usually
 outputs too many spikes?
@@ -61,3 +62,8 @@ tends to occur for lower spike counts, which is biasing this estimation!
 
 Fixing the "bad apples" is probably first priority.
 =#
+
+out_and_timer_st_dict(event_vec) = filter(event_vec) do (t, compname, event)
+    event isa SpikingSimulator.OutputSpike && compname === nothing ||
+    event isa SpikingSimulator.Spike && (compname == :timer || (compname isa Pair && compname.first == :timer))
+end |> spiketrain_dict
