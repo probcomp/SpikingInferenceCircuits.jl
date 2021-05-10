@@ -25,7 +25,7 @@ Circuits.target(::ProbCounter) = Spiking()
 
 Circuits.implement(c::ProbCounter, ::Spiking) =
     CompositeComponent(
-        inputs(c), outputs(c),
+        inputs(c), implement_deep(outputs(c), Spiking()),
         (mux=c.mux, ti=c.ti, gate=c.gate),
         (
             Input(:sel) => CompIn(:mux, :sel),

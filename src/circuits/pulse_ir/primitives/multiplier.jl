@@ -10,7 +10,7 @@ after the correct output spike count has been emitted, a spike will occur in the
 struct SpikeCountMultiplier{n} <: GenericComponent
     # count_inputs::NTuple{n, UnbiasedSpikeCountReal}
     input_count_denominators::NTuple{n, Float64}
-    output_count_demonimator::Float64
+    output_count_denominator::Float64
 end
 Circuits.target(::SpikeCountMultiplier) = Spiking()
 Circuits.inputs(m::SpikeCountMultiplier) = NamedValues(
