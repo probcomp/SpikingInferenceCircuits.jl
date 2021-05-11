@@ -72,9 +72,9 @@ sync = PulseIR.Sync(cluster_sizes)
 Circuits.implement(s::PulseIR.Sync, ::Spiking) =
     PulseIR.PoissonSync(
         s.cluster_sizes,
-        (1000, 20),
-        (0.1, 1000, 20),
-        (50., 20, (0.1, 1000, 20), 0., 100.)
+        (1000., 30.),
+        (0.1, 30.),
+        (50., 4, (0.1, 1000, 20), 0., 100.)
     )
 
 # implement
