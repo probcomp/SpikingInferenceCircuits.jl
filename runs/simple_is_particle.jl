@@ -83,9 +83,8 @@ output = Circuits.outputs(circuit)
 display(output)
 
 # Implement deep.
-#implemented = implement_deep(circuit, Spiking())
-#
-#println("Component implemented.")
+implemented = implement_deep(circuit, Spiking())
+println("Component implemented.")
 
 #include("spiketrain_utils.jl")
 #

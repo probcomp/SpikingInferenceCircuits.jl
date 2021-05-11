@@ -46,6 +46,7 @@ function Circuits.outputs(p::ISParticle)
                   )
 end
 
+# Creates a Generator for edges between propose and assess sub-circuits.
 function get_edges_propose_assess(p)
     (Pair(CompOut(:propose, :trace => addr), CompIn(:assess, :obs => addr))
      for addr in key(outputs(p.propose)[:trace]))
@@ -54,12 +55,8 @@ end
 function Circuits.implement(p::ISParticle, t::Target)
 
     # Weights are represented internally by a tuple of Value instance.
-    mult_unit = implement_deep(let w = score_value(p.assess)
-                                   if w isa ProductNonnegativeReal
-                                       NonnegativeRealMultiplier(w.factors)
-                                   elseif w isa SingleNonnegativeReal
-                                       NonnegativeRealMultiplier((w, ))
-                                   end
+    mult_unit = implement_deep(let w = implement(score_value(p.assess), t)
+                                   SDCs.NonnegativeRealMultiplier((w, ))
                                end, t)
 
     return let full_in = implement_deep(inputs(p), t)
@@ -83,7 +80,7 @@ function Circuits.implement(p::ISParticle, t::Target)
                                                Pair(Input(:propose_args),
                                                     CompIn(:propose, :inputs)),
                                                Pair(CompOut(:assess, :score),
-                                                    CompIn(:multiplier))
+                                                    CompIn(:multiplier)),
                                                get_edges_propose_assess(p)...,
                                               )
                                              )...,
