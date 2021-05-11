@@ -5,6 +5,7 @@ using Circuits
 using SpikingCircuits
 using SpikingInferenceCircuits
 const SIC = SpikingInferenceCircuits
+using .SDCs: IndicatedSpikeCountReal, UnbiasedSpikeCountReal
 
 ### Implementation Rules ###
 
@@ -38,6 +39,15 @@ Circuits.implement(lt::SIC.SDCs.LookupTable, ::Spiking) =
 SIC.SDCs.OneHotLookupTable(lt)
 
 Circuits.implement(::Binary, ::Spiking) = SpikeWire()
+
+to_spiking_real(::SDCs.SingleNonnegativeReal) = 
+    IndicatedSpikeCountReal(UnbiasedSpikeCountReal(K))
+to_spiking_real(v::SDCs.ProductNonnegativeReal) =
+    SDCs.ProductNonnegativeReal(map(to_spiking_real, v.factors))
+to_spiking_real(v::SDCs.NonnegativeReal) = to_spiking_real(implement(v, Spiking()))
+
+Circuits.implement(r::SDCs.SingleNonnegativeReal, ::Spiking) = to_spiking_real(r)
+Circuits.implement(r::SDCs.ProductNonnegativeReal, ::Spiking) = to_spiking_real(r)
 
 Circuits.implement(m::SDCs.NonnegativeRealMultiplier, ::Spiking) = 
 SDCs.PulseNonnegativeRealMultiplier(

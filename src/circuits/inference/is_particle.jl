@@ -49,13 +49,13 @@ end
 # Creates a Generator for edges between propose and assess sub-circuits.
 function get_edges_propose_assess(p)
     (Pair(CompOut(:propose, :trace => addr), CompIn(:assess, :obs => addr))
-     for addr in key(outputs(p.propose)[:trace]))
+     for addr in keys(outputs(p.propose)[:trace]))
 end
 
 # Creates a Generator for edges from propose trace to out.
 function get_edges_trace_out(p)
     (Pair(CompOut(:propose, :trace => addr), Output(:trace, addr))
-     for addr in key(outputs(p.propose)[:trace]))
+     for addr in keys(outputs(p.propose)[:trace]))
 end
 
 function Circuits.implement(p::ISParticle, t::Target)
@@ -85,11 +85,9 @@ function Circuits.implement(p::ISParticle, t::Target)
                                                          CompIn(:assess, :inputs)),
                                                     Pair(Input(:propose_args),
                                                          CompIn(:propose, :inputs)),
-                                                    Pair(CompOut(:assess, :score),
-                                                         CompIn(:multiplier)),
                                                     get_edges_propose_assess(p),
                                                     get_edges_trace_out(p),
-                                                    Pair(CompOut(:multiplier),
+                                                    Pair(CompOut(:multiplier, :value),
                                                          Output(:score))
                                                    )
                                                   )
