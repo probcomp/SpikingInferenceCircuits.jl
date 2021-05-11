@@ -1,11 +1,12 @@
 """
     NonnegativeRealMultiplier <: GenericComponent
-    NonnegativeRealMultiplier(n)
+    NonnegativeRealMultiplier(inputs_values)
 
-Multiplies `n` `NonnegativeReal`s together.
+Multiplies one or more `NonnegativeReal`s together.
+`input_values` is the tuple of Values which carry the values to multiply.
 """
 struct NonnegativeRealMultiplier <: GenericComponent
-    n_inputs::Int
+    inputs::Tuple{Vararg{<:Value}}
 end
-Circuits.inputs(r::NonnegativeRealMultiplier) = IndexedValues(NonnegativeReal() for _=1:r.n_inputs)
+Circuits.inputs(r::NonnegativeRealMultiplier) = IndexedValues(r.inputs)
 Circuits.outputs(r::NonnegativeRealMultiplier) = NamedValues(:out => NonnegativeReal())
