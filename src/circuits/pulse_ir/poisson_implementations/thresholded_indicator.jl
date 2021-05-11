@@ -10,6 +10,10 @@ struct PoissonThresholdedIndicator <: ConcretePulseIRPrimitive
 end
 PoissonThresholdedIndicator(threshold, ΔT, max_delay, M, R) =
     PoissonThresholdedIndicator(ConcreteThresholdedIndicator(threshold, ΔT, max_delay, M), R)
+
+# Note that PoissonThresholdedIndicator with M will output again once `M` spikes have been input,
+# once the initial `threshold` have been delivered.
+
 # TODO: constructor where we give a failure probability & it figures out the `max_delay`
 # we need to accomodate that
 Circuits.abstract(t::PoissonThresholdedIndicator) = t.ti

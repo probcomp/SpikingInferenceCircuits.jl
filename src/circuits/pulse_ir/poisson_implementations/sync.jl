@@ -1,7 +1,7 @@
 struct PoissonSync <: ConcretePulseIRPrimitive
     cluster_sizes::Vector{Int}
     gate_params::NTuple{2, Float64} # (M, R)
-    ti_params::NTuple{3, Float64} # (max_delay, M, R)
+    ti_params::NTuple{2, Float64} # (max_delay, R)
     timer_params::Tuple{Float64, Int, NTuple{3, Float64}, Float64, Float64}
     # PoissonTimer_params= (ΔT_PoissonTimer, n_spikes, PoissonTimer_ti_params, offrate, memory)
 end
@@ -18,7 +18,7 @@ Circuits.implement(s::PoissonSync, ::Spiking) = CompositeComponent(
             cluster(s, i) for i=1:length(s.cluster_sizes)
         ),
         ti = PoissonThresholdedIndicator(
-            length(s.cluster_sizes), Inf, s.ti_params...
+            length(s.cluster_sizes), Inf, s.ti_params[1], length(s.cluster_sizes), s.ti_params[2]
         ),
         timer = PoissonTimer(s.timer_params...),
     ),
@@ -131,7 +131,7 @@ Circuits.implement(g::PoissonOnOffGate, ::Spiking) =
         inputs(g), outputs(g),
         (
             neuron=PoissonNeuron([
-                x -> x, x -> -x, x -> g.M*min(x, 1), x -> -g.M*min(x, 1)
+                x -> x, x -> -x, x -> g.M*x, x -> -g.M*x
             ], g.ΔT, u -> exp(g.R * (u - 1/2 - (g.starts_on ? 0. : g.M)))),
         ),
         (
