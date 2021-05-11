@@ -51,40 +51,43 @@ function get_edges_propose_assess(p)
      for addr in key(outputs(p.propose)[:trace]))
 end
 
-function Circuits.implement(p::ISParticle, ::Target)
+function Circuits.implement(p::ISParticle, t::Target)
 
     # Weights are represented internally by a tuple of Value instance.
-    mult_unit = let w = score_value(p.assess)
-        if w isa ProductNonnegativeReal
-            NonnegativeRealMultiplier(w.factors)
-        elseif w isa SingleNonnegativeReal
-            NonnegativeRealMultiplier((w, ))
-        end
+    mult_unit = implement_deep(let w = score_value(p.assess)
+                                   if w isa ProductNonnegativeReal
+                                       NonnegativeRealMultiplier(w.factors)
+                                   elseif w isa SingleNonnegativeReal
+                                       NonnegativeRealMultiplier((w, ))
+                                   end
+                               end, t)
+
+    return let full_in = implement_deep(inputs(p), t)
+        full_out = implement_deep(outputs(p), t)
+        CompositeComponent(full_in,
+                           full_out,
+
+                           # Subcomponents.
+                           (  
+                            assess=p.assess, # GenFn{Assess}
+                            propose=p.propose, # GenFn{Propose}
+                            multiplier=mult_unit,
+                           ),
+
+                           # Edges.
+                           (
+                            Iterators.flatten(
+                                              (
+                                               Pair(Input(:assess_args),
+                                                    CompIn(:assess, :inputs)),
+                                               Pair(Input(:propose_args),
+                                                    CompIn(:propose, :inputs)),
+                                               Pair(CompOut(:assess, :score),
+                                                    CompIn(:multiplier))
+                                               get_edges_propose_assess(p)...,
+                                              )
+                                             )...,
+                           )
+                          )
     end
-
-    return CompositeComponent(inputs(p), 
-                              outputs(p),
-
-                              # Subcomponents.
-                              (  
-                               assess=p.assess, # GenFn{Assess}
-                               propose=p.propose, # GenFn{Propose}
-                               multiplier=mult_unit,
-                              ),
-
-                              # Edges.
-                              (
-                               Iterators.flatten(
-                                                 (
-                                                  Pair(Input(:assess_args),
-                                                       CompIn(:assess, :inputs)),
-                                                  Pair(Input(:propose_args),
-                                                       CompIn(:propose, :inputs)),
-                                                  Pair(CompOut(:assess, :score),
-                                                       CompIn(:multiplier))
-                                                  get_edges_propose_assess(p)...,
-                                                 )
-                                                )...,
-                              )
-                             )
 end
