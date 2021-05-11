@@ -41,7 +41,7 @@ end
 function Circuits.outputs(p::ISParticle)
     CompositeValue(
                    (trace=outputs(p.propose)[:trace],
-                    weight=NonnegativeReal()
+                    weight=SingleNonnegativeReal()
                    )
                   )
 end
@@ -61,9 +61,10 @@ end
 function Circuits.implement(p::ISParticle, t::Target)
 
     # Weights are represented internally by a tuple of Value instance.
-    mult_unit = implement_deep(let w = implement(score_value(p.assess), t)
-                                   SDCs.NonnegativeRealMultiplier((w, ))
-                               end, t)
+    mult_unit = SDCs.NonnegativeRealMultiplier((
+                                                outputs(p.assess)[:score],
+                                                outputs(p.propose)[:score]
+                                               ))
 
     return let full_in = implement_deep(inputs(p), t)
         full_out = implement_deep(outputs(p), t)
