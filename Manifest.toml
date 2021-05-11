@@ -81,7 +81,9 @@ version = "0.9.33"
 
 [[Circuits]]
 deps = ["Distributions", "LightGraphs"]
-path = "/Users/georgematheos/Developer/research/Circuits.jl/"
+git-tree-sha1 = "ada0975040bbeb28c1a8ff9bfa6a57fa3824b2fd"
+repo-rev = "main"
+repo-url = "https://github.com/probcomp/Circuits.jl"
 uuid = "f5b243b3-c95b-4650-9ac7-659d8f0b0982"
 version = "0.1.0"
 
@@ -649,7 +651,7 @@ uuid = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
 version = "1.1.0"
 
 [[Pkg]]
-deps = ["Artifacts", "Dates", "Downloads", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Serialization", "TOML", "Tar", "UUIDs"]
+deps = ["Artifacts", "Dates", "Downloads", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Serialization", "TOML", "Tar", "UUIDs", "p7zip_jll"]
 uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 
 [[PkgVersion]]
@@ -782,7 +784,9 @@ version = "1.3.0"
 
 [[SpikingCircuits]]
 deps = ["AbstractPlotting", "Circuits", "Colors", "DataStructures", "Distributions", "GLMakie"]
-path = "/Users/georgematheos/Developer/research/SpikingCircuits.jl/"
+git-tree-sha1 = "adb3968050ba6702e35bd5cd6d43a13072678a96"
+repo-rev = "main"
+repo-url = "https://github.com/probcomp/SpikingCircuits.jl"
 uuid = "549ce59a-75fd-4aaf-b0ba-30f73ee3de21"
 version = "0.1.0"
 
@@ -1005,6 +1009,10 @@ version = "1.3.6+6"
 [[nghttp2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850ede-7688-5339-a07c-302acd2aaf8d"
+
+[[p7zip_jll]]
+deps = ["Artifacts", "Libdl"]
+uuid = "3f19e933-33d8-53b3-aaab-bd5110c3b7a0"
 
 [[x264_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]

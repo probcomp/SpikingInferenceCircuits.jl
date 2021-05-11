@@ -1,4 +1,5 @@
 module SpikingInferenceCircuits
+
 using Gen
 using Circuits
 using SpikingCircuits
@@ -16,5 +17,9 @@ export PulseIR, SDCs
 
 export CPT, gen_fn_circuit, Propose, Generate, Assess
 export FiniteDomain, IndexedProductDomain
+
+include("circuits/inference/inference.jl")
+
+export ISParticle
 
 end
