@@ -22,18 +22,26 @@ unwrap(w::Wrapper) = w.val
 
 function get_test_vec(w)
     (shape_type, rot_x, rot_z) = unwrap(w)
-    vec = ones(1000)
+    vec = ones(50)
     vec[1 + abs(20 * rot_x) |> round |> Int] = 2
     vec[1 + abs(20 * rot_z) |> round |> Int] = 2
     vec[1 + abs(20 * (rot_x + rot_z)) |> round |> Int] = 2
     if shape_type == :cube
-        for i=1:1000
+        for i=1:50
             vec[i] = vec[i] == 1 ? 2 : 1
         end
     else
         @assert shape_type == :tetrahedron
     end
     return vec
+end
+
+const BITFLIPPROB = 0.05
+@gen (static) function maybe_flip_bit(value)
+    new_value ~ LabeledCPT{Int}([[1, 2]], [1, 2], ((val,),) -> 
+        val == 1 ? [1 - BITFLIPPROB, BITFLIPPROB] : [BITFLIPPROB, 1 - BITFLIPPROB]
+    )(value)
+    return new_value
 end
 
 # We have a one-value input, so that when we compile it, we send in a spike to tell it "go"!
@@ -46,13 +54,6 @@ end
     pixel_grid::Vector = get_test_vec(triple)
     noisy_pixel_grid ~ Map(maybe_flip_bit)(pixel_grid)
     return noisy_pixel_grid
-end
-const BITFLIPPROB = 0.05
-@gen (static) function maybe_flip_bit(value)
-    new_value ~ LabeledCPT{Int}([[1, 2]], [1, 2], ((val,),) -> 
-        val == 1 ? [1 - BITFLIPPROB, BITFLIPPROB] : [BITFLIPPROB, 1 - BITFLIPPROB]
-    )(value)
-    return new_value
 end
 
 (with_cpts, bijs) = to_indexed_cpts(produce_shape_image, [EnumeratedDomain([nothing])])
