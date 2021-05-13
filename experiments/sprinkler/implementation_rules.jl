@@ -8,11 +8,12 @@ Circuits.implement(ta::SIC.SDCs.ToAssmts, ::Spiking) =
         # realistic rates)!
     )
 
-K = 10
-ONRATE = 0.2
+K() = 20
+SAMPLE_ONRATE() = 0.2
+SCORE_ONRATE() = 3.0
 Circuits.implement(cs::SIC.SDCs.ConditionalSample, ::Spiking) =
     SDCs.PoissonPulseConditionalSample(
-        (cs, K, ONRATE,
+        (cs, K(), SAMPLE_ONRATE(),
             500, # ΔT
             0.2, # max_delay
             1000, # M (num spikes to override offs/ons)
@@ -22,7 +23,7 @@ Circuits.implement(cs::SIC.SDCs.ConditionalSample, ::Spiking) =
         10^(-10), 12
     )
 Circuits.implement(cs::SIC.SDCs.ConditionalScore, ::Spiking) =
-    SDCs.PoissonPulseConditionalScore((cs, K, ONRATE, 500, 0.2, 1000), 10^(-10), 12)
+    SDCs.PoissonPulseConditionalScore((cs, K(), SCORE_ONRATE(), 500, 0.2, 1000), 10^(-10), 12)
 
 Circuits.implement(lt::SIC.SDCs.LookupTable, ::Spiking) =
     SIC.SDCs.OneHotLookupTable(lt)
@@ -38,7 +39,7 @@ Circuits.implement(m::SDCs.NonnegativeRealMultiplier, ::Spiking) =
             ((500, 12), 0.), #(ti_params, offrate)
             (500, 12)
         ),
-        K,
+        K(),
         threshold -> begin
             println("thresh: $threshold")
             PulseIR.PoissonThresholdedIndicator(threshold, 500, 0.5, 50, 40)
@@ -46,7 +47,7 @@ Circuits.implement(m::SDCs.NonnegativeRealMultiplier, ::Spiking) =
     )
 
 to_spiking_real(::SDCs.SingleNonnegativeReal) = 
-    SDCs.IndicatedSpikeCountReal(SDCs.UnbiasedSpikeCountReal(K))
+    SDCs.IndicatedSpikeCountReal(SDCs.UnbiasedSpikeCountReal(K()))
 to_spiking_real(v::SDCs.ProductNonnegativeReal) =
     SDCs.ProductNonnegativeReal(map(to_spiking_real, v.factors))
 to_spiking_real(v::SDCs.NonnegativeReal) = to_spiking_real(implement(v, Spiking()))

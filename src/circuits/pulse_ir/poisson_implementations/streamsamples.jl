@@ -74,7 +74,7 @@ Circuits.implement(p::PoissonStreamSamples, ::Spiking) =
                             )
                             for inval=1:in_domain_size(p)
                         ],
-                        p.ΔT, u -> exp(u + bias)
+                        p.ΔT, u -> min(p.overall_on_rate, exp(u + bias))
                     )
                     for outval = 1:out_domain_size(p)
                 ),

@@ -119,6 +119,10 @@ Circuits.implement(mh::MH, ::Target) = CompositeComponent(
         # advance traces forward 1 --> N
         (
             CompOut(:kernels => i, :next_trace) => CompIn(:steps => i, :in => :trace)
+            for i=1:(length(mh.kernels))
+        )...,
+        (
+            CompOut(:steps => i, :out => :trace) => CompIn(:kernels => i + 1, :prev_trace)
             for i=1:(length(mh.kernels) - 1)
         )...,
 
@@ -126,7 +130,11 @@ Circuits.implement(mh::MH, ::Target) = CompositeComponent(
         Input(:model_args) => CompIn(:steps => 1, :in => :args),
         (
             CompOut(:steps => i, :out => :args) => CompIn(:steps => i + 1, :in => :args)
-            for i=2:(length(mh.kernels) - 1)
+            for i=1:(length(mh.kernels) - 1)
+        )...,
+        (
+            CompOut(:steps => i, :out => :args) => CompIn(:kernels => i + 1, :model_args)
+            for i=1:(length(mh.kernels) - 1)
         )...,
 
         # Cycle trace and model args around
