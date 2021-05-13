@@ -65,34 +65,74 @@ Circuits.implement(s::PulseIR.Sync, ::Spiking) =
     return z
 end
 
-propose_circuit = gen_fn_circuit(test, (input=FiniteDomain(2),), Propose())
-implemented_propose = implement_deep(propose_circuit, Spiking())
+### Propose --> Step ###
+
+# propose_circuit = gen_fn_circuit(test, (input=FiniteDomain(2),), Propose())
+# implemented_propose = implement_deep(propose_circuit, Spiking())
+
+# println("Got implemented propose.")
+
+# comp = CompositeComponent(
+#     NamedValues(:in => inputs(propose_circuit)),
+#     NamedValues(:out => outputs(propose_circuit)),
+#     (
+#         prop=propose_circuit,
+#         step=SDCs.Step(outputs(propose_circuit))
+#     ),
+#     (
+#         Input(:in => :inputs) => CompIn(:prop, :inputs),
+#         CompOut(:prop, :trace) => CompIn(:step, :in => :trace),
+#         CompOut(:prop, :score) => CompIn(:step, :in => :score),
+#         CompOut(:prop, :value) => CompIn(:step, :in => :value),
+#         CompOut(:step, :out) => Output(:out)
+#     )
+# )
+
+### Assess --> Step ###
+
+assess_circuit = gen_fn_circuit(test, (input=FiniteDomain(2),), Assess())
+implemented_assess = implement_deep(assess_circuit, Spiking())
 
 println("Got implemented propose.")
 
 comp = CompositeComponent(
-    NamedValues(:in => inputs(propose_circuit)),
-    NamedValues(:out => outputs(propose_circuit)),
+    NamedValues(:in => inputs(assess_circuit)),
+    NamedValues(:out => outputs(assess_circuit)),
     (
-        prop=propose_circuit,
-        step=SDCs.Step(outputs(propose_circuit))
+        assess=assess_circuit,
+        step=SDCs.Step(outputs(assess_circuit))
     ),
     (
-        Input(:in => :inputs) => CompIn(:prop, :inputs),
-        CompOut(:prop, :trace) => CompIn(:step, :in => :trace),
-        CompOut(:prop, :score) => CompIn(:step, :in => :score),
-        CompOut(:prop, :value) => CompIn(:step, :in => :value),
+        Input(:in => :inputs) => CompIn(:assess, :inputs),
+        Input(:in => :obs) => CompIn(:assess, :obs),
+        CompOut(:assess, :score) => CompIn(:step, :in => :score),
+        CompOut(:assess, :value) => CompIn(:step, :in => :value),
         CompOut(:step, :out) => Output(:out)
     )
 )
+
+
+### Implement + Simulate
+
 println("comp constructed")
 implemented = implement_deep(comp, Spiking())
 println("Implemented composite component deep.")
 
-get_events(impl) = SpikingSimulator.simulate_for_time_and_get_events(impl, 1000.;
+get_events_propose(impl) = SpikingSimulator.simulate_for_time_and_get_events(impl, 1000.;
     initial_inputs=(:in => :inputs => :input => 1,)
 )
-events = get_events(implemented)
+
+# assess a trace with very low probability of being true!
+get_events_unlikely_assess(impl) = SpikingSimulator.simulate_for_time_and_get_events(impl, 1000.;
+    initial_inputs=(
+        :in => :inputs => :input => 1,
+        :in => :obs => :x => 1,
+        :in => :obs => :y => 2,
+        :in => :obs => :z => 1
+    )
+)
+
+events = get_events_unlikely_assess(implemented)
 println("Simulation run.")
 
 include("spiketrain_utils.jl")
