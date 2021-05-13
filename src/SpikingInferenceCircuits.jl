@@ -19,6 +19,6 @@ export PulseIR, SDCs
 export CPT, gen_fn_circuit, Propose, Generate, Assess
 export FiniteDomain, IndexedProductDomain
 
-export MHKernel
+export MHKernel, MH
 
 end

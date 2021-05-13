@@ -5,6 +5,8 @@ using SpikingInferenceCircuits
 const SIC = SpikingInferenceCircuits
 using DiscreteIRTransforms
 
+include("../../runs/spiketrain_utils.jl")
+
 includet("implementation_rules.jl")
 
 @gen (static) function iswet(in::Nothing)
@@ -36,21 +38,34 @@ raining_mh_kernel = MHKernel(iswet_cpts, (in=FiniteDomain(1),), raining_proposal
 sprinkler_mh_kernel = MHKernel(iswet_cpts, (in=FiniteDomain(1),), sprinkler_proposal_cpts, (FiniteDomain(2), FiniteDomain(2), FiniteDomain(2)))
 println("MH Kernels constructed.")
 
-rain_impl = implement_deep(raining_mh_kernel, Spiking())
-println("Rain MH Kernel implemented.")
+# rain_impl = implement_deep(raining_mh_kernel, Spiking())
+# println("Rain MH Kernel implemented.")
 
-include("../../runs/spiketrain_utils.jl")
+# get_events(impl) = SpikingSimulator.simulate_for_time_and_get_events(
+#     impl, 1000.;
+#     initial_inputs=(
+#         :prev_trace => :raining => 1,
+#         :prev_trace => :sprinkler => 1,
+#         :prev_trace => :grasswet => 1,
+#         :model_args => :in => 1
+#     )
+# )
 
-get_events(impl) = SpikingSimulator.simulate_for_time_and_get_events(
-    impl, 1000.;
+# events = get_events(rain_impl)
+# println("Simulation completed.")
+
+mh_cycle = MH([raining_mh_kernel, sprinkler_mh_kernel])
+println("MH Cycle Constructed.")
+
+cycle_impl = implement_deep(mh_cycle, Spiking())
+println("MH Cycle implemented.")
+
+get_cycle_events(impl, run_time; log=true) = SpikingSimulator.simulate_for_time_and_get_events(
+    impl, run_time;
     initial_inputs=(
-        :prev_trace => :raining => 1,
-        :prev_trace => :sprinkler => 1,
-        :prev_trace => :grasswet => 1,
+        :initial_trace => :raining => 1,
+        :initial_trace => :sprinkler => 1,
+        :initial_trace => :grasswet => 1,
         :model_args => :in => 1
-    )
+    ), log
 )
-
-events = get_events(rain_impl)
-println("Simulation completed.")
-

@@ -84,40 +84,60 @@ edges_from_new_trace_to(mh::MHKernel, receiver::Circuits.NodeName) =(
     )
 
 ### MH Inference alg ###
-# struct MH <: GenericComponent
-#     kernels::Vector{MH}
-#     function MH(kernels::Vector{MH})
-#         # All kernels should be for the same model!
-#         @assert length(Set(kernel.model for kernel in kernels)) == 1
-#         return new(kernels)
-#     end
-# end
-# Circuits.inputs(mh::MH) = NamedValues(
-#     :model_args => inputs(first(mh.kernels).model)[:inputs],
-#     :initial_trace => traceable_value(first(mh.kernels).model)
-# )
-# Circuits.outputs(mh::MH) = NamedValues(:updated_traces => IndexedValue(
-#     outputs(kernel)[:next_trace] for kernel in mh.kernels
-# ))
-# Circuits.implement(mh::MH, ::Target) = CompositeComponent(
-#     inputs(mh), outputs(mh), (
-#         kernels=IndexedComponentGroup(mh.kernels),
-#         steps=IndexedComponentGroup(
-#             Step(NamedValues(
-#                 :trace => inputs(mh)[:initial_trace],
-#                 :args => inputs(mh)[:model_args]
-#             ))
-#             for _ in mh.kernels
-#         )
-#     ), (
-#         Input(:model_args) => CompIn(:kernels => 1, :model_args),
-#         Input(:initial_trace) => CompIn(:kernels => 1, :prev_trace),
+struct MH <: GenericComponent
+    kernels::Vector{MHKernel}
+    function MH(kernels::Vector{MHKernel})
+        # All kernels should be for the same model!
+        # @assert length(Set(kernel.model for kernel in kernels)) == 1
+        # TODO: add in this check.  It currently doesn't work since
+        # equality for GenFnCircuits is not defined properly.
 
-#         # advance traces forward 1 --> N
-#         (
-#                 CompOut(:kernels => i, :next_trace) => CompIn(:steps => i, :trace)
-#             for i=1:(length(mh.kernels) - 1)
-#         )...,
+        return new(kernels)
+    end
+end
+Circuits.inputs(mh::MH) = NamedValues(
+    :model_args => inputs(first(mh.kernels).model)[:inputs],
+    :initial_trace => traceable_value(first(mh.kernels).model)
+)
+Circuits.outputs(mh::MH) = NamedValues(:updated_traces => IndexedValues(
+    outputs(kernel)[:next_trace] for kernel in mh.kernels
+))
+Circuits.implement(mh::MH, ::Target) = CompositeComponent(
+    inputs(mh), outputs(mh), (
+        kernels=IndexedComponentGroup(mh.kernels),
+        steps=IndexedComponentGroup(
+            Step(NamedValues(
+                :trace => inputs(mh)[:initial_trace],
+                :args => inputs(mh)[:model_args]
+            ))
+            for _ in mh.kernels
+        )
+    ), (
+        Input(:model_args) => CompIn(:kernels => 1, :model_args),
+        Input(:initial_trace) => CompIn(:kernels => 1, :prev_trace),
 
-#     )
-# )
+        # advance traces forward 1 --> N
+        (
+            CompOut(:kernels => i, :next_trace) => CompIn(:steps => i, :in => :trace)
+            for i=1:(length(mh.kernels) - 1)
+        )...,
+
+        # advance model_args forward 1-->n
+        Input(:model_args) => CompIn(:steps => 1, :in => :args),
+        (
+            CompOut(:steps => i, :out => :args) => CompIn(:steps => i + 1, :in => :args)
+            for i=2:(length(mh.kernels) - 1)
+        )...,
+
+        # Cycle trace and model args around
+        CompOut(:steps => length(mh.kernels), :out => :args) => CompIn(:kernels => 1, :model_args),
+        CompOut(:steps => length(mh.kernels), :out => :trace) => CompIn(:kernels => 1, :prev_trace),
+        CompOut(:steps => length(mh.kernels), :out => :args) => CompIn(:steps => 1, :in => :args),
+
+        # Output each next_trace
+        (
+            CompOut(:kernels => i, :next_trace) => Output(:updated_traces => i)
+            for i=1:length(mh.kernels)
+        )...
+    )
+)

@@ -68,3 +68,11 @@ Circuits.implement(m::SDCs.Mux, ::Spiking) =
             30
         )
     )
+
+Circuits.implement(s::PulseIR.Sync, ::Spiking) =
+    PulseIR.PoissonSync(
+        s.cluster_sizes,
+        (1000., 30.),
+        (0.1, 30.),
+        (50., 20, (0.1, 1000, 30.), 0., 100.)
+    )
