@@ -12,9 +12,13 @@ using .SDCs
 using .SDCs: CPTSample, CPTScore
 include("circuits/generative_functions/gen_fn_circuits.jl")
 
+include("circuits/inference/mh.jl")
+
 export PulseIR, SDCs
 
 export CPT, gen_fn_circuit, Propose, Generate, Assess
 export FiniteDomain, IndexedProductDomain
+
+export MHKernel
 
 end
