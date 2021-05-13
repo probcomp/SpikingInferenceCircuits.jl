@@ -2,12 +2,12 @@ using SpikingCircuits.SpiketrainViz
 
 function mh_output_spiketrain_dict(output_event_vector)
     spiketrains = Dict()
-    for (_, compname, outspike) in output_event_vector
+    for (time, compname, outspike) in output_event_vector
         @assert compname === nothing
-        @assert outspike.name isa Pair && outspike.first == :updated_traces
-        @assert outspike.second isa Pair && outspike.second.first isa Int
-        sample_idx = outspike.second.first
-        valname_and_val = outspike.second.second
+        @assert outspike.name isa Pair && outspike.name.first == :updated_traces
+        @assert outspike.name.second isa Pair && outspike.name.second.first isa Int
+        sample_idx = outspike.name.second.first
+        valname_and_val = outspike.name.second.second
 
         @assert valname_and_val isa Pair
         valname = nothing
@@ -33,7 +33,7 @@ function get_names_and_trains(dict)
     vals = Dict(
         valname => Set(key[3] for key in keys(dict)
         if key[1] == first(mh_sample_indices) && key[2] == valname)
-        for val in valnames
+        for valname in valnames
     )
     names = []
     spiketrains = []
@@ -49,12 +49,17 @@ function get_names_and_trains(dict)
     return (names, spiketrains)
 end
 
-function draw_mh_figure(dict::Dict)
+function draw_mh_figure(dict::Dict; endtime=nothing)
     names, trains = get_names_and_trains(dict)
-    draw_spiketrain_figure(trains; names=names, xmin=0)
+    if !isnothing(endtime)
+        draw_spiketrain_figure(trains; names=names, xmin=0, xmax=endtime)
+    else
+        draw_spiketrain_figure(trains; names=names, xmin=0)
+    end
 end
-draw_mh_figure(events::Vector) = draw_mh_figure(
-    mh_output_spiketrain_dict(filter(events) do (t, compname, evt)
-        compname === nothing && evt isa SpikingSimulator.OutputSpike
-    end)
+draw_mh_figure(events::Vector; endtime=nothing) = draw_mh_figure(
+    mh_output_spiketrain_dict(filter(is_root_outspike, events)); endtime
 )
+
+is_root_outspike((t, compname, evt)) = 
+    compname === nothing && evt isa SpikingSimulator.OutputSpike
