@@ -6,6 +6,7 @@ const SIC = SpikingInferenceCircuits
 using DiscreteIRTransforms
 
 include("../../runs/spiketrain_utils.jl")
+include("spiketrain_utils.jl")
 
 includet("implementation_rules.jl")
 
