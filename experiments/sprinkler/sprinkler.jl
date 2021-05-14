@@ -13,15 +13,18 @@ includet("implementation_rules.jl")
 @gen (static) function iswet(in::Nothing)
     raining ~ bernoulli(in === nothing ? 0.3 : 0.3)
     sprinkler ~ bernoulli(in === nothing ? 0.3 : 0.3)
-    grasswet ~ bernoulli(raining || sprinkler ? 0.7 : 0.3)
+    grasswet ~ bernoulli(raining || sprinkler ? 0.9 : 0.1)
+    return grasswet
 end
 
 @gen (static) function raining_proposal(raining, sprinkler, grasswet)
-    raining ~ bernoulli(raining ? 0.3 : 0.7)
+    raining ~ bernoulli(raining ? 0.5 : 0.5)
+    return raining
 end
 
 @gen (static) function sprinkler_proposal(raining, sprinkler, grasswet)
-    sprinkler ~ bernoulli(sprinkler ? 0.3 : 0.7)
+    sprinkler ~ bernoulli(sprinkler ? 0.5 : 0.5)
+    return sprinkler
 end
 
 function inference_cycle(tr)
@@ -55,7 +58,7 @@ println("MH Kernels constructed.")
 # events = get_events(rain_impl)
 # println("Simulation completed.")
 
-mh_cycle = MH([raining_mh_kernel, sprinkler_mh_kernel, raining_mh_kernel, sprinkler_mh_kernel])
+mh_cycle = MH([raining_mh_kernel, sprinkler_mh_kernel, raining_mh_kernel, sprinkler_mh_kernel, raining_mh_kernel, sprinkler_mh_kernel])
 println("MH Cycle Constructed.")
 
 cycle_impl = implement_deep(mh_cycle, Spiking())
@@ -87,7 +90,7 @@ get_cycle_events(impl, run_time; log=true, log_interval=100) = SpikingSimulator.
     log_str=time_log_str
 )
 
-events = get_cycle_events(cycle_impl, 1600.); nothing
+events = get_cycle_events(cycle_impl, 1000.); nothing
 
 # grasswet ss   (assess_new_trace)
 # got 2 spikes in, I think

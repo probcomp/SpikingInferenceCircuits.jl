@@ -9,8 +9,8 @@ Circuits.implement(ta::SIC.SDCs.ToAssmts, ::Spiking) =
     )
 
 K() = 20
-SAMPLE_ONRATE() = 0.2
-SCORE_ONRATE() = 3.0
+SAMPLE_ONRATE() = 1.0
+SCORE_ONRATE() = 1.0
 Circuits.implement(cs::SIC.SDCs.ConditionalSample, ::Spiking) =
     SDCs.PoissonPulseConditionalSample(
         (cs, K(), SAMPLE_ONRATE(),
@@ -68,7 +68,7 @@ Circuits.implement(theta::SDCs.Theta, ::Spiking) =
 Circuits.implement(m::SDCs.Mux, ::Spiking) =
     SDCs.PulseMux(m,
         PulseIR.PoissonAsyncOnGate(
-            PulseIR.ConcreteAsyncOnGate(500, 0.1, 1000), # ΔT, max_delay, M
+            PulseIR.ConcreteAsyncOnGate(350, 0.1, 1000), # ΔT, max_delay, M
             30 # R
         )
     )
