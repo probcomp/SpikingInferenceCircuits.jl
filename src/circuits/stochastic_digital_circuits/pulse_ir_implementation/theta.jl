@@ -8,13 +8,13 @@ end
 PulseTheta(
     input_denominator,
     n_inputs,
-    theta_type, M, ΔT, rate_rescaling_factor,
+    theta_type, M, L, ΔT, rate,
     offgate,
     ti_type, ti_params
 
 ) = PulseTheta(
     input_denominator,
-    theta_type(n_inputs, M, ΔT, rate_rescaling_factor, offgate),
+    theta_type(n_inputs, M, L, ΔT, rate, offgate),
     ti_type(n_inputs, ti_params...)
 )
 
