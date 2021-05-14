@@ -10,5 +10,6 @@ interface does not include the clock wire; that must be added on a hardware-spec
 struct Step <: GenericComponent
     input::Value
 end
+
 Circuits.inputs(s::Step) = NamedValues(:in => s.input)
 Circuits.outputs(s::Step) = NamedValues(:out => s.input)

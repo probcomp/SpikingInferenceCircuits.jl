@@ -1,4 +1,4 @@
-### Object motion model + inferennce code for possible figure.
+### Object motion model + inference code for possible figure.
 
 # UTILS:
 # onehot vector for `x` with length `length(dom)`,
@@ -17,7 +17,8 @@ maybe_one_off(idx, prob, dom) =
 
 # MODEL:
 XDOMAIN = 1:20 # = [1, 2, ..., 20]
-                  # Annotate inputs with their domains
+
+# Annotate inputs with their domains
 @gen (static) function object_motion_step(xₜ₋₁::XDOMAIN,
                                       velₜ₋₁::[-1, 0, 1])
     # change velocity with small probability
@@ -41,7 +42,6 @@ end
 end
 
 inference_circuit = SMC_Circuit( object_motion_step, step_proposal; num_particles=3, resample=true )
-
 
 # SMC algorithm
 N = 4 # 4 particles
@@ -71,11 +71,11 @@ end
 # - An `@particle` circuit returns a `(trace, weight)` pair
 # - An `@particles` circuit returns a vector of `(trace, weight)` pairs
 
-
 ### Draft 2 ###
 maybe_one_off(i, p, d) = ((1 - p) * onehot(i, d) +
     p/2 * onehot(i - 1, d) + p/2 * onehot(i + 1, d) )
 XDOMAIN = 1:20 # = [1, 2, ..., 20]
+
 @gen (static) function object_motion_step(
         xₜ₋₁::XDOMAIN, velₜ₋₁::[-1, 0, 1]   )
     # change velocity with small probability
