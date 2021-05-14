@@ -32,8 +32,9 @@ An `ISParticle` is a circuit component which represents an importance sampling p
 
 function Circuits.inputs(p::ISParticle)
     CompositeValue(
-                   (assess_args = inputs(p.assess),
-                    propose_args = inputs(p.propose)
+                   (assess_args = inputs(p.assess)[:inputs],
+                    obs = non_proposed_addresses(p),
+                    propose_args = inputs(p.propose)[:inputs]
                    )
                   )
 end
@@ -46,11 +47,29 @@ function Circuits.outputs(p::ISParticle)
                   )
 end
 
+function non_proposed_addresses(p)
+    proposed_in = outputs(p.propose)[:trace] # CompositeValue
+    inkeys = keys(proposed_in) # iterator over keys of some sort
+    required_in = inputs(p.assess)[:obs] # CompositeValue
+    reqkeys = keys(required_in)
+    obsaddrs = setdiff(Set(reqkeys), Set(inkeys))
+    return CompositeValue((;(
+        addr => required_in[addr]
+        for addr in obsaddrs
+    )...))
+end
+
 # Creates a Generator for edges between propose and assess sub-circuits.
 function get_edges_propose_assess(p)
     (Pair(CompOut(:propose, :trace => addr), 
           CompIn(:assess, :obs => addr))
      for addr in keys(outputs(p.propose)[:trace]))
+end
+
+function get_edges_obs_assess(p)
+    (Pair(Input(:obs => addr), 
+          CompIn(:assess, :obs => addr))
+     for addr in keys(inputs(p)[:obs]))
 end
 
 function Circuits.implement(p::ISParticle, t::Target)
@@ -73,15 +92,21 @@ function Circuits.implement(p::ISParticle, t::Target)
 
                               # Edges.
                               (
-                               Pair(Input(:assess_args => :inputs),
+                               Pair(Input(:assess_args),
                                     CompIn(:assess, :inputs)),
-                               Pair(Input(:propose_args => :inputs),
+                               Pair(Input(:propose_args),
                                     CompIn(:propose, :inputs)),
                                get_edges_propose_assess(p)...,
+                                get_edges_obs_assess(p)...,
                                Pair(CompOut(:propose, :trace), 
                                     Output(:trace)),
                                Pair(CompOut(:multiplier, :out),
-                                    Output(:weight))
-                              )
+                                    Output(:weight)),
+                                Pair(CompOut(:assess, :score),
+                                    CompIn(:multiplier, 1)),
+                                Pair(CompOut(:propose, :score),
+                                     CompIn(:multiplier, 2))
+                              ),
+                              p
                              )
 end
