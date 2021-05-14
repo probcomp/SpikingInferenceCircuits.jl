@@ -28,12 +28,22 @@ Circuits.implement(θ::PoissonTheta, ::Spiking) =
                 # and if ∑cⱼ ≥ 1, the probability of sampling i is almost proportional
                 # to cᵢ (though off by a small amount proportional to eᴸ).
                 PoissonNeuron([
-                        c -> min(1, c) × θ.M,
-                        cᵢ -> cᵢ == 0 ? θ.L : log(cᵢ),
-                        ∑cⱼ -> ∑cⱼ == 0 ? -log(θ.n_possibilities) - θ.L : -log(∑cⱼ)
+                        (let M = θ.M; (c -> min(1, c) × M); end),
+                        (let L = θ.L; (cᵢ -> cᵢ == 0 ? L : log(cᵢ)); end),
+                        (let N = θ.n_possibilities, L = θ.L
+                            (∑cⱼ -> begin
+                                # println("sum = $(∑cⱼ)")
+                                ∑cⱼ == 0 ? -log(N) - L : -log(∑cⱼ)
+                            end)
+                        end)
                     ],
                     θ.ΔT,
-                    u -> θ.rate × exp(u - θ.M)
+                    let M = θ.M, rate = θ.rate
+                        u -> begin
+                            # println("u = $u; Rate = $(rate × exp(u - M))")
+                            rate × exp(u - M)
+                        end
+                    end
                 )
                 for _=1:θ.n_possibilities
             ),
@@ -49,7 +59,7 @@ Circuits.implement(θ::PoissonTheta, ::Spiking) =
                 for i=1:θ.n_possibilities
             )...,
             (
-                Input(:probs => j) => CompIn(:neurons => j, 3)
+                Input(:probs => j) => CompIn(:neurons => i, 3)
                 for i=1:θ.n_possibilities
                     for j=1:θ.n_possibilities
             )...,

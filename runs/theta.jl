@@ -22,12 +22,12 @@ implemented = implement_deep(theta, Spiking())
 println("Implemented deeply.")
 
 get_events(impl; log=true) = SpikingSimulator.simulate_for_time_and_get_events(
-    impl, 500.0; initial_inputs=(
+    impl, 50.0; initial_inputs=(
         (1 => :count for _=1:4)..., 1 => :ind, 2 => :count, 2 => :ind
     ), log
 )
 
-events = get_events(implemented)
+events = get_events(implemented, log=false)
 println("Simulation completed.")
 
-include("spiketrain_utils.jl")
+# include("spiketrain_utils.jl")

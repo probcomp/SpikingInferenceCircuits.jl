@@ -56,13 +56,13 @@ to_spiking_real(v::SDCs.NonnegativeReal) = to_spiking_real(implement(v, Spiking(
 # TODO: improve where we set the `rate_rescaling_factor`...
 # Could we set things up so the rate is self-normalizing?
 Circuits.implement(theta::SDCs.Theta, ::Spiking) =
-    SDCs.PulseTheta(                                    # M, ΔT, rate_rescaling_factor (DOES NOT NEED TO EQUAL K() -- though its relationship with K matters)
-        K(), theta.n_possibilities, PulseIR.PoissonTheta, 1000, 300., 1*K(),
+    SDCs.PulseTheta(                                    # M,     L,  ΔT,    rate
+        K(), theta.n_possibilities, PulseIR.PoissonTheta, 1000, -20, 300., 1.,
         PulseIR.PoissonOffGate(
             PulseIR.ConcreteOffGate(350. #= ΔT =#, 0.2 #=max_delay=#, 500 #=M=#), 20 #=R=#
         ),
         PulseIR.PoissonThresholdedIndicator,
-        (400., 0.2, 500, 20) # ΔT, Maxdelay, M, R
+        (350., 0.2, 500, 20) # ΔT, Maxdelay, M, R
     )
 
 Circuits.implement(m::SDCs.Mux, ::Spiking) =
