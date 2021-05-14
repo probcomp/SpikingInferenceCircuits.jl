@@ -80,10 +80,8 @@ uuid = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
 version = "0.9.33"
 
 [[Circuits]]
-deps = ["Distributions", "LightGraphs"]
-git-tree-sha1 = "ada0975040bbeb28c1a8ff9bfa6a57fa3824b2fd"
-repo-rev = "main"
-repo-url = "https://github.com/probcomp/Circuits.jl"
+deps = ["Distributions", "LightGraphs", "Memoization"]
+path = "/Users/mccoybecker/.julia/dev/Circuits"
 uuid = "f5b243b3-c95b-4650-9ac7-659d8f0b0982"
 version = "0.1.0"
 
@@ -529,6 +527,12 @@ version = "1.1.0"
 [[MbedTLS_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "c8ffd9c3-330d-5841-b78e-0817d7145fa1"
+
+[[Memoization]]
+deps = ["MacroTools"]
+git-tree-sha1 = "7b8610852185715907835e02ad15d769c852ffc3"
+uuid = "6fafb56a-5788-4b4e-91ca-c0cea6611c73"
+version = "0.1.8"
 
 [[MeshIO]]
 deps = ["ColorTypes", "FileIO", "GeometryBasics", "Printf"]

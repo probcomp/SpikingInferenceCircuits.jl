@@ -5,5 +5,9 @@ include("off_gate.jl")
 include("async_on_gate.jl")
 include("thresholded_indicator.jl")
 include("streamsamples.jl")
-include("multiplier.jl")
 include("theta.jl")
+
+include("timer.jl") # Util
+
+include("multiplier.jl")
+include("sync.jl")

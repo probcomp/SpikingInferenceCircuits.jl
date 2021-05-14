@@ -42,7 +42,7 @@ Circuits.implement(m::PoissonSpikeCountMultiplier, ::Spiking) =
     CompositeComponent(
         inputs(m), outputs(m),
         (
-            timer=Timer(
+            timer=PoissonTimer(
                 m.conc.spikecount_dist.expected_output_length,
                 m.conc.spikecount_dist.erlang_shape,
                 (m.conc.max_delay, m.timer_params[1]...), # Timer TI parameters
@@ -82,45 +82,3 @@ Circuits.implement(m::PoissonSpikeCountMultiplier, ::Spiking) =
 
 # TODO: failure probability
 
-### Timer
-# I'm not going to make this a Pulse IR Primitive
-# since I think this is the only place we need it,
-# and I'm not sure what the general purpose PulseIR interface
-# would be.
-"""
-
-"""
-struct Timer <: GenericComponent
-    ΔT::Float64 # amount of time to time in expectation
-    n_spikes::Int # more spikes → more precise estimate of `ΔT` is timed
-    ti_params::Tuple{Float64, Float64, Float64}
-    offrate::Float64 # higher → more likely to fail!
-    memory::Float64
-end
-Circuits.inputs(::Timer) = NamedValues(:start => SpikeWire())
-Circuits.outputs(::Timer) = NamedValues(:out => SpikeWire())
-Circuits.target(::Timer) = Spiking()
-Circuits.implement(t::Timer, ::Spiking) =
-    CompositeComponent(
-        inputs(t), outputs(t),
-        (
-            neuron=PoissonNeuron(
-                [
-                    x -> min(1, x) × (t.n_spikes/t.ΔT - t.offrate),
-                    x -> min(1, x) × -(t.n_spikes/t.ΔT - t.offrate)
-                ], t.memory,
-                u -> max(0, u + t.offrate)
-            ),
-            
-            ti=PoissonThresholdedIndicator(
-                t.n_spikes, t.memory, t.ti_params...
-            )
-        ),
-        (
-            Input(:start) => CompIn(:neuron, 1),
-            CompOut(:neuron, :out) => CompIn(:ti, :in),
-            CompOut(:ti, :out) => CompIn(:neuron, 2),
-            CompOut(:ti, :out) => Output(:out)
-        ),
-        t
-    )

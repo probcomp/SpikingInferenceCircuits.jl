@@ -17,3 +17,5 @@ Circuits.inputs(s::Sync) = IndexedValues(
     for size in s.cluster_sizes
 )
 Circuits.outputs(s::Sync) = Circuits.inputs(s)
+
+# TODO: ConcreteSync?

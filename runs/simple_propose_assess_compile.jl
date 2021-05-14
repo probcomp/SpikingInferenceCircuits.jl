@@ -66,7 +66,7 @@ get_events(impl) = SpikingSimulator.simulate_for_time_and_get_events(
 events = get_events(implemented)
 println("Simulation completed.")
 println(out_st_dict(events))
-# draw_fig(events)  
+# draw_fig(events)
 
 println()
 println()

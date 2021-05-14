@@ -41,9 +41,9 @@ SIC.SDCs.OneHotLookupTable(lt)
 Circuits.implement(::Binary, ::Spiking) = SpikeWire()
 
 to_spiking_real(::SDCs.SingleNonnegativeReal) = 
-    IndicatedSpikeCountReal(UnbiasedSpikeCountReal(K))
+IndicatedSpikeCountReal(UnbiasedSpikeCountReal(K))
 to_spiking_real(v::SDCs.ProductNonnegativeReal) =
-    SDCs.ProductNonnegativeReal(map(to_spiking_real, v.factors))
+SDCs.ProductNonnegativeReal(map(to_spiking_real, v.factors))
 to_spiking_real(v::SDCs.NonnegativeReal) = to_spiking_real(implement(v, Spiking()))
 
 Circuits.implement(r::SDCs.SingleNonnegativeReal, ::Spiking) = to_spiking_real(r)
@@ -102,11 +102,8 @@ circuit = ISParticle(test, proposal,
                      (input = FiniteDomain(2), ))
 
 # Circuits interfaces.
-inputs = Circuits.inputs(circuit)
-display(inputs)
-
-output = Circuits.outputs(circuit)
-display(output)
+ins = Circuits.inputs(circuit)
+outs = Circuits.outputs(circuit)
 
 # Implement deep.
 implemented = implement_deep(circuit, Spiking())

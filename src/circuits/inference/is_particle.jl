@@ -3,7 +3,7 @@
 #####
 
 struct ISParticle <: GenericComponent
-    assess::GenFn{Generate} # really: GenFn{Assess}
+    assess::GenFn{Generate}
     propose::GenFn{Propose}
 end
 
@@ -48,13 +48,8 @@ end
 
 # Creates a Generator for edges between propose and assess sub-circuits.
 function get_edges_propose_assess(p)
-    (Pair(CompOut(:propose, :trace => addr), CompIn(:assess, :obs => addr))
-     for addr in keys(outputs(p.propose)[:trace]))
-end
-
-# Creates a Generator for edges from propose trace to out.
-function get_edges_trace_out(p)
-    (Pair(CompOut(:propose, :trace => addr), Output(:trace, addr))
+    (Pair(CompOut(:propose, :trace => addr), 
+          CompIn(:assess, :obs => addr))
      for addr in keys(outputs(p.propose)[:trace]))
 end
 
@@ -62,36 +57,31 @@ function Circuits.implement(p::ISParticle, t::Target)
 
     # Weights are represented internally by a tuple of Value instance.
     mult_unit = SDCs.NonnegativeRealMultiplier((
-                                                outputs(p.assess)[:score],
-                                                outputs(p.propose)[:score]
+                                        outputs(p.assess)[:score],
+                                        outputs(p.propose)[:score]
                                                ))
 
-    return let full_in = implement_deep(inputs(p), t)
-        full_out = implement_deep(outputs(p), t)
-        CompositeComponent(full_in,
-                           full_out,
+    return CompositeComponent(inputs(p),
+                              outputs(p),
 
-                           # Subcomponents.
-                           (  
-                            assess=p.assess, # GenFn{Assess}
-                            propose=p.propose, # GenFn{Propose}
-                            multiplier=mult_unit,
-                           ),
+                              # Subcomponents.
+                              (  
+                               assess=p.assess, # GenFn{Generate}
+                               propose=p.propose, # GenFn{Propose}
+                               multiplier=mult_unit,
+                              ),
 
-                           # Edges.
-                           Tuple(Iterators.flatten(
-                                                   (
-                                                    Pair(Input(:assess_args),
-                                                         CompIn(:assess, :inputs)),
-                                                    Pair(Input(:propose_args),
-                                                         CompIn(:propose, :inputs)),
-                                                    get_edges_propose_assess(p),
-                                                    get_edges_trace_out(p),
-                                                    Pair(CompOut(:multiplier, :value),
-                                                         Output(:score))
-                                                   )
-                                                  )
-                                )
-                          )
-    end
+                              # Edges.
+                              (
+                               Pair(Input(:assess_args => :inputs),
+                                    CompIn(:assess, :inputs)),
+                               Pair(Input(:propose_args => :inputs),
+                                    CompIn(:propose, :inputs)),
+                               get_edges_propose_assess(p)...,
+                               Pair(CompOut(:propose, :trace), 
+                                    Output(:trace)),
+                               Pair(CompOut(:multiplier, :out),
+                                    Output(:weight))
+                              )
+                             )
 end
