@@ -67,14 +67,18 @@ Circuits.implement(p::PoissonStreamSamples, ::Spiking) =
                 Tuple(
                     PoissonNeuron(
                         [
-                            x -> min(1, x) × (
-                                log(prob_output_given_input(
+                            let weight = (log(prob_output_given_input(
                                     p, outval
                                 )[inval]) + base_weight
                             )
+                                x -> min(1, x) × weight
+                            end
                             for inval=1:in_domain_size(p)
                         ],
-                        p.ΔT, u -> min(p.overall_on_rate, exp(u + bias))
+                        p.ΔT,
+                        let onrate = p.overall_on_rate, bias = bias
+                            u -> min(onrate, exp(u + bias))
+                        end
                     )
                     for outval = 1:out_domain_size(p)
                 ),
