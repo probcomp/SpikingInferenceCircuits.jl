@@ -44,7 +44,7 @@ Circuits.implement(m::OneHotMux, t::Target) =
                     (
                         Input(:values => i_keyname) => CompIn(i_keyname, :value),
                         Input(:sel => i) => CompIn(i_keyname, :sel),
-                        CompOut(i_keyname, :out) => Output(i_keyname == i ? :out : :out => keyname)
+                        CompOut(i_keyname, :out) => Output(i_keyname == i ? :out : :out => i_keyname.second)
                     ) for i=1:m.mux.n_possibilities for i_keyname in i_to_keynames(i, full_out[:out])
                 ), m
             )

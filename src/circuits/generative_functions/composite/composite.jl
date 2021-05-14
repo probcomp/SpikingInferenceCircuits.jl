@@ -63,8 +63,9 @@ addr_to_name(::CompositeGenFn) = error("Not implemented")
 
 num_internal_score_outputs(g) = length(collect(score_outputter_names(g)))
 
-Circuits.implement(g::CompositeGenFn, ::Target) =
-    CompositeComponent(
+function Circuits.implement(g::CompositeGenFn, ::Target)
+    println("Implementing genfn of type $(typeof(g))...")
+    component = CompositeComponent(
         inputs(g),
         # implement the `score` output so we can output factors
         # to the sub-score for each factors
@@ -83,6 +84,9 @@ Circuits.implement(g::CompositeGenFn, ::Target) =
         )),
         g
     )
+    println("Done implementing genfn of type $(typeof(g)).")
+    return component
+end
 
 obs_input_edges(::CompositeGenFn{Propose}) = ()
 obs_input_edges(g::CompositeGenFn{Generate}) = (

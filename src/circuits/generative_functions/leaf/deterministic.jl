@@ -34,7 +34,7 @@ input_domains(g::DeterministicGenFn) = g.input_domains
 output_domain(g::DeterministicGenFn) = g.output_domain
 has_traceable_value(::DeterministicGenFn) = false
 # currently, I assume we never observe a deterministic node (since these are not traced)
-operation(::DeterministicGenFn{Generate}) = Generate(Set())
+operation(::DeterministicGenFn{Generate}) = Generate(EmptySelection())
 
 ### implementation ###
 
@@ -70,12 +70,16 @@ function determ_to_product_implementation(g::DeterministicGenFn, ::Spiking)
     )
 end
 
-Circuits.implement(g::DeterministicGenFn, t::Target) =
-    if g.output_domain isa FiniteDomain
-        determ_finite_domain_implementation(g)
-    elseif g.output_domain isa IndexedProductDomain
-        determ_to_product_implementation(g, t)
-    end
+function Circuits.implement(g::DeterministicGenFn, t::Target)
+    println("Implementing a deterministic gen fn...")
+    impl = if g.output_domain isa FiniteDomain
+            determ_finite_domain_implementation(g)
+        elseif g.output_domain isa IndexedProductDomain
+            determ_to_product_implementation(g, t)
+        end
+    println("Done implementing deterministic gen fn..")
+    return impl
+end
 
 ### Function --> DeterministicGenFn component ###
 

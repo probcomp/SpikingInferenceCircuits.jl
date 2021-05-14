@@ -33,4 +33,8 @@ include("nonprimitives/multi_input_lookup_table.jl")
 
 export FiniteDomainValue, NonnegativeReal, SingleNonnegativeReal, ProductNonnegativeReal
 
+export Mux, ConditionalScore, ConditionalSample, ToAssmts, LookupTable
+export NonnegativeRealMultiplier, Theta, Step
+export CPTSampleScore, MultiInputLookupTable
+
 end

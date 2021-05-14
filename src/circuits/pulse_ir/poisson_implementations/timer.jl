@@ -22,10 +22,16 @@ Circuits.implement(t::PoissonTimer, ::Spiking) =
         (
             neuron=PoissonNeuron(
                 [
-                    x -> min(1, x) × (t.n_spikes/t.ΔT - t.offrate),
-                    x -> min(1, x) × -(t.n_spikes/t.ΔT - t.offrate)
+                    let multiplier = (t.n_spikes/t.ΔT - t.offrate)
+                        x -> min(1, x) × multiplier
+                    end,
+                    let multiplier = -(t.n_spikes/t.ΔT - t.offrate)
+                        x -> min(1, x) × multiplier
+                    end
                 ], t.memory,
-                u -> max(0, u + t.offrate)
+                let offrate = t.offrate
+                    u -> max(0, u + offrate)
+                end
             ),
             
             ti=PoissonThresholdedIndicator(

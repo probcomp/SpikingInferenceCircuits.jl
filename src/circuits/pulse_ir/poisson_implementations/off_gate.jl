@@ -10,9 +10,14 @@ end
 Circuits.implement(g::PoissonOffGate, ::Spiking) =
     CompositeComponent(
         inputs(g), outputs(g),
-        (neuron=PoissonNeuron([
-            x -> x, x -> -g.gate.M*x, x -> -x
-        ], g.gate.ΔT, u -> exp(g.R*(u - 1/2))),),
+        (neuron=PoissonNeuron(
+            [
+                x -> x,
+                let M = g.gate.M; x -> -M*x; end,
+                x -> -x
+            ], g.gate.ΔT,
+            let R = g.R; u -> exp(R*(u - 1/2)); end
+        ),),
         (
             Input(:in) => CompIn(:neuron, 1),
             Input(:off) => CompIn(:neuron, 2),

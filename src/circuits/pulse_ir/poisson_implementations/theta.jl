@@ -1,9 +1,16 @@
 struct PoissonTheta <: ConcretePulseIRPrimitive
     n_possibilities::Int
-    M::Float64
-    ΔT::Float64
-    rate_rescaling_factor::Float64
-    wta_off::PoissonOffGate
+    M::Float64 # num spikes needed to override and have sample to early
+    L::Float64 # P[θ samples index j | P[j]=0] ∝ eᴸ
+    ΔT::Float64 # memory time
+    rate::Float64 # rate at which samples are output
+    wta_off::PoissonOffGate # used to construct the WTA to choose a sample
+    function PoissonTheta(n, M, L, ΔT, rate, wta_off)
+        if exp(L) > 0.01
+            @warn "Setting $L is a pretty large value for L, and could significantly skew the distribution the θ gate samples from."
+        end
+        return new(n, M, L, ΔT, rate, wta_off)
+    end
 end
 
 Circuits.abstract(θ::PoissonTheta) = Theta(θ.n_possibilities)
@@ -16,7 +23,28 @@ Circuits.implement(θ::PoissonTheta, ::Spiking) =
         inputs(θ), outputs(θ),
         (
             neurons=IndexedComponentGroup(
-                PoissonNeuron([c -> min(1, c) × θ.M, c -> c], θ.ΔT, u -> max(0., u - θ.M)/θ.rate_rescaling_factor)
+                # These equations were worked out on page 94-95 of notebook
+                # Idea is that if ∑cⱼ = 0, each output is equally likely,
+                # and if ∑cⱼ ≥ 1, the probability of sampling i is almost proportional
+                # to cᵢ (though off by a small amount proportional to eᴸ).
+                PoissonNeuron([
+                        (let M = θ.M; (c -> min(1, c) × M); end),
+                        (let L = θ.L; (cᵢ -> cᵢ == 0 ? L : log(cᵢ)); end),
+                        (let N = θ.n_possibilities, L = θ.L
+                            (∑cⱼ -> begin
+                                # println("sum = $(∑cⱼ)")
+                                ∑cⱼ == 0 ? -log(N) - L : -log(∑cⱼ)
+                            end)
+                        end)
+                    ],
+                    θ.ΔT,
+                    let M = θ.M, rate = θ.rate
+                        u -> begin
+                            # println("u = $u; Rate = $(rate × exp(u - M))")
+                            rate × exp(u - M)
+                        end
+                    end
+                )
                 for _=1:θ.n_possibilities
             ),
             wta=ConcreteWTA(θ.n_possibilities, θ.wta_off)
@@ -31,6 +59,11 @@ Circuits.implement(θ::PoissonTheta, ::Spiking) =
                 for i=1:θ.n_possibilities
             )...,
             (
+                Input(:probs => j) => CompIn(:neurons => i, 3)
+                for i=1:θ.n_possibilities
+                    for j=1:θ.n_possibilities
+            )...,
+            (
                 CompOut(:neurons => i, :out) => CompIn(:wta, i)
                 for i=1:θ.n_possibilities
             )...,
@@ -41,5 +74,3 @@ Circuits.implement(θ::PoissonTheta, ::Spiking) =
         ),
         θ
     )
-
-# TODO: temporal interface

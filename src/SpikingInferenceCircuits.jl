@@ -13,6 +13,9 @@ using .SDCs
 using .SDCs: CPTSample, CPTScore
 include("circuits/generative_functions/gen_fn_circuits.jl")
 
+include("circuits/inference/mh.jl")
+include("circuits/inference/is_particle.jl")
+
 export PulseIR, SDCs
 
 export CPT, gen_fn_circuit, Propose, Generate, Assess
@@ -21,5 +24,6 @@ export FiniteDomain, IndexedProductDomain
 include("circuits/inference/inference.jl")
 
 export ISParticle
+export MHKernel, MH
 
 end
