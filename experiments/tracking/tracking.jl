@@ -35,6 +35,20 @@ end
     xₜ ~ categorical(maybe_one_off(obsₜ, 0.2, XDOMAIN))
 end
 
+@compilable object_motion_step(::XDOMAIN)
+@compilable step_proposal(::XDOMAIN, ::XDOMAIN)
+
+smc_circuit = SMC(object_motion_step, 10, [step_proposal], resample=true)
+
+# @SMC object_motion_step 10 (
+#     function smc_step(traces)
+#         weighted_traces = is(step_proposal)(traces)
+#         traces = resample(weighted_traces)
+#     end
+# )
+
+# @MH iswet trace -> trace |> mh(sprinkler_proposal) |> mh(raining_proposal)
+
 ################
 ### Circuits ###
 ################
