@@ -9,6 +9,8 @@ for s in (:target, :inputs, :outputs)
     @eval (Circuits.$s(g::PoissonAsyncOnGate) = Circuits.$s(Circuits.abstract(g)))
 end
 
+async_on_gate(off::PoissonOffGate) = PoissonAsyncOnGate(async_on_gate(abstract(off)), off.R)
+
 Circuits.implement(g::PoissonAsyncOnGate, ::Spiking) =
     CompositeComponent(
         inputs(g), outputs(g),
