@@ -31,41 +31,30 @@ end
     return sprinkler
 end
 
-function inference_cycle(tr)
-    tr = mh(tr, raining_proposal)
-    tr = mh(tr, sprinkler_proposal)
-    return tr
+@gen (static) function smart_block_proposal(raining, sprinkler, grasswet)
+    raining ~ bernoulli(grasswet ? 0.55 : 0.2)
+    sprinkler ~ bernoulli(grasswet && !raining ? 0.8 : 0.3)
+    return sprinkler
 end
 
 binary = EnumeratedDomain([true, false])
 iswet_cpts, _ = to_indexed_cpts(iswet, [EnumeratedDomain([nothing])])
 raining_proposal_cpts, _ = to_indexed_cpts(raining_proposal, [binary, binary, binary])
 sprinkler_proposal_cpts, _ = to_indexed_cpts(sprinkler_proposal, [binary, binary, binary])
+block_proposal_cpts, _ = to_indexed_cpts(smart_block_proposal, [binary, binary, binary])
 
 raining_mh_kernel = MHKernel(iswet_cpts, (in=FiniteDomain(1),), raining_proposal_cpts, (FiniteDomain(2), FiniteDomain(2), FiniteDomain(2)))
 sprinkler_mh_kernel = MHKernel(iswet_cpts, (in=FiniteDomain(1),), sprinkler_proposal_cpts, (FiniteDomain(2), FiniteDomain(2), FiniteDomain(2)))
+block_mh_kernel = MHKernel(iswet_cpts, (in=FiniteDomain(1),), block_proposal_cpts, (FiniteDomain(2), FiniteDomain(2), FiniteDomain(2)))
 println("MH Kernels constructed.")
 
-# rain_impl = implement_deep(raining_mh_kernel, Spiking())
-# println("Rain MH Kernel implemented.")
+# mh_cycle = MH([raining_mh_kernel, sprinkler_mh_kernel, raining_mh_kernel, sprinkler_mh_kernel, raining_mh_kernel, sprinkler_mh_kernel])
+# println("MH Cycle Constructed.")
 
-# get_events(impl) = SpikingSimulator.simulate_for_time_and_get_events(
-#     impl, 1000.;
-#     initial_inputs=(
-#         :prev_trace => :raining => 1,
-#         :prev_trace => :sprinkler => 1,
-#         :prev_trace => :grasswet => 1,
-#         :model_args => :in => 1
-#     )
-# )
-
-# events = get_events(rain_impl)
-# println("Simulation completed.")
-
-mh_cycle = MH([raining_mh_kernel, sprinkler_mh_kernel, raining_mh_kernel, sprinkler_mh_kernel, raining_mh_kernel, sprinkler_mh_kernel])
+mh_cycle = MH([block_mh_kernel for _=1:6])
 println("MH Cycle Constructed.")
 
-cycle_impl = implement_deep(mh_cycle, Spiking())
+cycle_impl = Circuits.memoized_implement_deep(mh_cycle, Spiking())
 println("MH Cycle implemented.")
 
 ### Simulate
