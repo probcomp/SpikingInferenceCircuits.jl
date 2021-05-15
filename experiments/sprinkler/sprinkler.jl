@@ -10,6 +10,10 @@ include("spiketrain_utils.jl")
 
 includet("implementation_rules.jl")
 
+# util for debugging:
+pairlast(p::Pair) = pairlast(p.second)
+pairlast(v) = v
+
 @gen (static) function iswet(in::Nothing)
     raining ~ bernoulli(in === nothing ? 0.3 : 0.3)
     sprinkler ~ bernoulli(in === nothing ? 0.3 : 0.3)
@@ -90,7 +94,7 @@ get_cycle_events(impl, run_time; log=true, log_interval=100) = SpikingSimulator.
     log_str=time_log_str
 )
 
-events = get_cycle_events(cycle_impl, 1600.); nothing
+events = get_cycle_events(cycle_impl, 1000.); nothing
 
 # grasswet ss   (assess_new_trace)
 # got 2 spikes in, I think
