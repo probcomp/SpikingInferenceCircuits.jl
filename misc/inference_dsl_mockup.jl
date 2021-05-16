@@ -160,3 +160,44 @@ end
 
 # # grasswet ss   (assess_new_trace)
 # # got 2 spikes in, I think
+
+
+
+# Sketching on the tracking example--
+
+@compilable object_motion_step(::XDOMAIN)
+@compilable step_proposal(::XDOMAIN, ::XDOMAIN)
+
+smc_circuit = SMC(object_motion_step, 10, [step_proposal], resample=true)
+
+# @SMC object_motion_step 10 (
+#     function smc_step(traces)
+#         weighted_traces = is(step_proposal)(traces)
+#         traces = resample(weighted_traces)
+#         return traces
+#     end
+# )
+
+# SMC takes a model, a number of particles, and a sequence of steps
+# each step is either a ISParticle, MCMCKernel, or Resample.
+# ISParticle or MCMCKernel are applied to each particle individually.
+# Resample is applied to the block.
+# 
+SMC(object_motion_step, 10, [is(step_proposal), resample()])
+
+# MCMC takes a model and a list of MCMC kernels (such as MH kernels)
+# it returns a function which accepts (initial_trace, model_args),
+# then runs inference through the sequence of kernels --> recur to beginning
+# and outputs each trace.
+MCMC(iswet, [mh(sprinkler_proposal), mh(raining_proposal)])
+
+# @MH iswet(model_args) (mh_cycle(trace) = trace |> mh(sprinkler_proposal) |> mh(raining_proposal))
+#=
+@MH iswet(model_args) (
+    function mh_cycle(trace)
+        tr = mh(sprinkler_proposal)(trace)
+        tr = mh(raining_proposal)(tr)
+        return tr
+    end
+)
+=#
