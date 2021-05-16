@@ -35,10 +35,10 @@ function smc_get_names_and_trains(dict)
     smc_particle_indices = 1:length(smc_particle_indices)
     valnames = Set(key[2] for key in keys(dict))
     vals = Dict(
-        valname => Set(
+        valname => sort(collect(Set(
             key[3] for key in keys(dict)
             if  key[2] == valname
-        )
+        )))
         for valname in valnames
     )
     names = []
@@ -67,7 +67,7 @@ function draw_smc_figure(dict::Dict; endtime=nothing)
         draw_spiketrain_figure(trains; names=names, xmin=0)
     end
 end
-draw_smc_figure(events::Vector; endtime=nothing) = draw_mh_figure(
+draw_smc_figure(events::Vector; endtime=nothing) = draw_smc_figure(
     smc_output_spiketrain_dict(filter(is_root_outspike, events)); endtime
 )
 

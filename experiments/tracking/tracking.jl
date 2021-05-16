@@ -5,7 +5,8 @@ using SpikingInferenceCircuits
 const SIC = SpikingInferenceCircuits
 using DiscreteIRTransforms
 
-include("implementation_rules.jl")
+includet("../logging_utils.jl")
+includet("implementation_rules.jl")
 includet("spiketrain_utils.jl")
 
 # UTILS:
