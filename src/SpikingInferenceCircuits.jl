@@ -20,8 +20,12 @@ export CPT, gen_fn_circuit, Propose, Generate, Assess
 export FiniteDomain, IndexedProductDomain
 
 include("circuits/inference/is_particle.jl")
+include("circuits/inference/resample.jl")
+include("circuits/inference/smc.jl")
+include("circuits/inference/mh.jl")
 
 export ISParticle
+export SMC
 export MHKernel, MH
 
 end
