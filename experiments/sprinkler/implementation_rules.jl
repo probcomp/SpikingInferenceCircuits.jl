@@ -37,8 +37,8 @@ Circuits.implement(m::SDCs.NonnegativeRealMultiplier, ::Spiking) =
         (indenoms, outdenom) -> PulseIR.PoissonSpikeCountMultiplier(
             indenoms, outdenom,
             30, 50., 175., 0.5, # erlang_shape/num_timer_spikes | expected_output_time | max_input_memory | max_delay
-            ((500, 24), 0.), #(ti_params = (M, R), offrate)
-            (500, 24) # (M, R) offgate params
+            ((500, 30), 0.), #(ti_params = (M, R), offrate)
+            (500, 30) # (M, R) offgate params
         ), 
         K(),
         threshold -> begin
@@ -59,10 +59,10 @@ Circuits.implement(theta::SDCs.Theta, ::Spiking) =
     SDCs.PulseTheta(                                    # M,     L,  ΔT,    rate
         K(), theta.n_possibilities, PulseIR.PoissonTheta, 1000, -20, 175., 1.,
         PulseIR.PoissonOffGate(
-            PulseIR.ConcreteOffGate(175. #= ΔT =#, 0.2 #=max_delay=#, 500 #=M=#), 20 #=R=#
+            PulseIR.ConcreteOffGate(175. #= ΔT =#, 0.2 #=max_delay=#, 500 #=M=#), 30 #=R=#
         ),
         PulseIR.PoissonThresholdedIndicator,
-        (175., 0.2, 500, 20) # ΔT, Maxdelay, M, R
+        (175., 0.2, 500, 30) # ΔT, Maxdelay, M, R
     )
 
 Circuits.implement(m::SDCs.Mux, ::Spiking) =

@@ -71,7 +71,7 @@ function time_log_str(time, compname, event)
     @sprintf("%.4f", time)
 end
 
-get_cycle_events(impl, run_time; log=true, log_interval=100) = SpikingSimulator.simulate_for_time_and_get_events(
+get_cycle_events(impl, run_time; log=true, log_interval=400) = SpikingSimulator.simulate_for_time_and_get_events(
     impl, run_time;
     initial_inputs=(
         :initial_trace => :raining => 1,
@@ -83,7 +83,7 @@ get_cycle_events(impl, run_time; log=true, log_interval=100) = SpikingSimulator.
     log_str=time_log_str
 )
 
-events = get_cycle_events(cycle_impl, 1000.); nothing
+events = get_cycle_events(cycle_impl, 10_000.); nothing
 
 # grasswet ss   (assess_new_trace)
 # got 2 spikes in, I think
