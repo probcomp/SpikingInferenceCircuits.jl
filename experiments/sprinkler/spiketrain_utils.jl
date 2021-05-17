@@ -126,7 +126,7 @@ end
 
 ### Extract MH states
 function get_mh_states(events)
-    dict = mh_output_spiketrain_dict(filter(is_root_outspike, unblocked_events))
+    dict = mh_output_spiketrain_dict(filter(is_root_outspike, events))
     sequence = []
     for ((kernelidx, variable, value), times) in dict
         for time in times

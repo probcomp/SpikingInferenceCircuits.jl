@@ -48,13 +48,13 @@ sprinkler_mh_kernel = MHKernel(iswet_cpts, (in=FiniteDomain(1),), sprinkler_prop
 block_mh_kernel = MHKernel(iswet_cpts, (in=FiniteDomain(1),), block_proposal_cpts, (FiniteDomain(2), FiniteDomain(2), FiniteDomain(2)))
 println("MH Kernels constructed.")
 
-# mh_cycle = MH([raining_mh_kernel, sprinkler_mh_kernel, raining_mh_kernel, sprinkler_mh_kernel, raining_mh_kernel, sprinkler_mh_kernel])
-# println("MH Cycle Constructed.")
-
-mh_cycle = MH([block_mh_kernel for _=1:6])
+mh_cycle = MH([raining_mh_kernel, sprinkler_mh_kernel, raining_mh_kernel, sprinkler_mh_kernel, raining_mh_kernel, sprinkler_mh_kernel])
 println("MH Cycle Constructed.")
 
-cycle_impl = Circuits.memoized_implement_deep(mh_cycle, Spiking())
+# mh_cycle = MH([block_mh_kernel for _=1:6])
+# println("MH Cycle Constructed.")
+
+cycle_impl = Circuits.implement_deep(mh_cycle, Spiking())
 println("MH Cycle implemented.")
 
 ### Simulate
@@ -83,7 +83,7 @@ get_cycle_events(impl, run_time; log=true, log_interval=400) = SpikingSimulator.
     log_str=time_log_str
 )
 
-events = get_cycle_events(cycle_impl, 10_000.); nothing
+# events = get_cycle_events(cycle_impl, 10_000.); nothing
 
 # grasswet ss   (assess_new_trace)
 # got 2 spikes in, I think
