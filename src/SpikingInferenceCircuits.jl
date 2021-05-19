@@ -12,13 +12,20 @@ using .SDCs
 using .SDCs: CPTSample, CPTScore
 include("circuits/generative_functions/gen_fn_circuits.jl")
 
-include("circuits/inference/mh.jl")
+#include("circuits/inference/mh.jl")
 
 export PulseIR, SDCs
 
 export CPT, gen_fn_circuit, Propose, Generate, Assess
 export FiniteDomain, IndexedProductDomain
 
+include("circuits/inference/is_particle.jl")
+include("circuits/inference/resample.jl")
+include("circuits/inference/smc.jl")
+include("circuits/inference/mh.jl")
+
+export ISParticle
+export SMC
 export MHKernel, MH
 
 include("DiscreteIRTransforms/src/DiscreteIRTransforms.jl")

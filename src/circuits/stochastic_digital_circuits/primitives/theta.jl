@@ -1,5 +1,6 @@
 """
     Theta <: GenericComponent
+    Theta(n_possibilities::Int)
 
 Given `n` `NonnegativeReal`s `[v₁, ..., vₙ]`, normalizes
 the vector to a probability vector `[p₁, ..., pₙ]` and

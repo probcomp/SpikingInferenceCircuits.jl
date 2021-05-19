@@ -35,6 +35,7 @@ for s in (:target, :inputs, :outputs)
     @eval (Circuits.$s(g::ConcreteAsyncOnGate) = Circuits.$s(Circuits.abstract(g)))
 end
 
+async_on_gate(off::ConcreteOffGate) = ConcreteAsyncOnGate(off.ΔT, off.max_delay, off.M)
 
 is_valid_input(g::ConcreteAsyncOnGate, d::Dict{Input, UInt}) = d[Input(:in)] < g.M
 
