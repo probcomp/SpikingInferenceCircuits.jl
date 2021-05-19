@@ -78,5 +78,5 @@ Circuits.implement(s::PulseIR.Sync, ::Spiking) =
         s.cluster_sizes,
         (1000, 30.), # M R
         (0.1, 30.), # max_delay, R
-        (50., 20, (0.1, 1000, 30.), 0., 100.) # ΔT_timer, N_spikes_timer | timer TI params (maxdelay M R) | offrate | timer memory
+        (25., 20, (0.1, 1000, 30.), 0., 50.) # ΔT_timer, N_spikes_timer | timer TI params (maxdelay M R) | offrate | timer memory
     )

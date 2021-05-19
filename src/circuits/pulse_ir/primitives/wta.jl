@@ -35,25 +35,46 @@ Circuits.outputs(w::ConcreteWTA) = outputs(abstract(w))
 Circuits.implement(w::ConcreteWTA, ::Spiking) =
     CompositeComponent(
         inputs(w), outputs(w),
-        Tuple(
-            w.offgate for _=1:w.n_inputs
+        (
+            offs=IndexedComponentGroup(w.offgate for _=1:w.n_inputs),
+            on=async_on_gate(w.offgate) # construct an On gate with same params as the Off gate
+            # TODO: support different On gate params.  Also TODO: better constructors!
         ),
         Iterators.flatten((
             (
-                Input(i) => CompIn(i, :in)
+                Input(i) => CompIn(:offs => i, :in)
                 for i=1:w.n_inputs
             ),
             ( # Input spike immediately turns of all other repeaters
-                Input(i) => CompIn(j, :off)
+                Input(i) => CompIn(:offs => j, :off)
                 for i=1:w.n_inputs
                     for j=1:w.n_inputs if j != i
             ),
             ( # After spike is repeated, that repeater is turned off
-                CompOut(i, :out) => CompIn(i, :off)
+                CompOut(:offs => i, :out) => CompIn(:offs => i, :off)
                 for i=1:w.n_inputs
             ),
             (
-                CompOut(i, :out) => Output(i)
+                CompOut(:offs => i, :out) => Output(i)
+                for i=1:w.n_inputs
+            ),
+
+            # Ongate is activated by any output spike from the WTA,
+            # and passes any input spike to become an "OFF" spike for each offgate
+            # This ensures that the OFF gates are turned off by every IN spike
+            # that occurs within ongate.ΔT of the WTA's output,
+            # and thus only one spike will be emitted so long as input spikes stop
+            # within ongate.ΔT of the wta's output.
+            (
+                Input(i) => CompIn(:on, :in)
+                for i=1:w.n_inputs
+            ),
+            (
+                CompOut(:offs => i, :out) => CompIn(:on, :on)
+                for i=1:w.n_inputs
+            ),
+            (
+                CompOut(:on, :out) => CompIn(:offs => i, :off)
                 for i=1:w.n_inputs
             )
         )),
