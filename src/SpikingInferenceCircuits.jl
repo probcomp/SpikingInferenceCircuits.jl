@@ -21,4 +21,6 @@ export FiniteDomain, IndexedProductDomain
 
 export MHKernel, MH
 
+include("DiscreteIRTransforms/src/DiscreteIRTransforms.jl")
+
 end
