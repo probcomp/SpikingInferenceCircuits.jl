@@ -5,4 +5,6 @@ using SpikingInferenceCircuits
 const SIC = SpikingInferenceCircuits
 using Serialization
 
-smc_events = deserialize("experiments/tracking/rundata/smc_1_events.jls")
+include("spiketrain_utils.jl")
+
+smc_events = deserialize("experiments/tracking/rundata/smc_events_2.jls")

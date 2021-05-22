@@ -73,3 +73,44 @@ draw_smc_figure(events::Vector; endtime=nothing) = draw_smc_figure(
 
 is_root_outspike((t, compname, evt)) = 
     compname === nothing && evt isa SpikingSimulator.OutputSpike
+
+
+# Get states
+function get_smc_states(events, nparticles, nlatents)
+    dict = smc_output_spiketrain_dict(filter(is_root_outspike, events))
+    sequence = []
+    for ((particle_idx, variable, value), times) in dict
+        for time in times
+            push!(sequence, (time, (particle_idx, variable, value)))
+        end
+    end
+   
+    sort!(sequence, by=((t, k),) -> t)
+    idx_var_vals_full = [idx_var_val for (_, idx_var_val) in sequence]
+    
+    particle_approximations = []
+
+    for idx_var_vals in Iterators.partition(idx_var_vals_full, nlatents * nparticles)
+        display(collect(idx_var_vals))
+        latents = Set(varname for (_, varname, _) in idx_var_vals)
+        display(latents)
+        @assert length(latents) == nlatents
+        @assert Set(
+                (part_idx, varname) for (part_idx, varname, _) in idx_var_vals
+            ) == Set(
+                Iterators.product(1:nparticles, latents)
+            )
+
+        assmts_t = Dict(
+            varname => [-1 for _=1:nparticles]
+            for varname in latents
+        ) # assmts[varname] = [val_in_particle1, ..., val_in_particleN]
+        for (idx, varname, varval) in idx_var_vals
+            assmts_t[varname][idx] = varval
+        end
+
+        push!(particle_approximations, assmts_t)
+    end
+    
+    return particle_approximations
+end
