@@ -14,7 +14,7 @@ SCORE_ONRATE() = 1.0
 Circuits.implement(cs::SIC.SDCs.ConditionalSample, ::Spiking) =
     SDCs.PoissonPulseConditionalSample(
         (cs, K(), SAMPLE_ONRATE(),
-            175, # ΔT 
+            175, # ΔT        // Note that it can take 2x as long as this to reset!
             0.2, # max_delay
             1000, # M (num spikes to override offs/ons)
             50, # max delay before sample is emitted
@@ -36,14 +36,14 @@ Circuits.implement(m::SDCs.NonnegativeRealMultiplier, ::Spiking) =
         map(to_spiking_real, m.inputs),
         (indenoms, outdenom) -> PulseIR.PoissonSpikeCountMultiplier(
             indenoms, outdenom,
-            30, 50., 175., 0.5, # erlang_shape/num_timer_spikes | expected_output_time | max_input_memory | max_delay
+            30, 50., 245., 0.5, # erlang_shape/num_timer_spikes | expected_output_time | max_input_memory | max_delay
             ((500, 30), 0.), #(ti_params = (M, R), offrate)
             (500, 30) # (M, R) offgate params
         ), 
         K(),
         threshold -> begin
             # println("thresh: $threshold")
-            PulseIR.PoissonThresholdedIndicator(threshold, 175, 0.5, 1000, 40) # threshold, ΔT, max_delay, M, R 
+            PulseIR.PoissonThresholdedIndicator(threshold, 245, 0.5, 1000, 40) # threshold, ΔT, max_delay, M, R 
         end
     )
 
@@ -68,7 +68,7 @@ Circuits.implement(theta::SDCs.Theta, ::Spiking) =
 Circuits.implement(m::SDCs.Mux, ::Spiking) =
     SDCs.PulseMux(m,
         PulseIR.PoissonAsyncOnGate(
-            PulseIR.ConcreteAsyncOnGate(175., 0.1, 1000), # ΔT, max_delay, M
+            PulseIR.ConcreteAsyncOnGate(245., 0.1, 1000), # ΔT, max_delay, M
             30 # R
         )
     )

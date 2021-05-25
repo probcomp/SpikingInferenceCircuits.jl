@@ -26,26 +26,33 @@ maybe_one_off(idx, prob, dom) =
 
 ### Model
 XDOMAIN = 1:10
-@gen (static) function object_motion_step(xₜ₋₁)
-    xₜ   ~ categorical(maybe_one_off(xₜ₋₁, 0.8, XDOMAIN))
+@gen (static) function object_motion_step(velₜ₋₁, xₜ₋₁)
+    velₜ ~ categorical(
+        velₜ₋₁ == 1 ? [.7, .3, .0] : # vel=-1
+        velₜ₋₁ == 2 ? [.3, .4, .3] : # vel= 0
+                     [.0, .3, .7]   # vel = 1
+    )
+    xₜ   ~ categorical(maybe_one_off(xₜ₋₁ + velₜ₋₁ - 2, 0.4, XDOMAIN))
     obsₜ ~ categorical(maybe_one_off(xₜ, 0.5, XDOMAIN))
     return obsₜ
 end
 
 ### Proposal
-@gen (static) function step_proposal(xₜ₋₁, obsₜ)
+@gen (static) function step_proposal(velₜ₋₁, xₜ₋₁, obsₜ)
     xₜ ~ categorical(maybe_one_off(obsₜ, 0.5, XDOMAIN))
+    velₜ ~ categorical(maybe_one_off(xₜ - xₜ₋₁ + 2, 0.5, 1:3))
 end
 @load_generated_functions()
 
 ################
 ### Circuits ###
 ################
-model_with_cpts, _ = to_indexed_cpts(object_motion_step, [EnumeratedDomain(XDOMAIN)])
-proposal_with_cpts, _ = to_indexed_cpts(step_proposal, [EnumeratedDomain(XDOMAIN), EnumeratedDomain(XDOMAIN)])
+model_with_cpts, _ = to_indexed_cpts(object_motion_step, [EnumeratedDomain(1:3), EnumeratedDomain(XDOMAIN)])
+proposal_with_cpts, _ = to_indexed_cpts(step_proposal, [EnumeratedDomain(1:3), EnumeratedDomain(XDOMAIN), EnumeratedDomain(XDOMAIN)])
 
-model_in_domains = (xₜ₋₁=FiniteDomain(length(XDOMAIN)),)
+model_in_domains = (velₜ₋₁=FiniteDomain(3), xₜ₋₁=FiniteDomain(length(XDOMAIN)))
 proposal_in_domains = (
+            velₜ₋₁=FiniteDomain(3),
             xₜ₋₁=FiniteDomain(length(XDOMAIN)),
             obsₜ=FiniteDomain(length(XDOMAIN))
         )
@@ -59,7 +66,7 @@ proposal_in_domains = (
 # impl_a = implement_deep(model_assess_circuit, Spiking())
 # impl_p = implement_deep(proposal_propose_circuit, Spiking())
 
-NPARTICLES() = 4
+NPARTICLES() = 10
 smc_circuit = SIC.SMC(NPARTICLES(), model_with_cpts, proposal_with_cpts, model_in_domains, proposal_in_domains)
 println("SMC circuit constructed.")
 
@@ -87,32 +94,37 @@ function get_gt_traces_and_events(
     )
 end
 
-function get_gt_traces_and_inputs(runtime, inter_obs_interval, initial_x)    
-    initial_tr = simulate(object_motion_step, (initial_x,))
+function get_gt_traces_and_inputs(runtime, inter_obs_interval, initial_x, initial_vel)    
+    initial_tr = simulate(object_motion_step, (initial_vel, initial_x,))
     gt_traces = [initial_tr]
     inputs = Tuple{Float64, Tuple}[
         (0., (
-            (
-                :initial_latents => i => :xₜ₋₁ => initial_x
+            Iterators.flatten(
+                (
+                    :initial_latents => i => :xₜ₋₁ => initial_x,
+                    :initial_latents => i => :velₜ₋₁ => initial_vel
+                )
                 for i=1:NPARTICLES()
             )...,
             :obs => :obsₜ => initial_tr[:obsₜ])
         )
     ]
     current_x = initial_tr[:xₜ]
+    current_vel = initial_tr[:velₜ]
     t = 0.
     while t < runtime
         t += inter_obs_interval
-        tr = simulate(object_motion_step, (current_x,))
+        tr = simulate(object_motion_step, (current_vel, current_x))
    
         push!(gt_traces, tr)
         push!(inputs, (t, (:obs => :obsₜ => tr[:obsₜ],)))
         current_x = tr[:xₜ]
+        current_vel = tr[:velₜ]
     end
 
     return (gt_traces, inputs)
 end
 
-trs, ins = get_gt_traces_and_inputs(2000, 390, 5)
-display([(tr[:xₜ], tr[:obsₜ]) for tr in trs])
-events = get_events(smc_impl, 2000, ins)
+trs, ins = get_gt_traces_and_inputs(10_000, 1000, 5, 2)
+display([(tr[:velₜ], tr[:xₜ], tr[:obsₜ]) for tr in trs])
+events = get_events(smc_impl, 10_000, ins)
