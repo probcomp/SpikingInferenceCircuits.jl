@@ -34,6 +34,6 @@ get_events(impl, runtime, inputs; log_interval=400) =
 
 
 NPARTICLES() = 10
-inputs = get_inputs(2500, 1000, 10, 2 + 4, 7, [11, 15, 14, 14], NPARTICLES())
+ins = get_inputs(2500, 1000, 10, 2 + 4, 7, [11, 15, 14, 14], NPARTICLES())
 println("Got inputs.")
-events = get_events(impl_deep, 2500, inputs)
+events = get_events(impl_deep, 2500, ins)
