@@ -22,7 +22,7 @@ end
 @gen (static) function step_model(eₜ₋₁, vₜ₋₁, xₜ₋₁)
     vₜ ~ pseudomarginalized_vel_dist(eₜ₋₁, vₜ₋₁, xₜ₋₁)
     xₜ ~ categorical(maybe_one_off(xₜ₋₁ + vₜ, 0.6, Xs))
-    eₜ ~ categorical(maybe_one_off(expected_energy(eₜ₋₁, vₜ), 0.5), Energies)
+    eₜ ~ categorical(maybe_one_off(expected_energy(eₜ₋₁, vₜ), 0.5, Energies()))
 end
 @gen (static) function obs_model(eₜ, vₜ, xₜ)
     obsₜ ~ categorical(discretized_gaussian(xₜ, 2.0, Xs))
