@@ -28,4 +28,6 @@ export ISParticle
 export SMC
 export MHKernel, MH
 
+include("DiscreteIRTransforms/src/DiscreteIRTransforms.jl")
+
 end
