@@ -9,7 +9,7 @@ Circuits.implement(ta::SIC.SDCs.ToAssmts, ::Spiking) =
     )
 
 K() = 20
-SAMPLE_ONRATE() = 1.0
+SAMPLE_ONRATE() = 2.0
 SCORE_ONRATE() = 1.0
 Circuits.implement(cs::SIC.SDCs.ConditionalSample, ::Spiking) =
     SDCs.PoissonPulseConditionalSample(
@@ -20,11 +20,11 @@ Circuits.implement(cs::SIC.SDCs.ConditionalSample, ::Spiking) =
             50, # max delay before sample is emitted
             0.1 # intersample hold
         ),
-        10^(-10), 24  # max_delay | lower_R
+        10^(-10), 28  # max_delay | lower_R
     )
 Circuits.implement(cs::SIC.SDCs.ConditionalScore, ::Spiking) =
                                                             #  ΔT, max_delay, M | offrate, lower_R 
-    SDCs.PoissonPulseConditionalScore((cs, K(), SCORE_ONRATE(), 175, 0.2, 1000), 10^(-10), 24)
+    SDCs.PoissonPulseConditionalScore((cs, K(), SCORE_ONRATE(), 175, 0.2, 1000), 10^(-10), 28)
 
 Circuits.implement(lt::SIC.SDCs.LookupTable, ::Spiking) =
     SIC.SDCs.OneHotLookupTable(lt)

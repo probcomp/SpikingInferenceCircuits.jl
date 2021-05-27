@@ -19,6 +19,15 @@ normalize(v) = v / sum(v)
 discretized_gaussian(mean, std, dom) = normalize([
     cdf(Normal(mean, std), i + .5) - cdf(Normal(mean, std), i - .5) for i in dom
 ])
+disc_gauss_range7(mean, std, dom) = [abs(i - mean) > 3 ? 0. : p for (i, p) in enumerate(discretized_gaussian(mean, std, dom))] |> normalize
+# function block_below_prob(vec, p)
+#     thresh = p
+#     while minimum(normalize(filter(x -> x != 0, _filtered(vec, thresh)))) >= p
+#         thresh = thresh * 0.9
+#     end
+#     return normalize(_filtered(vec, thresh/0.9))
+# end
+# _filtered(vec, p) = [v < p ? 0. : v for v in vec]
 
 ### Domains for discrete values ###
 Xs() = 1:20; Vels() = -3:3; Energies() = 1:10
@@ -34,7 +43,7 @@ prop_p_stop_far(is_stopped, vₜ₋₁, xₜ₋₁) = !is_stopped ? 0. :
                        moving_away_from_home(vₜ₋₁, xₜ₋₁) ? 0.5 : 0.
 prop_p_stop_tired(is_stopped, already_stopped, eₜ₋₁) =
     !is_stopped ? 0. : already_stopped ? prior_p_stop_tired(eₜ₋₁) : 0.6
-expected_energy(eₜ₋₁, vₜ) = eₜ₋₁ + (abs(vₜ₋₁) > 0 ? -abs(vₜ₋₁) : 2.)
+expected_energy(eₜ₋₁, vₜ₋₁) = eₜ₋₁ + (abs(vₜ₋₁) > 0 ? -abs(vₜ₋₁) : 2.)
 or(a, b) = a || b
 
 ### Model & Proposal ###
@@ -51,17 +60,17 @@ or(a, b) = a || b
                 maybe_one_or_two_off(vₜ₋₁, 0.8, Vels())
         )(stop, vₜ₋₁)
     xₜ ~ categorical(maybe_one_off(xₜ₋₁ + vₜ, 0.6, Xs()))
-    eₜ ~ categorical(maybe_one_off(expected_energy(eₜ₋₁, vₜ), 0.5, Energies()))
+    eₜ ~ categorical(maybe_one_off(expected_energy(eₜ₋₁, vₜ₋₁), 0.5, Energies()))
     obsₜ ~ categorical(discretized_gaussian(xₜ, 2.0, Xs()))
     return obsₜ
 end
 @gen (static) function step_proposal(xₜ₋₁, vₜ₋₁, trd, far, eₜ₋₁, obsₜ)
-    xₜ ~ categorical(discretized_gaussian(obsₜ, 2.0, Xs()))
+    xₜ ~ categorical((disc_gauss_range7(obsₜ, 3.0, Xs())))
     vₜ ~ categorical(maybe_one_or_two_off(xₜ - xₜ₋₁, 0.5, Vels()))
     stopped = vₜ == 0
     stop_because_far ~ bernoulli(prop_p_stop_far(stopped, vₜ₋₁, xₜ₋₁))
     stop_because_tired ~ bernoulli(prop_p_stop_tired(stopped, stop_because_far, eₜ₋₁))
-    eₜ ~ categorical(maybe_one_off(expected_energy(eₜ₋₁, vₜ), .5, Energies()))
+    eₜ ~ categorical(maybe_one_off(expected_energy(eₜ₋₁, vₜ₋₁), .5, Energies()))
     return xₜ
 end
 

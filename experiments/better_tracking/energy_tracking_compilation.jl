@@ -12,6 +12,8 @@ includet("implementation_rules.jl")
 includet("inference_dsl.jl")
 includet("input_construction.jl")
 
+NPARTICLES() = 2
+
 m = @compile step_model(Xs(), Bools(), Energies(), Vels(), Bools())
 p =  @compile step_proposal(Xs(), Vels(), Bools(), Bools(), Energies(), Xs())
 @infer function smcprog(m, p)
@@ -20,6 +22,10 @@ p =  @compile step_proposal(Xs(), Vels(), Bools(), Bools(), Energies(), Xs())
     end
 end
 smc_circuit = smcprog(m, p)
+println("Circuit constructed.")
+
+smc_impl = Circuits.memoized_implement_deep(smc_circuit, Spiking())
+println("Circuit implemented.")
 
 # run!
 include("../logging_utils.jl")
@@ -33,7 +39,40 @@ get_events(impl, runtime, inputs; log_interval=400) =
     )
 
 
-NPARTICLES() = 10
-ins = get_inputs(2500, 1000, 10, 2 + 4, 7, [11, 15, 14, 14], NPARTICLES())
-println("Got inputs.")
-events = get_events(impl_deep, 2500, ins)
+function do_run_may25_5pm()
+    ins = get_inputs(12500, 1000,
+        10, # initial x
+        2 + 4, # initial v (add in offset by 4)
+        7, # initial energy
+        [9, 12, 13, 14, 15, 15, 16, 15, 15, 14, 13, 11, 9, 9, 9, 9, 9, 9],
+    NPARTICLES())
+    println("Got inputs.")
+    events = get_events(smc_impl, 12500, ins)
+    println("Simulation completed.")
+    try
+        serialize("energy_tracking_may25_5pm_events.jls", events)
+        println("serialized")
+    catch e
+        @error("Error when trying to serialize")
+    end
+    return events
+end
+
+function do_run_may25_9_33pm(impl)
+    ins = get_inputs(12500, 1000,
+        10, # initial x
+        2 + 4, # initial v (add in offset by 4)
+        7, # initial energy
+        [9, 12, 13, 14, 15, 15, 16, 15, 15, 14, 13, 11, 9, 9, 9, 9, 9, 9],
+    NPARTICLES())
+    println("Got inputs.")
+    events = get_events(impl, 12500, ins)
+    println("Simulation completed.")
+    try
+        serialize("energy_tracking_may25_9-33pm_events.jls", events)
+        println("serialized")
+    catch e
+        @error("Error when trying to serialize")
+    end
+    return events
+end
