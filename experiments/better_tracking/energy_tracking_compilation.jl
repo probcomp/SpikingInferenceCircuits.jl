@@ -27,7 +27,7 @@ println("Circuit constructed.")
 smc_impl = Circuits.memoized_implement_deep(smc_circuit, Spiking())
 println("Circuit implemented.")
 
-# run!
+# # run!
 include("../logging_utils.jl")
 get_events(impl, runtime, inputs; log_interval=400) =
     SpikingSimulator.simulate_for_time_and_get_events(
