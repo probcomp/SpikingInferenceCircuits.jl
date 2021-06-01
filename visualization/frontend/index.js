@@ -59,9 +59,9 @@ d3.select("#load_component").on("click", function() {
  * Initial modifications to the graph to add needed visual constraints and properties
  */
 
-const GroupPadding = 10;
-const NodeH = 2;
-const NodeW = 2;
+const GroupPadding = 1;
+const NodeH = 0.2;
+const NodeW = 0.2;
 const PoissonH = 25;
 const PoissonW = 25;
 
@@ -71,13 +71,13 @@ function make_initial_graph_modifications(graph) {
         v.height = NodeH;
     });
     graph.groups.forEach(g => {
-        g.padding = is_composite(g) || is_generic(g) ? GroupPadding : 0.01;
+        g.padding = is_composite(g) || is_generic(g) ? GroupPadding : 0.001;
     })
 
     graph.constraints.filter(c => c.type === "separation" && c.axis === "x")
-        .forEach(c => { c.gap = 20 });
+        .forEach(c => { c.gap = 2 });
     graph.constraints.filter(c => c.type === "separation" && c.axis === "y")
-        .forEach(c => { c.gap = 4 });
+        .forEach(c => { c.gap = 0.4 });
 
     // add constraints to ensure the neurons triangles
     graph.groups.filter(is_neuron).forEach(function(g) {
@@ -86,7 +86,7 @@ function make_initial_graph_modifications(graph) {
                 type: "separation",
                 axis: "y",
                 left: g.leaves[0],
-                right: g.leaves[1],
+                right: g.leaves[2],
                 gap: PoissonH,
                 equality: true
             })
@@ -94,18 +94,26 @@ function make_initial_graph_modifications(graph) {
                 type: "separation",
                 axis: "x",
                 left: g.leaves[0],
-                right: g.leaves[2],
+                right: g.leaves[3],
                 gap: PoissonW,
                 equality: true
             })
             graph.constraints.push({ // y position of output
-                type: "separation",
-                axis: "y",
-                left: g.leaves[0],
-                right: g.leaves[2],
-                gap: PoissonH / 2,
-                equality: true
-            })
+                    type: "separation",
+                    axis: "y",
+                    left: g.leaves[0],
+                    right: g.leaves[3],
+                    gap: PoissonH / 2,
+                    equality: true
+                }),
+                graph.constraints.push({ // y position of center dot
+                    type: "separation",
+                    axis: "y",
+                    left: g.leaves[0],
+                    right: g.leaves[1],
+                    gap: PoissonH / 2,
+                    equality: true
+                })
         }
     })
 }
@@ -126,7 +134,7 @@ function add_groups(svg, graph) {
     var generic_groups = svg.selectAll(".genericGroup")
         .data(graph.groups.filter(is_generic))
         .enter().append("rect")
-        .attr("rx", 8).attr("ry", 8)
+        .attr("rx", 0.8).attr("ry", 0.8)
         .attr("class", "genericGroup")
         .call(cola.drag)
         .on("mouseup", d => { d.fixed = false });
@@ -146,7 +154,7 @@ function add_groups(svg, graph) {
 }
 
 function add_nodes(svg, graph) {
-    const NodeR = 2;
+    const NodeR = 0.2;
     return svg.selectAll(".node")
         .data(graph.nodes)
         .enter().append("circle")
@@ -234,7 +242,7 @@ function is_composite(g) {
 }
 
 function is_neuron(g) {
-    return g.comptype === "OnOffPoissonNeuron" || g.comptype === "IntegratingPoisson"
+    return g.comptype === "OnOffPoissonNeuron" || g.comptype === "IntegratingPoisson" || g.comptype == "InputFunctionPoisson"
 }
 
 function is_generic(g) {
