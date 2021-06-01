@@ -1,2 +1,6 @@
 visualization/frontend/node_modules/**/*
 visualization/frontend/renders/**/*
+**/*.jls
+**/*.txt
+**/*.zip
+.vscode/**/*

@@ -18,9 +18,16 @@ traceable_value(d::DistributionGenFn) = to_value(output_domain(d))
 operation(d::DistributionGenFn{Generate}) = Generate(d.is_observed ? AllSelection() : EmptySelection())
 score_value(::DistributionGenFn) = SingleNonnegativeReal()
 
-Circuits.implement(d::DistributionGenFn{Propose}, ::Target) =
+function Circuits.implement(d::DistributionGenFn, t::Target)
+    println("Implementing a distribution...")
+    impl = _implement(d, t)
+    println("Finished implementing a distribution.")
+    return impl
+end
+
+_implement(d::DistributionGenFn{Propose}, ::Target) =
     sample_distribution_implementation(d; output_inverse_prob=true)
-Circuits.implement(d::DistributionGenFn{Generate}, ::Target) =  
+_implement(d::DistributionGenFn{Generate}, ::Target) =  
     if d.is_observed
         score_distribution_implementation(d)
     else

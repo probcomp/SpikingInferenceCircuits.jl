@@ -131,9 +131,15 @@ Circuits.implement(g::PoissonOnOffGate, ::Spiking) =
         inputs(g), outputs(g),
         (
             neuron=PoissonNeuron([
-                x -> x, x -> -x, x -> g.M*x, x -> -g.M*x
-            ], g.ΔT, u -> exp(g.R * (u - 1/2 - (g.starts_on ? 0. : g.M)))),
-        ),
+                x -> x,
+                x -> -x,
+                let M = g.M; x -> M*x; end,
+                let M = g.M; x -> -M*x; end
+            ], g.ΔT,
+            let R = g.R, M = g.M, starts_on = g.starts_on
+                u -> exp(R * (u - 1/2 - (starts_on ? 0. : M)))
+            end,
+        ),),
         (
             Input(:in) => CompIn(:neuron, 1),
             CompOut(:neuron, :out) => CompIn(:neuron, 2),

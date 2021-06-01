@@ -20,7 +20,7 @@ _possible_prob_names(m::MapGenFn) = (
 score_outputter_names(m::MapGenFn{Propose}) = _possible_prob_names(m)
 score_outputter_names(m::MapGenFn{Generate}) = (
     i for i in _possible_prob_names(m)
-    if !isempty(operation(g).observed_addrs[i])
+    if !isempty(operation(m).observed_addrs[i])
 )
 
 # arg values and return value mapping

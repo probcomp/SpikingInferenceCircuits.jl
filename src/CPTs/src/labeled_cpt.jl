@@ -85,3 +85,7 @@ function Gen.random(l::LabeledCPT, args...)
 end
 Gen.logpdf(l::LabeledCPT, val, args...) = logpdf(l.cpt, l.output_values(val), _args_to_inds(l, args)...)
 (l::LabeledCPT)(args...) = Gen.random(l, args...)
+
+function Base.show(io::IO, l::LabeledCPT)
+    print(io, "LCPT(input_vals: $(l.input_values) | output_vals: $(l.output_values))")
+end

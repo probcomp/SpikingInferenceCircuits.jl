@@ -18,11 +18,11 @@ function get_selected(val::FiniteDomainValue, s::ComplementSelection)
     @assert s.complement == EmptySelection() "complement was $(s.complement)"
     val
 end
-get_selected(val::CompositeValue, sel::Selection) = NamedValues((
+get_selected(val::CompositeValue, sel::Selection) = Circuits.NamedOrIndexedValues((
         addr => get_selected(subval, sel[addr])
         for (addr, subval) in pairs(val)
         if has_selected(subval, sel[addr])
-    )...)
+    ))
 
 function has_selected(::FiniteDomainValue, s::ComplementSelection)
     if isempty(s.complement)

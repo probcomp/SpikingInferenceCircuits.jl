@@ -60,21 +60,25 @@ function PoissonStreamSamples(ss::ConcreteStreamSamples, off_rate)
 end
 
 Circuits.implement(p::PoissonStreamSamples, ::Spiking) =
-    let bias = log(p.overall_off_rate),
+    let bias = log(p.overall_off_rate), # TODO: I think this should actually be called "individual_off_rate"?
         base_weight = log(p.overall_on_rate) - bias
             CompositeComponent(
                 inputs(p), outputs(p),
                 Tuple(
                     PoissonNeuron(
                         [
-                            x -> min(1, x) × (
-                                log(prob_output_given_input(
-                                    p, outval
-                                )[inval]) + base_weight
+                            let weight = max(
+                                0., # Never decrease the rate via an input spike (we assume offrate is the min).
+                                (log(prob_output_given_input(p, outval)[inval]) + base_weight)
                             )
+                                x -> min(1, x) × weight
+                            end
                             for inval=1:in_domain_size(p)
                         ],
-                        p.ΔT, u -> exp(u + bias)
+                        p.ΔT,
+                        let onrate = p.overall_on_rate, bias = bias
+                            u -> min(onrate, exp(u + bias))
+                        end
                     )
                     for outval = 1:out_domain_size(p)
                 ),

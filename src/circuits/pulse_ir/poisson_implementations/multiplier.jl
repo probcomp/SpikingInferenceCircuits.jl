@@ -55,7 +55,9 @@ Circuits.implement(m::PoissonSpikeCountMultiplier, ::Spiking) =
                     for denominator in m.conc.input_count_denominators
                 ],
                 m.conc.max_input_memory,
-                u -> m.conc.spikecount_dist.K / m.conc.spikecount_dist.expected_output_length × exp(u)
+                let ratio = m.conc.spikecount_dist.K/m.conc.spikecount_dist.expected_output_length
+                    u -> ratio × exp(u)
+                end
             ),
             gate=PoissonOffGate(
                 ConcreteOffGate(

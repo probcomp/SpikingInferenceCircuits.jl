@@ -36,7 +36,10 @@ function handle_node!(node::JuliaNode, name_to_domain, domain_type_constraint)
     input_domains = (name_to_domain[parent.name] for parent in node.inputs)
     assmts = Iterators.product(input_domains...)
 
-    possible_outcomes = EnumeratedDomain([node.fn(assmt...) for assmt in assmts])
+    possible_outcomes = EnumeratedDomain(collect(unique(node.fn(assmt...) for assmt in assmts)))
+    # if length(possible_outcomes.vals) < 10
+    #     println("POSSIBLE OUTCOMES: $(possible_outcomes.vals)")
+    # end
 
     name_to_domain[node.name] =
         if domain_type_constraint == EnumeratedDomain

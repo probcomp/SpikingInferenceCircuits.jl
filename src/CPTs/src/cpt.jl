@@ -43,3 +43,7 @@ Gen.is_discrete(::CPT) = true
 (c::CPT)(args...) = Gen.random(c, args...)
 Gen.has_output_grad(::CPT) = false
 Gen.has_argument_grads(::CPT) = (true,)
+
+function Base.show(io::IO, c::CPTWithParents)
+    print(io, "CPT(input_ncategories = $(input_ncategories(c)); output_ncategories = $(ncategories(c)))")
+end

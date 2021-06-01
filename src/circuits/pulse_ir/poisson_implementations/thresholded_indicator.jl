@@ -28,8 +28,12 @@ Circuits.implement(t::PoissonThresholdedIndicator, ::Spiking) =
     CompositeComponent(
         inputs(t), outputs(t),
         (neuron=PoissonNeuron(
-            [x -> x, x -> -t.ti.M*x], t.ti.ΔT,
-            u -> exp(t.R * (u - t.ti.threshold + 1/2))
+            [x -> x,
+            let M = t.ti.M; x -> -M*x; end
+            ], t.ti.ΔT,
+            let R = t.R, threshold = t.ti.threshold
+                u -> exp(R * (u - threshold + 1/2))
+            end
         ),),
         (
             Input(:in) => CompIn(:neuron, 1),

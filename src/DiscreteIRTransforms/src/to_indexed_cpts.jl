@@ -5,6 +5,7 @@
 function to_indexed_cpts(ir::StaticIR, arg_domains)
     ir = to_labeled_cpts(ir, arg_domains)
     original_domains = get_domains(ir.nodes, arg_domains)
+    # display(original_domains)
 
     new_domains = Dict()
 
@@ -14,6 +15,7 @@ function to_indexed_cpts(ir::StaticIR, arg_domains)
     domain_bijections = Dict()
 
     for (name, old_domain) in original_domains
+
         (new_domains[name], domain_bijections[name]) = to_indexed_domain(old_domain)
     end
 
@@ -67,7 +69,11 @@ to_indexed_domain(old_domain::EnumeratedDomain) =
         if old_domain == EnumeratedDomain(1:length(old_domain))
             nothing
         else
-            Bijection(Dict(enumerate(old_domain)))
+            try
+                Bijection(Dict(enumerate(old_domain)))
+            catch e
+                @error "Err while constructing bijection for $old_domain" exception=(e, catch_backtrace())
+            end
         end
     )
 to_indexed_domain(old_domain::ProductDomain) =
