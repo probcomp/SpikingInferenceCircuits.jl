@@ -19,11 +19,14 @@ normalize(v) = v / sum(v)
 discretized_gaussian(mean, std, dom) = normalize([
     cdf(Normal(mean, std), i + .5) - cdf(Normal(mean, std), i - .5) for i in dom
 ])
+truncate(pvec, min, max, dom) = [
+        (min ≤ i + first(dom) - 1 ≤ max ? p : 0.) for (i, p) in enumerate(pvec)
+       ] |> normalize
 
 ### Domains for discrete values ###
 Xs() = 1:20; Vels() = -3:3; Energies() = 1:10
 Bools() = [true, false]
-HOME() = 10 # home at the 10th x position
+HOME() = 2 # home at the 10th x position
 
 ### Definitions of probability distributions ###
 moving_away_from_home(vₜ₋₁, xₜ₋₁) = sign(vₜ₋₁) == sign(xₜ₋₁ - HOME())
@@ -34,7 +37,7 @@ prop_p_stop_far(is_stopped, vₜ₋₁, xₜ₋₁) = !is_stopped ? 0. :
                        moving_away_from_home(vₜ₋₁, xₜ₋₁) ? 0.5 : 0.
 prop_p_stop_tired(is_stopped, already_stopped, eₜ₋₁) =
     !is_stopped ? 0. : already_stopped ? prior_p_stop_tired(eₜ₋₁) : 0.6
-expected_energy(eₜ₋₁, vₜ) = eₜ₋₁ + (abs(vₜ₋₁) > 0 ? -abs(vₜ₋₁) : 2.)
+expected_energy(eₜ₋₁, vₜ₋₁) = eₜ₋₁ + (abs(vₜ₋₁) > 0 ? -abs(vₜ₋₁) : 2.)
 or(a, b) = a || b
 
 ### Model & Proposal ###
@@ -56,12 +59,43 @@ or(a, b) = a || b
     return obsₜ
 end
 @gen (static) function step_proposal(xₜ₋₁, vₜ₋₁, trd, far, eₜ₋₁, obsₜ)
-    xₜ ~ categorical(discretized_gaussian(obsₜ, 2.0, Xs()))
-    vₜ ~ categorical(maybe_one_or_two_off(xₜ - xₜ₋₁, 0.5, Vels()))
+    projection = min(max(first(Xs()), xₜ₋₁ + vₜ₋₁), last(Xs()))
+    mean = (obsₜ + projection)/2
+    xₜ ~ categorical(discretized_gaussian((Int ∘ floor)(mean), 1.5, Xs()))
+    truncd_diff = min(last(Vels()), max(first(Vels()), xₜ - xₜ₋₁))
+    vₜ ~ LabeledCPT{Int}(
+        [Vels()],
+        Vels(),
+        ((diff,),) -> maybe_one_or_two_off(diff, 0.5, Vels())
+    )(truncd_diff)
     stopped = vₜ == 0
     stop_because_far ~ bernoulli(prop_p_stop_far(stopped, vₜ₋₁, xₜ₋₁))
     stop_because_tired ~ bernoulli(prop_p_stop_tired(stopped, stop_because_far, eₜ₋₁))
     eₜ ~ categorical(maybe_one_off(expected_energy(eₜ₋₁, vₜ), .5, Energies()))
     return xₜ
 end
+@load_generated_functions()
+
+args = (x0, v0, e0, obs1) = (10, 2, 8, 11)
+step_proposal(x0, v0, false, false, e0, obs1)
+
+# truncate(pvec, min, max) = [p for (i, p) in enumerate(pvec) if min ≤ i ≤ max] |> normalize
+
+(xₜ₋₁, vₜ₋₁, trd, far, eₜ₋₁, obsₜ) = x0, v0, false, false, e0, obs1
+
+# minvel = min(vₜ₋₁ - 2, 0)
+# maxvel = max(vₜ₋₁ + 2, 0)
+# xmin = xₜ₋₁ + minvel - 1
+# xmax = xₜ₋₁ + maxvel + 1
+# xₜ ~ categorical(
+#     truncate(
+#         discretized_gaussian(obsₜ, 2.0, Xs()),
+#         xmin, xmax, Xs()
+#     )
+# )
+
+# vₜ ~ LabeledCategorical(Vels())(truncate(
+#     maybe_one_or_two_off(xₜ - xₜ₋₁, 0.5, Vels()),
+#     minvel, maxvel, Vels()
+# )
 
