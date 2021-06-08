@@ -71,60 +71,64 @@ smc_circuit = SIC.SMC(NPARTICLES(), model_with_cpts, proposal_with_cpts, model_i
 println("SMC circuit constructed.")
 
 smc_impl = Circuits.memoized_implement_deep(smc_circuit, Spiking())
+flatten(smc_impl)
 
-get_events(impl, runtime, inputs; log_interval=400) =
-    SpikingSimulator.simulate_for_time_and_get_events(
-        impl, runtime;
-        inputs,
-        log=true,
-        log_filter=get_log_filter(log_interval),
-        log_str=time_log_str
-    )
-
-function get_gt_traces_and_events(
-    impl, runtime;
-    inter_obs_interval=400., log_interval=400,
-    initial_x=5
-)
-    (gt_traces, inputs) = get_gt_traces_and_inputs(runtime, inter_obs_interval, initial_x)
-    
-    return (
-        gt_traces,
-        get_events(impl, runtime, inputs; log_interval)
-    )
-end
-
-function get_gt_traces_and_inputs(runtime, inter_obs_interval, initial_x, initial_vel)    
-    initial_tr = simulate(object_motion_step, (initial_vel, initial_x,))
-    gt_traces = [initial_tr]
-    inputs = Tuple{Float64, Tuple}[
-        (0., (
-            Iterators.flatten(
-                (
-                    :initial_latents => i => :xₜ₋₁ => initial_x,
-                    :initial_latents => i => :velₜ₋₁ => initial_vel
-                )
-                for i=1:NPARTICLES()
-            )...,
-            :obs => :obsₜ => initial_tr[:obsₜ])
-        )
-    ]
-    current_x = initial_tr[:xₜ]
-    current_vel = initial_tr[:velₜ]
-    t = 0.
-    while t < runtime
-        t += inter_obs_interval
-        tr = simulate(object_motion_step, (current_vel, current_x))
-   
-        push!(gt_traces, tr)
-        push!(inputs, (t, (:obs => :obsₜ => tr[:obsₜ],)))
-        current_x = tr[:xₜ]
-        current_vel = tr[:velₜ]
-    end
-
-    return (gt_traces, inputs)
-end
-
-trs, ins = get_gt_traces_and_inputs(10_000, 1000, 5, 2)
-display([(tr[:velₜ], tr[:xₜ], tr[:obsₜ]) for tr in trs])
-events = get_events(smc_impl, 10_000, ins)
+#get_events(impl, runtime, inputs; log_interval=400) =
+#    SpikingSimulator.simulate_for_time_and_get_events(
+#        impl, runtime;
+#        inputs,
+#        log=true,
+#        log_filter=get_log_filter(log_interval),
+#        log_str=time_log_str
+#    )
+#
+#function get_gt_traces_and_events(
+#    impl, runtime;
+#    inter_obs_interval=400., log_interval=400,
+#    initial_x=5
+#)
+#    (gt_traces, inputs) = get_gt_traces_and_inputs(runtime, inter_obs_interval, initial_x)
+#    
+#    return (
+#        gt_traces,
+#        get_events(impl, runtime, inputs; log_interval)
+#    )
+#end
+#
+#function get_gt_traces_and_inputs(runtime, inter_obs_interval, 
+#        initial_x, initial_vel)    
+#    initial_tr = simulate(object_motion_step, 
+#                          (initial_vel, initial_x,))
+#    gt_traces = [initial_tr]
+#    inputs = Tuple{Float64, Tuple}[
+#        (0., (
+#            Iterators.flatten(
+#                (
+#                    :initial_latents => i => :xₜ₋₁ => initial_x,
+#                    :initial_latents => i => :velₜ₋₁ => initial_vel
+#                )
+#                for i=1:NPARTICLES()
+#            )...,
+#            :obs => :obsₜ => initial_tr[:obsₜ])
+#        )
+#    ]
+#    current_x = initial_tr[:xₜ]
+#    current_vel = initial_tr[:velₜ]
+#    t = 0.
+#    while t < runtime
+#        t += inter_obs_interval
+#        tr = simulate(object_motion_step, (current_vel, current_x))
+#   
+#        push!(gt_traces, tr)
+#        push!(inputs, (t, (:obs => :obsₜ => tr[:obsₜ],)))
+#        current_x = tr[:xₜ]
+#        current_vel = tr[:velₜ]
+#    end
+#
+#    return (gt_traces, inputs)
+#end
+#
+## collect a profile
+#trs, ins = get_gt_traces_and_inputs(2, 1000, 5, 2)
+#display([(tr[:velₜ], tr[:xₜ], tr[:obsₜ]) for tr in trs])
+#events = get_events(smc_impl, 2, ins)
