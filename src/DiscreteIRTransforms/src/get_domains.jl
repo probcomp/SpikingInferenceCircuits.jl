@@ -37,9 +37,7 @@ function handle_node!(node::JuliaNode, name_to_domain, domain_type_constraint)
     assmts = Iterators.product(input_domains...)
 
     possible_outcomes = EnumeratedDomain(collect(unique(node.fn(assmt...) for assmt in assmts)))
-    # if length(possible_outcomes.vals) < 10
-    #     println("POSSIBLE OUTCOMES: $(possible_outcomes.vals)")
-    # end
+
 
     name_to_domain[node.name] =
         if domain_type_constraint == EnumeratedDomain
@@ -54,8 +52,9 @@ function handle_node!(node::JuliaNode, name_to_domain, domain_type_constraint)
             possible_outcomes
         end
 end
+is_product_type(::AbstractArray) = true
 valid_for_product_domain(d::EnumeratedDomain) = (
-    all(v isa Array for v in vals(d)) &&
+    all(is_product_type(v) for v in vals(d)) &&
     let (first, rest) = Iterators.peel(vals(d))
         all(size(v) == size(first) for v in rest)
     end
