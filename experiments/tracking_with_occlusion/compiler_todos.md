@@ -8,5 +8,6 @@ Medium priority:
 - Handle distributions like `VelCat` where we should construct a `LabeledCPT` by evaluating
 function calls to fill in the probability table.
 - Handle tuples & tuple return values better
+- Handle GFs with no arguments
 
 #### SMC Compilation

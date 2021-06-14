@@ -1,13 +1,22 @@
-### initial & step model ###
-@gen (static) function initial_latents()
-	occ ~ categorical(uniform(positions(OccluderLength())))
-	x ~ categorical(uniform(positions(SquareSideLength())))
-	y ~ categorical(uniform(positions(SquareSideLength())))
-	vx ~ VelCat(uniform(Vels()))
-	vy ~ VelCat(uniform(Vels()))
-	return (occ, x, y, vx, vy)
-end
+include("model_hyperparams.jl")
+include("model_utils.jl")
 
+println("Model file loaded.")
+
+### initial & step model ###
+@gen (static) function initial_latents(go::Nothing)
+	occ ~ categorical(uniform(positions(let _=go; OccluderLength(); end)))
+	x ~ categorical(uniform(positions(let _=go; SquareSideLength(); end)))
+	y ~ categorical(uniform(positions(let _=go; SquareSideLength(); end)))
+	vx ~ LabeledCategorical(Vels(), uniform(Vels()))(go)
+	vy ~ LabeledCategorical(Vels(), uniform(Vels()))(go)
+
+	return go
+end
+@load_generated_functions
+println(initial_latents)
+
+VStepDist = LabeledCPT{Int}([Vels()], Vels(), ((v,),) -> maybe_one_off(v, 0.4, Vels()))
 @gen (static) function step(occ, x, y, vx, vy)
 	occ ~ categorical(maybe_one_off(occ, 0.3, positions(OccluderLength())))
 	x ~ categorical(truncated_discretized_gaussian(x + vx, 2.,
@@ -16,20 +25,31 @@ end
 	y ~ categorical(truncated_discretized_gaussian(y + vy, 2.,
 		positions(SquareSideLength()))
 	)
-	vx ~ VelCat(maybe_one_off(vx, 0.4, Vels()))
-	vy ~ VelCat(maybe_one_off(vy, 0.4, Vels()))
+
+    vx ~ VStepDist(vx)
+    vy ~ VStepDist(vy)
+
 	return (occ, x, y, vx, vy)
 end
 
 ### Obs model ###
-p_got_photon(occ, sqx, sqy, x, y) = (
-		is_occluded(occ, x, y) || is_in_square(sqx, sqy, x, y)
-	) ? 1 - p_flip() : p_flip()
+## deterministic util functions
+@gen (static) function is_in_square(squarex, squarey, x, y)
+    x_in_range = squarex ≤ x ≤ squarex + SquareSideLength()
+    y_in_range = squarey ≤ y ≤ squarey + SquareSideLength()
+    return x_in_range && y_in_range
+end
+@gen (static) function pixel_expected_on(occ, sqx, sqy, x, y)
+    is_occluded = occ ≤ x ≤ OccluderLength()
+    in_sq ~ is_in_square(sqx, sqy, x, y)
+    return is_occluded || in_sq
+end
 
 @gen (static) function render_pixel(a1, a2)
-    got_photon ~ BoolCat(
-        let p = p_got_photon(a1..., a2...); [p, 1-p]; end
-    )
+    (occ, x, y) = a1
+    vx, vy = a2
+    expect_pixel_on ~ pixel_expected_on(occ, x, y, vx, vy)
+    got_photon ~ bernoulli(expect_pixel_on ? 0.9 : 0.1)
     return got_photon
 end
 

@@ -1,5 +1,8 @@
-VelCat = LCat(Vels())
-BoolCat = LCat([true, false])
+LabeledCategorical(labels::Vector{T}, probs) where {T} = LabeledCPT{T}([[nothing]], labels, ((_,),) -> probs)
+LabeledCategorical(labels, probs) = LabeledCategorical(collect(labels), probs)
+
+# VelCat = LCat(Vels())
+# BoolCat = LCat([true, false])
 
 # positions(width) = positions the leftmost x position of an object with
 # the given `width` could be placed in
@@ -30,12 +33,6 @@ function normalize(vec)
     @assert sum(vec) > 0.
     return vec/sum(vec)
 end
-
-is_occluded(occ, x, y) = occ ≤ x ≤ occ + OccluderLength()
-is_in_square(squarex, squarey, x, y) = (
-    squarex ≤ x ≤ squarex + SquareSideLength() &&
-    squarey ≤ y ≤ squarey + SquareSideLength()
-)
 
 Map2D(gf) = Map(Map(gf))
 Map2Dargs(args...) = collect(
