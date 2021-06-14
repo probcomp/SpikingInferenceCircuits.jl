@@ -76,3 +76,46 @@ function do_run_may25_9_33pm(impl)
     end
     return events
 end
+
+function do_run_andrewtrace_may26_1020pm(impl)
+    ins = get_inputs(17_000, 1000,
+    10,
+    2 + 4,
+    10,
+    [13, 14, 16, 18, 18, 18, 17, 20, 16, 20, 16, 13, 13, 12, 10, 12, 12, 12, 12, 12, 12, 12, 12],
+    NPARTICLES()
+    )
+    println("Got inputs.")
+    events = get_events(impl, 17_000, ins)
+    println("Simulation completed.")
+    try
+        serialize("energy_tracking_andrewtrace_may26_1020pm.jls", events)
+        println("serialized")
+    catch e
+        @error("Error when trying to serialize")
+    end
+    return events
+
+end
+
+
+function do_run_andrewtrace_may27_11am(impl)
+    ins = get_inputs(17_000, 1000,
+    10,
+    2 + 4,
+    10,
+    [13, 14, 16, 18, 18, 18, 17, 20, 16, 20, 16, 13, 13, 12, 10, 12, 12, 12, 12, 12, 12, 12, 12],
+    NPARTICLES()
+    )
+    println("Got inputs.")
+    events = get_events(impl, 170_000, ins)
+    println("Simulation completed.")
+    try
+        serialize("energy_tracking_andrewtrace_may27_11am.jls", events)
+        println("serialized")
+    catch e
+        @error("Error when trying to serialize")
+    end
+    return events
+
+end

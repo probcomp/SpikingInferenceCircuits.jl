@@ -2,29 +2,29 @@ Circuits.implement(ta::SIC.SDCs.ToAssmts, ::Spiking) =
     SDCs.PulseToAssmts(
         ta, PulseIR.PoissonThresholdedIndicator,
         # ΔT, max_delay, M, R
-        (175, 0.5, 1000, 40)
+        (1075, 5, 1000, 40)
         # Note that the R needs to be high since getting spikes while off is catastrophic.
         # TODO: Design things so this is not catastrophic (or can't happen at
         # realistic rates)!
     )
 
 K() = 20
-SAMPLE_ONRATE() = 2.0
-SCORE_ONRATE() = 1.0
+SAMPLE_ONRATE() = 0.2
+SCORE_ONRATE() = 0.1
 Circuits.implement(cs::SIC.SDCs.ConditionalSample, ::Spiking) =
     SDCs.PoissonPulseConditionalSample(
         (cs, K(), SAMPLE_ONRATE(),
-            175, # ΔT        // Note that it can take 2x as long as this to reset!
-            0.2, # max_delay
+            1750, # ΔT        // Note that it can take 2x as long as this to reset!
+            2, # max_delay
             1000, # M (num spikes to override offs/ons)
-            50, # max delay before sample is emitted
-            0.1 # intersample hold
+            500, # max delay before sample is emitted
+            1 # intersample hold
         ),
-        10^(-10), 28  # max_delay | lower_R
+        10^(-10), 36  # max_delay | lower_R
     )
 Circuits.implement(cs::SIC.SDCs.ConditionalScore, ::Spiking) =
                                                             #  ΔT, max_delay, M | offrate, lower_R 
-    SDCs.PoissonPulseConditionalScore((cs, K(), SCORE_ONRATE(), 175, 0.2, 1000), 10^(-10), 28)
+    SDCs.PoissonPulseConditionalScore((cs, K(), SCORE_ONRATE(), 1750, 2, 1000), 10^(-10), 36)
 
 Circuits.implement(lt::SIC.SDCs.LookupTable, ::Spiking) =
     SIC.SDCs.OneHotLookupTable(lt)
@@ -36,14 +36,14 @@ Circuits.implement(m::SDCs.NonnegativeRealMultiplier, ::Spiking) =
         map(to_spiking_real, m.inputs),
         (indenoms, outdenom) -> PulseIR.PoissonSpikeCountMultiplier(
             indenoms, outdenom,
-            30, 50., 245., 0.5, # erlang_shape/num_timer_spikes | expected_output_time | max_input_memory | max_delay
-            ((500, 30), 0.), #(ti_params = (M, R), offrate)
-            (500, 30) # (M, R) offgate params
+            30, 500., 2450., 5, # erlang_shape/num_timer_spikes | expected_output_time | max_input_memory | max_delay
+            ((500, 36), 0.), #(ti_params = (M, R), offrate)
+            (500, 36) # (M, R) offgate params
         ), 
         K(),
         threshold -> begin
             # println("thresh: $threshold")
-            PulseIR.PoissonThresholdedIndicator(threshold, 245, 0.5, 1000, 40) # threshold, ΔT, max_delay, M, R 
+            PulseIR.PoissonThresholdedIndicator(threshold, 2450, 5, 1000, 40) # threshold, ΔT, max_delay, M, R 
         end
     )
 
@@ -57,26 +57,26 @@ to_spiking_real(v::SDCs.NonnegativeReal) = to_spiking_real(implement(v, Spiking(
 # Could we set things up so the rate is self-normalizing?
 Circuits.implement(theta::SDCs.Theta, ::Spiking) =
     SDCs.PulseTheta(                                    # M,     L,  ΔT,    rate
-        K(), theta.n_possibilities, PulseIR.PoissonTheta, 1000, -20, 175., 1.,
+        K(), theta.n_possibilities, PulseIR.PoissonTheta, 1000, -20, 1750., 0.1,
         PulseIR.PoissonOffGate(
-            PulseIR.ConcreteOffGate(175. #= ΔT =#, 0.2 #=max_delay=#, 500 #=M=#), 30 #=R=#
+            PulseIR.ConcreteOffGate(1750. #= ΔT =#, 2. #=max_delay=#, 500 #=M=#), 36 #=R=#
         ),
         PulseIR.PoissonThresholdedIndicator,
-        (175., 0.2, 500, 30) # ΔT, Maxdelay, M, R
+        (1750., 2., 500, 36) # ΔT, Maxdelay, M, R
     )
 
 Circuits.implement(m::SDCs.Mux, ::Spiking) =
     SDCs.PulseMux(m,
         PulseIR.PoissonAsyncOnGate(
-            PulseIR.ConcreteAsyncOnGate(245., 0.1, 1000), # ΔT, max_delay, M
-            30 # R
+            PulseIR.ConcreteAsyncOnGate(2450., 1, 1000), # ΔT, max_delay, M
+            36 # R
         )
     )
 
 Circuits.implement(s::PulseIR.Sync, ::Spiking) =
     PulseIR.PoissonSync(
         s.cluster_sizes,
-        (1000, 30.), # M R
-        (0.1, 30.), # max_delay, R
-        (25., 20, (0.1, 1000, 30.), 0., 50.) # ΔT_timer, N_spikes_timer | timer TI params (maxdelay M R) | offrate | timer memory
+        (1000, 36.), # M R
+        (1, 36.), # max_delay, R
+        (250., 20, (1, 1000, 36.), 0., 500.0) # ΔT_timer, N_spikes_timer | timer TI params (maxdelay M R) | offrate | timer memory
     )
