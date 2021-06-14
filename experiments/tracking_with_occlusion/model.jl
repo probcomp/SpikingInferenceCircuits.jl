@@ -45,19 +45,32 @@ end
     return is_occluded || in_sq
 end
 
-@gen (static) function render_pixel(a1, a2)
-    (occ, x, y) = a1
-    vx, vy = a2
-    expect_pixel_on ~ pixel_expected_on(occ, x, y, vx, vy)
+@gen (static) function render_pixel(occ, sqx, sqy, x, y)
+    expect_pixel_on ~ pixel_expected_on(occ, sqx, sqy, x, y)
     got_photon ~ bernoulli(expect_pixel_on ? 0.9 : 0.1)
     return got_photon
 end
 
 @gen (static) function observation(occ, x, y, vx, vy)
-    arg1, arg2 = Map2Dargs(
-        fill((occ, x, y), (ImageSideLength(), ImageSideLength())),
-        [(x, y) for x=1:ImageSideLength(), y=1:ImageSideLength()]
+    # TODO: Figure out whether each pixel is in the given range
+    # _before_ calling `fill` to reduce the number of edges
+    img ~ Map(Map(render_pixel))(
+        fill(fill(occ, ImageSideLength()), ImageSideLength()),
+        fill(fill(x, ImageSideLength()), ImageSideLength()),
+        fill(fill(y, ImageSideLength()), ImageSideLength()),
+        fill(1:ImageSideLength(), ImageSideLength()),
+        [[pixx for _=1:ImageSideLength()] for pixx=1:ImageSideLength()]
     )
-    img_inner ~ Map2D(render_pixel)(arg1, arg2)
-    return img_inner
+
+    return img
+end
+
+@gen (static) function obs_1d(occ, x)
+    pixline ~ Map(render_pixel)(
+        fill(occ, ImageSideLength()),
+        fill(x, ImageSideLength()),
+        fill(1, ImageSideLength()),
+        1:ImageSideLength(),
+        fill(1, ImageSideLength())
+    )
 end
