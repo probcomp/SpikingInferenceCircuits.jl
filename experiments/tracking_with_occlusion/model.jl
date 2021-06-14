@@ -1,5 +1,5 @@
-include("model_hyperparams.jl")
-include("model_utils.jl")
+includet("model_hyperparams.jl")
+includet("model_utils.jl")
 
 println("Model file loaded.")
 
@@ -29,7 +29,7 @@ VStepDist = LabeledCPT{Int}([Vels()], Vels(), ((v,),) -> maybe_one_off(v, 0.4, V
     vx ~ VStepDist(vx)
     vy ~ VStepDist(vy)
 
-	return (occ, x, y, vx, vy)
+	return occ
 end
 
 ### Obs model ###
