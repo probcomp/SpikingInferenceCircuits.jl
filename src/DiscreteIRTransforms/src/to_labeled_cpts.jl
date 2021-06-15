@@ -68,6 +68,7 @@ function to_labeled_cpts(gf::StaticIRGenerativeFunction{T, U}, arg_domains) wher
         )
     )
     @load_generated_functions()
+    @assert gf isa GenerativeFunction
     return gf
 end
 

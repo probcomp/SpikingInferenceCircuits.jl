@@ -108,7 +108,7 @@ to_indexed_cpt_node(node::RandomChoiceNode, _, bijections) =
         setproperties(node, (dist=node.dist.cpt, typ=valtype_expr(bijections[node.name])))
     end
 
-function to_indexed_cpt_node(node::JuliaNode, _, bijections)
+function to_indexed_cpt_node(node::JuliaNode, old_domains, bijections)
     output_to_idx = label_to_idx(bijections[node.name])
     
     indexed_fn(indices...) =
@@ -126,10 +126,13 @@ function to_indexed_cpt_node(node::JuliaNode, _, bijections)
             @error("""
             Error when running indexed fn on $(collect(indices))
             with inputs $(node.inputs);
-            node.fn() = $(node.fn());
             node.name = $(node.name);
+            old domain = $(old_domains[node.name])
             bijections[node.name] = $(bijections[node.name])
             """)
+            for (idx, p) in zip(indices, node.inputs)
+                @error("bijections[$(p.name)] == $(bijections[p.name]); old_domains[$(p.name)] = $(old_domains[p.name])")
+            end
             error(e)
         end
     

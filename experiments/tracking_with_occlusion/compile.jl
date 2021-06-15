@@ -2,6 +2,8 @@ using Gen
 using Distributions
 using DiscreteIRTransforms
 using CPTs
+using SpikingInferenceCircuits
+using Revise
 
 includet("model.jl")
 
@@ -21,7 +23,7 @@ function compile_initial_latents()
         initial_latents,
         (EnumeratedDomain([nothing]),)
     )
-    return (with_lcpts, with_cpts, dom_maps)
+    return (lcpts, with_cpts, dom_maps)
 end
 function compile_step()
     lcpts = to_labeled_cpts(step, latent_domains())
@@ -35,8 +37,9 @@ function compile_obs()
     # return lcpts
 end
 
+latent_doms_1d() = map(EnumeratedDomain, (positions(OccluderLength()), positions(SquareSideLength())))
 function compile_obs1d()
-    lcpts = to_labeled_cpts(obs_1d, map(EnumeratedDomain, (positions(OccluderLength()), positions(SquareSideLength()))))
+    lcpts = to_labeled_cpts(obs_1d, latent_doms_1d())
     (cpts, dom_maps) = to_indexed_cpts(obs_1d, map(EnumeratedDomain, (positions(OccluderLength()), positions(SquareSideLength()))))
     return (lcpts, cpts, dom_maps)
     # return lcpts
@@ -44,10 +47,28 @@ end
 
 
 (lcpts, icpts, dom_maps) = compile_obs1d()
-# lcpts = compile_obs()
-@load_generated_functions()
+# lcpts = compile_obs1d()
+println("Compiled 1D obs model.")
 
-tr = simulate(icpts, (2, 2, 3, 2, 2));
-#=
- 
-=#
+@load_generated_functions()
+println("Loaded generated functions.")
+
+# ### Circuit compilation
+circuit = gen_fn_circuit(
+    icpts,
+    map(d -> FiniteDomain(length(DiscreteIRTransforms.vals(d))), latent_doms_1d()),
+    Assess()
+)
+println("Circuit constructed.")
+
+impl2 = SpikingInferenceCircuits.implement(
+    SpikingInferenceCircuits.implement(circuit, SpikingInferenceCircuits.Spiking()),
+    SpikingInferenceCircuits.Spiking()
+);
+
+
+# lcpts = to_labeled_cpts(render_pixel, latent_domains())
+# icpts, maps = to_indexed_cpts(render_pixel, map(EnumeratedDomain, (
+#     positions(OccluderLength()), (positions(SquareSideLength()) for _=1:4)...
+# )))
+# @load_generated_functions

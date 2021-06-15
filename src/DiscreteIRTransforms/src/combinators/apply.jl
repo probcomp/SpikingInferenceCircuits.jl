@@ -45,4 +45,4 @@ function to_indexed_cpts(a::ApplyCombinator.Apply, arg_domains)
     )
 end
 
-is_cpts(a::ApplyCombinator.Map) = all(is_cpts(k) for k in a.kernels)
+is_cpts(a::ApplyCombinator.Apply) = all(is_cpts(k) for k in a.kernels)

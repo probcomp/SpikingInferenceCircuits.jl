@@ -1,8 +1,6 @@
 includet("model_hyperparams.jl")
 includet("model_utils.jl")
 
-println("Model file loaded.")
-
 ### initial & step model ###
 @gen (static) function initial_latents(go::Nothing)
 	occ ~ categorical(uniform(positions(let _=go; OccluderLength(); end)))
@@ -73,4 +71,8 @@ end
         1:ImageSideLength(),
         fill(1, ImageSideLength())
     )
+
+    return pixline
 end
+
+println("Model file loaded.")

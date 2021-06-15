@@ -98,7 +98,7 @@ gen_fn_circuit(f::Function, arg_domains::Tuple{Vararg{FiniteDomain}}, ::Op) wher
     DeterministicGenFn{Op}(
         arg_domains,
         Iterators.map(
-            inputs -> f(inputs...),
+            inputs -> f(inputs...)
             Iterators.product(map(vals, arg_domains)...)
         ) |> collect |> infer_domain,
         f
