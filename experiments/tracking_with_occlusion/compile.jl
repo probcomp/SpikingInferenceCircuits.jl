@@ -30,21 +30,21 @@ function compile_step()
 end
 function compile_obs()
     lcpts = to_labeled_cpts(observation, latent_domains())
-    # (cpts, dom_maps) = to_indexed_cpts(observation, latent_domains())
-    # return (lcpts, cpts, dom_maps)
-    return lcpts
+    (cpts, dom_maps) = to_indexed_cpts(observation, latent_domains())
+    return (lcpts, cpts, dom_maps)
+    # return lcpts
 end
 
 function compile_obs1d()
     lcpts = to_labeled_cpts(obs_1d, map(EnumeratedDomain, (positions(OccluderLength()), positions(SquareSideLength()))))
     (cpts, dom_maps) = to_indexed_cpts(obs_1d, map(EnumeratedDomain, (positions(OccluderLength()), positions(SquareSideLength()))))
     return (lcpts, cpts, dom_maps)
-    return lcpts
+    # return lcpts
 end
 
 
-(lcpts, lcpts, dom_maps) = compile_obs1d() #compile_obs()
-# lcpts = compile_obs()
+(lcpts, icpts, dom_maps) = compile_obs1d() #compile_obs()
+# lcpts = compile_obs1d()
 @load_generated_functions()
 
 #=

@@ -14,6 +14,10 @@ using Setfield: @set, setproperties
 # then have a separate folder for handling the static IR?
 # Perhaps I should have a top-level file with docstrings for the methods we need to implement?
 
+# Similar to `Map`, but can use different kernel gen fns at different indices
+include("apply_combinator.jl")
+
+# Utils for manipulating static IRs
 include("ir_manipulation.jl")
 
 ## distribution specific: ##
@@ -34,15 +38,24 @@ get_domain(c::LabeledCPT, _) = EnumeratedDomain([c.output_values[i] for i=1:leng
 include("domains.jl")
 export EnumeratedDomain, ProductDomain
 
-include("get_domains.jl")
+# Functions for each gen fn type to implement:
+# - to_labeled_cpts
+# - to_indexed_cpts
+# - is_cpts
+# - get_ret_domain
 
+# Implementations for static GFs & IRs:
+include("is_cpts.jl")
+include("get_domains.jl")
 include("to_labeled_cpts.jl")
 export to_labeled_cpts
-
 include("to_indexed_cpts.jl")
 export to_indexed_cpts
 
+# Implementations for combinators:
+apply_tracetype(kernels) = Union{(Gen.get_trace_type(k) for k in kernels)...}
 include("combinators/switch.jl")
 include("combinators/map.jl")
+include("combinators/apply.jl")
 
 end # module

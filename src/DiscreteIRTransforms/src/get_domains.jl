@@ -53,6 +53,7 @@ function handle_node!(node::JuliaNode, name_to_domain, domain_type_constraint)
         end
 end
 is_product_type(::AbstractArray) = true
+is_product_type(_) = false
 valid_for_product_domain(d::EnumeratedDomain) = (
     all(is_product_type(v) for v in vals(d)) &&
     let (first, rest) = Iterators.peel(vals(d))

@@ -9,5 +9,6 @@ Medium priority:
 function calls to fill in the probability table.
 - Handle tuples & tuple return values better
 - Handle GFs with no arguments
+- Remove arguments to GFs which have domain 1
 
 #### SMC Compilation
