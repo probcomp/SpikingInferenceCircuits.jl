@@ -49,7 +49,7 @@ determ_finite_domain_implementation(g::DeterministicGenFn) =
 
 # TODO: implementation for ProductDomain output
 function determ_to_product_implementation(g::DeterministicGenFn, ::Spiking)
-    @assert length(g.input_domains) == 1 "In the current implementation, a deterministic function outputting a ProductDomain value may only have a single value as input!"
+    @assert length(g.input_domains) == 1 "In the current implementation, a deterministic function outputting a ProductDomain value must have exactly one input value, but got $(length(g.input_domains)) for $g."
     @assert all(d isa FiniteDomain for d in g.output_domain.subdomains) "Currently not implemented: outputting ProductDomain values where some subdomains are not FiniteDomains."
     input_domain = only(g.input_domains)
 
@@ -98,7 +98,7 @@ gen_fn_circuit(f::Function, arg_domains::Tuple{Vararg{FiniteDomain}}, ::Op) wher
     DeterministicGenFn{Op}(
         arg_domains,
         Iterators.map(
-            inputs -> f(inputs...)
+            inputs -> f(inputs...),
             Iterators.product(map(vals, arg_domains)...)
         ) |> collect |> infer_domain,
         f

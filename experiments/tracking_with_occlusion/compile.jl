@@ -61,10 +61,15 @@ circuit = gen_fn_circuit(
 )
 println("Circuit constructed.")
 
-impl2 = SpikingInferenceCircuits.implement(
-    SpikingInferenceCircuits.implement(circuit, SpikingInferenceCircuits.Spiking()),
+includet("../neurips_tracking/implementation_rules.jl")
+println("Implemenation rules loaded.")
+
+impl = SpikingInferenceCircuits.Circuits.memoized_implement_deep(
+    circuit,
     SpikingInferenceCircuits.Spiking()
 );
+
+println("Circuit implemented deeply.")
 
 
 # lcpts = to_labeled_cpts(render_pixel, latent_domains())

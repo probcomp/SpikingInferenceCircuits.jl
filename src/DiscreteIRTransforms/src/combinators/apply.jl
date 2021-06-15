@@ -46,3 +46,10 @@ function to_indexed_cpts(a::ApplyCombinator.Apply, arg_domains)
 end
 
 is_cpts(a::ApplyCombinator.Apply) = all(is_cpts(k) for k in a.kernels)
+
+with_constant_inputs_at_indices(a::ApplyCombinator.Apply, idx_val_pairs) =
+    ApplyCombinator.Apply{
+        # TODO
+    }(
+
+    )
