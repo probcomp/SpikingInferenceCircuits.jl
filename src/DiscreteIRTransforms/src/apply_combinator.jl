@@ -6,7 +6,7 @@ using Gen
 struct Apply{T, U} <: Gen.GenerativeFunction{PersistentVector{T}, Gen.VectorTrace{Gen.MapType}}
     kernels::Vector{GenerativeFunction{<:T, <:U}}
 end
-Apply(kernels::Vector{<:GenerativeFunction}) = Apply{Any, Gen.Trace}(kernels)
+Apply(kernels::Vector) = Apply{Any, Gen.Trace}(kernels)
 
 vec_trace(gen_fn::Apply{T, U}, traces::PersistentVector{U}, args) where {T, U} =
     Gen.VectorTrace{Gen.MapType, T, U}(gen_fn,  

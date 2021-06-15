@@ -1,5 +1,11 @@
+function ensure_product_inputs(arg_domains)
+    for dom in arg_domains
+        @assert dom isa ProductDomain "$dom is used where we need a ProductDomain"
+    end
+end
+
 function to_labeled_cpts(m::Gen.Map{T, U}, arg_domains) where {T, U}
-    @assert all(dom isa ProductDomain for dom in arg_domains)
+    ensure_product_inputs(arg_domains)
     maplength = length(first(arg_domains).sub_domains)
     @assert all(length(dom.sub_domains) == maplength for dom in arg_domains)
 
@@ -11,12 +17,13 @@ function to_labeled_cpts(m::Gen.Map{T, U}, arg_domains) where {T, U}
     return ApplyCombinator.Apply{T, apply_tracetype(compiled_kernels)}(compiled_kernels)
 end
 
-get_ret_domain(m::Gen.Map, arg_domains) =
-    ProductDomain([
+function get_ret_domain(m::Gen.Map, arg_domains)
+    ensure_product_inputs(arg_domains)
+    return ProductDomain([
         get_ret_domain(m.kernel, domain_assmt)
         for domain_assmt in zip((dom.sub_domains for dom in arg_domains)...)
     ])
-
+end
 is_cpts(m::Gen.Map) = is_cpts(m.kernel)
 
 # TODO: to_indexed_cpts

@@ -5,7 +5,6 @@
 function to_indexed_cpts(ir::StaticIR, arg_domains)
     ir = to_labeled_cpts(ir, arg_domains)
     original_domains = get_domains(ir.nodes, arg_domains)
-    # display(original_domains)
 
     new_domains = Dict()
 
@@ -15,7 +14,6 @@ function to_indexed_cpts(ir::StaticIR, arg_domains)
     domain_bijections = Dict()
 
     for (name, old_domain) in original_domains
-
         (new_domains[name], domain_bijections[name]) = to_indexed_domain(old_domain)
     end
 
@@ -114,14 +112,26 @@ function to_indexed_cpt_node(node::JuliaNode, _, bijections)
     output_to_idx = label_to_idx(bijections[node.name])
     
     indexed_fn(indices...) =
-        output_to_idx(
-            node.fn(
-                (
-                    idx_to_label(bijections[p.name])(idx)
-                    for (idx, p) in zip(indices, node.inputs)
-                )...
+        # TODO: consider removing try/catch
+        try
+            output_to_idx(
+                node.fn(
+                    (
+                        idx_to_label(bijections[p.name])(idx)
+                        for (idx, p) in zip(indices, node.inputs)
+                    )...
+                )
             )
-        )
+        catch e
+            @error("""
+            Error when running indexed fn on $(collect(indices))
+            with inputs $(node.inputs);
+            node.fn() = $(node.fn());
+            node.name = $(node.name);
+            bijections[node.name] = $(bijections[node.name])
+            """)
+            error(e)
+        end
     
     return setproperties(node, (fn = indexed_fn, typ=valtype_expr(bijections[node.name])))
 end

@@ -37,7 +37,8 @@ function to_indexed_cpts(a::ApplyCombinator.Apply, arg_domains)
 
     return (
         ApplyCombinator.Apply{
-            Int, apply_tracetype(compiled_kernels)
+            Union{(Gen.get_return_type(k) for k in compiled_kernels)...},
+            apply_tracetype(compiled_kernels)
         }(compiled_kernels),
         Dict(i => bij for (i, bij) in enumerate(bijs)),
         retbijs
