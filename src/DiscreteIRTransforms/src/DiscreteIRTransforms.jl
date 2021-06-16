@@ -43,6 +43,7 @@ export EnumeratedDomain, ProductDomain
 # - to_indexed_cpts
 # - is_cpts
 # - get_ret_domain
+# - with_constant_inputs_at_indices
 
 # Implementations for static GFs & IRs:
 include("is_cpts.jl")
@@ -51,6 +52,7 @@ include("to_labeled_cpts.jl")
 export to_labeled_cpts
 include("to_indexed_cpts.jl")
 export to_indexed_cpts
+include("compile_constants.jl")
 
 # Implementations for combinators:
 apply_tracetype(kernels) = Union{(Gen.get_trace_type(k) for k in kernels)...}

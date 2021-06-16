@@ -26,3 +26,20 @@ node_specific_add!(builder, node::JuliaNode) = push!(builder.julia_nodes, node)
 # so if we create a new generative function _within_ our transformation functions, and
 # we need to access its IR before we return to the top-level, the world age problem arises
 get_ir(gf) = Base.invokelatest(Gen.get_ir, gf)
+
+"""
+Apply a transformation to a static GF's IR and return the resulting GF.
+
+A suffix can be provided for the end of the transformed GF's name.
+"""
+# TODO: we should ideally get `track_diffs` and `cache_julia_nodes` from the original `gf`!
+function gen_fn_for_ir_transformation(gf::StaticIRGenerativeFunction, transform_ir, name_ending="transformed")
+    gf = eval(
+        Gen.generate_generative_function(
+            transform_ir(Gen.get_ir(typeof(gf))),
+            Symbol("$(typeof(gf))__$name_ending"); track_diffs=false, cache_julia_nodes=true
+        )
+    )
+    @load_generated_functions()
+    return gf
+end

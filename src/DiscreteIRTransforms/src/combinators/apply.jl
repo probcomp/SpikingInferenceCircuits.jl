@@ -47,9 +47,15 @@ end
 
 is_cpts(a::ApplyCombinator.Apply) = all(is_cpts(k) for k in a.kernels)
 
-with_constant_inputs_at_indices(a::ApplyCombinator.Apply, idx_val_pairs) =
-    ApplyCombinator.Apply{
-        # TODO
-    }(
-
-    )
+function with_constant_inputs_at_indices(a::ApplyCombinator.Apply, idx_val_pairs)
+    idxs = [idx for (idx, _) in idx_val_pairs]
+    val_assmts = zip((val for (_, val) in val_idx_pairs)...)
+    new_kernels = [
+        with_constant_inputs_at_indices(kernel, zip(idxs, assmt) |> collect)
+        for (kernel, assmt) in zip(a.kernels, val_assmts)
+    ]
+    return ApplyCombinator.Apply{
+        Union{(Gen.get_return_type(k) for k in new_kernels)...},
+        apply_tracetype(new_kernels)
+    }(new_kernels)
+end

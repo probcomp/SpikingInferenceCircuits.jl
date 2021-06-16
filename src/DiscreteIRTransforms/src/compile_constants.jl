@@ -1,8 +1,8 @@
-#=
+"""
 Remove JuliaNodes which have 0 inputs from the IR, and modify the IR
 so that the values from these nodes are hardcoded constants.
-=#
-function remove_0arg_nodes(ir::StaticIR)
+"""
+function remove_zero_arg_nodes(ir::StaticIR)
     nodes_to_remove_values = Dict()
     for node in ir.nodes
         if hasproperty(node, :inputs) && length(node.inputs) == 0
@@ -16,7 +16,14 @@ function remove_0arg_nodes(ir::StaticIR)
 
     return replace_nodes_with_constant_vals(ir, node_to_remove_values)
 end
+remove_zero_arg_nodes(gf::StaticIRGenerativeFunction) =
+    gen_fn_for_ir_transformation(gf, remove_zero_arg_nodes, "constant_nodes_compiled")
 
+"""
+Given a dict from node to the value that node should always output,
+compiles the IR into a new IR where the constant nodes have been removed,
+and the constant values compield into the receivers of the node outputs.
+"""
 function replace_nodes_with_constant_vals(ir::StaticIR, nodes_to_remove_values)
     name_to_new_node = Dict{Symbol, StaticIRNode}()
     builder = StaticIRBuilder()
@@ -112,7 +119,12 @@ end
 ### with_constant_inputs_at_indices ###
 
 ## For Distributions:
-
+"""
+Return a version of the given distribution/IR/GenFn for which the value
+of certain arguments is fixed (and so fewer arguments are accepted).
+`idx_val_pairs` is a vector of `(idx, val)` pairs giving an index
+where the argument should have a constant value, and the constant value. 
+""" 
 with_constant_inputs_at_indices(cpt::CPT, idx_val_pairs) =
     CPT(cpt.dists[
         insert_values_at_indices(
@@ -148,5 +160,7 @@ with_constant_inputs_at_indices(ir::StaticIR, idx_val_pairs) =
             for (idx, val) in idx_val_pairs
         )
     )
+with_constant_inputs_at_indices(gf::StaticIRGenerativeFunction, idx_val_pairs) =
+    gen_fn_for_ir_transformation(gf, ir -> with_constant_inputs_at_indices(ir, idx_val_pairs), "with_constant_inputs_at_indices")
 
 ## Implementation for Combinators in the `combinators/` directory

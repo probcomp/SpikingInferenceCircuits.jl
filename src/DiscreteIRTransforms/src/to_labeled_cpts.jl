@@ -59,18 +59,8 @@ function to_labeled_cpts(ir::StaticIR, arg_domains)
     return build_ir(builder)
 end
 
-# It's annoying that we have to do `eval` -- this is a TODO for the static IR
-function to_labeled_cpts(gf::StaticIRGenerativeFunction{T, U}, arg_domains) where {T, U}
-    gf = eval(
-        Gen.generate_generative_function(
-            to_labeled_cpts(Gen.get_ir(typeof(gf)), arg_domains),
-            Symbol("$(typeof(gf))__labeled_cpts"); track_diffs=false, cache_julia_nodes=true
-        )
-    )
-    @load_generated_functions()
-    @assert gf isa GenerativeFunction
-    return gf
-end
+to_labeled_cpts(gf::StaticIRGenerativeFunction, arg_domains) =
+    gen_fn_for_ir_transformation(gf, ir -> to_labeled_cpts(ir, arg_domains), "labeled_cpts")
 
 # Get a RandomChoiceNode with a LabeledCPT distribution equivalent to `node`'s distribution,
 # slurping in all the parents of the node (which are assumed to be JuliaNodes which produce

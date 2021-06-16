@@ -33,16 +33,8 @@ function to_indexed_cpts(ir::StaticIR, arg_domains)
     return (build_ir(builder), domain_bijections, domain_bijections[ir.return_node.name])
 end
 
-# TODO: we should ideally get `track_diffs` and `cache_julia_nodes` from the original `gf`!
-function to_indexed_cpts(gf::StaticIRGenerativeFunction, arg_domains)
-    (ir, bijs...) = to_indexed_cpts(get_ir(gf), arg_domains)
-    gf = eval(Gen.generate_generative_function(
-            ir,
-            Symbol("$(typeof(gf))__indexed"); track_diffs=false, cache_julia_nodes=true
-        ))
-    @load_generated_functions()
-    return (gf, bijs...)
-end
+to_indexed_cpts(gf::StaticIRGenerativeFunction, arg_domains) =
+    gen_fn_for_ir_transformation(gf, ir -> to_indexed_cpts(ir, arg_domains), "indexed")
 
 ### idx_to_label / label_to_idx utils ###
 
