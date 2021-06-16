@@ -68,7 +68,7 @@ arg_edges(g::GraphGenFn) = Iterators.flatten(
 )
 arg_edges(g::GraphGenFn, name, node::GenFnNode) = (
     arg_edge(g.nodes[parentname], parentname, inputname, name)
-    for (parentname, inputname) in zip(node.parents, keys_deep(inputs(node.gen_fn)[:inputs]))
+    for (parentname, inputname) in zip(node.parents, keys(inputs(node.gen_fn)[:inputs]))
 )
 arg_edges(::GraphGenFn, _, ::InputNode) = ()
 arg_edge(parentnode::InputNode, _, inputname, gen_fn_name) =

@@ -51,11 +51,12 @@ end
 
 (lcpts, icpts, dom_maps) = compile_obs1d()
 # lcpts = compile_obs1d()
-println("Compiled 1D obs model.")
+println("Compiled 1D obs model to indexed CPTS.")
 
 @load_generated_functions()
 
 consts_compiled = DiscreteIRTransforms.inline_constant_nodes(icpts)
+println("Inlined constants.")
 @load_generated_functions()
 
 println("Loaded generated functions.")
@@ -66,7 +67,7 @@ pix_renderer = DiscreteIRTransforms.get_ir(consts_compiled).nodes[5].generative_
 
 # ### Circuit compilation
 circuit = gen_fn_circuit(
-    pix_renderer,
+    consts_compiled,
     map(d -> FiniteDomain(length(DiscreteIRTransforms.vals(d))), latent_doms_1d()),
     Assess()
 )
@@ -75,27 +76,11 @@ println("Circuit constructed.")
 includet("../neurips_tracking/implementation_rules.jl")
 println("Implemenation rules loaded.")
 
-impl1 = SpikingInferenceCircuits.Circuits.implement(
-    circuit,
-    SpikingInferenceCircuits.Spiking()
-);
+impl1 = implement(circuit, Spiking())
 println("Circuit implemented once.")
-impl2 = SpikingInferenceCircuits.Circuits.implement(
-    impl1,
-    SpikingInferenceCircuits.Spiking()
-);
-println("Circuit implemented twice.")
-impl3 = SpikingInferenceCircuits.Circuits.implement(
-    impl1,
-    SpikingInferenceCircuits.Spiking()
-);
-println("Circuit implemented thrice.")
 
-impl_deep = SpikingInferenceCircuits.Circuits.implement_deep(
-    impl3,
-    SpikingInferenceCircuits.Spiking()
-);
-println("Circuit implemented deeply.")
+# impl_deep = Circuits.memoized_implement_deep(circuit, Spiking());
+# println("Circuit implemented deeply.")
 
 
 # println("Circuit implemented deeply.")
