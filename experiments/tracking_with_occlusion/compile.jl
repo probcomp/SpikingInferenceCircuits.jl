@@ -3,6 +3,8 @@ using Distributions
 using DiscreteIRTransforms
 using CPTs
 using SpikingInferenceCircuits
+const SIC = SpikingInferenceCircuits
+using Circuits
 using Revise
 
 includet("model.jl")
@@ -52,32 +54,50 @@ println("Compiled 1D obs model.")
 
 @load_generated_functions()
 
-consts_compiled = DiscreteIRTransforms.inline_constant_nodes(lcpts)
+consts_compiled = DiscreteIRTransforms.inline_constant_nodes(icpts)
 @load_generated_functions()
 
 println("Loaded generated functions.")
 
 tr = simulate(consts_compiled, (2,2));
 
-
-
-
+pix_renderer = get_ir(consts_compiled).nodes[5].generative_function.kernels[1]
 
 # ### Circuit compilation
-# circuit = gen_fn_circuit(
-#     icpts,
-#     map(d -> FiniteDomain(length(DiscreteIRTransforms.vals(d))), latent_doms_1d()),
-#     Assess()
-# )
-# println("Circuit constructed.")
+circuit = gen_fn_circuit(
+    pix_renderer,
+    map(d -> FiniteDomain(length(DiscreteIRTransforms.vals(d))), latent_doms_1d()),
+    Assess()
+)
+println("Circuit constructed.")
 
-# includet("../neurips_tracking/implementation_rules.jl")
-# println("Implemenation rules loaded.")
+includet("../neurips_tracking/implementation_rules.jl")
+println("Implemenation rules loaded.")
 
-# impl = SpikingInferenceCircuits.Circuits.memoized_implement_deep(
-#     circuit,
-#     SpikingInferenceCircuits.Spiking()
-# );
+impl1 = SpikingInferenceCircuits.Circuits.implement(
+    circuit,
+    SpikingInferenceCircuits.Spiking()
+);
+println("Circuit implemented once.")
+impl2 =
+SpikingInferenceCircuits.Circuits.implement(
+    impl1,
+    SpikingInferenceCircuits.Spiking()
+);
+println("Circuit implemented twice.")
+impl3 =
+SpikingInferenceCircuits.Circuits.implement(
+    impl1,
+    SpikingInferenceCircuits.Spiking()
+);
+println("Circuit implemented thrice.")
+
+impl_deep = SpikingInferenceCircuits.Circuits.implement_deep(
+    impl3,
+    SpikingInferenceCircuits.Spiking()
+);
+println("Circuit implemented deeply.")
+
 
 # println("Circuit implemented deeply.")
 
