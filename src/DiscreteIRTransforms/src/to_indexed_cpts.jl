@@ -52,7 +52,7 @@ idx_to_label(bijs::Vector) =
 label_to_idx(::Nothing) = identity
 label_to_idx(bij::Bijection) = l -> bij(l)
 label_to_idx(bijs::Vector) =
-    labels -> map.(map(label_to_idx, bijs), labels)
+    labels -> [f(label) for (f, label) in zip(map(label_to_idx, bijs), labels)]
 
 ### to_indexed_domain ###
 to_indexed_domain(old_domain::EnumeratedDomain) =
@@ -117,7 +117,7 @@ function to_indexed_cpt_node(node::JuliaNode, old_domains, bijections)
                 )
             )
         catch e
-            @error("""
+             @error("""
             Error when running indexed fn on $(collect(indices))
             with inputs $(node.inputs);
             node.name = $(node.name);
@@ -126,6 +126,9 @@ function to_indexed_cpt_node(node::JuliaNode, old_domains, bijections)
             """)
             for (idx, p) in zip(indices, node.inputs)
                 @error("bijections[$(p.name)] == $(bijections[p.name]); old_domains[$(p.name)] = $(old_domains[p.name])")
+            end
+            if isempty(node.inputs)
+                @error("node.fn() = $(node.fn())")
             end
             error(e)
         end

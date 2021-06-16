@@ -33,12 +33,6 @@ function compile_step()
     (cpts, dom_maps) = to_indexed_cpts(step, latent_domains())
     return (lcpts, cpts, dom_maps)
 end
-function compile_obs()
-    lcpts = to_labeled_cpts(observation, latent_domains())
-    (cpts, dom_maps) = to_indexed_cpts(observation, latent_domains())
-    return (lcpts, cpts, dom_maps)
-    # return lcpts
-end
 
 latent_doms_1d() = map(EnumeratedDomain, (positions(OccluderLength()), positions(SquareSideLength())))
 function compile_obs1d()
@@ -48,9 +42,8 @@ function compile_obs1d()
     # return lcpts
 end
 
-
 (lcpts, icpts, dom_maps) = compile_obs1d()
-# lcpts = compile_obs1d()
+
 println("Compiled 1D obs model to indexed CPTS.")
 
 @load_generated_functions()
@@ -79,15 +72,5 @@ println("Implemenation rules loaded.")
 impl1 = implement(circuit, Spiking())
 println("Circuit implemented once.")
 
-# impl_deep = Circuits.memoized_implement_deep(circuit, Spiking());
-# println("Circuit implemented deeply.")
-
-
-# println("Circuit implemented deeply.")
-
-
-# lcpts = to_labeled_cpts(render_pixel, latent_domains())
-# icpts, maps = to_indexed_cpts(render_pixel, map(EnumeratedDomain, (
-#     positions(OccluderLength()), (positions(SquareSideLength()) for _=1:4)...
-# )))
-# @load_generated_functions
+impl_deep = Circuits.memoized_implement_deep(circuit, Spiking());
+println("Circuit implemented deeply.")
