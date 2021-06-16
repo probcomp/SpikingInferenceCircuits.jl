@@ -10,11 +10,11 @@ using Revise
 
 includet("model.jl")
 
-latent_domains() = map(EnumeratedDomain, [
-    positions(OccluderLength()),
-    positions(SquareSideLength()), positions(SquareSideLength()),
-    Vels(), Vels()
-])
+latent_domains() = map(EnumeratedDomain, (
+    occ=positions(OccluderLength()),
+    x=positions(SquareSideLength()), y=positions(SquareSideLength()),
+    vx=Vels(), vy=Vels()
+))
 
 function compile_obs()
     lcpts = to_labeled_cpts(observation, latent_domains())
