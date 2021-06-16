@@ -16,7 +16,7 @@ version = "0.1.3"
 
 [[CPTs]]
 deps = ["Bijections", "Distributions", "Gen"]
-path = "/Users/georgematheos/Developer/research/SpikingInferenceCircuits.jl/src/CPTs"
+path = "../CPTs"
 uuid = "b537e094-b773-4c3d-913e-03cd2b143e52"
 version = "0.1.0"
 

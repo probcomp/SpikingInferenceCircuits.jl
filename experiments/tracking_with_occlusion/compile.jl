@@ -5,6 +5,7 @@ using CPTs
 using SpikingInferenceCircuits
 const SIC = SpikingInferenceCircuits
 using Circuits
+using SpikingCircuits
 using Revise
 
 includet("model.jl")
@@ -61,7 +62,7 @@ println("Loaded generated functions.")
 
 tr = simulate(consts_compiled, (2,2));
 
-pix_renderer = get_ir(consts_compiled).nodes[5].generative_function.kernels[1]
+pix_renderer = DiscreteIRTransforms.get_ir(consts_compiled).nodes[5].generative_function.kernels[1]
 
 # ### Circuit compilation
 circuit = gen_fn_circuit(
@@ -79,14 +80,12 @@ impl1 = SpikingInferenceCircuits.Circuits.implement(
     SpikingInferenceCircuits.Spiking()
 );
 println("Circuit implemented once.")
-impl2 =
-SpikingInferenceCircuits.Circuits.implement(
+impl2 = SpikingInferenceCircuits.Circuits.implement(
     impl1,
     SpikingInferenceCircuits.Spiking()
 );
 println("Circuit implemented twice.")
-impl3 =
-SpikingInferenceCircuits.Circuits.implement(
+impl3 = SpikingInferenceCircuits.Circuits.implement(
     impl1,
     SpikingInferenceCircuits.Spiking()
 );

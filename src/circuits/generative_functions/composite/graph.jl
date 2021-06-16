@@ -67,13 +67,13 @@ arg_edges(g::GraphGenFn) = Iterators.flatten(
     arg_edges(g, name, node) for (name, node) in g.nodes
 )
 arg_edges(g::GraphGenFn, name, node::GenFnNode) = (
-    arg_edge(g.nodes[parentname], parentname, comp_in_idx, name)
-    for (comp_in_idx, parentname) in enumerate(node.parents)
+    arg_edge(g.nodes[parentname], parentname, inputname, name)
+    for (parentname, inputname) in zip(node.parents, keys_deep(inputs(node.gen_fn)[:inputs]))
 )
 arg_edges(::GraphGenFn, _, ::InputNode) = ()
-arg_edge(parentnode::InputNode, _, comp_in_idx, gen_fn_name) =
-    Input(:inputs => parentnode.name) => CompIn(:sub_gen_fns => gen_fn_name, :inputs => comp_in_idx)
-arg_edge(::GenFnNode, parentname, comp_in_idx, gen_fn_name) =
-    CompOut(:sub_gen_fns => parentname, :value) => CompIn(:sub_gen_fns => gen_fn_name, :inputs => comp_in_idx)
+arg_edge(parentnode::InputNode, _, inputname, gen_fn_name) =
+    Input(:inputs => parentnode.name) => CompIn(:sub_gen_fns => gen_fn_name, :inputs => inputname)
+arg_edge(::GenFnNode, parentname, inputname, gen_fn_name) =
+    CompOut(:sub_gen_fns => parentname, :value) => CompIn(:sub_gen_fns => gen_fn_name, :inputs => inputname)
 
 ret_edges(g::GraphGenFn) = ((CompOut(:sub_gen_fns => g.output_node_name, :value) => Output(:value)),)
