@@ -60,7 +60,7 @@ function to_labeled_cpts(ir::StaticIR, arg_domains)
 end
 
 to_labeled_cpts(gf::StaticIRGenerativeFunction, arg_domains) =
-    gen_fn_for_ir_transformation(gf, ir -> to_labeled_cpts(ir, arg_domains), "labeled_cpts")
+    to_gf(to_labeled_cpts(get_ir(gf), arg_domains), add_gf_name_suffix(gf, "labeled"))
 
 # Get a RandomChoiceNode with a LabeledCPT distribution equivalent to `node`'s distribution,
 # slurping in all the parents of the node (which are assumed to be JuliaNodes which produce

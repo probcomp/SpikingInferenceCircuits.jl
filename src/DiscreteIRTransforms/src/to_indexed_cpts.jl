@@ -33,8 +33,10 @@ function to_indexed_cpts(ir::StaticIR, arg_domains)
     return (build_ir(builder), domain_bijections, domain_bijections[ir.return_node.name])
 end
 
-to_indexed_cpts(gf::StaticIRGenerativeFunction, arg_domains) =
-    gen_fn_for_ir_transformation(gf, ir -> to_indexed_cpts(ir, arg_domains), "indexed")
+function to_indexed_cpts(gf::StaticIRGenerativeFunction, arg_domains)
+    (ir, bijs...) = to_indexed_cpts(get_ir(gf), arg_domains)
+    return (to_gf(ir, add_gf_name_suffix(gf, "indexed")), bijs...)
+end
 
 ### idx_to_label / label_to_idx utils ###
 

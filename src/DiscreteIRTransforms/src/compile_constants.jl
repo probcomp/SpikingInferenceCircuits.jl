@@ -2,7 +2,7 @@
 Remove JuliaNodes which have 0 inputs from the IR, and modify the IR
 so that the values from these nodes are hardcoded constants.
 """
-function remove_zero_arg_nodes(ir::StaticIR)
+function inline_constant_nodes(ir::StaticIR)
     nodes_to_remove_values = Dict()
     for node in ir.nodes
         if hasproperty(node, :inputs) && length(node.inputs) == 0
@@ -16,8 +16,11 @@ function remove_zero_arg_nodes(ir::StaticIR)
 
     return replace_nodes_with_constant_vals(ir, node_to_remove_values)
 end
-remove_zero_arg_nodes(gf::StaticIRGenerativeFunction) =
-    gen_fn_for_ir_transformation(gf, remove_zero_arg_nodes, "constant_nodes_compiled")
+inline_constant_nodes(gf::StaticIRGenerativeFunction) =
+    to_gf(
+        inline_constant_nodes(get_ir(gf)),
+        add_gf_name_suffix(gf, "constant_nodes_inlined")
+    )
 
 """
 Given a dict from node to the value that node should always output,
@@ -161,6 +164,9 @@ with_constant_inputs_at_indices(ir::StaticIR, idx_val_pairs) =
         )
     )
 with_constant_inputs_at_indices(gf::StaticIRGenerativeFunction, idx_val_pairs) =
-    gen_fn_for_ir_transformation(gf, ir -> with_constant_inputs_at_indices(ir, idx_val_pairs), "with_constant_inputs_at_indices")
+    to_gf(
+        with_constant_inputs_at_indices(get_ir(gf), idx_val_pairs),
+        add_gf_name_suffix(gf, "with_constant_inputs_at_indices")
+    )
 
 ## Implementation for Combinators in the `combinators/` directory
