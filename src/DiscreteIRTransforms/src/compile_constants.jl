@@ -3,18 +3,18 @@ Remove JuliaNodes which have 0 inputs from the IR, and modify the IR
 so that the values from these nodes are hardcoded constants.
 """
 function inline_constant_nodes(ir::StaticIR)
-    nodes_to_remove_values = Dict()
+    nodename_to_remove_values = Dict()
     for node in ir.nodes
         if hasproperty(node, :inputs) && length(node.inputs) == 0
             if !(node isa JuliaNode)
                 error("Cannot remove 0-argument nodes which are not JuliaNodes; this one is a $(typeof(node)).")
             end
 
-            nodes_to_remove_values[node] = node.function()
+            nodename_to_remove_values[node.name] = node.fn()
         end
     end
 
-    return replace_nodes_with_constant_vals(ir, node_to_remove_values)
+    return replace_nodes_with_constant_vals(ir, nodename_to_remove_values)
 end
 inline_constant_nodes(gf::StaticIRGenerativeFunction) =
     to_gf(
@@ -27,12 +27,12 @@ Given a dict from node to the value that node should always output,
 compiles the IR into a new IR where the constant nodes have been removed,
 and the constant values compield into the receivers of the node outputs.
 """
-function replace_nodes_with_constant_vals(ir::StaticIR, nodes_to_remove_values)
+function replace_nodes_with_constant_vals(ir::StaticIR, nodename_to_remove_values)
     name_to_new_node = Dict{Symbol, StaticIRNode}()
     builder = StaticIRBuilder()
     for node in ir.nodes
-        if !haskey(nodes_to_remove_values, node) # remove the node if it is a key in this Dict
-            new_node = node_without_deleted_as_parent(node, nodes_to_remove_values)
+        if !haskey(nodename_to_remove_values, node.name) # remove the node if it is a key in this Dict
+            new_node = node_without_deleted_as_parent(node, nodename_to_remove_values)
             new_node = update_inputs(new_node, name_to_new_node)
             name_to_new_node[new_node.name] = new_node
 
@@ -46,14 +46,14 @@ function replace_nodes_with_constant_vals(ir::StaticIR, nodes_to_remove_values)
     return build_ir(builder)
 end
 
-function node_without_deleted_as_parent(node, nodes_to_remove_values)
-    if hasproperty(node, :inputs) && any(haskey(nodes_to_remove_values, n.name) for n in node.inputs)
+function node_without_deleted_as_parent(node, nodename_to_remove_values)
+    if hasproperty(node, :inputs) && any(haskey(nodename_to_remove_values, n.name) for n in node.inputs)
         node_with_constant_inputs(
             node,
             Dict(
-                n.name => nodes_to_remove_values[n.name]
+                n.name => nodename_to_remove_values[n.name]
                 for n in node.inputs
-                    if haskey(nodes_to_remove_values, n.name)
+                    if haskey(nodename_to_remove_values, n.name)
             )
         )
     else
@@ -65,9 +65,9 @@ node_with_constant_inputs(node::JuliaNode, input_name_to_value::Dict) =
     JuliaNode(
         let delted_idx_values = node_input_idx_val_vec(node, input_name_to_value),
             nargs = length(node.inputs)
-                (args...,) -> n.function(insert_values_at_indices(args, delted_idx_values, nargs)...)
+                (args...,) -> node.fn(insert_values_at_indices(args, delted_idx_values, nargs)...)
         end,
-        [n for n in node.inputs if !haskey(input_name_to_value, n)],
+        [n for n in node.inputs if !haskey(input_name_to_value, n.name)],
         node.name, node.typ
     )
 
@@ -77,7 +77,7 @@ node_with_constant_inputs(node::RandomChoiceNode, input_name_to_value::Dict) =
             node.dist,
             node_input_idx_val_vec(node, input_name_to_value)
         ),
-        [n for n in node.inputs if !haskey(input_name_to_value, n)],
+        [n for n in node.inputs if !haskey(input_name_to_value, n.name)],
         node.addr, node.name, node.typ
     )
 node_with_constant_inputs(node::GenerativeFunctionCallNode, input_name_to_value::Dict) =
@@ -86,14 +86,14 @@ node_with_constant_inputs(node::GenerativeFunctionCallNode, input_name_to_value:
             node.generative_function,
             node_input_idx_val_vec(node, input_name_to_value)
         ),
-        [n for n in node.inputs if !haskey(input_name_to_value, n)],
+        [n for n in node.inputs if !haskey(input_name_to_value, n.name)],
         node.addr, node.name, node.typ
     )
 
 # vector of `(idx, value)` pairs with the index and constant value
 # for each input to this node with a constant value in the `input_name_to_value` dict
 node_input_idx_val_vec(node, input_name_to_value) = [
-        (i, input_name_to_value[n.name]) 
+        (i, input_name_to_value[n.name])
         for (i, n) in enumerate(node.inputs)
             if haskey(input_name_to_value, n.name)
     ]
@@ -134,7 +134,7 @@ with_constant_inputs_at_indices(cpt::CPT, idx_val_pairs) =
             [Colon() for _=1:(num_inputs(cpt) - length(idx_val_pairs))],
             idx_val_pairs,
             num_inputs(cpt)
-        )
+        )...
     ])
 
 with_constant_inputs_at_indices(lcpt::LabeledCPT{Ret}, idx_val_pairs) where {Ret} =
@@ -159,7 +159,7 @@ with_constant_inputs_at_indices(lcpt::LabeledCPT{Ret}, idx_val_pairs) where {Ret
 with_constant_inputs_at_indices(ir::StaticIR, idx_val_pairs) = 
     replace_nodes_with_constant_vals(ir,
         Dict(
-            ir.arg_nodes[idx] => val
+            ir.arg_nodes[idx].name => val
             for (idx, val) in idx_val_pairs
         )
     )

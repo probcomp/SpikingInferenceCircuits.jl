@@ -53,6 +53,7 @@ export to_labeled_cpts
 include("to_indexed_cpts.jl")
 export to_indexed_cpts
 include("compile_constants.jl")
+export inline_constant_nodes
 
 # Implementations for combinators:
 apply_tracetype(kernels) = Union{(Gen.get_trace_type(k) for k in kernels)...}

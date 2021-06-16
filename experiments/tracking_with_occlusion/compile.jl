@@ -51,25 +51,35 @@ end
 println("Compiled 1D obs model.")
 
 @load_generated_functions()
+
+consts_compiled = DiscreteIRTransforms.inline_constant_nodes(lcpts)
+@load_generated_functions()
+
 println("Loaded generated functions.")
 
+tr = simulate(consts_compiled, (2,2));
+
+
+
+
+
 # ### Circuit compilation
-circuit = gen_fn_circuit(
-    icpts,
-    map(d -> FiniteDomain(length(DiscreteIRTransforms.vals(d))), latent_doms_1d()),
-    Assess()
-)
-println("Circuit constructed.")
+# circuit = gen_fn_circuit(
+#     icpts,
+#     map(d -> FiniteDomain(length(DiscreteIRTransforms.vals(d))), latent_doms_1d()),
+#     Assess()
+# )
+# println("Circuit constructed.")
 
-includet("../neurips_tracking/implementation_rules.jl")
-println("Implemenation rules loaded.")
+# includet("../neurips_tracking/implementation_rules.jl")
+# println("Implemenation rules loaded.")
 
-impl = SpikingInferenceCircuits.Circuits.memoized_implement_deep(
-    circuit,
-    SpikingInferenceCircuits.Spiking()
-);
+# impl = SpikingInferenceCircuits.Circuits.memoized_implement_deep(
+#     circuit,
+#     SpikingInferenceCircuits.Spiking()
+# );
 
-println("Circuit implemented deeply.")
+# println("Circuit implemented deeply.")
 
 
 # lcpts = to_labeled_cpts(render_pixel, latent_domains())
