@@ -29,6 +29,7 @@ macro DynamicModel(
     end
 end
 
+obs_addr(t)    = t == 0 ? :init => :obs     : :steps => t => :obs
 latent_addr(t) = t == 0 ? :init => :latents : :steps => t => :latents
 macro compile_step_proposal(
     step_proposal, n_latents, n_obs_inputs

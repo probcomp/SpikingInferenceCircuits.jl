@@ -24,10 +24,16 @@ function truncate(pvec)
     if mininvec ≥ MinProb()
         return pvec
     else
-        return truncate(normalize([p == mininvec ? 0. : p for p in pvec]))
+        return truncate(
+            normalize([p == mininvec ? 0. : p for p in pvec])
+        )
     end
 end
 truncated_discretized_gaussian(args...) = discretized_gaussian(args...) |> truncate
+truncate_dist_to_valrange(pvec, range, dom) = [
+    first(range) ≤ x ≤ last(range) ? p : 0.
+    for (x, p) in zip(dom, pvec)
+] |> normalize
 
 truncate_value(val, range) = max(min(val, last(range)), first(range))
 

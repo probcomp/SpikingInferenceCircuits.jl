@@ -58,6 +58,9 @@ obs_matrix_for_tr(tr) = [x == tr[:obsx] && y == tr[:obsy] for x in M.Positions()
 # ╔═╡ d59b932f-1349-44dd-a313-755a5b6b890c
 heatmap(obs_matrix_for_tr(tr))
 
+# ╔═╡ a828e48f-762b-45c9-99b9-06633be63c04
+
+
 # ╔═╡ 6c62b5b4-597f-431c-8708-dc970cb5281a
 gt_matrix_for_tr(tr) = [x == tr[:xₜ] && y == tr[:yₜ] for x in M.Positions(), y in M.Positions()]
 
@@ -169,13 +172,14 @@ M.joint_trace_logprob(obs_chs, [unweighted_samples[t][1] for t=3:4])
 # ╔═╡ Cell order:
 # ╟─05d22ac0-cfb2-11eb-0573-a73c27695cce
 # ╠═47329ce2-3c79-454c-9ed0-47a95d2dc5c2
-# ╟─911d420d-7571-4487-9f0a-33b2b8c48f85
+# ╠═911d420d-7571-4487-9f0a-33b2b8c48f85
 # ╟─46dcdb1d-3527-4149-9b8f-19064e98d022
 # ╠═43a36d34-5380-4c83-8b51-7e24efa7ef79
 # ╠═d7d270ef-fa6f-4b9e-9ef1-8b1a7615b758
 # ╠═d59b932f-1349-44dd-a313-755a5b6b890c
-# ╟─9d61975e-5db5-44da-8e75-d9ee16912b2c
-# ╟─6c62b5b4-597f-431c-8708-dc970cb5281a
+# ╠═9d61975e-5db5-44da-8e75-d9ee16912b2c
+# ╠═a828e48f-762b-45c9-99b9-06633be63c04
+# ╠═6c62b5b4-597f-431c-8708-dc970cb5281a
 # ╟─ec610508-f605-4839-a173-00a995f80937
 # ╠═1f9ce7b4-7c20-4fc2-96bb-62a90ac079e2
 # ╠═b12da6d7-0b8a-439d-8199-8f67fa8ad123
