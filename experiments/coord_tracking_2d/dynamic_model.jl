@@ -13,13 +13,13 @@ end
 
     exp_x = xₜ₋₁ + vxₜ
     exp_y = yₜ₋₁ + vyₜ
-    xₜ ~ categorical(maybe_one_off(exp_x, 0.6, Positions()))
-    yₜ ~ categorical(maybe_one_off(exp_y, 0.6, Positions()))
+    xₜ ~ categorical(truncated_discretized_gaussian(exp_x, 1.0, Positions()))
+    yₜ ~ categorical(truncated_discretized_gaussian(exp_y, 1.0, Positions()))
     return (xₜ, vxₜ, yₜ, vyₜ)
 end
 @gen (static) function obs_model(xₜ, vxₜ, yₜ, vyₜ)
-    obsx ~ categorical(truncated_discretized_gaussian(xₜ, 2.0, Positions()))
-    obsy ~ categorical(truncated_discretized_gaussian(yₜ, 2.0, Positions()))
+    obsx ~ categorical(truncated_discretized_gaussian(xₜ, 4.0, Positions()))
+    obsy ~ categorical(truncated_discretized_gaussian(yₜ, 4.0, Positions()))
 
     return (obsx, obsy)
 end
@@ -47,12 +47,4 @@ end
     vyₜ ~ labeled_categorical(Vels(),
         truncated_discretized_gaussian(diff_y, 1.0, Vels())
     )
-end
-
-@gen function _step_proposal(prev_tr, obsx, obsy)
-    T = get_args(prev_tr)[1] + 1
-    prev_latents = prev_tr[latent_addr(T - 1)]
-    (a1, a2, a3, a4) = prev_latents
-
-    {:steps => T => :latents} ~ step_proposal(a1, a2, a3, a4, obsx, obsy)
 end
