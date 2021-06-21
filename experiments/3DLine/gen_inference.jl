@@ -1,4 +1,8 @@
+include("../../src/DynamicModels/DynamicModels.jl")
+using .DynamicModels: @DynamicModel, @compile_step_proposal, get_dynamic_model_obs, dynamic_model_smc
+
 include("model.jl")
+
 # latents = (moving_in_depthₜ, vₜ, heightₜ, xₜ, yₜ, rₜ)  --  6 vars
 # obs = (θ, ϕ)  --  2 vars
 model = @DynamicModel(initial_model, step_model, obs_model, 6)
@@ -23,3 +27,6 @@ observations = get_dynamic_model_obs(tr)
     # [particle1trace, particle2trace, ...] # for timestep 3
 # ]
 # where the traces are the traces we have after resampling
+
+# by a "trace for timestep T", I mean a trace which has choices
+# for every timestep up to and including T
