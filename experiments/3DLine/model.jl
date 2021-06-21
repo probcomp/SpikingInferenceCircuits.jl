@@ -9,17 +9,12 @@ ProbEstimates.use_perfect_weights!()
 include("model_utils.jl")
 include("model_hyperparams.jl")
 
-Xs() = 1:10
-Ys() = -5:5
-Heights() = 1:10
-Rs() = 0:Int(ceil(norm_3d(Xs[end], Ys[end], Heights[end])))
-
 @gen (static) function initial_model()
     x = 5
     y = 0
     height = 5
     moving_in_depth = true
-    r = Int(round(#= TODO =#))
+    r = Int(round(sqrt(x^2 + y^2 + height^2)))
     
     return (moving_in_depth, v, height, x, y, r)
 end
@@ -41,10 +36,6 @@ end
     rₜ ~ Cat(onehot(origin_to_object), Rs())
     exact_θ ~ Cat(onehot(acos(x / (exact_r * cos(ϕ))), θs()))
     exact_ϕ ~ Cat(onehot(asin(h / exact_r), ϕs()))
-
-    # rₜ ~ LCat(Rs())(truncated_discretized_gaussian(
-    #     origin_to_object, 2.0, Rs()
-    # ))
 
     return (moving_in_depthₜ, vₜ, heightₜ, xₜ, yₜ, rₜ)
 end
@@ -70,17 +61,12 @@ end
     return (θ, ϕ)
 end
 
-model = @DynamicModel(initial_model, step_model, obs_model, Num_Latent_Vars)
-
 @gen (static) function step_proposal(
     moving_in_depthₜ₋₁, vₜ₋₁, heightₜ₋₁, xₜ₋₁, yₜ₋₁, rₜ₋₁, θₜ, ϕₜ # θ and ϕ are noisy
 )
     # instead of sampling (x, y, h) then computing r (as we do in the model)
     # in the proposal we sample (r, x, y) and then compute h
 
-    # we have the prevoius x,y,h, r and current angles
-    #  
-    
     exact_θ ~ LCat(θs())(truncated_discretized_gaussian(θₜ, 0.05, θs()))
     exact_ϕ ~ LCat(ϕs())(truncated_discretized_gaussian(ϕₜ, 0.05, ϕs()))
 
@@ -95,13 +81,6 @@ model = @DynamicModel(initial_model, step_model, obs_model, Num_Latent_Vars)
     xₜ ~ LCat(Xs())(onehot(exact_x, Xs()))
     yₜ ~ LCat(Ys())(onehot(exact_y, Ys()))
     heightₜ ~ LCat(Heights())(onehot(exact_height, Heights()))
-    
-    # xₜ ~ Cat(truncated_discretized_gaussian(rₜ*cos(ϕ)*cos(θ), 1.5, Xs()))
-    # yₜ ~ Cat(truncated_discretized_gaussian(rₜ*cos(ϕ)*sin(θ), 1.5, Ys()))
-
-    # ϕ_exact = inverse_cosine()
-    # (rₜ, xₜ, yₜ)
-    # heightₜ ~ Cat(onehot(rₜ*sin(ϕ_exact), Heights()))
     
     vₜ ~ LCat(Vs(), maybe_one_off(yₜ - yₜ₋₁, .4, Vs()))
     
