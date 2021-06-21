@@ -3,13 +3,13 @@
 # bernoulli, categorical, etc., but may be incorrect in other cases!
 function to_labeled_cpts(ir::StaticIR, arg_domains)
     # if everything is already a CPT, we can just return the current IR
-    if all(is_cpt(node.dist) for node in ir.choice_nodes)
+    if is_cpts(ir)
         return ir
     end
 
     parents_of_dists = Set{Symbol}()
     for node in ir.choice_nodes
-        if !is_cpt(node.dist)
+        if !is_cpts(node.dist)
             for parent in node.inputs
                 push!(parents_of_dists, parent.name)
             end
@@ -23,18 +23,20 @@ function to_labeled_cpts(ir::StaticIR, arg_domains)
     to_replace = Dict{Symbol, StaticIRNode}()
 
     for node in ir.choice_nodes
-        if !is_cpt(node.dist)
+        if !is_cpts(node.dist)
             to_replace[node.name] = get_labeled_cpt_node(node, name_to_domain)
         end
     end
     for node in ir.call_nodes
-        to_replace[node.name] = GenerativeFunctionCallNode(
-            to_labeled_cpts(
-                node.generative_function,
-                [name_to_domain[x.name] for x in node.inputs]
-            ),
-            node.inputs, node.addr, node.name, node.typ
-        )
+        if !is_cpts(node.generative_function)
+            to_replace[node.name] = GenerativeFunctionCallNode(
+                to_labeled_cpts(
+                    node.generative_function,
+                    [name_to_domain[x.name] for x in node.inputs]
+                ),
+                node.inputs, node.addr, node.name, node.typ
+            )
+        end
     end
 
     ### Build a new IR, using our REPLACE/DELETE labels ###
@@ -57,21 +59,8 @@ function to_labeled_cpts(ir::StaticIR, arg_domains)
     return build_ir(builder)
 end
 
-# It's annoying that we have to do `eval` -- this is a TODO for the static IR
-function to_labeled_cpts(gf::StaticIRGenerativeFunction, arg_domains)
-    gf = eval(
-        Gen.generate_generative_function(
-            to_labeled_cpts(Gen.get_ir(typeof(gf)), arg_domains),
-            Symbol("$(typeof(gf))__labeled_cpts"); track_diffs=false, cache_julia_nodes=true
-        )
-    )
-    @load_generated_functions()
-    return gf
-end
-
-is_cpt(::CPT) = true
-is_cpt(::LabeledCPT) = true
-is_cpt(::Gen.Distribution) = false
+to_labeled_cpts(gf::StaticIRGenerativeFunction, arg_domains) =
+    to_gf(to_labeled_cpts(get_ir(gf), arg_domains), add_gf_name_suffix(gf, "labeled"))
 
 # Get a RandomChoiceNode with a LabeledCPT distribution equivalent to `node`'s distribution,
 # slurping in all the parents of the node (which are assumed to be JuliaNodes which produce

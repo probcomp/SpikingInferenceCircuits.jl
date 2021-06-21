@@ -5,7 +5,6 @@
 function to_indexed_cpts(ir::StaticIR, arg_domains)
     ir = to_labeled_cpts(ir, arg_domains)
     original_domains = get_domains(ir.nodes, arg_domains)
-    # display(original_domains)
 
     new_domains = Dict()
 
@@ -15,7 +14,6 @@ function to_indexed_cpts(ir::StaticIR, arg_domains)
     domain_bijections = Dict()
 
     for (name, old_domain) in original_domains
-
         (new_domains[name], domain_bijections[name]) = to_indexed_domain(old_domain)
     end
 
@@ -35,15 +33,9 @@ function to_indexed_cpts(ir::StaticIR, arg_domains)
     return (build_ir(builder), domain_bijections, domain_bijections[ir.return_node.name])
 end
 
-# TODO: we should ideally get `track_diffs` and `cache_julia_nodes` from the original `gf`!
 function to_indexed_cpts(gf::StaticIRGenerativeFunction, arg_domains)
     (ir, bijs...) = to_indexed_cpts(get_ir(gf), arg_domains)
-    gf = eval(Gen.generate_generative_function(
-            ir,
-            Symbol("$(typeof(gf))__indexed"); track_diffs=false, cache_julia_nodes=true
-        ))
-    @load_generated_functions()
-    return (gf, bijs...)
+    return (to_gf(ir, add_gf_name_suffix(gf, "indexed")), bijs...)
 end
 
 ### idx_to_label / label_to_idx utils ###
@@ -60,7 +52,7 @@ idx_to_label(bijs::Vector) =
 label_to_idx(::Nothing) = identity
 label_to_idx(bij::Bijection) = l -> bij(l)
 label_to_idx(bijs::Vector) =
-    labels -> map.(map(label_to_idx, bijs), labels)
+    labels -> [f(label) for (f, label) in zip(map(label_to_idx, bijs), labels)]
 
 ### to_indexed_domain ###
 to_indexed_domain(old_domain::EnumeratedDomain) =
@@ -110,18 +102,36 @@ to_indexed_cpt_node(node::RandomChoiceNode, _, bijections) =
         setproperties(node, (dist=node.dist.cpt, typ=valtype_expr(bijections[node.name])))
     end
 
-function to_indexed_cpt_node(node::JuliaNode, _, bijections)
+function to_indexed_cpt_node(node::JuliaNode, old_domains, bijections)
     output_to_idx = label_to_idx(bijections[node.name])
     
     indexed_fn(indices...) =
-        output_to_idx(
-            node.fn(
-                (
-                    idx_to_label(bijections[p.name])(idx)
-                    for (idx, p) in zip(indices, node.inputs)
-                )...
+        # TODO: consider removing try/catch
+        try
+            output_to_idx(
+                node.fn(
+                    (
+                        idx_to_label(bijections[p.name])(idx)
+                        for (idx, p) in zip(indices, node.inputs)
+                    )...
+                )
             )
-        )
+        catch e
+             @error("""
+            Error when running indexed fn on $(collect(indices))
+            with inputs $(node.inputs);
+            node.name = $(node.name);
+            old domain = $(old_domains[node.name])
+            bijections[node.name] = $(bijections[node.name])
+            """)
+            for (idx, p) in zip(indices, node.inputs)
+                @error("bijections[$(p.name)] == $(bijections[p.name]); old_domains[$(p.name)] = $(old_domains[p.name])")
+            end
+            if isempty(node.inputs)
+                @error("node.fn() = $(node.fn())")
+            end
+            error(e)
+        end
     
     return setproperties(node, (fn = indexed_fn, typ=valtype_expr(bijections[node.name])))
 end

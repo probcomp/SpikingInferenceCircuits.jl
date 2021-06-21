@@ -47,10 +47,8 @@ determ_finite_domain_implementation(g::DeterministicGenFn) =
         ), (), (:out => :value,)
     ) # TODO: double check that this is right
 
-# TODO: implementation for ProductDomain output
 function determ_to_product_implementation(g::DeterministicGenFn, ::Spiking)
-    @assert length(g.input_domains) == 1 "In the current implementation, a deterministic function outputting a ProductDomain value may only have a single value as input!"
-    @assert all(d isa FiniteDomain for d in g.output_domain.subdomains) "Currently not implemented: outputting ProductDomain values where some subdomains are not FiniteDomains."
+    @assert length(g.input_domains) == 1 "In the current implementation, a deterministic function outputting a ProductDomain value must have exactly one input value, but got $(length(g.input_domains)) for $g."
     input_domain = only(g.input_domains)
 
     return CompositeComponent(
@@ -59,16 +57,28 @@ function determ_to_product_implementation(g::DeterministicGenFn, ::Spiking)
         implement(implement(inputs(g), Spiking(), :inputs), Spiking(), :inputs),
         implement(implement(outputs(g), Spiking(), :value), Spiking(), :value),
         (),
-        (
-            let outval = g.fn(inval)
-                Input(:inputs => 1 => inval) => Output(:value => outidx => outval[outidx])
-            end
+        Iterators.flatten(
+            (
+                Input(:inputs => 1 => inval) => Output(:value => addr)    
+                for addr in activated_output_addrs(g.output_domain, g.fn(inval))
+            )
             for inval=1:input_domain.n
-                for outidx=1:length(g.output_domain.subdomains)
         ),
         g
     )
 end
+
+# Get the output addresses which should be activated for a given input in a determ fn outputting a
+# (potentially nested) ProductDomain
+# activated_output_addr(domain::IndexedProductDomain, array_output_from_fn_called_on_some_input)
+# will yield an iterator over nested addrs `i => j => ... => v` such that
+# for the input from which the array was obtained, `Output(:names => i => j => ... => v)` should
+# be activated
+activated_output_addrs(d::FiniteDomain, v) = v
+activated_output_addrs(p::IndexedProductDomain, a::AbstractArray) = Iterators.flatten(
+    (i => r for r in activated_output_addrs(subdomain, a[i]))
+    for (i, subdomain) in enumerate(p.subdomains)
+)
 
 function Circuits.implement(g::DeterministicGenFn, t::Target)
     println("Implementing a deterministic gen fn...")

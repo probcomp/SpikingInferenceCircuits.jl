@@ -35,34 +35,37 @@ end
 function handle_node!(node::JuliaNode, name_to_domain, domain_type_constraint)
     input_domains = (name_to_domain[parent.name] for parent in node.inputs)
     assmts = Iterators.product(input_domains...)
-
-    possible_outcomes = EnumeratedDomain(collect(unique(node.fn(assmt...) for assmt in assmts)))
-    # if length(possible_outcomes.vals) < 10
-    #     println("POSSIBLE OUTCOMES: $(possible_outcomes.vals)")
-    # end
-
-    name_to_domain[node.name] =
-        if domain_type_constraint == EnumeratedDomain
-            possible_outcomes
-        elseif domain_type_constraint == ProductDomain
-            @assert valid_for_product_domain(possible_outcomes)
-            to_product_domain(possible_outcomes)
-        # else if no specific domain type is given (ie. domain_type_constraint == Domain)
-        elseif valid_for_product_domain(possible_outcomes)
-            to_product_domain(possible_outcomes)
-        else
-            possible_outcomes
-        end
+    possible_domains = EnumeratedDomain(collect(unique(node.fn(assmt...) for assmt in assmts)))
+    name_to_domain[node.name] = possible_outcomes_to_domain(
+        possible_domains, domain_type_constraint
+    )
 end
+
+function possible_outcomes_to_domain(possible_outcomes::EnumeratedDomain, domain_type_constraint=Domain)
+    if domain_type_constraint == EnumeratedDomain
+        possible_outcomes
+    elseif domain_type_constraint == ProductDomain
+        @assert valid_for_product_domain(possible_outcomes)
+        to_product_domain(possible_outcomes)
+    # else if no specific domain type is given (ie. domain_type_constraint == Domain)
+    elseif valid_for_product_domain(possible_outcomes)
+        to_product_domain(possible_outcomes)
+    else
+        possible_outcomes
+    end
+end
+
+is_product_type(::AbstractArray) = true
+is_product_type(_) = false
 valid_for_product_domain(d::EnumeratedDomain) = (
-    all(v isa Array for v in vals(d)) &&
+    all(is_product_type(v) for v in vals(d)) &&
     let (first, rest) = Iterators.peel(vals(d))
         all(size(v) == size(first) for v in rest)
     end
 )
 to_product_domain(d::EnumeratedDomain) = ProductDomain(
         [
-            map(x -> x[i], vals(d)) |> unique |> collect |> EnumeratedDomain
+            map(x -> x[i], vals(d)) |> unique |> collect |> EnumeratedDomain |> possible_outcomes_to_domain
             for i=1:length(first(vals(d)))
         ]
     )

@@ -17,6 +17,5 @@ function get_inputs(runtime, inter_obs_interval, initial_x, initial_v, initial_e
         newobs = popfirst!(observations)
         push!(inputs, (t, (:obs => :obsₜ => newobs,)))
     end
-
     return inputs
 end

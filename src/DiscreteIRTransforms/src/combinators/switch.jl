@@ -20,3 +20,5 @@ function to_indexed_cpts(s::Switch, arg_domains)
         only(unique(retbijs))
     )
 end
+
+is_cpts(s::Switch) = all(is_cpts(b) for b in s.branches)

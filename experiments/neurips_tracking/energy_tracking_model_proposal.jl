@@ -54,7 +54,7 @@ or(a, b) = a || b
                 maybe_one_or_two_off(vₜ₋₁, 0.8, Vels())
         )(stop, vₜ₋₁)
     xₜ ~ categorical(maybe_one_off(xₜ₋₁ + vₜ, 0.6, Xs()))
-    eₜ ~ categorical(maybe_one_off(expected_energy(eₜ₋₁, vₜ), 0.5, Energies()))
+    eₜ ~ categorical(maybe_one_off(expected_energy(eₜ₋₁, vₜ₋₁), 0.5, Energies()))
     obsₜ ~ categorical(discretized_gaussian(xₜ, 2.0, Xs()))
     return obsₜ
 end
@@ -71,7 +71,7 @@ end
     stopped = vₜ == 0
     stop_because_far ~ bernoulli(prop_p_stop_far(stopped, vₜ₋₁, xₜ₋₁))
     stop_because_tired ~ bernoulli(prop_p_stop_tired(stopped, stop_because_far, eₜ₋₁))
-    eₜ ~ categorical(maybe_one_off(expected_energy(eₜ₋₁, vₜ), .5, Energies()))
+    eₜ ~ categorical(maybe_one_off(expected_energy(eₜ₋₁, vₜ₋₁), .5, Energies()))
     return xₜ
 end
 @load_generated_functions()

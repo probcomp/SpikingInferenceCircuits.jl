@@ -3,6 +3,7 @@ using Gen
 using Circuits
 using SpikingCircuits
 using CPTs
+using DiscreteIRTransforms
 using Distributions: ncategories
 
 include("circuits/pulse_ir/pulse_ir.jl")
@@ -27,7 +28,5 @@ include("circuits/inference/mh.jl")
 export ISParticle
 export SMC
 export MHKernel, MH
-
-include("DiscreteIRTransforms/src/DiscreteIRTransforms.jl")
 
 end
