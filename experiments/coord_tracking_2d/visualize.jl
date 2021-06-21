@@ -3,8 +3,8 @@ RES = 400
 set_theme!(resolution=(RES, RES), colormap=:grays, fontsize=12)
 
 matrix(truex, truey) = [x == truex && y == truey for x in Positions(), y in Positions()]
-gt_matrix(ch) = matrix(ch[:latents => :xₜ], ch[:latents => :yₜ])
-obs_matrix(ch) = matrix(ch[:obs => :obsx], ch[:obs => :obsy])
+gt_matrix(ch) = matrix(ch[:latents => :xₜ => :val], ch[:latents => :yₜ => :val])
+obs_matrix(ch) = matrix(ch[:obs => :obsx => :val], ch[:obs => :obsy => :val])
 both_matrix(ch) = 2 * obs_matrix(ch) + gt_matrix(ch)
 
 # inferred_vs_true_img() =

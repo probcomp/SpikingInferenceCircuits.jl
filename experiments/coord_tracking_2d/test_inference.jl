@@ -1,14 +1,13 @@
 include("dynamic_model.jl")
-include("dynamic_model_utils.jl")
 
 @gen (static) function dumb_step_proposal(xₜ₋₁, vxₜ₋₁, yₜ₋₁, vyₜ₋₁, obsx, obsy)
-    xₜ ~ categorical(truncated_discretized_gaussian(obsx, 2.0, Positions()))
-    yₜ ~ categorical(truncated_discretized_gaussian(obsy, 2.0, Positions()))
-    vxₜ ~ categorical(onehot(
+    xₜ ~ Cat(truncated_discretized_gaussian(obsx, 2.0, Positions()))
+    yₜ ~ Cat(truncated_discretized_gaussian(obsy, 2.0, Positions()))
+    vxₜ ~ LCat(Vels())(onehot(
         truncate_value(truncate_value(xₜ - xₜ₋₁, (vxₜ₋₁ - 1):(vxₜ₋₁ + 1)), Vels()),
         Vels()
     ))
-    vyₜ ~ categorical(onehot(
+    vyₜ ~ LCat(Vels())(onehot(
         truncate_value(truncate_value(yₜ - yₜ₋₁, (vyₜ₋₁ - 1):(vyₜ₋₁ + 1)), Vels()),
         Vels()
     ))
@@ -23,12 +22,12 @@ tr = simulate(dm, (NSTEPS,))
 obss = get_dynamic_model_obs(tr)
 
 smc_inferences = dynamic_model_smc(
-    dm, obss, cm -> (cm[:obsx], cm[:obsy]),
+    dm, obss, cm -> (cm[:obsx => :val], cm[:obsy => :val]),
     initial_proposal, smart_sp, 20
 )
 
 dumb_inferences = dynamic_model_smc(
-    dm, obss, cm -> (cm[:obsx], cm[:obsy]),
+    dm, obss, cm -> (cm[:obsx => :val], cm[:obsy => :val]),
     initial_proposal, dumb_sp, 1 # 1 particle so no the weights have no effect
 )
 
@@ -41,10 +40,10 @@ avg_dist_from_ground_truth(inferred_trace_for_step, gt, T) = sum(
     ) / T
 
 function dist(tr1, tr2, t)
-    x1 = tr1[:steps => t => :latents => :xₜ]
-    y1 = tr1[:steps => t => :latents => :yₜ]
-    x2 = tr2[:steps => t => :latents => :xₜ]
-    y2 = tr2[:steps => t => :latents => :yₜ]
+    x1 = tr1[:steps => t => :latents => :xₜ => :val]
+    y1 = tr1[:steps => t => :latents => :yₜ => :val]
+    x2 = tr2[:steps => t => :latents => :xₜ => :val]
+    y2 = tr2[:steps => t => :latents => :yₜ => :val]
     return abs(x1 - x2) + abs(y1 - y2)
 end
 
@@ -54,7 +53,7 @@ function avg_dists_from_ground_truth(n_steps, n_traces, n_runs_per_trace, n_part
     smart_unweighted_inferences = [
         [
             dynamic_model_smc(
-                dm, obss, cm -> (cm[:obsx], cm[:obsy]),
+                dm, obss, cm -> (cm[:obsx => :val], cm[:obsy => :val]),
                 initial_proposal, smart_sp, n_particles
             )[1]
             for _=1:n_runs_per_trace
@@ -64,7 +63,7 @@ function avg_dists_from_ground_truth(n_steps, n_traces, n_runs_per_trace, n_part
     dumb_unweighted_inferences = [
         [
             dynamic_model_smc(
-                dm, obss, cm -> (cm[:obsx], cm[:obsy]),
+                dm, obss, cm -> (cm[:obsx => :val], cm[:obsy => :val]),
                 initial_proposal, dumb_sp, 1 # 1 particle so no the weights have no effect
             )[1]
             for _=1:n_runs_per_trace
