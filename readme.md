@@ -6,13 +6,25 @@ to (e.g.) FPGAs or ASICs in the future by defining compilation routes for those 
 However, currently full compilation paths to primitive components are only provided for
 the `Spiking` target.
 
-This library uses the [Circuits library]() for circuit representation & compilation,
-and the [Spiking circuits library]() for primitive spiking components and the SNN simulator.
+This library uses the [Circuits library](https://github.com/probcomp/Circuits.jl) for circuit representation & compilation,
+and the [Spiking circuits library](https://github.com/probcomp/SpikingCircuits.jl) for primitive spiking components and the SNN simulator.
 
 ## Current goals
 Our current goals include compiling a subset of [Gen](gen.dev) probabilistic programs into spiking neural
 networks in forward-sampling mode, implementing importance sampling using Gen target & proposal distributions,
 and eventually implementing sequential monte carlo for these models.
+
+### Setup
+After cloning this repo, from the `SpikingInferenceCircuits.jl/` directory:
+```zsh
+] activate .
+] add https://github.com/probcomp/Gen.jl#20210615-marcoct-sml
+] add https://github.com/probcomp/Circuits.jl
+] add https://github.com/probcomp/SpikingCircuits.jl
+] build
+```
+
+(I haven't tested this recently; there may be some other work to do to get the envirnoment set up properly.)
 
 ### Repository Structure
 
@@ -30,11 +42,13 @@ I'm currently reorganizing and rewriting large parts of `src`, so the imports in
 
 (This is currently WIP.)
 
-I would like to end up with the directory structure looking something like
+An outline of the directory structure is:
 ```
 src/
     CPTs/
     DiscreteIRTransforms/
+    ProbEstimates/
+    DynamicModels/
     circuits/
         value_types.jl
         pulse_ir/
@@ -44,16 +58,10 @@ src/
             primitives/
             pulse_ir_implementations/
         generative_functions/
-            interface.jl
-            sdc_implementation/
-                composite/
-                leaf/
+            composite/
+            leaf/
         inference/
 ```
-though it doesn't quite match this yet.
-
-I'm also not totally sure about what subdirectory structure for `generative_functions/` and `inference/` will
-make the most sense.
 
 - `CPTs` a Julia package exposing the `CPT` (conditional probability table)
   and `LabeledCPT` Gen distributions.
@@ -61,21 +69,24 @@ make the most sense.
   all variables are discrete and have finite domains.  In particular, it contains some
   transformations to convert from Static IR (+ combinators) generative functions
   to equivalent generative functions where all distributions are CPTs.
-- `circuits/value_types.jl` defines `Value` types (from the Circuits library) used for the circuits
-- `circuits/generative_functions` contains generative function PROPOSE and ASSESS circuits.
-  - Eventually, I would like to have an externally-facing interface for these circuits in `interface.jl`
-    and then implementations in terms of stochastic digital circuits in `sdc_implementation/`.
-    (Currently, it isn't structured quite like this; I haven't thought through what the external vs internal
-    interface for this code should be.)
-- `circuits/inference` will contain code for producing inference circuits.  I haven't thought through
-  what this should look like.
-- `circuits/stochastic_digital_circuits/` and `circuits/pulse_ir/` will define the stochastic digital circuits
-  and Pulse IR primitive components (and maybe some non-primitive components too.  Eventually
-  they will also include SDC --> Pulse IR implementations, and Pulse IR --> Poisson neuron implementations.
-  `pulse_ir/` will also contain code for satisfying the temporal interfaces of the Pulse IR.
+- `ProbEstimates/` is a module for running inference in Gen, injecting noise
+  into each probability or inverse-probability value used in the calculations.
+  This noise mirrors the type of noise which arises in the spiking neural network
+  implementations.  This lets us test the robustness of the SNN implementation of
+  inference algorithms in Gen.
+- `DynamicModels/` is a WIP module providing utility functions for constructing
+  and running SMC inference in dynamic models.
 
-`old_src` contains some component implementations from a previous draft; I haven't sifted through
-which of these I want to keep yet.
+- `circuits` contains the code to compile models and inference programs into circuits
+  and ultimately into spiking neural networks.  The sub-directory structure is roughly:
+  - `circuits/value_types.jl` defines `Value` types (from the Circuits library) used for the circuits
+  - `circuits/generative_functions` contains generative function PROPOSE and ASSESS circuits.
+  - `circuits/inference` contains code for producing inference circuits.  I haven't thought through
+    what this should look like.
+  - `circuits/stochastic_digital_circuits/` and `circuits/pulse_ir/` define the stochastic digital circuits
+    and Pulse IR primitive components (and maybe some non-primitive components too.  Eventually
+    they will also include SDC --> Pulse IR implementations, and Pulse IR --> Poisson neuron implementations.
+    `pulse_ir/` will also contain code for satisfying the temporal interfaces of the Pulse IR.
 
 ### Visualizations
 
