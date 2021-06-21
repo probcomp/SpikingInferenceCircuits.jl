@@ -21,6 +21,8 @@ After cloning this repo, from the `SpikingInferenceCircuits.jl/` directory:
 ] add https://github.com/probcomp/Gen.jl#20210615-marcoct-sml
 ] add https://github.com/probcomp/Circuits.jl
 ] add https://github.com/probcomp/SpikingCircuits.jl
+] dev src/CPTs
+] dev src/DiscreteIRTransforms
 ] build
 ```
 
