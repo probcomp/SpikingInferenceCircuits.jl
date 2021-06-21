@@ -29,7 +29,7 @@ end
     vₜ ~ LCat(Vels())(maybe_one_off(vₜ₋₁, 0.2, Vels()))
 
     heightₜ ~ Cat(moving_in_depthₜ ? onehot(heightₜ₋₁, Heights()) : maybe_one_off(heightₜ₋₁ - vₜ, 0.2, Heights()))
-    xₜ ~ Cat(moving_in_depthₜ ? maybe_one_off(xₜ₋₁ + v,  0.2, Xs()) : onehot(xₜ₋₁, Xs()))
+    xₜ ~ Cat(moving_in_depthₜ ? maybe_one_off(xₜ₋₁ + vₜ,  0.2, Xs()) : onehot(xₜ₋₁, Xs()))
     yₜ ~ Cat(maybe_one_off(yₜ₋₁ + 0.2, Ys()))
 
     # Here: a stochastic mapping from (x, y, h) -> (r, θ, ϕ)
@@ -62,8 +62,8 @@ norm_3d(x, y, z) = sqrt(x^2 + y^2 + z^2)
     exact_ϕ = asin(height / exact_r)
     exact_θ = acos(x / (exact_r * cos(exact_ϕ)))
 
-    ϕ ~ Cat(trunacated_discretized_gaussian(exact_ϕ, 0.4, ϕs()))
-    θ ~ Cat(trunacated_discretized_gaussian(exact_θ, 0.4, θs()))
+    ϕ ~ Cat(truncated_discretized_gaussian(exact_ϕ, 0.4, ϕs()))
+    θ ~ Cat(truncated_discretized_gaussian(exact_θ, 0.4, θs()))
 
     return (θ, ϕ)
 end
