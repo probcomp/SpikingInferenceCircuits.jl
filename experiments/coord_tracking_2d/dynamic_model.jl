@@ -1,4 +1,7 @@
 using Gen, Distributions
+include("../../src/DynamicModels.jl")
+using .DynamicModels
+
 include("modeling_utils.jl")
 include("model_hyperparams.jl")
 

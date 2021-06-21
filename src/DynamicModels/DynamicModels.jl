@@ -1,3 +1,7 @@
+module DynamicModels
+
+using Gen
+
 macro DynamicModel(
     initial_latent_model,
     latent_step_model,
@@ -109,4 +113,8 @@ function nest_at(addr, submap::Gen.ChoiceMap)
     c = choicemap()
     set_submap!(c, addr, submap)
     return c
+end
+
+export @DynamicModel, @compile_step_proposal, dynamic_model_smc, get_dynamic_model_obs
+
 end
