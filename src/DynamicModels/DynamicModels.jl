@@ -12,17 +12,17 @@ macro DynamicModel(
     latent_names = [Symbol("latent$i") for i=1:n_latents]
     return quote
         @gen (static) function initial_step()
-            latents ~ $(initial_latent_model)()
+            latents ~ $(esc(initial_latent_model))()
             ($(latent_names...),) = latents
-            obs ~ $(obs_model)($(latent_names...))
+            obs ~ $(esc(obs_model))($(latent_names...))
             return latents
         end
 
         @gen (static) function take_step(t, prev_latents)
             ($(prev_latent_names...),) = prev_latents
-            latents ~ $(latent_step_model)($(prev_latent_names...))
+            latents ~ $(esc(latent_step_model))($(prev_latent_names...))
             ($(latent_names...),) = latents
-            obs ~ $(obs_model)($(latent_names...))
+            obs ~ $(esc(obs_model))($(latent_names...))
             return latents
         end
 
@@ -46,7 +46,7 @@ macro compile_step_proposal(
             prev_latents = tr[latent_addr(T - 1)]
             ($(prop_argnames...),) = prev_latents
 
-            {:steps => T => :latents} ~ $(step_proposal)($(prop_argnames...), $(obs_argnames...))
+            {:steps => T => :latents} ~ $(esc(step_proposal))($(prop_argnames...), $(obs_argnames...))
         end
     end
 end
