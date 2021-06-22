@@ -29,4 +29,8 @@ observations = get_dynamic_model_obs(tr)
 # where the traces are the traces we have after resampling
 
 # by a "trace for timestep T", I mean a trace which has choices
+
 # for every timestep up to and including T
+
+
+
