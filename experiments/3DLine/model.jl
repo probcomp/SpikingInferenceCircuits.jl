@@ -33,7 +33,7 @@ end
 
     heightₜ ~ Cat(moving_in_depthₜ ? onehot(heightₜ₋₁, Heights()) : maybe_one_off(heightₜ₋₁ - vₜ, 0.2, Heights()))
     xₜ ~ Cat(moving_in_depthₜ ? maybe_one_off(xₜ₋₁ + vₜ,  0.2, Xs()) : onehot(xₜ₋₁, Xs()))
-    yₜ ~ Cat(maybe_one_off(yₜ₋₁ + 0.2, Ys()))
+    yₜ ~ Cat(maybe_one_off(yₜ₋₁ + vₜ, 0.2, Ys()))
 
     # Here: a stochastic mapping from (x, y, h) -> (r, θ, ϕ)
     # TODO: make the probabilities perfectly correspond to the volume of overlap
@@ -41,10 +41,9 @@ end
     # For now: just use dimension-wise discretized Gaussians.
     # # rθϕ ~ LCat(RΘΦs())(xyh_to_azalt_probs(xₜ, yₜ, heightₜ))
     origin_to_object = norm_3d(xₜ, yₜ, heightₜ)
-    rₜ ~ Cat(truncated_discretized_guassian(origin_to_object, 1.0, Rs()), Rs())
-    exact_θ ~ LCat(θs())(truncated_discretized_gaussian(acos(x / (exact_r * cos(ϕ))), θstep(), θs()))
-    exact_ϕ ~ LCat(ϕs())(truncated_discretized_gaussian(asin(h / exact_r), ϕstep(), ϕs()))
-
+    rₜ ~ Cat(truncated_discretized_gaussian(origin_to_object, 1.0, Rs()))
+    exact_ϕ ~ LCat(ϕs())(truncated_discretized_gaussian(asin(heightₜ / rₜ), ϕstep(), ϕs()))
+    exact_θ ~ LCat(θs())(truncated_discretized_gaussian(acos(xₜ / (rₜ * cos(exact_ϕ))), θstep(), θs()))
     return (moving_in_depthₜ, vₜ, heightₜ, xₜ, yₜ, rₜ)
 end
 

@@ -1,3 +1,4 @@
+using Base: Int64
 include("../../src/DynamicModels/DynamicModels.jl")
 using .DynamicModels: @DynamicModel, @compile_step_proposal, get_dynamic_model_obs, dynamic_model_smc
 
