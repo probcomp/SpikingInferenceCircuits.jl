@@ -2,6 +2,7 @@ using Gen, Distributions, CPTs
 include("modeling_utils.jl")
 include("model_hyperparams.jl")
 
+PositionDiffs() = (first(Positions()) - last(Positions())):(last(Positions()) - first(Positions()))
 err_if_not_probvec(pvec, errmsg) =
     if isprobvec(pvec)
         pvec
@@ -46,7 +47,7 @@ end
     )
     
     diff_x = xₜ - xₜ₋₁
-    vxₜ ~ LabeledCPT{Int}([Vels(), Vels()], Vels(), ((vx, diff_x),) -> vel_step_dist(vx, diff_x))(vxₜ₋₁, diff_x)
+    vxₜ ~ LabeledCPT{Int}([Vels(), PositionDiffs()], Vels(), ((vx, diff_x),) -> vel_step_dist(vx, diff_x))(vxₜ₋₁, diff_x)
 
     projected_y = truncate_value(yₜ₋₁ + vyₜ₋₁, Positions())
     mean_y = (obsy + projected_y)/2
@@ -58,7 +59,7 @@ end
         ) |> truncate
     )
     diff_y = yₜ - yₜ₋₁
-    vyₜ ~ LabeledCPT{Int}([Vels(), Vels()], Vels(), ((vx, diff_x),) -> vel_step_dist(vx, diff_x))(vyₜ₋₁, diff_y)
+    vyₜ ~ LabeledCPT{Int}([Vels(), PositionDiffs()], Vels(), ((vx, diff_x),) -> vel_step_dist(vx, diff_x))(vyₜ₋₁, diff_y)
 
     return xₜ
 end

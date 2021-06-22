@@ -1,4 +1,5 @@
 using SpikingInferenceCircuits
+const SIC = SpikingInferenceCircuits
 using Circuits, SpikingCircuits
 include("compilable_model.jl")
 
@@ -22,5 +23,5 @@ println("SMC Circuit Constructed.")
 
 includet("implementation_rules.jl")
 println("Implementation rules loaded.")
-impl = Circuits.implement_deep(rsmcstep, Spiking())
+impl = Circuits.memoized_implement_deep(rsmcstep, Spiking());
 println("Circuit implemented deeply.")

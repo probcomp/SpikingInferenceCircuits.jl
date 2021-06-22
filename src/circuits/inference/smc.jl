@@ -54,7 +54,7 @@ Circuits.implement(s::SMCStep, ::Target) =
             resample=Resample(s.num_particles, all_new_latents_val(s))
         ), Iterators.flatten(
             (
-                Input(:prev_latents) => CompIn(:particles => i, :args),
+                Input(:prev_latents => i) => CompIn(:particles => i, :args),
                 Input(:obs) => CompIn(:particles => i, :obs),
                 CompOut(:particles => i, :trace) => CompIn(:resample, :traces => i),
                 CompOut(:particles => i, :weight) => CompIn(:resample, :weights => i),
@@ -109,17 +109,17 @@ Circuits.implement(s::RecurrentSMCStep, ::Target) =
         (
             # Inputs --> timestep
             Input(:initial_latents) => CompIn(:timestep, :in => :latents),
-            Input(:obs) => CompIn(:timestep, :obs),
+            Input(:obs) => CompIn(:timestep, :in => :obs),
             
             # Timestep --> SMCStep
             CompOut(:timestep, :out => :obs) => CompIn(:smcstep, :obs),
             CompOut(:timestep, :out => :latents) => CompIn(:smcstep, :prev_latents),
 
             ( # Recur outputted latents back into the timestep unit
-                CompOut(:smcstep, i => new_latent_addr) => CompIn(:timestep, i => prev_latent_addr)
+                CompOut(:smcstep, i => new_latent_addr) => CompIn(:timestep, :in => :latents => i => prev_latent_addr)
                 for i=1:s.step.num_particles
                     for (new_latent_addr, prev_latent_addr) in zip(
-                        s.latent_var_addrs_for_recurrence, keys(inputs(s.step)[:prev_latents])
+                        s.latent_var_addrs_for_recurrence, keys(inputs(s.step)[:prev_latents => 1])
                     )
             )...,
 

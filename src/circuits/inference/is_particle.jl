@@ -46,8 +46,8 @@ struct ISParticle <: GenericComponent
     propose           :: GenFn{Propose}
     assess_latents    :: GenFn{Generate}
     assess_obs        :: GenFn{Generate}
-    obs_addr_order    :: Vector
     latent_addr_order :: Vector
+    obs_addr_order    :: Vector
 end
 ISParticle(
     proposal::GenFnWithInputDomains, latent_model::GenFnWithInputDomains,
@@ -79,7 +79,7 @@ Circuits.implement(p::ISParticle, ::Target) =
             ))
         ), (
             ( # Input args -> propose args
-                Input(:args => addr) => CompIn(:propose => addr)
+                Input(:args => addr) => CompIn(:propose, :inputs => addr)
                 for addr in keys(inputs(p.assess_latents)[:inputs])
             )...,
             ( # Input obs -> propose args
@@ -89,7 +89,7 @@ Circuits.implement(p::ISParticle, ::Target) =
             Input(:args) => CompIn(:assess_latents, :inputs),
             CompOut(:propose, :trace) => CompIn(:assess_latents, :obs),
             ( # sampled latent values -> assess obs args
-                CompOut(:propose, :trace => prop_addr) => CompIn(:assess_obs, :args => obs_addr)
+                CompOut(:propose, :trace => prop_addr) => CompIn(:assess_obs, :inputs => obs_addr)
                 for (prop_addr, obs_addr) in zip(
                     p.latent_addr_order, keys(inputs(p.assess_obs)[:inputs])
                 )
@@ -97,7 +97,7 @@ Circuits.implement(p::ISParticle, ::Target) =
             Input(:obs) => CompIn(:assess_obs, :obs),
             CompOut(:propose, :score) => CompIn(:multiplier, 1),
             CompOut(:assess_latents, :score) => CompIn(:multiplier, 2),
-            CompOut(:assess_obs, :score) => CompIn(:multipler, 3),
+            CompOut(:assess_obs, :score) => CompIn(:multiplier, 3),
             CompOut(:multiplier, :out) => Output(:weight),
             CompOut(:propose, :trace) => Output(:trace)
         ), p
