@@ -1,156 +1,134 @@
-#=
-One current restriction is that the model must accept the previous latent values as inputs
-in the same order that the proposal samples them.
+"""
+    SMCStep(
+        step_model_bundle               :: GenFnWithInputDomains,
+        obs_model_bundle                :: GenFnWithInputDomains,
+        step_proposal_bundle            :: GenFnWithInputDomains,
+        latent_var_addrs_for_obs        :: Vector               ,
+        obs_addr_order                  :: Vector               ,
+        num_particles                   :: Int
+    )
 
-Outputs the resampled traces at each step.
-=#
-struct SMC <: GenericComponent
-    num_particles::Int
+A circuit for performing an SMC step under the given step model and proposal.
+Performs the operation: "draw `num_particles` importance samples,
+then resample according to the importance weights, and output the resampled traces".
 
-    #=
-    IS particle where:
-    - assess_args = previous timestep's latents
-    - propose_args = previous timestep latents + current timestep obs
-    =#
-    is_particle::ISParticle
-    # TODO: rejuventation kernels
-
-    function SMC(np::Int, is_particle::ISParticle)
-        smc = new(np, is_particle)
-        @assert all(v1 == v2 for (v1, v2) in zip(values(new_latents_val(smc)), values(prev_latents_val(smc)))) "Prev latents (inputs to model) don't appear to be in same order as values sampled by proposal.  Inputs to model: $(collect(keys(prev_latents_val(smc)))); proposal sampling order: $(collect(keys(new_latents_val(smc))))."
-        return smc
-    end
+``obs_addr_order`` gives the order in which observations should be fed into the proposal
+after the previous timesteps' latents.
+`latent_var_addrs_for_obs` gives the order in which latent variables should be input into the observation
+model.
+"""
+struct SMCStep <: Circuits.GenericComponent
+    num_particles                   :: Int
+    is_particle                     :: ISParticle
+    latent_var_addrs_for_recurrence :: Vector
 end
+SMCStep(
+    step_model_bundle               :: GenFnWithInputDomains,
+    obs_model_bundle                :: GenFnWithInputDomains,
+    step_proposal_bundle            :: GenFnWithInputDomains,
+    latent_var_addrs_for_obs        :: Vector               ,
+    latent_var_addrs_for_recurrence :: Vector               ,
+    obs_addr_order                  :: Vector               ,
+    num_particles                   :: Int
+) = SMCStep(
+        num_particles,
+        ISParticle(
+            step_proposal_bundle, step_model_bundle, obs_model_bundle,
+            latent_var_addrs_for_obs, obs_addr_order
+        )
+    )
 
-SMC(num_particles::Int,  model::Gen.GenerativeFunction, proposal::Gen.GenerativeFunction, model_arg_domains, proposal_arg_domains) =
-    SMC(num_particles, ISParticle(model, proposal, model_arg_domains, proposal_arg_domains))
+# TODO: prev_latents_val, new_latents_val, obs_val
+prev_latents_val(s::SMCStep) = inputs(s.is_particle)[:args]
+obs_val(s::SMC) = inputs(s.is_particle)[:obs]
+all_new_latents_val(s::SMCStep) = outputs(s.is_particle)[:trace]
 
-# prev vs new will have different names, but should have the same values in the same order
-# (e.g. `xₜ₋₁` vs `xₜ`)
-new_latents_val(smc::SMC) = outputs(smc.is_particle)[:trace]
-prev_latents_val(smc::SMC) = inputs(smc.is_particle)[:assess_args]
-
-obs_val(smc::SMC) = inputs(smc.is_particle)[:obs]
-
-Circuits.inputs(smc::SMC) = NamedValues(
-    :initial_latents => IndexedValues(
-        prev_latents_val(smc)
-        for _=1:smc.num_particles
-    ),
-    :obs => obs_val(smc)
+Circuits.inputs(s::SMCStep) = NamedValues(
+    :prev_latents => IndexedValues(prev_latents_val(s) for _=1:s.num_particles),
+    :obs => obs_val(s)
 )
-# inferred current latents for each particle  (after resampling, so they are equally weighted)
-Circuits.outputs(smc::SMC) = IndexedValues(
-    new_latents_val(smc)
-    for _=1:smc.num_particles
-)
+Circuits.outputs(s::SMC) = IndexedValues(all_new_latents_val(s) for _=1:s.num_particles)
 
-obs_to_particle_edges(smc, sending_nodename, i) = (
-    sending_nodename => CompIn(:particles => i, :obs),
-    (
-        Circuits.append_to_valname(sending_nodename, addr) => CompIn(:particles => i, :propose_args => addr)
-        for addr in keys(obs_val(smc))
-    )...
-)
-latents_to_particle_edges(smc, sending_nodename, i) = (
-    sending_nodename => CompIn(:particles => i, :assess_args),
-    (
-        Circuits.append_to_valname(sending_nodename, addr) => CompIn(:particles => i, :propose_args => addr)
-        for addr in keys(prev_latents_val(smc))
-    )...
-)
-
-Circuits.implement(smc::SMC, ::Target) =
+Circuits.implement(s::SMC, ::Target) =
     CompositeComponent(
-        inputs(smc), outputs(smc),
+        inputs(s), outputs(s), (
+            particles=IndexedComponentGroup(s.is_particle for _=1:s.num_particles),
+            resample=Resample(s.num_particles, all_new_latents_val(s))
+        ), Iterators.flatten(
+            (
+                Input(:prev_latents) => CompIn(:particles => i, :args),
+                Input(:obs) => CompIn(:particles => i, :obs),
+                CompOut(:particles => i, :trace) => CompIn(:resample, :traces => i),
+                CompOut(:particles => i, :weight) => CompIn(:resample, :weights => i),
+                CompOut(:resample, :traces => i) => Output(i)
+            )
+            for i=1:s.num_particles
+        ), s
+    )
+
+"""
+    RecurrentSMCStep(step::SMCStep, latent_var_addrs_for_recurrence)
+
+A `SMCStep` which automatically recurs latents sampled at the previous timestep back to the beginning.
+The resulting behavior is that at first the circuit must receive an initial assignment to the latents
+and an initial observation, and will output an initial
+collection of particles for updated latents at the first timestep.
+At each subsequent timesteup, an observation should be input, and the circuit will output
+a collection of particles for updated latents (updating the pervious cloud of latents).
+The particle clouds are unweighted (ie. we output the particles which occur
+after resampling.)
+
+``latent_var_addrs_for_recurrence`` gives the subset of the addresses traced in the model / proposal
+which are latent variables (which should be input to the model/proposal at the next timestep),
+and the order in which they should be input.
+
+The implementation of this circuit includes a `STEP` unit to ensure that all values
+are synchronized when a timestep passes.  Note that there may be a required delay between
+when observations for timesteps are received to maintain high probability of circuit success.
+"""
+struct RecurrentSMCStep <: GenericComponent
+    step                            :: SMCStep
+    latent_var_addrs_for_recurrence :: Vector
+
+    RecurrentSMCStep(s::SMCStep, lvar) = new(s, lvar)
+end
+Circuits.inputs(s::RecurrentSMCStep) = NamedValues(
+    :initial_latents => inputs(s.step)[:latents],
+    :obs => obs_val(s.step)
+)
+Circuits.ouptuts(s::RecurrentSMCStep) = outputs(s.step)
+
+Circuits.implement(s::RecurrentSMCStep, ::Target) =
+    CompositeComponent(
+        inputs(s), outputs(s),
         (
-            particles=IndexedComponentGroup(
-                smc.is_particle for _=1:smc.num_particles
-            ),
-            resample=Resample(smc.num_particles, new_latents_val(smc)),
-            step=Step(NamedValues(
-                :latents => IndexedValues(prev_latents_val(smc) for _=1:smc.num_particles),
+            smcstep=s.step,
+            timestep=Step(NamedValues(
+                :latents => IndexedValues(prev_latents_val(s.step) for _=1:s.step.n_particles),
                 :obs => obs_val(smc)
             ))
         ),
         (
-            # obs -> step
-            Input(:obs) => CompIn(:step, :in => :obs),
+            # Inputs --> timestep
+            Input(:initial_latents) => CompIn(:timestep, :in => :latents),
+            Input(:obs) => CompIn(:timestep, :obs),
+            
+            # Timestep --> SMCStep
+            CompOut(:timestep, :out => :obs) => CompIn(:smcstep, :obs),
+            CompOut(:timestep, :out => :latents) => CompIn(:smcstep, :latents),
 
-            # initial latents -> step
-            Input(:initial_latents) => CompIn(:step, :in => :latents),
-
-            Iterators.flatten( # obs step  -> particles
-                obs_to_particle_edges(smc, CompOut(:step, :out => :obs), i)
-                for i=1:smc.num_particles
-            )...,
-            Iterators.flatten( # step latents -> particles
-                latents_to_particle_edges(smc, CompOut(:step, :out => :latents => i), i)
-                for i=1:smc.num_particles
-            )...,
-            Iterators.flatten( # particle outputs -> resample
-                (
-                    CompOut(:particles => i, :trace) => CompIn(:resample, :traces => i),
-                    CompOut(:particles => i, :weight) => CompIn(:resample, :weights => i)
-                )
-                for i=1:smc.num_particles
-            )...,
-            # recur latents to beginning
-            Iterators.flatten(
-                (
-                    CompOut(:resample, :traces => i => newaddr) => CompIn(:step, :in => :latents => i => oldaddr)
-                    for (oldaddr, newaddr) in zip(keys(prev_latents_val(smc)), keys(new_latents_val(smc)))
-                )
-                for i=1:smc.num_particles
+            ( # Recur outputted latents back into the timestep unit
+                CompOut(:smcstep, i => new_latent_addr) => CompIn(:timestep, i => prev_latent_addr)
+                for i=1:s.step.num_particles
+                    for (new_latent_addr, prev_latent_addr) in zip(
+                        s.latent_var_addrs_for_recurrence, keys(inputs(s.step)[:prev_latents])
+                    )
             )...,
 
-            # output resampled traces
+            # SMCStep --> Output
             (
-                CompOut(:resample, :traces => i) => Output(i)
-                for i=1:smc.num_particles
+                CompOut(:smcstep, i) => Output(i)
+                for i=1:s.step.num_particles
             )...
-        ),
-        smc
+        ), s
     )
-
-#=
-Circuits.implement(smc::SMC, ::Target) =
-    CompositeComponent(
-        inputs(smc), outputs(smc),
-        (
-            particles=IndexedComponentGroup(
-                smc.is_particle for _=1:smc.num_particles
-            ),
-            resample=Resample(smc.num_particles, latents_val(smc)),
-            steps=IndexedComponentGroup(
-                Step(latents_val(smc)) for _=1:smc.num_particles
-            )
-        ),
-        (
-            Iterators.flatten( # obs -> particle circuits
-                obs_to_particle_edges(smc, Input(:obs => i), i)
-                for i=1:smc.num_particles
-            )...,
-            Iterators.flatten( # initial latents -> particle circuits
-                latents_to_particles_edges(smc, Input(:obs => i), i)
-                for i=1:smc.num_particles
-            )...,
-            Iterators.flatten( # particle outputs -> resample
-                (
-                    CompOut(:particles => i, :trace) => CompIn(:resample, :traces => i),
-                    CompOut(:particles => i, :weight) => CompIn(:resample, :weights => i)
-                )
-                for i=1:smc.num_particles
-            )...,
-            ( # resample outputs -> steps
-                CompOut(:resample, :traces => i) => CompIn(:steps => i, :in)
-                for i=1:smc.num_particles
-            )...,
-            ( # recur latents to beginning
-                latents_to_particles_edges(smc, CompOut(:steps => i, :out), i)
-                for i=1:smc.num_particles
-            )...
-        ),
-        smc
-    )
-=#

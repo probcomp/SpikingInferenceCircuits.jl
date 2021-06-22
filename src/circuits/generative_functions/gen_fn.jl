@@ -194,3 +194,27 @@ The circuit will expect input values to be in the given `arg_domain`s.
 for other objects, `arg_domains` should just be a tuple.)
 """
 gen_fn_circuit(_, _, _) = error("Not implemented")
+
+"""
+    GenFnWithInputDomains(gen_fn::GenerativeFunction, input_domains::Vector{DiscreteIRTransforms.Domain})
+
+A generative function with labels giving the domain of each input value to the gen fn.
+"""
+struct GenFnWithInputDomains
+    gen_fn::GenerativeFunction
+    input_domains::Vector{DiscreteIRTransforms.Domain}
+end
+
+icpts(gf::GenFnWithInputDomains) = to_indexed_cpts(gf.gen_fn, gf.input_domains)[1]
+
+"""
+    gen_fn_circuit(gf::GenFnWithInputDomains, op::GenFnOp)
+
+A GenFnCircuit for the given generative function with the given input domain labels.
+"""
+gen_fn_circuit(gf::GenFnWithInputDomains, op::GenFnOp) =
+    gen_fn_circuit(
+        icpts(gf),
+        [FiniteDomain(vals(x)) for x in gf.input_domains],
+        op
+    )
