@@ -20,14 +20,12 @@ model.
 struct SMCStep <: Circuits.GenericComponent
     num_particles                   :: Int
     is_particle                     :: ISParticle
-    latent_var_addrs_for_recurrence :: Vector
 end
 SMCStep(
     step_model_bundle               :: GenFnWithInputDomains,
     obs_model_bundle                :: GenFnWithInputDomains,
     step_proposal_bundle            :: GenFnWithInputDomains,
     latent_var_addrs_for_obs        :: Vector               ,
-    latent_var_addrs_for_recurrence :: Vector               ,
     obs_addr_order                  :: Vector               ,
     num_particles                   :: Int
 ) = SMCStep(
@@ -40,16 +38,16 @@ SMCStep(
 
 # TODO: prev_latents_val, new_latents_val, obs_val
 prev_latents_val(s::SMCStep) = inputs(s.is_particle)[:args]
-obs_val(s::SMC) = inputs(s.is_particle)[:obs]
+obs_val(s::SMCStep) = inputs(s.is_particle)[:obs]
 all_new_latents_val(s::SMCStep) = outputs(s.is_particle)[:trace]
 
 Circuits.inputs(s::SMCStep) = NamedValues(
     :prev_latents => IndexedValues(prev_latents_val(s) for _=1:s.num_particles),
     :obs => obs_val(s)
 )
-Circuits.outputs(s::SMC) = IndexedValues(all_new_latents_val(s) for _=1:s.num_particles)
+Circuits.outputs(s::SMCStep) = IndexedValues(all_new_latents_val(s) for _=1:s.num_particles)
 
-Circuits.implement(s::SMC, ::Target) =
+Circuits.implement(s::SMCStep, ::Target) =
     CompositeComponent(
         inputs(s), outputs(s), (
             particles=IndexedComponentGroup(s.is_particle for _=1:s.num_particles),
@@ -93,10 +91,10 @@ struct RecurrentSMCStep <: GenericComponent
     RecurrentSMCStep(s::SMCStep, lvar) = new(s, lvar)
 end
 Circuits.inputs(s::RecurrentSMCStep) = NamedValues(
-    :initial_latents => inputs(s.step)[:latents],
+    :initial_latents => inputs(s.step)[:prev_latents],
     :obs => obs_val(s.step)
 )
-Circuits.ouptuts(s::RecurrentSMCStep) = outputs(s.step)
+Circuits.outputs(s::RecurrentSMCStep) = outputs(s.step)
 
 Circuits.implement(s::RecurrentSMCStep, ::Target) =
     CompositeComponent(
@@ -104,8 +102,8 @@ Circuits.implement(s::RecurrentSMCStep, ::Target) =
         (
             smcstep=s.step,
             timestep=Step(NamedValues(
-                :latents => IndexedValues(prev_latents_val(s.step) for _=1:s.step.n_particles),
-                :obs => obs_val(smc)
+                :latents => IndexedValues(prev_latents_val(s.step) for _=1:s.step.num_particles),
+                :obs => obs_val(s.step)
             ))
         ),
         (
@@ -115,7 +113,7 @@ Circuits.implement(s::RecurrentSMCStep, ::Target) =
             
             # Timestep --> SMCStep
             CompOut(:timestep, :out => :obs) => CompIn(:smcstep, :obs),
-            CompOut(:timestep, :out => :latents) => CompIn(:smcstep, :latents),
+            CompOut(:timestep, :out => :latents) => CompIn(:smcstep, :prev_latents),
 
             ( # Recur outputted latents back into the timestep unit
                 CompOut(:smcstep, i => new_latent_addr) => CompIn(:timestep, i => prev_latent_addr)

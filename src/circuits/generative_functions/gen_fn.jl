@@ -202,8 +202,19 @@ A generative function with labels giving the domain of each input value to the g
 """
 struct GenFnWithInputDomains
     gen_fn::GenerativeFunction
-    input_domains::Vector{DiscreteIRTransforms.Domain}
+    input_domains::Vector{<:DiscreteIRTransforms.Domain}
 end
+GenFnWithInputDomains(gen_fn::GenerativeFunction, input_domains) =
+    GenFnWithInputDomains(gen_fn,
+        [
+            if dom isa DiscreteIRTransforms.Domain
+                dom
+            else
+                DiscreteIRTransforms.EnumeratedDomain(dom)
+            end
+            for dom in input_domains
+        ]
+    )
 
 icpts(gf::GenFnWithInputDomains) = to_indexed_cpts(gf.gen_fn, gf.input_domains)[1]
 
@@ -215,6 +226,6 @@ A GenFnCircuit for the given generative function with the given input domain lab
 gen_fn_circuit(gf::GenFnWithInputDomains, op::GenFnOp) =
     gen_fn_circuit(
         icpts(gf),
-        [FiniteDomain(vals(x)) for x in gf.input_domains],
+        [FiniteDomain((length ∘ DiscreteIRTransforms.vals)(x)) for x in gf.input_domains],
         op
     )
