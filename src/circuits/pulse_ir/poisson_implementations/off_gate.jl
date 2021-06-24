@@ -1,7 +1,7 @@
 struct PoissonOffGate <: ConcretePulseIRPrimitive
     gate::ConcreteOffGate
-    onrate::Float64
     offrate::Float64
+    onrate::Float64
 end
 Circuits.abstract(g::PoissonOffGate) = g.gate
 for s in (:target, :inputs, :outputs)
@@ -17,9 +17,11 @@ Circuits.implement(g::PoissonOffGate, ::Spiking) =
                 let M = g.gate.M; x -> -M*x; end,
                 x -> -x
             ], g.gate.ΔT,
-            let on = g.onrate, off = g.offrate
-                u -> truncated_linear(off, on, -1/2, 1/2)
-            end
+        truncated_linear(g.offrate, g.onrate, 0, 1)
+            # u -> begin
+            #     println("u = $u, λ = $(truncated_linear(g.offrate, g.onrate, 0, 1)(u))")
+            #     truncated_linear(g.offrate, g.onrate, 0, 1)
+            # end
         ),),
         (
             Input(:in) => CompIn(:neuron, 1),

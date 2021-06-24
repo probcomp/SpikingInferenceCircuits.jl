@@ -4,11 +4,11 @@
 """
 struct PoissonThresholdedIndicator <: ConcretePulseIRPrimitive
     ti::ConcreteThresholdedIndicator
-    onrate::Float64
     offrate::Float64
+    onrate::Float64
 end
-PoissonThresholdedIndicator(threshold, ΔT, max_delay, M, R) =
-    PoissonThresholdedIndicator(ConcreteThresholdedIndicator(threshold, ΔT, max_delay, M), R)
+PoissonThresholdedIndicator(threshold, ΔT, max_delay, M, offrate, onrate) =
+    PoissonThresholdedIndicator(ConcreteThresholdedIndicator(threshold, ΔT, max_delay, M), offrate, onrate)
 
 # Note that PoissonThresholdedIndicator with M will output again once `M` spikes have been input,
 # once the initial `threshold` have been delivered.
@@ -30,9 +30,7 @@ Circuits.implement(t::PoissonThresholdedIndicator, ::Spiking) =
             [x -> x,
             let M = t.ti.M; x -> -M*x; end
             ], t.ti.ΔT,
-            let R = t.R, threshold = t.ti.threshold
-                u -> truncated_linear(off, on, threshold - 1/2, threshold + 1/2)
-            end
+            truncated_linear(t.offrate, t.onrate, t.ti.threshold - 1, t.ti.threshold)
         ),),
         (
             Input(:in) => CompIn(:neuron, 1),

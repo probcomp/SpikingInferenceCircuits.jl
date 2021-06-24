@@ -118,8 +118,8 @@ struct PoissonOnOffGate <: GenericComponent
     starts_on::Bool
     ΔT::Float64
     M::Float64
-    onrate::Float64
     offrate::Float64
+    onrate::Float64
 end
 PoissonOnOffGate(s::Symbol, params...) = PoissonOnOffGate(
     s == :on ? true : (s == :off ? false : error("unrecognized start state (should be :on or :off)")),
@@ -129,24 +129,20 @@ Circuits.inputs(::PoissonOnOffGate) = NamedValues(:in => SpikeWire(), :on => Spi
 Circuits.outputs(::PoissonOnOffGate) = NamedValues(:out => SpikeWire())
 Circuits.implement(g::PoissonOnOffGate, ::Spiking) = 
     CompositeComponent(
-        inputs(g), outputs(g),
-        (
+        inputs(g), outputs(g), (
             neuron=PoissonNeuron([
-                x -> x,
-                x -> -x,
-                let M = g.M; x -> M*x; end,
-                let M = g.M; x -> -M*x; end
-            ], g.ΔT,
-            let on = g.onrate,
-                off = g.offrate,
-                M = g.M,
-                starts_on = g.starts_on
-                u -> truncated_linear(off, on, (
-                        starts_on ? (-1/2, 1/2) : (M - 1/2, M + 1/2)
-                    )...)
-            end,
-        ),),
-        (
+                    x -> x,
+                    x -> -x,
+                    let M = g.M; x -> M*x; end,
+                    let M = g.M; x -> -M*x; end
+                ], g.ΔT,
+                truncated_linear(
+                    g.offrate, g.onrate,
+                    g.starts_on ? 0 : g.M,
+                    g.starts_on ? 1 : g.M + 1
+                )
+            ),
+        ), (
             Input(:in) => CompIn(:neuron, 1),
             CompOut(:neuron, :out) => CompIn(:neuron, 2),
             Input(:on) => CompIn(:neuron, 3),

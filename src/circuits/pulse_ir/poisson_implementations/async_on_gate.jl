@@ -19,9 +19,7 @@ Circuits.implement(g::PoissonAsyncOnGate, ::Spiking) =
                 (let M = g.gate.M; x -> M*min(x, 1); end),
                 x -> -x
             ], g.gate.ΔT,
-            (let offrate = g.offrate, onrate = g.onrate, M = g.gate.M;
-                u -> truncated_linear(offrate, onrate, M - 1/2, M + 1/2)
-            end)
+            truncated_linear(g.offrate, g.onrate, g.gate.M, g.gate.M + 1)
         ),),
         (
             Input(:in) => CompIn(:neuron, 1),
