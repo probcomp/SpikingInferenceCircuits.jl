@@ -118,7 +118,8 @@ struct PoissonOnOffGate <: GenericComponent
     starts_on::Bool
     ΔT::Float64
     M::Float64
-    R::Float64
+    onrate::Float64
+    offrate::Float64
 end
 PoissonOnOffGate(s::Symbol, params...) = PoissonOnOffGate(
     s == :on ? true : (s == :off ? false : error("unrecognized start state (should be :on or :off)")),
@@ -136,8 +137,13 @@ Circuits.implement(g::PoissonOnOffGate, ::Spiking) =
                 let M = g.M; x -> M*x; end,
                 let M = g.M; x -> -M*x; end
             ], g.ΔT,
-            let R = g.R, M = g.M, starts_on = g.starts_on
-                u -> exp(R * (u - 1/2 - (starts_on ? 0. : M)))
+            let on = g.onrate,
+                off = g.offrate,
+                M = g.M,
+                starts_on = g.starts_on
+                u -> truncated_linear(off, on, (
+                        starts_on ? (-1/2, 1/2) : (M - 1/2, M + 1/2)
+                    )...)
             end,
         ),),
         (

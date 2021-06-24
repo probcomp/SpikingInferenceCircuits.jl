@@ -1,5 +1,5 @@
 Circuits.implement(cs::SIC.SDCs.ConditionalScore, ::Spiking) =      # max_delay
-    SDCs.PoissonPulseConditionalScore((cs, K(), SCORE_ONRATE(), ΔT(),    2,     M()), OFFRATE(), LOWER_R())
+    SDCs.PoissonPulseConditionalScore((cs, K(), SCORE_ONRATE(), ΔT(),    2,     M()), OFFRATE(), (GATE_OFFRATE(), LOWER_GATE_ONRATE()))
 
 Circuits.implement(cs::SIC.SDCs.ConditionalSample, ::Spiking) =
     SDCs.PoissonPulseConditionalSample(
@@ -10,17 +10,17 @@ Circuits.implement(cs::SIC.SDCs.ConditionalSample, ::Spiking) =
             500, # max delay before sample is emitted
             1 # intersample hold
         ),
-        OFFTATE(), LOWER_R()
+        OFFRATE(), (GATE_OFFRATE(), LOWER_GATE_ONRATE())
     )
 
 Circuits.implement(theta::SDCs.Theta, ::Spiking) =
     SDCs.PulseTheta(                                    # M,     L,  ΔT,         rate
         K(), theta.n_possibilities, PulseIR.PoissonTheta, M(), -20, ΔT_THETA(), THETA_RATE(),
         PulseIR.PoissonOffGate(
-            PulseIR.ConcreteOffGate(ΔT_THETA() #= ΔT =#, 2. #=max_delay=#, M() #=M=#), R_MID() #=R=#
+            PulseIR.ConcreteOffGate(ΔT_THETA() #= ΔT =#, 2. #=max_delay=#, M() #=M=#), GATE_RATES()...
         ),
         PulseIR.PoissonThresholdedIndicator,
-        (ΔT_THETA(), 2., M(), R_MID()) # ΔT, Maxdelay, M, R
+        (ΔT_THETA(), 2., M(), GATE_RATES()...) # 2. is maxdelay
     )
 
 Circuits.implement(m::SDCs.NonnegativeRealMultiplier, ::Spiking) = 
@@ -32,14 +32,14 @@ Circuits.implement(m::SDCs.NonnegativeRealMultiplier, ::Spiking) =
             MULT_EXPECTED_OUT_TIME(), # expected_output_time
             MULT_MAX_INPUT_MEMORY(), # | max_input_memory
             5, # max_delay
-            ((M(), MID_R()), 0.), #(ti_params = (M, R), offrate)
-            (M(), MID_R()) # (M, R) offgate params
+            ((M(), GATE_RATES()...), 0.), #(ti_params = (M, R), offrate)
+            (M(), GATE_RATES()...) # (M, R) offgate params
         ), 
         K(),
         threshold -> begin
             # println("thresh: $threshold")
-            #                                   threshold, ΔT,             max_delay,  M,    R 
-            PulseIR.PoissonThresholdedIndicator(threshold, MULT_MAX_INPUT_MEMORY(), 5, M(), R_MID())
+            #                                   threshold, ΔT,             max_delay,  M,    
+            PulseIR.PoissonThresholdedIndicator(threshold, MULT_MAX_INPUT_MEMORY(), 5, M(), GATE_RATES()...)
         end
     )
 
@@ -52,10 +52,10 @@ to_spiking_real(v::SDCs.NonnegativeReal) = to_spiking_real(implement(v, Spiking(
 Circuits.implement(s::PulseIR.Sync, ::Spiking) =
     PulseIR.PoissonSync(
         s.cluster_sizes,
-        (M(), MID_R()), # M R
-        (1, MID_R()), # max_delay, R
+        (M(), GATE_RATES()...),
+        (1, GATE_RATES()...), # 1 = max_delay
         (SYNC_ΔT_TIMER(), NSPIKES_SYNC_TIMER(),  # ΔT_timer, N_spikes_timer
-            (1, M(), MID_R()), 0., # timer TI params (maxdelay M R) | offrate
+            (1, M(), GATE_RATES()...), 0., # timer TI params (maxdelay M gaterates...) | offrate
             SYNC_TIMER_MEMORY() # timer memory
         )
     )
@@ -65,14 +65,14 @@ Circuits.implement(s::PulseIR.Sync, ::Spiking) =
 Circuits.implement(ta::SIC.SDCs.ToAssmts, ::Spiking) =
     SDCs.PulseToAssmts(
         ta, PulseIR.PoissonThresholdedIndicator,
-        (ΔT(), 5, M(), MID_R())
+        (ΔT(), 5, M(), GATE_RATES()...)
     )
 
 Circuits.implement(m::SDCs.Mux, ::Spiking) =
     SDCs.PulseMux(m,
         PulseIR.PoissonAsyncOnGate(
             PulseIR.ConcreteAsyncOnGate(ΔT_MUX(), 1, M()), # ΔT, max_delay, M
-            MID_R() # R
+            GATE_RATES()...
         )
     )
 

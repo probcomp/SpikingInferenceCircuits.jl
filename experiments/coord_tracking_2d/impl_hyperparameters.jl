@@ -9,8 +9,11 @@ MinProb() = 0.1
 
 OFFRATE() = 10e-20
 
-LOWER_R() = 36
-MID_R() = 40
+# rates for neurons in logic gates like TI, OFFGATE, ASYNC_ON_GATE
+GATE_OFFRATE() = 0.
+GATE_ONRATE() = 5. # KHz
+GATE_LOWER_ONRATE() = 1. # KHz
+GATE_RATES() = (GATE_OFFRATE(), GATE_ONRATE())
 
 M() = 1000 # number of spikes to override off/on gate
 
@@ -37,6 +40,9 @@ bound_on_overall_failure_prob(n_steps, n_vars, n_particles) = 1 - (
     * ((1 - MULT_FAIL_PROB()) * (1 - P_FAILURE_MULT_INTO_THETA()))^n_particles # prob we have a failure on the multiplier or theta
     * (1 - SYNC_FORGET_FAIL_PROB())                                            # prob failure in sync
 )^n_steps
+
+# Low probability of getting an eroneous spike from a logic gate while it's supposed to be off:
+@assert GATE_OFFRATE() == 0 || error("TODO: implement a check for logic gate being unlikely to spike while off!")
 
 # We need K() spikes to occur from an assembly with rate SCORE_ONRATE() when sampling.
 # So we need P[spikes from P.P. with rate SCORE_ONRATE() in ΔT > K()] > SCORER_FAILUREPROB

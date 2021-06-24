@@ -46,24 +46,30 @@ ConcretePulseConditionalScore(cs::ConditionalScore, args...) =
 
 PoissonPulseConditionalScore(
     concrete_pcs::PulseConditionalScore,
-    ss_off_rate::Real, mux_on_R::Real, ti_R::Real, off_R::Real
+    ss_off_rate::Real,
+    mux_off_on_rates::Tuple{<:Real, <:Real},
+    ti_off_on_rates::Tuple{<:Real, <:Real},
+    off_off_on_rates::Tuple{<:Real, <:Real}
 ) = SDCs.PulseConditionalScore(
         PulseIR.PoissonStreamSamples(concrete_pcs.streamsamples, ss_off_rate),
-        PulseIR.PoissonAsyncOnGate(concrete_pcs.mux_on_gate, mux_on_R),
-        PulseIR.PoissonThresholdedIndicator(concrete_pcs.ti, ti_R),
-        PulseIR.PoissonOffGate(concrete_pcs.offgate, off_R)
+        PulseIR.PoissonAsyncOnGate(concrete_pcs.mux_on_gate, mux_off_on_rates...),
+        PulseIR.PoissonThresholdedIndicator(concrete_pcs.ti, ti_off_on_rates...),
+        PulseIR.PoissonOffGate(concrete_pcs.offgate, off_off_on_rates...)
     )
 
-# Constructor to set the TI's `R` value to the given quantity,
-# and set the others to be larger.
+# Constructor to set the TI's on and off rates, and set
+# the others to have the same offrate but a larger onrate.
 # This will ensure that the gate outputs spikes before
 # it is turned off.
 PoissonPulseConditionalScore(
     concrete_pcs::PulseConditionalScore,
     off_rate::Real,
-    ti_R::Real
+    (ti_offrate, ti_onrate)::Tuple{<:Real, <:Real}
 ) = PoissonPulseConditionalScore(
-        concrete_pcs, off_rate, ti_R + 10, ti_R, ti_R + 10
+        concrete_pcs, off_rate,
+        (ti_offrate, ti_onrate * 100),
+        (ti_offrate, ti_onrate),
+        (ti_offrate, ti_onrate * 100)
     )
 PoissonPulseConditionalScore(concrete_pcs_args::Tuple, args...) =
     PoissonPulseConditionalScore(ConcretePulseConditionalScore(concrete_pcs_args...), args...)

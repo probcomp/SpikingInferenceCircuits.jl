@@ -1,8 +1,7 @@
 struct PoissonAsyncOnGate <: ConcretePulseIRPrimitive
     gate::ConcreteAsyncOnGate
-    # `R` controls the rate during ON and OFF modes.
-    # "off" rate will always be ≤ exp(-R/2); "on" rate will always be ≥ exp(R/2)
-    R::Float64
+    offrate::Float64
+    onrate::Float64
 end
 Circuits.abstract(g::PoissonAsyncOnGate) = g.gate
 for s in (:target, :inputs, :outputs)
@@ -20,8 +19,8 @@ Circuits.implement(g::PoissonAsyncOnGate, ::Spiking) =
                 (let M = g.gate.M; x -> M*min(x, 1); end),
                 x -> -x
             ], g.gate.ΔT,
-            (let R = g.R, M = g.gate.M;
-                u -> exp(R*(u - M - 1/2))
+            (let offrate = g.offrate, onrate = g.onrate, M = g.gate.M;
+                u -> truncated_linear(offrate, onrate, M - 1/2, M + 1/2)
             end)
         ),),
         (
@@ -33,14 +32,14 @@ Circuits.implement(g::PoissonAsyncOnGate, ::Spiking) =
         g
     )
 
-failure_probability_bound(g::PoissonAsyncOnGate) =
-    1 - (1 - p_spikes_while_off_bound(g))*(1 - p_doesnt_spike_by_delay_bound(g))
+# failure_probability_bound(g::PoissonAsyncOnGate) =
+#     1 - (1 - p_spikes_while_off_bound(g))*(1 - p_doesnt_spike_by_delay_bound(g))
 
-p_spikes_while_off_bound(g::PoissonAsyncOnGate) =
-    1 - exp(-g.gate.ΔT × exp(-g.R/2))
+# p_spikes_while_off_bound(g::PoissonAsyncOnGate) =
+#     1 - exp(-g.gate.ΔT × exp(-g.R/2))
 
-# Derived on page 76 of notebook
-p_doesnt_spike_by_delay_bound(g::PoissonAsyncOnGate) =
-    let α = g.gate.max_delay × (exp(g.R) - 1)
-        1 - (1 - exp(-α × exp(-g.R/2)))^(g.gate.M - 1)
-    end
+# # Derived on page 76 of notebook
+# p_doesnt_spike_by_delay_bound(g::PoissonAsyncOnGate) =
+#     let α = g.gate.max_delay × (exp(g.R) - 1)
+#         1 - (1 - exp(-α × exp(-g.R/2)))^(g.gate.M - 1)
+#     end

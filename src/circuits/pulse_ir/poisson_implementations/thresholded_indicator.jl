@@ -4,9 +4,8 @@
 """
 struct PoissonThresholdedIndicator <: ConcretePulseIRPrimitive
     ti::ConcreteThresholdedIndicator
-    # `R` controls the rate during ON and OFF modes.
-    # "off" rate will always be ≤ exp(-R/2); "on" rate will always be ≥ exp(R/2)
-    R::Float64
+    onrate::Float64
+    offrate::Float64
 end
 PoissonThresholdedIndicator(threshold, ΔT, max_delay, M, R) =
     PoissonThresholdedIndicator(ConcreteThresholdedIndicator(threshold, ΔT, max_delay, M), R)
@@ -32,7 +31,7 @@ Circuits.implement(t::PoissonThresholdedIndicator, ::Spiking) =
             let M = t.ti.M; x -> -M*x; end
             ], t.ti.ΔT,
             let R = t.R, threshold = t.ti.threshold
-                u -> exp(R * (u - threshold + 1/2))
+                u -> truncated_linear(off, on, threshold - 1/2, threshold + 1/2)
             end
         ),),
         (
