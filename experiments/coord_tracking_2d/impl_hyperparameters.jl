@@ -27,6 +27,8 @@ TIMER_N_SPIKES() = 30
 SYNC_ΔT_TIMER() = ΔT()/4; NSPIKES_SYNC_TIMER() = TIMER_N_SPIKES()
 SYNC_TIMER_MEMORY() = 3 * SYNC_ΔT_TIMER()
 
+ΔT_MUX() = ΔT()
+
 ### Check probabilities of certain types of failure
 
 SCORE_FAIL_PROB() = 10e-10

@@ -22,11 +22,11 @@ end
 ConcretePulseConditionalSample(
     P::Matrix{Float64},
     K::Int,
-    ss_params::Tuple{Int, Function},
-    mux_on_params::Tuple{Int, Real, Int},
-    wta_off_params::Tuple{Int, Real, Int},
-    ti_params::Tuple{Int, Real, Int},
-    off_params::Tuple{Int, Real, Int},
+    ss_params::Tuple{Real, Function},
+    mux_on_params::Tuple{Real, Real, Int},
+    wta_off_params::Tuple{Real, Real, Int},
+    ti_params::Tuple{Real, Real, Int},
+    off_params::Tuple{Real, Real, Int},
     time_to_first_sample::Real,
     intersample_hold::Real
 ) = SDCs.PulseConditionalSample(
