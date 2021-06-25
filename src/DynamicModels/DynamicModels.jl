@@ -2,6 +2,29 @@ module DynamicModels
 
 using Gen
 
+"""
+    model = @DynamicModel(initial_latent_model, latent_step_model, obs_model, num_latent_variables)
+
+Constructs a generative function `model` such that `model(T)` produces a trace containing
+`T + 1` latent variable assignments, and `T + 1` observations.  The first latent variables
+are sampled from `initial_latent_model()`, and the
+latent variables at time `t` are sampled from `latent_step_model(latentsₜ₋₁)`.
+Observations at time `t` are sampled from `obs_model(latentsₜ)`.
+
+`initial_latent_model` should accept 0 arguments, and output a tuple of `num_latent_variables` latent variable
+values `(x₁, ..., xₙ)`.  `latent_step_model` should accept `num_latent_variables` arguments (the latent
+variables from the previous timestep), and output a tuple of `num_latent_variables` values (the
+latent variables at the next timestep).  `obs_model` should accept `num_latent_variables` arguments
+(the latents at the current timestep) and output a tuple of values (the observations at that timestep).
+
+The choicemap of `model` will be such that:
+- `:init => :latents` and `:init => :obs` contain the choicemaps for the first latents and observations.
+- `:init => :step => t => :latents` and `:init => :step => t => :obs` contain the latent and observation model choicemaps
+  for the `t`th timestep after the initial one.
+
+Currently, `model` does not have a return value (ie. it outputs nothing), but observation values
+can be easily accessed from a trace via `get_dynamic_model_obs`.
+"""
 macro DynamicModel(
     initial_latent_model,
     latent_step_model,
@@ -35,6 +58,18 @@ end
 
 obs_addr(t)    = t == 0 ? :init => :obs     : :steps => t => :obs
 latent_addr(t) = t == 0 ? :init => :latents : :steps => t => :latents
+"""
+    @compile_step_proposal(step_proposal, num_latent_variables, num_obs_variables)
+
+Converts a step proposal for a step model into a proposal compatible with a dynamic model
+built from that step model using the `@DynamicModel` macro.
+
+`step_proposal` should accept `num_latent_variables + num_obs_variables` arguments,
+where the first `num_latent_variables` arguments are the latents from the previous timestep,
+and the remaining `num_obs_variables` arguments are the observations from the current timestep.
+`step_proposal` should trace a value at exactly the same set of addresses
+traced in the `step_model` in the model it is a proposal for.
+"""
 macro compile_step_proposal(
     step_proposal, n_latents, n_obs_inputs
 )
@@ -50,6 +85,8 @@ macro compile_step_proposal(
         end
     end
 end
+
+# TODO: @compile_initial_proposal
 
 """
 Given a trace `tr` from a dynamic model,
