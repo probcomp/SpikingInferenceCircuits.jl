@@ -12,7 +12,9 @@ function replace_return_node(ir::StaticIR)
         for node in Iterators.flatten(
             (ir.julia_nodes, ir.call_nodes, ir.choice_nodes)
         )
-    )
+        # always keep nodes where there could be random choices!
+    ) || !(ir.return_node isa JuliaNode)
+    
 
     builder = StaticIRBuilder()
     for node in ir.nodes
