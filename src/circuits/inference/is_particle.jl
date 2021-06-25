@@ -53,8 +53,13 @@ ISParticle(
     proposal::GenFnWithInputDomains, latent_model::GenFnWithInputDomains,
     obs_model::GenFnWithInputDomains, latent_addr_order, obs_addr_order
 ) = ISParticle(
-    gen_fn_circuit(proposal, Propose()), gen_fn_circuit(latent_model, Assess()),
-    gen_fn_circuit(obs_model, Assess()), latent_addr_order, obs_addr_order
+    # Replace the return nodes since (1) the top-level return nodes don't matter to this circuit, and (2)
+    # the return nodes may be tuples of values, which are currently not handled well by the compiler.
+    # (They are treated as EnumeratedDomains spanning every possible assignment to the tuple, so there could be a huge
+    # number of possible values.)
+    # The return nodes will just be replaced with some node from within the IR.
+    gen_fn_circuit(replace_return_node(proposal), Propose()), gen_fn_circuit(replace_return_node(latent_model), Assess()),
+    gen_fn_circuit(replace_return_node(obs_model), Assess()), latent_addr_order, obs_addr_order
 )
 
 Circuits.inputs(p::ISParticle) = NamedValues(

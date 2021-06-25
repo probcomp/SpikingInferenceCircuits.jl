@@ -24,13 +24,13 @@ include("model_hyperparams.jl")
     xₜ ~ Cat(maybe_one_off(exp_x, 0.3, Positions()))
     yₜ ~ Cat(maybe_one_off(exp_y, 0.3, Positions()))
     
-    return xₜ # current restriction: still must return exactly 1 value
+    return (xₜ, vxₜ, yₜ, vyₜ)
 end
 @gen (static) function obs_model(xₜ, vxₜ, yₜ, vyₜ)
     obsx ~ Cat(truncated_discretized_gaussian(xₜ, 4.0, Positions()))
     obsy ~ Cat(truncated_discretized_gaussian(yₜ, 4.0, Positions()))
 
-    return obsx
+    return (obsx, obsy)
 end
 @gen (static) function step_proposal(xₜ₋₁, vxₜ₋₁, yₜ₋₁, vyₜ₋₁, obsx, obsy)
     projected_x = truncate_value(xₜ₋₁ + vxₜ₋₁, Positions())
@@ -59,8 +59,6 @@ end
     )
     diff_y = yₜ - yₜ₋₁
     vyₜ ~ LCat(Vels())(vel_step_dist(vyₜ₋₁, diff_y))
-
-    return xₜ
 end
 
 err_if_not_probvec(pvec, errmsg) =

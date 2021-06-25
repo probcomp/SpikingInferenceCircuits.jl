@@ -229,3 +229,6 @@ gen_fn_circuit(gf::GenFnWithInputDomains, op::GenFnOp) =
         [FiniteDomain((length ∘ DiscreteIRTransforms.vals)(x)) for x in gf.input_domains],
         op
     )
+
+replace_return_node(gf::GenFnWithInputDomains) =
+    GenFnWithInputDomains(DiscreteIRTransforms.replace_return_node(gf.gen_fn), gf.input_domains)

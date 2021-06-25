@@ -67,4 +67,6 @@ include("combinators/switch.jl")
 include("combinators/map.jl")
 include("combinators/apply.jl")
 
+include("replace_return_node.jl")
+
 end # module
