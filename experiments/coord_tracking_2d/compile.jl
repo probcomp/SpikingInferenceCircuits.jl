@@ -50,11 +50,10 @@ println("Constructed input spike sequence.")
 using Serialization
 function save_evts(evts, run_idx)
     try
-        serialize("saves/run$(run_idx)_20210623_events.jls", evts)
+        serialize("run$(run_idx)_20210624_events.jls", evts)
     catch e
         @error("Error saving events for run $run_idx.")
     end
-    
 end
 
 function do_run(i)

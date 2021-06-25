@@ -12,7 +12,7 @@ OFFRATE() = 10e-20
 # rates for neurons in logic gates like TI, OFFGATE, ASYNC_ON_GATE
 GATE_OFFRATE() = 0.
 GATE_ONRATE() = 5. # KHz
-GATE_LOWER_ONRATE() = 1. # KHz
+LOWER_GATE_ONRATE() = 1. # KHz
 GATE_RATES() = (GATE_OFFRATE(), GATE_ONRATE())
 
 M() = 1000 # number of spikes to override off/on gate
