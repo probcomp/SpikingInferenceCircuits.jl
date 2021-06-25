@@ -24,7 +24,6 @@ include("circuits/inference/resample.jl")
 include("circuits/inference/smc.jl")
 
 export ISParticle
-export SMCStep, RecurrentSMCStep
-export MHKernel, MH
+export SMCStep, RecurrentSMCStep, SMC
 
 end

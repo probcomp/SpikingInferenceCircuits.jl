@@ -6,10 +6,10 @@ struct MultiParticleWithResample <: GenericComponent
     is_particle::ISParticle
 end
 Circuits.inputs(m::MultiParticleWithResample) = NamedValues(
-    :args => IndexedValues(inputs(m.is_particle)[:args] for _=1:m.num_particles),
+    :args => IndexedValue(inputs(m.is_particle)[:args] for _=1:m.num_particles),
     :obs => inputs(m.is_particle)[:obs]
 )
-Circuits.outputs(m::MultiParticleWithResample) = IndexedValues(outputs(m.is_particle)[:trace] for _=1:m.num_particles)
+Circuits.outputs(m::MultiParticleWithResample) = IndexedComponentGroup(outputs(m.is_particle)[:trace] for _=1:m.num_particles)
 Circuits.implement(m::MultiParticleWithResample, ::Target) =
     CompositeComponent(
         inputs(m), outputs(m), (
@@ -29,9 +29,9 @@ Circuits.implement(m::MultiParticleWithResample, ::Target) =
 
 """
     SMCStep(
-        step_model_bundle               :: ImplementableGenFn,
-        obs_model_bundle                :: ImplementableGenFn,
-        step_proposal_bundle            :: ImplementableGenFn,
+        step_model_bundle               :: GenFnWithInputDomains,
+        obs_model_bundle                :: GenFnWithInputDomains,
+        step_proposal_bundle            :: GenFnWithInputDomains,
         latent_var_addrs_for_obs        :: Vector               ,
         obs_addr_order                  :: Vector               ,
         num_particles                   :: Int
@@ -47,9 +47,9 @@ after the previous timesteps' latents.
 model.
 """
 SMCStep(
-    step_model_bundle               :: ImplementableGenFn,
-    obs_model_bundle                :: ImplementableGenFn,
-    step_proposal_bundle            :: ImplementableGenFn,
+    step_model_bundle               :: GenFnWithInputDomains,
+    obs_model_bundle                :: GenFnWithInputDomains,
+    step_proposal_bundle            :: GenFnWithInputDomains,
     latent_var_addrs_for_obs        :: Vector               ,
     obs_addr_order                  :: Vector               ,
     num_particles                   :: Int
@@ -104,7 +104,8 @@ Circuits.implement(s::RecurrentSMCStep, ::Target) =
                 :latents => IndexedValues(prev_latents_val(s.step) for _=1:s.step.num_particles),
                 :obs => obs_val(s.step)
             ))
-        ), (
+        ),
+        (
             # Inputs --> timestep
             Input(:initial_latents) => CompIn(:timestep, :in => :latents),
             Input(:obs) => CompIn(:timestep, :in => :obs),
@@ -129,99 +130,3 @@ Circuits.implement(s::RecurrentSMCStep, ::Target) =
         ), s
     )
 
-"""
-    SMC(
-        initial_model_bundle            :: ImplementableGenFn,
-        initial_proposal_bundle         :: ImplementableGenFn,
-        step_model_bundle               :: ImplementableGenFn,
-        obs_model_bundle                :: ImplementableGenFn,
-        step_proposal_bundle            :: ImplementableGenFn,
-        latent_var_addrs_for_obs        :: Vector               ,
-        obs_addr_order                  :: Vector               ,
-        latent_var_addrs_for_recurrence :: Vector               ,
-        num_particles                   :: Int
-    )
-
-    SMC(initial_step_particle::ISParticle, subsequent_steps::RecurrentSMCStep)
-
-A circuit to perform SMC in a dynamical model.
-
-The resulting circuit should initially be given an observation and a `true` signal
-in the `:is_initial_obs` line, and after that it should periodically be given an obs
-with `:is_initial_obs` set to false.  For each obs, an unweighted particle cloud
-of inferred assignments to the latent variables will be output.
-"""
-struct SMC <: GenericComponent
-    initial_step_particle :: ISParticle
-    subsequent_steps      :: RecurrentSMCStep
-end
-
-SMC(
-    initial_model_bundle            :: ImplementableGenFn,
-    initial_proposal_bundle         :: ImplementableGenFn,
-    step_model_bundle               :: ImplementableGenFn,
-    obs_model_bundle                :: ImplementableGenFn,
-    step_proposal_bundle            :: ImplementableGenFn,
-    latent_var_addrs_for_obs        :: Vector               ,
-    obs_addr_order                  :: Vector               ,
-    latent_var_addrs_for_recurrence :: Vector               ,
-    num_particles                   :: Int
-) = SMC(
-        ISParticle(
-            initial_proposal_bundle,
-            # an initial model will have 0 inputs, but we need there to be an input line
-            # so the circuit knows when to output scores!  so update the IR to include an
-            # input called `:in` which feeds into all distributions with no arguments
-            add_activator_input(initial_model_bundle, :in),
-            obs_model_bundle,
-            latent_var_addrs_for_obs, obs_addr_order
-       ),
-       RecurrentSMCStep(
-           SMCStep(
-                step_model_bundle, obs_model_bundle, step_proposal_bundle,
-                latent_var_addrs_for_obs, obs_addr_order, num_particles
-           ),
-           latent_var_addrs_for_recurrence
-       )
-)
-
-num_particles(s::SMC) = s.subsequent_steps.step.num_particles
-
-Circuits.inputs(s::SMC) = NamedValues(
-    :obs => inputs(s.initial_step_particle)[:obs],
-    :is_initial_obs => Binary()
-)
-Circuits.outputs(s::SMC) = outputs(s.subsequent_steps)
-Circuits.implement(s::SMC, ::Spiking) =
-    CompositeComponent(
-        inputs(s), outputs(s), (
-            initial_step=MultiParticleWithResample(num_particles(s), s.initial_step_particle),
-            subsequent_steps=s.subsequent_steps,
-            initial_obs_gate=ValuePasser(inputs(s)[:obs]),
-            step_obs_gate=ValueBlocker(inputs(s)[:obs])
-        ), (
-            # observations --> initial and step units
-            Input(:obs) => CompIn(:initial_obs_gate, :in),
-            Input(:obs) => CompIn(:step_obs_gate, :in),
-            Input(:is_initial_obs) => CompIn(:initial_obs_gate, :pass),
-            Input(:is_initial_obs) => CompIn(:step_obs_gate, :block),
-            CompOut(:initial_obs_gate, :out) => CompIn(:initial_step, :obs),
-            CompOut(:step_obs_gate, :out) => CompOut(:subsequent_steps, :obs),
-
-            # route `is_initial_obs` to the activator input we have added to the initial model
-            Input(:is_initial_obs) => CompIn(:initial_step, :args => :in),            
-
-            # outputs    &    initial latents -> step model
-            Iterators.flatten( # route outputs from initial step
-                (
-                    CompOut(:initial_step, i) => CompIn(:subsequent_steps, :initial_latents => i),
-                    CompOut(:initial_step, i) => Output(i)
-                )
-                for i=1:num_particles(s)
-            )...,
-            ( # route outputs from subsequent_steps
-                CompOut(:subsequent_steps, i) => Output(i)
-                for i=1:num_particles(s)
-            )...
-        ), s
-    )
