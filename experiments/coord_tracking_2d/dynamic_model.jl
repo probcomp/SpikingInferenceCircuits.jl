@@ -1,17 +1,22 @@
 using Gen, Distributions
-include("../../src/DynamicModels/DynamicModels.jl")
+includet("../../src/DynamicModels/DynamicModels.jl")
 using .DynamicModels
 
-include("../../src/ProbEstimates/ProbEstimates.jl")
+includet("../../src/ProbEstimates/ProbEstimates.jl")
 using .ProbEstimates
 ProbEstimates.use_perfect_weights!()
 
-include("modeling_utils.jl")
-include("model_hyperparams.jl")
+includet("modeling_utils.jl")
+includet("model_hyperparams.jl")
 
 InitialLatents() = (2, 2, 18, -2)
 @gen (static) function initial_latent_model()
-    return InitialLatents()
+    xₜ ~ Cat(unif(Positions()))
+    yₜ ~ Cat(unif(Positions()))
+    vxₜ ~ LCat(Vels())(unif(Vels()))
+    vyₜ ~ LCat(Vels())(unif(Vels()))
+
+    return (xₜ, vxₜ, yₜ, vyₜ)
 end
 @gen (static) function step_latent_model(xₜ₋₁, vxₜ₋₁, yₜ₋₁, vyₜ₋₁)
     vxₜ ~ LCat(Vels())(maybe_one_off(vxₜ₋₁, 0.3, Vels()))
@@ -31,7 +36,12 @@ end
 end
 
 ### proposals
-@gen (static) function initial_proposal(obs)
+@gen (static) function initial_proposal(obsx, obsy)
+    xₜ ~ Cat(truncated_discretized_gaussian(obsx, 2., Positions()))
+    yₜ ~ Cat(truncated_discretized_gaussian(obsx, 2., Positions()))
+
+    vxₜ ~ LCat(Vels())(unif(Vels()))
+    vyₜ ~ LCat(Vels())(unif(Vels()))
 end
 @gen (static) function step_proposal(xₜ₋₁, vxₜ₋₁, yₜ₋₁, vyₜ₋₁, obsx, obsy)
     projected_x = truncate_value(xₜ₋₁ + vxₜ₋₁, Positions())
@@ -62,21 +72,8 @@ end
     vyₜ ~ LCat(Vels())(vel_step_dist(vyₜ₋₁, diff_y))
 end
 
-err_if_not_probvec(pvec, errmsg) =
-    if isprobvec(pvec)
-        pvec
-    else
-        error(errmsg)
-    end
-
 vel_step_dist(vxₜ₋₁, diff_x) =
     let probs = maybe_one_off(vxₜ₋₁, 0.3, Vels()) .* maybe_one_off(diff_x, 0.5, Vels())
         isprobvec(probs) ? probs : maybe_one_off(vxₜ₋₁, 0.3, Vels())
     end |> normalize
 
-# smc_circuit = SMCStep(
-#     (@label_domains step_latent_model(Positions(), Vels(), Positions(), Vels())),
-#     (@label_domains obs_model(Positions(), Vels(), Positions(), Vels())),
-#     (@label_domains step_proposal(Positions(), Vels(), Positions(), Vels(), Positions(), Positions())),
-#     nparticles
-# )
