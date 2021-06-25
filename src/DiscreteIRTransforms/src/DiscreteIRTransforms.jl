@@ -68,5 +68,6 @@ include("combinators/map.jl")
 include("combinators/apply.jl")
 
 include("replace_return_node.jl")
+include("add_activator_input.jl")
 
 end # module
