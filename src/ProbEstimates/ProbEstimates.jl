@@ -1,6 +1,7 @@
 module ProbEstimates
 using Gen
 using Distributions
+using DiscreteIRTransforms
 
 struct CatTrace <: Gen.Trace
     gf::Gen.GenerativeFunction
@@ -20,6 +21,7 @@ struct LCat{T} <: Gen.GenerativeFunction{T, CatTrace}
     is_indexed::Bool
     labels::Union{Nothing, Vector{T}}
 end
+labels(l::LCat, pvec) = l.is_indexed ? (1:length(pvec)) : l.labels
 idx_to_label(c::LCat, idx) = c.is_indexed ? idx : c.labels[idx]
 label_to_idx(c::LCat, lab) = c.is_indexed ? lab : findfirst(c.labels .== lab)
 Base.:(==)(a::LCat{T}, b::LCat{T}) where {T} = (
@@ -71,5 +73,7 @@ acceptable_p_error(n_vars_in_model, err_constant=10) = K_fwd() > log(err_constan
 include("weight_mode_switching.jl")
 
 export LCat, Cat
+
+include("compilation_compatibility.jl")
 
 end # module

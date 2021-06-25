@@ -1,19 +1,21 @@
-using Gen, Distributions
-include("../../src/DynamicModels/DynamicModels.jl")
-using .DynamicModels
+"""
+This is a test for compiling syntax that is _almost_ the same as is used in Vanilla Gen.
+I'm using it as I add features to the compilation, to test that they are working.
+Eventually once the exact same syntax is supported we won't need this additional file.
+"""
 
-include("../../src/ProbEstimates/ProbEstimates.jl")
-using .ProbEstimates
-ProbEstimates.use_perfect_weights!()
+using SpikingInferenceCircuits
+const SIC = SpikingInferenceCircuits
+using Circuits, SpikingCircuits
+using Gen, Distributions
+
+includet("../../src/ProbEstimates/ProbEstimates.jl")
+using .ProbEstimates: Cat, LCat
 
 include("modeling_utils.jl")
 include("model_hyperparams.jl")
 
-InitialLatents() = (2, 2, 18, -2)
-@gen (static) function initial_latent_model()
-    return InitialLatents()
-end
-@gen (static) function step_latent_model(xₜ₋₁, vxₜ₋₁, yₜ₋₁, vyₜ₋₁)
+@gen (static) function step_model(xₜ₋₁, vxₜ₋₁, yₜ₋₁, vyₜ₋₁)
     vxₜ ~ LCat(Vels())(maybe_one_off(vxₜ₋₁, 0.3, Vels()))
     vyₜ ~ LCat(Vels())(maybe_one_off(vyₜ₋₁, 0.3, Vels()))
 
@@ -21,6 +23,7 @@ end
     exp_y = yₜ₋₁ + vyₜ
     xₜ ~ Cat(maybe_one_off(exp_x, 0.3, Positions()))
     yₜ ~ Cat(maybe_one_off(exp_y, 0.3, Positions()))
+    
     return (xₜ, vxₜ, yₜ, vyₜ)
 end
 @gen (static) function obs_model(xₜ, vxₜ, yₜ, vyₜ)
@@ -28,10 +31,6 @@ end
     obsy ~ Cat(truncated_discretized_gaussian(yₜ, 4.0, Positions()))
 
     return (obsx, obsy)
-end
-
-### proposals
-@gen (static) function initial_proposal(obs)
 end
 @gen (static) function step_proposal(xₜ₋₁, vxₜ₋₁, yₜ₋₁, vyₜ₋₁, obsx, obsy)
     projected_x = truncate_value(xₜ₋₁ + vxₜ₋₁, Positions())
@@ -74,9 +73,20 @@ vel_step_dist(vxₜ₋₁, diff_x) =
         isprobvec(probs) ? probs : maybe_one_off(vxₜ₋₁, 0.3, Vels())
     end |> normalize
 
-# smc_circuit = SMCStep(
-#     (@label_domains step_latent_model(Positions(), Vels(), Positions(), Vels())),
-#     (@label_domains obs_model(Positions(), Vels(), Positions(), Vels())),
-#     (@label_domains step_proposal(Positions(), Vels(), Positions(), Vels(), Positions(), Positions())),
-#     nparticles
-# )
+latent_domains() = (Positions(), Vels(), Positions(), Vels())
+obs_domains() = (Positions(), Positions())
+latent_obs_domains() = (latent_domains()..., obs_domains()...)
+NPARTICLES() = 2
+
+rsmcstep = RecurrentSMCStep(
+    SMCStep(
+        GenFnWithInputDomains(step_model, latent_domains()),
+        GenFnWithInputDomains(obs_model, latent_domains()),
+        GenFnWithInputDomains(step_proposal, latent_obs_domains()),
+        [:xₜ, :vxₜ, :yₜ, :vyₜ],
+        [:obsx, :obsy],
+        NPARTICLES()
+    ),
+    [:xₜ, :vxₜ, :yₜ, :vyₜ]
+)
+println("Circuit constructed.")

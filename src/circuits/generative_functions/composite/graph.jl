@@ -76,4 +76,9 @@ arg_edge(parentnode::InputNode, _, inputname, gen_fn_name) =
 arg_edge(::GenFnNode, parentname, inputname, gen_fn_name) =
     CompOut(:sub_gen_fns => parentname, :value) => CompIn(:sub_gen_fns => gen_fn_name, :inputs => inputname)
 
-ret_edges(g::GraphGenFn) = ((CompOut(:sub_gen_fns => g.output_node_name, :value) => Output(:value)),)
+ret_edges(g::GraphGenFn) = 
+    if g.nodes[g.output_node_name] isa GenFnNode
+        ((CompOut(:sub_gen_fns => g.output_node_name, :value) => Output(:value)),)
+    else
+        ((Input(:inputs => g.output_node_name) => Output(:value)),)
+    end
