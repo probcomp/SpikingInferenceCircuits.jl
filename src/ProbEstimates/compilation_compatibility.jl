@@ -1,8 +1,11 @@
-# Currently this file is not included by default, and must be included separately.
-# It allows models defined using `Cat` and `LCat` from `ProbEstimates`
-# to be compiled using `DiscreteIRTransforms`.
+DiscreteIRTransforms.is_cpts(::LCat) = false
 
-# TODO: encapsulate these definitions in a somewhat less ad-hoc way!
+# LCat / Cat should be compiled into CPTs, even though this is
+# not a distribution
+DiscreteIRTransforms.compile_to_primitive(::LCat) = true
 
-DiscreteIRTransforms.get_domain(l::ProbEstimates.LCat) = l.labels
-DiscreteIRTransforms.assmt_to_probs(::ProbEstimates.LCat) = ((pvec,),) -> pvec
+DiscreteIRTransforms.get_ret_domain(l::LCat, arg_domains) =
+    DiscreteIRTransforms.EnumeratedDomain(labels(l, first(only(arg_domains))))
+
+DiscreteIRTransforms.get_domain(l::LCat, arg_domains) = DiscreteIRTransforms.get_ret_domain(l, arg_domains)
+DiscreteIRTransforms.assmt_to_probs(::LCat) = ((pvec,),) -> pvec
