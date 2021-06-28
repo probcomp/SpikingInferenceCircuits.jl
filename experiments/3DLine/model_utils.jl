@@ -19,16 +19,22 @@ normalize(v) = v / sum(v)
 discretized_gaussian(mean, std, dom) = normalize([
     cdf(Normal(mean, std), i + .5) - cdf(Normal(mean, std), i - .5) for i in dom
 ])
+
 function truncate(pvec)
+    if !isprobvec(pvec)
+        error("pvec = $pvec is not a probability vector")
+    end
     mininvec = minimum(p for p in pvec if p != 0)
     if mininvec ≥ MinProb()
         return pvec
     else
+        first_to_truncate = findfirst(pvec .== mininvec)
         return truncate(
-            normalize([p == mininvec ? 0. : p for p in pvec])
+            normalize([i == first_to_truncate ? 0. : p for (i, p) in enumerate(pvec)])
         )
     end
 end
+
 truncated_discretized_gaussian(args...) = discretized_gaussian(args...) |> truncate
 truncate_dist_to_valrange(pvec, range, dom) = [
     first(range) ≤ x ≤ last(range) ? p : 0.
