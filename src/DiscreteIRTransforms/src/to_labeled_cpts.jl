@@ -1,3 +1,6 @@
+dist_or_gf(node::GenerativeFunctionCallNode) = node.generative_function
+dist_or_gf(node::RandomChoiceNode) = node.dist
+
 # Note: this currently only works when every input to every discrete distribution
 # should be removed from the graph!  This is common when setting parameters to
 # bernoulli, categorical, etc., but may be incorrect in other cases!
@@ -7,9 +10,12 @@ function to_labeled_cpts(ir::StaticIR, arg_domains)
         return ir
     end
 
+    choice_call_nodes = Iterators.flatten((ir.choice_nodes, ir.call_nodes))
+    replace_with_lcpt(node) = !is_cpts(dist_or_gf(node)) && compile_to_primitive(dist_or_gf(node))
+
     parents_of_dists = Set{Symbol}()
-    for node in ir.choice_nodes
-        if !is_cpts(node.dist)
+    for node in choice_call_nodes
+        if replace_with_lcpt(node)
             for parent in node.inputs
                 push!(parents_of_dists, parent.name)
             end
@@ -22,13 +28,13 @@ function to_labeled_cpts(ir::StaticIR, arg_domains)
     )
     to_replace = Dict{Symbol, StaticIRNode}()
 
-    for node in ir.choice_nodes
-        if !is_cpts(node.dist)
+    for node in choice_call_nodes
+        if replace_with_lcpt(node)
             to_replace[node.name] = get_labeled_cpt_node(node, name_to_domain)
         end
     end
     for node in ir.call_nodes
-        if !is_cpts(node.generative_function)
+        if !is_cpts(node.generative_function) && !replace_with_lcpt(node)
             to_replace[node.name] = GenerativeFunctionCallNode(
                 to_labeled_cpts(
                     node.generative_function,
@@ -62,10 +68,11 @@ end
 to_labeled_cpts(gf::StaticIRGenerativeFunction, arg_domains) =
     to_gf(to_labeled_cpts(get_ir(gf), arg_domains), add_gf_name_suffix(gf, "labeled"))
 
-# Get a RandomChoiceNode with a LabeledCPT distribution equivalent to `node`'s distribution,
+# Get a RandomChoiceNode with a LabeledCPT distribution equivalent to `node`'s distribution
+# (or generative function, if the input node is a CallNode),
 # slurping in all the parents of the node (which are assumed to be JuliaNodes which produce
 # probabilities parametrizing the discrete distribution)
-function get_labeled_cpt_node(node::RandomChoiceNode, name_to_domain)
+function get_labeled_cpt_node(node::Union{RandomChoiceNode, GenerativeFunctionCallNode}, name_to_domain)
     @assert all(n isa JuliaNode for n in node.inputs) "Assumptions about restrictions on IR violated for node $(node.name)!"
     
     # determine an ordering of grandparent nodes to use
@@ -83,10 +90,10 @@ function get_labeled_cpt_node(node::RandomChoiceNode, name_to_domain)
 
     grandparent_assmt_to_probs(assmt) =
         let parent_assmt = grandparent_assmt_to_parent_assmt(assmt)
-            assmt_to_probs(node.dist)(parent_assmt)
+            assmt_to_probs(dist_or_gf(node))(parent_assmt)
         end
 
-    rettype = Gen.get_return_type(node.dist)
+    rettype = Gen.get_return_type(dist_or_gf(node))
     grandparent_domains = [name_to_domain[x.name] for x in grandparent_nodes]
     output_domain = name_to_domain[node.name]
 
