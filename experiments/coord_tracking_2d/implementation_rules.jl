@@ -78,6 +78,17 @@ Circuits.implement(m::SDCs.Mux, ::Spiking) =
         )
     )
 
+Circuits.implement(::PulseIR.OnGate, ::Spiking) =
+    PulseIR.PoissonAsyncOnGate(
+        PulseIR.ConcreteAsyncOnGate(ΔT_MUX(), 1, M()),
+        GATE_RATES()...
+    )
+Circuits.implement(::PulseIR.OffGate, ::Spiking) =
+    PulseIR.PoissonOffGate(
+        PulseIR.ConcreteOffGate(ΔT_MUX(), 2., M()),
+        GATE_RATES()...
+    )
+
 ### Not dependent upon hyperparameters:
 
 Circuits.implement(lt::SIC.SDCs.LookupTable, ::Spiking) =

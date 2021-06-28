@@ -1,7 +1,7 @@
 """
     ISParticle(
-        proposal::GenFnWithInputDomains, latent_model::GenFnWithInputDomains,
-        obs_model::GenFnWithInputDomains, latent_addr_order, obs_addr_order
+        proposal::ImplementableGenFn, latent_model::ImplementableGenFn,
+        obs_model::ImplementableGenFn, latent_addr_order, obs_addr_order
     )
 
 An importance sampling particle.  Given observations, samples latent variables
@@ -16,12 +16,12 @@ to the observations.
 The proposal must be a distribution ``Q(\vec{l} ; \vec{x}, \vec{o})``.
 
 Arguments to the constructor:
-- `proposal` is a GenFnWithInputDomains which accepts a sequence of arguments first giving
+- `proposal` is a ImplementableGenFn which accepts a sequence of arguments first giving
 the model arguments``\vec{x}`` and then the observed values ``\vec{o}``; it traces values
 at the addresses of the latent variables in the latent model.
-- `latent_model` is a GenFnWithInputDomains which accepts a sequence of arguments ``\vec{x}``
+- `latent_model` is a ImplementableGenFn which accepts a sequence of arguments ``\vec{x}``
 and samples latent values ``\vec{l}``.
-- `obs_model` is a GenFnWithInputDomains which accepts a sequence of latent values ``\tilde{l}``
+- `obs_model` is a ImplementableGenFn which accepts a sequence of latent values ``\tilde{l}``
 which is a subset of all the traced latent values ``\vec{l}`` from the obs model.
 It samples observation values ``\vec{o}``.
 - `latent_addr_order` is a vector of addresses which are traced in the latent model.
@@ -50,8 +50,8 @@ struct ISParticle <: GenericComponent
     obs_addr_order    :: Vector
 end
 ISParticle(
-    proposal::GenFnWithInputDomains, latent_model::GenFnWithInputDomains,
-    obs_model::GenFnWithInputDomains, latent_addr_order, obs_addr_order
+    proposal::ImplementableGenFn, latent_model::ImplementableGenFn,
+    obs_model::ImplementableGenFn, latent_addr_order, obs_addr_order
 ) = ISParticle(
     # Replace the return nodes since (1) the top-level return nodes don't matter to this circuit, and (2)
     # the return nodes may be tuples of values, which are currently not handled well by the compiler.
@@ -86,6 +86,7 @@ Circuits.implement(p::ISParticle, ::Target) =
             ( # Input args -> propose args
                 Input(:args => addr) => CompIn(:propose, :inputs => addr)
                 for addr in keys(inputs(p.assess_latents)[:inputs])
+                    if addr in keys(inputs(p.propose)[:inputs])
             )...,
             ( # Input obs -> propose args
                 Input(:obs => addr) => CompIn(:propose, :inputs => addr)

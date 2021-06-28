@@ -35,17 +35,17 @@ macro DynamicModel(
     latent_names = [Symbol("latent$i") for i=1:n_latents]
     return quote
         @gen (static) function initial_step()
-            latents ~ $(initial_latent_model)()
+            latents ~ $(esc(initial_latent_model))()
             ($(latent_names...),) = latents
-            obs ~ $(obs_model)($(latent_names...))
+            obs ~ $(esc(obs_model))($(latent_names...))
             return latents
         end
 
         @gen (static) function take_step(t, prev_latents)
             ($(prev_latent_names...),) = prev_latents
-            latents ~ $(latent_step_model)($(prev_latent_names...))
+            latents ~ $(esc(latent_step_model))($(prev_latent_names...))
             ($(latent_names...),) = latents
-            obs ~ $(obs_model)($(latent_names...))
+            obs ~ $(esc(obs_model))($(latent_names...))
             return latents
         end
 
@@ -78,10 +78,31 @@ macro compile_step_proposal(
     return quote
         @gen (static) function _step_proposal(prev_tr, $(obs_argnames...))
             T = get_args(prev_tr)[1] + 1
-            prev_latents = tr[latent_addr(T - 1)]
+            prev_latents = tr[$(latent_addr)(T - 1)]
             ($(prop_argnames...),) = prev_latents
 
-            {:steps => T => :latents} ~ $(step_proposal)($(prop_argnames...), $(obs_argnames...))
+            {:steps => T => :latents} ~ $(esc(step_proposal))($(prop_argnames...), $(obs_argnames...))
+        end
+    end
+end
+
+"""
+    @compile_initial_proposal(initial_proposal, n_obs_inputs)
+
+Converts an initial proposal for the initial model used to construct a dynamic model
+using the `@DynamicModel` macro into a proposal compatible with the DynamicModel.
+
+`initial_proposal` should accept `n_obs_inputs` arguments (the observations
+at the initial timestep), and should trace a value at the same set of addresses
+as the initial latents model.
+"""
+macro compile_initial_proposal(
+    initial_proposal, n_obs_inputs
+)
+    obs_argnames = [Symbol("o$i") for i=1:n_obs_inputs]
+    return quote
+        @gen (static) function _initial_proposal($(obs_argnames...))
+            {:init => :latents} ~ $(esc(initial_proposal))($(obs_argnames...))
         end
     end
 end
@@ -152,6 +173,7 @@ function nest_at(addr, submap::Gen.ChoiceMap)
     return c
 end
 
-export @DynamicModel, @compile_step_proposal, dynamic_model_smc, get_dynamic_model_obs
+export @DynamicModel, @compile_step_proposal, @compile_initial_proposal
+export dynamic_model_smc, get_dynamic_model_obs
 
 end

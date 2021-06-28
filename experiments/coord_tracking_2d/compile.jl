@@ -51,22 +51,37 @@ NPARTICLES() = 2
 # using Serialization
 # function save_evts(evts, run_idx)
 #     try
+<<<<<<< HEAD
 #         serialize("run$(run_idx)_20210628_events.jls", evts)
+=======
+#         serialize("run$(run_idx)_20210624_events.jls", evts)
+>>>>>>> 446bf64529fadd83065f35839e1ecc7f938d727c
 #     catch e
 #         @error("Error saving events for run $run_idx.")
 #     end
 # end
 
 # function do_run(i)
+<<<<<<< HEAD
 #     events = simulate_and_get_events(impl, 999., inputs)
+=======
+#     events = simulate_and_get_events(impl, 10000, inputs)
+>>>>>>> 446bf64529fadd83065f35839e1ecc7f938d727c
 #     save_evts(events, i)
 #     return events
 # end
 
+<<<<<<< HEAD
 # println("Have access to $(Threads.nthreads()) threads")
 # evts = Any[nothing for _=1:4]
 # Threads.@threads for i=1:4
 #     println("Beginning $(i)th simulation.")
 #     evts[i] = do_run(i)
+=======
+# evts = Any[]
+# for i=1:4
+#     println("Beginning $(i)th simulation.")
+#     push!(evts, do_run(i))
+>>>>>>> 446bf64529fadd83065f35839e1ecc7f938d727c
 #     println("Completed $(i)th simulation.")
 # end
