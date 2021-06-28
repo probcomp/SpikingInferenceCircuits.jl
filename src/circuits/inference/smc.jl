@@ -132,9 +132,9 @@ Circuits.implement(s::RecurrentSMCStep, ::Target) =
 """
     SMC(
         initial_model_bundle            :: ImplementableGenFn,
-        initial_proposal_bundle         :: ImplementableGenFn,
         step_model_bundle               :: ImplementableGenFn,
         obs_model_bundle                :: ImplementableGenFn,
+        initial_proposal_bundle         :: ImplementableGenFn,
         step_proposal_bundle            :: ImplementableGenFn,
         latent_var_addrs_for_obs        :: Vector               ,
         obs_addr_order                  :: Vector               ,
@@ -158,9 +158,9 @@ end
 
 SMC(
     initial_model_bundle            :: ImplementableGenFn,
-    initial_proposal_bundle         :: ImplementableGenFn,
     step_model_bundle               :: ImplementableGenFn,
     obs_model_bundle                :: ImplementableGenFn,
+    initial_proposal_bundle         :: ImplementableGenFn,
     step_proposal_bundle            :: ImplementableGenFn,
     latent_var_addrs_for_obs        :: Vector               ,
     obs_addr_order                  :: Vector               ,
@@ -168,10 +168,12 @@ SMC(
     num_particles                   :: Int
 ) = SMC(
         ISParticle(
-            initial_proposal_bundle,
             # an initial model will have 0 inputs, but we need there to be an input line
             # so the circuit knows when to output scores!  so update the IR to include an
             # input called `:in` which feeds into all distributions with no arguments
+            # Also add it for the proposal, since often the proposal has draws with 0 inputs.
+            # TODO: do we want to add this for every gen fn?
+            add_activator_input(initial_proposal_bundle, :in),
             add_activator_input(initial_model_bundle, :in),
             obs_model_bundle,
             latent_var_addrs_for_obs, obs_addr_order
@@ -198,23 +200,34 @@ Circuits.implement(s::SMC, ::Spiking) =
             initial_step=MultiParticleWithResample(num_particles(s), s.initial_step_particle),
             subsequent_steps=s.subsequent_steps,
             initial_obs_gate=ValuePasser(inputs(s)[:obs]),
-            step_obs_gate=ValueBlocker(inputs(s)[:obs])
+            step_obs_gate=ValueBlocker(inputs(s)[:obs]),
+            to_singleton_val=ToSingletonValue() # Convert a spikewire into a FiniteDomainValue(1)
         ), (
             # observations --> initial and step units
-            Input(:obs) => CompIn(:initial_obs_gate, :in),
-            Input(:obs) => CompIn(:step_obs_gate, :in),
+            Input(:obs) => CompIn(:initial_obs_gate, :val),
+            Input(:obs) => CompIn(:step_obs_gate, :val),
             Input(:is_initial_obs) => CompIn(:initial_obs_gate, :pass),
             Input(:is_initial_obs) => CompIn(:step_obs_gate, :block),
             CompOut(:initial_obs_gate, :out) => CompIn(:initial_step, :obs),
-            CompOut(:step_obs_gate, :out) => CompOut(:subsequent_steps, :obs),
+            CompOut(:step_obs_gate, :out) => CompIn(:subsequent_steps, :obs),
 
             # route `is_initial_obs` to the activator input we have added to the initial model
-            Input(:is_initial_obs) => CompIn(:initial_step, :args => :in),            
+            Input(:is_initial_obs) => CompIn(:to_singleton_val, :in),
+            (
+                CompOut(:to_singleton_val, :out) => CompIn(:initial_step, :args => i => :in)
+                for i=1:num_particles(s)
+            )...,
 
             # outputs    &    initial latents -> step model
             Iterators.flatten( # route outputs from initial step
                 (
-                    CompOut(:initial_step, i) => CompIn(:subsequent_steps, :initial_latents => i),
+                    (
+                        CompOut(:initial_step, i => outkey) => CompIn(:subsequent_steps, :initial_latents => i => inkey)
+                        for (outkey, inkey) in zip(
+                            s.subsequent_steps.latent_var_addrs_for_recurrence,
+                            keys(inputs(s.subsequent_steps)[:initial_latents => i])
+                        )
+                    )...,
                     CompOut(:initial_step, i) => Output(i)
                 )
                 for i=1:num_particles(s)
@@ -225,3 +238,13 @@ Circuits.implement(s::SMC, ::Spiking) =
             )...
         ), s
     )
+
+struct ToSingletonValue <: GenericComponent end
+Circuits.target(::ToSingletonValue) = Spiking()
+Circuits.inputs(::ToSingletonValue) = NamedValues(:in => SpikeWire())
+Circuits.outputs(::ToSingletonValue) = NamedValues(:out => FiniteDomainValue(1))
+Circuits.implement(s::ToSingletonValue, ::Spiking) = CompositeComponent(
+    inputs(s), implement_deep(outputs(s), Spiking()), (), (
+        Input(:in) => Output(:out => 1),
+    )
+)

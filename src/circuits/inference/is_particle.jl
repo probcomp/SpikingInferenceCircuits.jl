@@ -86,6 +86,7 @@ Circuits.implement(p::ISParticle, ::Target) =
             ( # Input args -> propose args
                 Input(:args => addr) => CompIn(:propose, :inputs => addr)
                 for addr in keys(inputs(p.assess_latents)[:inputs])
+                    if addr in keys(inputs(p.propose)[:inputs])
             )...,
             ( # Input obs -> propose args
                 Input(:obs => addr) => CompIn(:propose, :inputs => addr)
