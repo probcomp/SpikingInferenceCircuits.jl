@@ -132,7 +132,8 @@ function dynamic_model_smc(
     (first_obs_cm, obs_cms),
     obs_cm_to_proposal_input, # obs choicemap -> arg sequence for proposal
     initial_proposal, step_proposal,
-    n_particles
+    n_particles;
+    ess_threshold=Inf
 )
     unweighted_traces = []
     weighted_traces = []
@@ -141,7 +142,7 @@ function dynamic_model_smc(
         push!(weighted_traces, collect(zip(state.traces, state.log_weights)))
 
         # always resample
-        Gen.maybe_resample!(state, ess_threshold=Inf)
+        Gen.maybe_resample!(state, ess_threshold=ess_threshold)
 
         push!(unweighted_traces, copy(state.traces))
     end
