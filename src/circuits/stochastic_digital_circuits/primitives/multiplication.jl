@@ -9,4 +9,4 @@ struct NonnegativeRealMultiplier <: GenericComponent
     inputs::Tuple{Vararg{<:Value}}
 end
 Circuits.inputs(r::NonnegativeRealMultiplier) = IndexedValues(r.inputs)
-Circuits.outputs(r::NonnegativeRealMultiplier) = NamedValues(:out => NonnegativeReal())
+Circuits.outputs(r::NonnegativeRealMultiplier) = NamedValues(:out => ProductEstimate())

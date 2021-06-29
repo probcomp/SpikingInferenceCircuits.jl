@@ -1,6 +1,8 @@
 SAMPLE_ONRATE() = 0.5
 SCORE_ONRATE() = 0.1
-K() = 20 # count denominator for scores
+PEstDenom() = 20 # count denominator for ProbEstimates
+RecipPEstDenom() = 10 # count denominator for ReciprocalProbEstimates
+MultOutDenom() = 200 # count denominator for the output of a multiplier
 
 ΔT() = 750 # ms  -- memory time for scoring unit (also used by many other units)
 
@@ -52,13 +54,13 @@ bound_on_overall_failure_prob(n_steps, n_vars, n_particles) = 1 - (
 # = 1 - LOWER_GATE_ONRATE()/(SAMPLE_ONRATE() + LOWER_GATE_ONRATE())
 @assert 1 - (LOWER_GATE_ONRATE()/(SAMPLE_ONRATE() + LOWER_GATE_ONRATE())) < P_WTA_TOO_SLOW() 
 
-# We need K() spikes to occur from an assembly with rate SCORE_ONRATE() when sampling.
-# So we need P[spikes from P.P. with rate SCORE_ONRATE() in ΔT > K()] > SCORER_FAILUREPROB
-# I.e. P[Poisson(SCORE_ONRATE() * ΔT) > K()] > SCORER_FAILUREPROB
-@assert cdf(Poisson(SCORE_ONRATE() * ΔT()), K()) < SCORE_FAIL_PROB() "Probability of not getting enough spikes from scoring unit before memory runs out is too high."
+# We need PEstDenom() spikes to occur from an assembly with rate SCORE_ONRATE() when sampling.
+# So we need P[spikes from P.P. with rate SCORE_ONRATE() in ΔT > PEstDenom()] > SCORER_FAILUREPROB
+# I.e. P[Poisson(SCORE_ONRATE() * ΔT) > PEstDenom()] > SCORER_FAILUREPROB
+@assert cdf(Poisson(SCORE_ONRATE() * ΔT()), PEstDenom()) < SCORE_FAIL_PROB() "Probability of not getting enough spikes from scoring unit before memory runs out is too high."
 
-# We may need K() spikes from a spiker of rate SAMPLE_ONRATE()*MinProb()
-@assert cdf(Poisson(SAMPLE_ONRATE()*MinProb()* ΔT_SAMPLE()), K()) < SAMPLE_FAIL_PROB() "Probability of not getting enough spikes from reciprical scoring unit before memory runs out is too high (at least from lowest prob)"
+# We may need RecipPEstDenom() spikes from a spiker of rate SAMPLE_ONRATE()*MinProb()
+@assert cdf(Poisson(SAMPLE_ONRATE()*MinProb()* ΔT_SAMPLE()), RecipPEstDenom()) < SAMPLE_FAIL_PROB() "Probability of not getting enough spikes from reciprical scoring unit before memory runs out is too high (at least from lowest prob)"
 
 p_mult_output_longer_than(T) = cdf(Erlang(TIMER_N_SPIKES(), 1/timer_rate_for_time(MULT_EXPECTED_OUT_TIME())), T)
 timer_rate_for_time(T) = T/TIMER_N_SPIKES()

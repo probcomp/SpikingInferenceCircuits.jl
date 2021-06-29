@@ -27,5 +27,5 @@ Circuits.inputs(c::ConditionalScore) =
 
 Circuits.outputs(::ConditionalScore) =
     NamedValues(
-        :prob => NonnegativeReal()
+        :prob => ProbEstimate()
     )

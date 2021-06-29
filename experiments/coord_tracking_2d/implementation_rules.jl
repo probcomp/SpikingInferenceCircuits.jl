@@ -1,11 +1,11 @@
 includet("impl_hyperparameters.jl")
 
 Circuits.implement(cs::SIC.SDCs.ConditionalScore, ::Spiking) =      # max_delay
-    SDCs.PoissonPulseConditionalScore((cs, K(), SCORE_ONRATE(), ΔT(),    2,     M()), OFFRATE(), (GATE_OFFRATE(), LOWER_GATE_ONRATE()))
+    SDCs.PoissonPulseConditionalScore((cs, PEstDenom(), SCORE_ONRATE(), ΔT(),    2,     M()), OFFRATE(), (GATE_OFFRATE(), LOWER_GATE_ONRATE()))
 
 Circuits.implement(cs::SIC.SDCs.ConditionalSample, ::Spiking) =
     SDCs.PoissonPulseConditionalSample(
-        (cs, K(), SAMPLE_ONRATE(),
+        (cs, RecipPEstDenom(), SAMPLE_ONRATE(),
             ΔT_SAMPLE(), # ΔT      --  Note that it can take 2x as long as this to reset!
             2, # max_delay
             M(), # M (num spikes to override offs/ons)
@@ -17,7 +17,7 @@ Circuits.implement(cs::SIC.SDCs.ConditionalSample, ::Spiking) =
 
 Circuits.implement(theta::SDCs.Theta, ::Spiking) =
     SDCs.PulseTheta(                                    # M,     L,  ΔT,         rate
-        K(), theta.n_possibilities, PulseIR.PoissonTheta, M(), -20, ΔT_THETA(), THETA_RATE(),
+        MultOutDenom(), theta.n_possibilities, PulseIR.PoissonTheta, M(), -20, ΔT_THETA(), THETA_RATE(),
         PulseIR.PoissonOffGate(
             PulseIR.ConcreteOffGate(ΔT_THETA() #= ΔT =#, 2. #=max_delay=#, M() #=M=#), GATE_RATES()...
         ),
@@ -37,7 +37,7 @@ Circuits.implement(m::SDCs.NonnegativeRealMultiplier, ::Spiking) =
             ((M(), GATE_RATES()...), 0.), #(ti_params = (M, R), offrate)
             (M(), GATE_RATES()...) # (M, R) offgate params
         ), 
-        K(),
+        MultOutDenom(),
         threshold -> begin
             # println("thresh: $threshold")
             #                                   threshold, ΔT,             max_delay,  M,    
@@ -45,8 +45,12 @@ Circuits.implement(m::SDCs.NonnegativeRealMultiplier, ::Spiking) =
         end
     )
 
-to_spiking_real(::SDCs.SingleNonnegativeReal) = 
-    SDCs.IndicatedSpikeCountReal(SDCs.UnbiasedSpikeCountReal(K()))
+to_spiking_real(::SDCs.ProbEstimate) = 
+    SDCs.IndicatedSpikeCountReal(SDCs.UnbiasedSpikeCountReal(PEstDenom()))
+to_spiking_real(::SDCs.ReciprocalProbEstimate) = 
+    SDCs.IndicatedSpikeCountReal(SDCs.UnbiasedSpikeCountReal(RecipPEstDenom()))
+to_spiking_real(::SDCs.ProductEstimate) = 
+    SDCs.IndicatedSpikeCountReal(SDCs.UnbiasedSpikeCountReal(MultOutDenom()))
 to_spiking_real(v::SDCs.ProductNonnegativeReal) =
     SDCs.ProductNonnegativeReal(map(to_spiking_real, v.factors))
 to_spiking_real(v::SDCs.NonnegativeReal) = to_spiking_real(implement(v, Spiking()))

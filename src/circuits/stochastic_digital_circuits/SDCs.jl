@@ -34,6 +34,7 @@ include("nonprimitives/cpt_sample_score.jl")
 include("nonprimitives/multi_input_lookup_table.jl")
 
 export FiniteDomainValue, NonnegativeReal, SingleNonnegativeReal, ProductNonnegativeReal
+export ProbEstimate, ReciprocalProbEstimate
 
 export Mux, ConditionalScore, ConditionalSample, ToAssmts, LookupTable
 export NonnegativeRealMultiplier, Theta, Step
