@@ -1,7 +1,8 @@
+# Include the library exposing `Cat` and `LCat`
 includet("../../src/ProbEstimates/ProbEstimates.jl")
 using .ProbEstimates
-MinProb() = ProbEstimates.MinProb()
 
+# Include some utilities for defining discrete probability distributions
 includet("../utils/modeling_utils.jl")
 Positions() = 1:20; Vels() = -3:3;
 Bools() = [true, false]

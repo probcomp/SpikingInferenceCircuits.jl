@@ -1,3 +1,5 @@
+MinProb() = ProbEstimates.MinProb()
+
 onehot(x, dom) =
     x < first(dom) ? onehot(first(dom), dom) :
     x > last(dom)  ? onehot(last(dom), dom)  :

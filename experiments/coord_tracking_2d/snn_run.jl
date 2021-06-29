@@ -4,6 +4,7 @@ using Circuits, SpikingCircuits
 
 includet("model_proposal.jl")
 
+# Load hyperparameter assignments, etc., for the spiking neural network compiler.
 includet("../utils/default_implementation_rules.jl")
 println("Implementation rules loaded.")
 
@@ -13,22 +14,22 @@ latent_obs_domains() = (latent_domains()..., obs_domains()...)
 NPARTICLES() = 2
 
 # Construct an SMC circuit, by telling each model the domains of the input variables
-# smc = SMC(
-#     GenFnWithInputDomains(initial_latent_model, ()),
-#     GenFnWithInputDomains(step_latent_model, latent_domains()),
-#     GenFnWithInputDomains(obs_model, latent_domains()),
-#     GenFnWithInputDomains(initial_proposal, obs_domains()),
-#     GenFnWithInputDomains(step_proposal, latent_obs_domains()),
-#     [:xₜ, :vxₜ, :yₜ, :vyₜ], # order in which to feed latent variables into the step proposal
-#     [:obsx, :obsy],       # order in which to feed observations into the proposals
-#     [:xₜ, :vxₜ, :yₜ, :vyₜ], # order in which to feed latent variables back into the step model for the next timestep
-#     NPARTICLES()
-# )
+smc = SMC(
+    GenFnWithInputDomains(initial_latent_model, ()),
+    GenFnWithInputDomains(step_latent_model, latent_domains()),
+    GenFnWithInputDomains(obs_model, latent_domains()),
+    GenFnWithInputDomains(initial_proposal, obs_domains()),
+    GenFnWithInputDomains(step_proposal, latent_obs_domains()),
+    [:xₜ, :vxₜ, :yₜ, :vyₜ], # order in which to feed latent variables into the step proposal
+    [:obsx, :obsy],       # order in which to feed observations into the proposals
+    [:xₜ, :vxₜ, :yₜ, :vyₜ], # order in which to feed latent variables back into the step model for the next timestep
+    NPARTICLES()
+)
+println("SMC Circuit Constructed.")
 
-# println("SMC Circuit Constructed.")
-
-# impl = Circuits.memoized_implement_deep(smc, Spiking());
-# println("Circuit fully implemented using Poisson Process neurons.")
+# Implement the circuit to a network of neurons.
+impl = Circuits.memoized_implement_deep(smc, Spiking());
+println("Circuit fully implemented using Poisson Process neurons.")
 
 includet("../utils/simulation_utils.jl")
 
