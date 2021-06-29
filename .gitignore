@@ -4,3 +4,4 @@ visualization/frontend/renders/**/*
 **/*.txt
 **/*.zip
 .vscode/**/*
+experiments/saves/**/*

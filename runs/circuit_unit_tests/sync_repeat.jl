@@ -8,13 +8,13 @@ const Sim = SpikingCircuits.SpikingSimulator
 Circuits.implement(s::PulseIR.Sync, ::Spiking) =
     PulseIR.PoissonSync(
         s.cluster_sizes,
-        (1000., 30.),
-        (0.1, 30.),
-        (50., 4, (0.1, 1000, 20), 0., 100.)
+        (1000, 0., 5.),
+        (0.1, 0., 5.),
+        (50., 4, (0.1, 1000, 0., 5.), 0., 100.)
     )
 
 sync = PulseIR.Sync([1, 2])
-timer = PulseIR.PoissonTimer(200., 50, (0.1, 1000, 20), 0., 300.)
+timer = PulseIR.PoissonTimer(200., 50, (0.1, 1000, 0, 5.), 0., 300.)
 
 # idea is: pass 
 comp = CompositeComponent(
@@ -57,4 +57,4 @@ get_events(impl) = Sim.simulate_for_time_and_get_events(impl, 5000.; initial_inp
 events = get_events(impl)
 println("Simulation run.")
 
-include("spiketrain_utils.jl")
+dict = out_st_dict(events)

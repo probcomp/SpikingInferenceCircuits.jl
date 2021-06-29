@@ -13,25 +13,19 @@ using .SDCs: PulseMux
 
 og = PoissonAsyncOnGate(
     ConcreteAsyncOnGate(300, 0.1, 50),
-    30
+    0., 2.
 )
-# mux = SDCs.PulseMux(SDCs.Mux(2, SpikeWire()), og)
 
-# imp = implement_deep(mux, Spiking())
-
-# events = Sim.simulate_for_time_and_get_events(
-#     imp, 10, initial_inputs=(:sel => 1,)
-# )
-# dict = spiketrain_dict(
-#     filter(events) do (t, compname, event)
-#         (compname === :ss || compname === nothing) && event isa Sim.OutputSpike
-#     end
-#         # filter(((t,args...),) -> is_primary_output(args...), events)
-#     )
+includet("../spiketrain_utils.jl")
 
 events = Sim.simulate_for_time_and_get_events(
     implement_deep(og, Spiking()),
-    10, initial_inputs=(:on,)
+    10,
+    inputs=[
+        (0., (:on,)),
+        (1., (:in,)),
+        (2.5, (:in,))
+    ]
 )
 dict = spiketrain_dict(
     filter(events) do (t, compname, event)

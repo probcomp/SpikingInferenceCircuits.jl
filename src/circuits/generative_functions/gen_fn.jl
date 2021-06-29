@@ -194,3 +194,76 @@ The circuit will expect input values to be in the given `arg_domain`s.
 for other objects, `arg_domains` should just be a tuple.)
 """
 gen_fn_circuit(_, _, _) = error("Not implemented")
+
+"""
+    gf::ImplementableGenFn
+
+A generative function packaged with enough metadata that it can be implemented as a stochastic
+digital circuit.
+To implement it to perform operation `op`, call `gen_fn_circuit(gf, op::GenFnOp)`.
+"""
+abstract type ImplementableGenFn end
+
+"""
+    GenFnWithInputDomains(gen_fn::GenerativeFunction, input_domains::Vector{DiscreteIRTransforms.Domain})
+
+A generative function with labels giving the domain of each input value to the gen fn.
+"""
+struct GenFnWithInputDomains <: ImplementableGenFn
+    gen_fn::GenerativeFunction
+    input_domains::Vector{<:DiscreteIRTransforms.Domain}
+end
+GenFnWithInputDomains(gen_fn::GenerativeFunction, input_domains) =
+    GenFnWithInputDomains(gen_fn,
+        [
+            if dom isa DiscreteIRTransforms.Domain
+                dom
+            else
+                DiscreteIRTransforms.EnumeratedDomain(dom)
+            end
+            for dom in input_domains
+        ]
+    )
+
+icpts(gf::GenFnWithInputDomains) = to_indexed_cpts(gf.gen_fn, gf.input_domains)[1]
+
+"""
+    gen_fn_circuit(gf::GenFnWithInputDomains, op::GenFnOp)
+
+A GenFnCircuit for the given generative function with the given input domain labels.
+"""
+gen_fn_circuit(gf::GenFnWithInputDomains, op::GenFnOp) =
+    gen_fn_circuit(
+        icpts(gf),
+        [FiniteDomain((length ∘ DiscreteIRTransforms.vals)(x)) for x in gf.input_domains],
+        op
+    )
+
+replace_return_node(gf::GenFnWithInputDomains) =
+    GenFnWithInputDomains(DiscreteIRTransforms.replace_return_node(gf.gen_fn), gf.input_domains)
+
+"""
+    WithActivatorInput(gf::GenFnWithInputDomains, activator_input_name)
+
+An `ImplementableGenFn` equivalent to `gf`, except that before being implemented,
+a argument with domain `[1]` is added to the generative function with name `activator_input_name`,
+and the argument is fed as input into every node which currently has no arguments.
+"""
+struct WithActivatorInput <: ImplementableGenFn
+    gf::GenFnWithInputDomains
+    activator_input_name
+end
+add_activator_input(gf::GenFnWithInputDomains, activator_input_name) =
+    WithActivatorInput(gf, activator_input_name)
+
+gen_fn_circuit(gf::WithActivatorInput, op::GenFnOp) =
+    gen_fn_circuit(
+        DiscreteIRTransforms.add_activator_input(icpts(gf.gf), gf.activator_input_name),
+        [
+            FiniteDomain(1), # activator input
+            (FiniteDomain((length ∘ DiscreteIRTransforms.vals)(x)) for x in gf.gf.input_domains)...
+        ],
+        op
+    )
+
+replace_return_node(gf::WithActivatorInput) = WithActivatorInput(replace_return_node(gf.gf), gf.activator_input_name)

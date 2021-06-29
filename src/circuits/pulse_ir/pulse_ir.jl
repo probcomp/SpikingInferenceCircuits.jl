@@ -1,4 +1,5 @@
 module PulseIR
+using Base: Float64
 using Circuits
 using SpikingCircuits
 import Distributions

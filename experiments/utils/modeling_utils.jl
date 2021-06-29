@@ -1,3 +1,5 @@
+MinProb() = ProbEstimates.MinProb()
+
 onehot(x, dom) =
     x < first(dom) ? onehot(first(dom), dom) :
     x > last(dom)  ? onehot(last(dom), dom)  :
@@ -37,4 +39,11 @@ truncate_dist_to_valrange(pvec, range, dom) = [
 
 truncate_value(val, range) = max(min(val, last(range)), first(range))
 
-@dist labeled_categorical(labels, probs) = labels[categorical(probs)]
+err_if_not_probvec(pvec, errmsg) =
+    if isprobvec(pvec)
+        pvec
+    else
+        error(errmsg)
+    end
+
+unif(range) = normalize([1. for _ in range])

@@ -1,6 +1,7 @@
 struct PoissonOffGate <: ConcretePulseIRPrimitive
     gate::ConcreteOffGate
-    R::Float64
+    offrate::Float64
+    onrate::Float64
 end
 Circuits.abstract(g::PoissonOffGate) = g.gate
 for s in (:target, :inputs, :outputs)
@@ -16,7 +17,11 @@ Circuits.implement(g::PoissonOffGate, ::Spiking) =
                 let M = g.gate.M; x -> -M*x; end,
                 x -> -x
             ], g.gate.ΔT,
-            let R = g.R; u -> exp(R*(u - 1/2)); end
+        truncated_linear(g.offrate, g.onrate, 0, 1)
+            # u -> begin
+            #     println("u = $u, λ = $(truncated_linear(g.offrate, g.onrate, 0, 1)(u))")
+            #     truncated_linear(g.offrate, g.onrate, 0, 1)
+            # end
         ),),
         (
             Input(:in) => CompIn(:neuron, 1),
@@ -27,14 +32,14 @@ Circuits.implement(g::PoissonOffGate, ::Spiking) =
         g
     )
 
-failure_probability_bound(g::PoissonOffGate) =
-    1 - (1 - p_spikes_while_off_bound(g))*(1 - p_doesnt_spike_by_delay_bound(g))
+# failure_probability_bound(g::PoissonOffGate) =
+#     1 - (1 - p_spikes_while_off_bound(g))*(1 - p_doesnt_spike_by_delay_bound(g))
 
-p_spikes_while_off_bound(g::PoissonOffGate) =
-    1 - exp(-g.gate.ΔT × exp(-g.R/2))
+# p_spikes_while_off_bound(g::PoissonOffGate) =
+#     1 - exp(-g.gate.ΔT × exp(-g.R/2))
 
-# Derived on page 76 of notebook
-p_doesnt_spike_by_delay_bound(g::PoissonOffGate) =
-    let α = g.gate.max_delay × (exp(g.R) - 1)
-        1 - (1 - exp(-α × exp(-g.R/2)))^(g.gate.M - 1)
-    end
+# # Derived on page 76 of notebook
+# p_doesnt_spike_by_delay_bound(g::PoissonOffGate) =
+#     let α = g.gate.max_delay × (exp(g.R) - 1)
+#         1 - (1 - exp(-α × exp(-g.R/2)))^(g.gate.M - 1)
+#     end

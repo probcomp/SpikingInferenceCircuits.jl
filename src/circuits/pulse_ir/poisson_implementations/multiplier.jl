@@ -7,8 +7,8 @@
 """
 struct PoissonSpikeCountMultiplier <: ConcretePulseIRPrimitive
     conc::ConcreteSpikeCountMultiplier
-    timer_params::Tuple{Tuple{Float64, Float64}, Float64}
-    offgate_params::Tuple{Int, Float64} # M, R [we set ΔT and max_delay using `conc`]
+    timer_params::Tuple{Tuple{Float64, Float64, Float64}, Float64}
+    offgate_params::Tuple{Int, Float64, Float64} # M, offrate, onrate [we set ΔT and max_delay using `conc`]
     function PoissonSpikeCountMultiplier(conc::ConcreteSpikeCountMultiplier, args...)
         @assert conc.spikecount_dist isa PoissonOnErlangTime
         new(conc, args...)
@@ -22,8 +22,8 @@ PoissonSpikeCountMultiplier(
     expected_output_time::Real,
     max_input_memory::Real,
     max_delay::Real,
-    timer_params::Tuple{<:Tuple{<:Real, <:Real}, <:Real},
-    offgate_params::Tuple{<:Real, <:Real}
+    timer_params::Tuple{<:Tuple{<:Real, <:Real, <:Real}, <:Real},
+    offgate_params::Tuple{<:Real, <:Real, <:Real}
 ) = PoissonSpikeCountMultiplier(
     ConcreteSpikeCountMultiplier(
         input_count_denominators,
@@ -65,7 +65,7 @@ Circuits.implement(m::PoissonSpikeCountMultiplier, ::Spiking) =
                     m.conc.max_delay,
                     m.offgate_params[1]
                 ),
-                m.offgate_params[2]
+                m.offgate_params[2:end]...
             )
         ),
         (
