@@ -1,11 +1,12 @@
 using Base: Int64
 include("../../src/DynamicModels/DynamicModels.jl")
-using .DynamicModels: @DynamicModel, @compile_step_proposal, get_dynamic_model_obs, dynamic_model_smc
+using .DynamicModels: @DynamicModel, @compile_initial_proposal, @compile_step_proposal, get_dynamic_model_obs, dynamic_model_smc
 
 include("model.jl")
 
 model = @DynamicModel(initial_model, step_model, obs_model, 9)
 step_proposal = @compile_step_proposal(step_proposal, 9, 2)
+initial_proposal = @compile_initial_proposal(initial_proposal, 2)
 @load_generated_functions()
 
 NSTEPS = 5
@@ -18,9 +19,10 @@ observations = get_dynamic_model_obs(tr)
     ch -> (ch[:obs_θ => :val], ch[:obs_ϕ => :val]),
     initial_proposal, step_proposal,
     NPARTICLES, # n particles
-    ess_threshold=NPARTICLES/2
+    ess_threshold=-Inf
 )
 
+#OK next step is figuring out which particles are moving in depth vs not
 
 heatmap_pf_results(unweighted_traces_at_each_step, tr, NSTEPS)
 

@@ -14,13 +14,15 @@ using .ProbEstimates: Cat, LCat
 include("model_utils.jl")
 include("model_hyperparams.jl")
 
+neg_to_inf(x) = x <= 0 ? Inf : x
 norm_3d(x, y, z) = sqrt(x^2 + y^2 + z^2)
+round_to_pt1(x) = round(x, digits=1)
 
 @gen (static) function initial_model()
     x = Xs()[end] / 2
     y = 0
     height = Heights()[end] / 2
-    moving_in_depth = false
+    moving_in_depth = true
     r = Int(round(sqrt(x^2 + y^2 + height^2)))
     phi = asin(height / r)
     theta = atan(y / x)
@@ -75,11 +77,9 @@ end
     moving_in_depthₜ₋₁, vₜ₋₁, heightₜ₋₁, xₜ₋₁, yₜ₋₁, rₜ₋₁, er, eϕ, eθ, θₜ, ϕₜ) # θ and ϕ are noisy
     # instead of sampling (x, y, h) then computing r (as we do in the model)
     # in the proposal we sample (r, x, y) and then compute h
-#    a = println(θₜ)
- #   a = println(ϕₜ)
     moving_in_depthₜ = { :moving_in_depthₜ } ~ bernoulli(moving_in_depthₜ₋₁ ? 1.0 : 0.0)
-    exact_θ = { :exact_θ } ~ LCat(θs())(truncated_discretized_gaussian(θₜ, 0.05, θs()))
-    exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(ϕₜ, 0.05, ϕs()))
+    exact_θ = { :exact_θ } ~ LCat(θs())(truncated_discretized_gaussian(θₜ, 0.2, θs()))
+    exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(ϕₜ, 0.2, ϕs()))
     rₜ = { :rₜ } ~ Cat(truncated_discretized_gaussian(rₜ₋₁, 3.0, Rs()))
     # now compute x, y, height (almost deterministically, plus some noise)
     exact_x = rₜ * cos(exact_ϕ) * cos(exact_θ)
@@ -93,38 +93,36 @@ end
         moving_in_depthₜ ? onehot(heightₜ₋₁, Heights()) : truncated_discretized_gaussian(
             exact_height, 1.0, Heights()))
     yₜ = { :yₜ } ~ LCat(Ys())(truncated_discretized_gaussian(exact_y, 1.0, Ys()))
-    a = println("before vt")
-    vₜ = { :vₜ } ~ LCat(Vels())(maybe_one_off(yₜ - yₜ₋₁, .4, Vels()))
-    b = println("after vt")
-  #  return (moving_in_depthₜ, vₜ, heightₜ, xₜ, yₜ, rₜ, )
+    vₜ = { :vₜ } ~ LCat(Vels())(maybe_one_off(round_to_pt1(yₜ - yₜ₋₁), .4, Vels()))
 end
 
 @gen (static) function initial_proposal(θₜ, ϕₜ)
     moving_in_depthₜ = { :moving_in_depthₜ } ~ bernoulli(.5)
-    exact_θ = { :exact_θ } ~ LCat(θs())(truncated_discretized_gaussian(θₜ, 0.05, θs()))
-    exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(ϕₜ, 0.05, ϕs()))
-    rₜ = { :rₜ } ~ LCat(Rs())(1/length(Rs()) * ones(length(Rs())))
-    # now compute x, y, height (almost deterministically, plus some noise)
-    a = println("HERE")
-    r_max = minimum([Xs()[end] / (cos(exact_ϕ) * cos(exact_θ)),
-                     abs(Ys()[end] / (cos(exact_ϕ) * sin(exact_θ)))])
-#    r_max = 5
-    a = println(r_max)
-    # the uppder bound of rs_trunc is automatically rounded down using this syntax. 
-    #  rₜ = { :rₜ } ~ LCat(Rs_trunc())(1/length(Rs_trunc()) * ones(length(Rs_trunc())))
-#    rₜ = { :rₜ } ~ LCat(1:r_max)(1/r_max * ones(r_max))
+    exact_θ = { :exact_θ } ~ LCat(θs())(truncated_discretized_gaussian(θₜ, 0.2, θs()))
+    exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(ϕₜ, 0.2, ϕs()))
+     # now compute x, y, height (almost deterministically, plus some noise)
+#    r_max = minimum([Xs()[end] / (cos(exact_ϕ) * cos(exact_θ)),
+ #                    neg_to_inf(Ys()[end] / (cos(exact_ϕ) * sin(exact_θ))), 
+    #                   neg_to_inf(Ys()[1] / (cos(exact_ϕ) * sin(exact_θ)))])
+    x = Xs()[end] / 2
+    y = 0
+    height = Heights()[end] / 2
+    r_approx = Int(round(sqrt(x^2 + y^2 + height^2)))
+
+  #  l = length(Rs())
+#    r_range = 1:r_max
+#    r_vec = vcat(ones(Int64(r_range[end])), zeros(Int64(l-r_range[end])))
+ #   r_probvec = r_vec / r_range[end]
+#    r_probvec = [i in r_range ? 1/r_range[end] : 0.0 for i in 1:length(Rs())]
+#    rₜ = { :rₜ } ~ LCat(Rs())(r_probvec)
+    rₜ = { :rₜ } ~ Cat(maybe_one_or_two_off(r_approx, .2, Rs()))
     exact_x = rₜ * cos(exact_ϕ) * cos(exact_θ)
     exact_y = rₜ * cos(exact_ϕ) * sin(exact_θ)
     exact_height = rₜ * sin(exact_ϕ)
     # size in absolute terms is obtained by the az alt divs being discrete 
     # and az alt not having fixed xyz transforms when distant. 
     xₜ = { :xₜ } ~ LCat(Xs())(truncated_discretized_gaussian(exact_x, 1.0, Xs()))
-    b = println(exact_θ)
-    b = println(exact_ϕ)
-    b = println(exact_y)
-    b = println("before y")
     yₜ = { :yₜ } ~ LCat(Ys())(truncated_discretized_gaussian(exact_y, 1.0, Ys()))
-    b = println("after y")
     heightₜ = { :heightₜ } ~ LCat(Heights())(truncated_discretized_gaussian(exact_height, 1.0, Heights()))
     #    vₜ = { :vₜ } ~ LCat(Vels())(maybe_one_off(yₜ - yₜ₋₁, .4, Vels()))
     vₜ = { :vₜ } ~ LCat(Vels())(1/length(Vels()) * ones(length(Vels())))
@@ -134,6 +132,8 @@ function extract_submap_value(cmap, symlist)
     lv = first(symlist)
     if lv == :val
         return cmap[:val]
+    elseif length(symlist) == 1
+        return cmap[lv]
     else
         cmap_sub = get_submap(cmap, lv)
         extract_submap_value(cmap_sub, symlist[2:end])
@@ -176,10 +176,13 @@ function heatmap_pf_results(uw_traces, gt::Trace, nsteps)
     xlims!(ax_depth, (.5, nsteps))
     ylims!(ax_height, (0.0, Heights()[end]+2))
     ylims!(ax_depth, (0.0, Xs()[end]+2))
-#    println(countmap([extract_submap_value
-    #    vlines!(ax, HOME, color=:red)
     println("particle scores")
     println([get_score(tr) for tr in uw_traces[end]])
     display(fig)
+    ax_moving_in_depth = fig[3, 1] = Axis(fig)
+    hist!(ax_moving_in_depth,
+          [extract_submap_value(
+              get_choices(tr),
+              [:steps, NSTEPS, :latents, :moving_in_depthₜ]) for tr in uw_traces[end]])
     return fig
 end
