@@ -9,7 +9,7 @@ step_proposal = @compile_step_proposal(step_proposal, 9, 2)
 @load_generated_functions()
 
 NSTEPS = 5
-NPARTICLES = 20
+NPARTICLES = 2000
 tr = simulate(model, (NSTEPS,))
 observations = get_dynamic_model_obs(tr)
 
@@ -17,7 +17,8 @@ observations = get_dynamic_model_obs(tr)
     model, observations,
     ch -> (ch[:obs_θ => :val], ch[:obs_ϕ => :val]),
     initial_proposal, step_proposal,
-    NPARTICLES # n particles
+    NPARTICLES, # n particles
+    ess_threshold=NPARTICLES/2
 )
 
 

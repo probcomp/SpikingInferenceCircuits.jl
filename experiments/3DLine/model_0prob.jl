@@ -17,9 +17,9 @@ include("model_hyperparams.jl")
 norm_3d(x, y, z) = sqrt(x^2 + y^2 + z^2)
 
 @gen (static) function initial_model()
-    x = Xs()[end] / 2
+    x = 5
     y = 0
-    height = Heights()[end] / 2
+    height = 5
     moving_in_depth = false
     r = Int(round(sqrt(x^2 + y^2 + height^2)))
     phi = asin(height / r)
@@ -34,17 +34,26 @@ end
 @gen (static) function step_model(moving_in_depthₜ₋₁, vₜ₋₁, heightₜ₋₁, xₜ₋₁, yₜ₋₁, rₜ₋₁, er, ephi, etheta)
     # TODO: experiment with 0.9 : 0.1 instead of 1.0 : 0.0
     moving_in_depthₜ = { :moving_in_depthₜ } ~ bernoulli(moving_in_depthₜ₋₁ ? 1.0 : 0.0)
-    vₜ = { :vₜ } ~ LCat(Vels())(discretized_gaussian(vₜ₋₁, 0.2, Vels()))
-    heightₜ = { :heightₜ } ~ Cat(moving_in_depthₜ ? onehot(heightₜ₋₁, Heights()) : discretized_gaussian(heightₜ₋₁ - vₜ, 0.2, Heights()))
-    xₜ = { :xₜ } ~ Cat(moving_in_depthₜ ? discretized_gaussian(xₜ₋₁ + vₜ,  0.2, Xs()) : onehot(xₜ₋₁, Xs()))
-    yₜ = { :yₜ } ~ LCat(Ys())(discretized_gaussian(yₜ₋₁ + vₜ, 0.2, Ys()))
+    vₜ = { :vₜ } ~ LCat(Vels())(maybe_one_off(vₜ₋₁, 0.2, Vels()))
+    a = println("Height")
+    b = println(heightₜ₋₁)
+  #  a = println(heightₜ₋₁ - vₜ)
+    heightₜ = { :heightₜ } ~ Cat(moving_in_depthₜ ? onehot(heightₜ₋₁, Heights()) : maybe_one_off(heightₜ₋₁ - vₜ, 0.2, Heights()))
+    xₜ = { :xₜ } ~ Cat(moving_in_depthₜ ? maybe_one_off(xₜ₋₁ + vₜ,  0.2, Xs()) : onehot(xₜ₋₁, Xs()))
+    yₜ = { :yₜ } ~ LCat(Ys())(maybe_one_off(yₜ₋₁ + vₜ, 0.2, Ys()))
+
     # Here: a stochastic mapping from (x, y, h) -> (r, θ, ϕ)
     # For now: just use dimension-wise discretized Gaussians.
     exact_r = norm_3d(xₜ, yₜ, heightₜ)
-    rₜ = { :rₜ } ~ LCat(Rs())(discretized_gaussian(exact_r, 1.0, Rs()))
-    exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(discretized_gaussian(asin(heightₜ / exact_r),
-                                                             ϕstep(), ϕs()))
-    exact_θ = { :exact_θ } ~ LCat(θs())(discretized_gaussian(atan(yₜ / xₜ), θstep(), θs()))
+    rₜ = { :rₜ } ~ LCat(Rs())(truncated_discretized_gaussian(exact_r, 1.0, Rs()))
+
+    exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(asin(heightₜ / exact_r),
+                                                                       ϕstep(), ϕs()))
+    # problem here is that x and phi are drawn, and there is no guarantee that x will be smaller than r *cos(phi)
+    # has to be b/c domain of acos is 0 to 1 -- cos(1) = 0, 
+    # instead, you can use arctan(y/x)
+    exact_θ = { :exact_θ } ~ LCat(θs())(truncated_discretized_gaussian(atan(yₜ / xₜ), θstep(), θs()))
+#    a = println((moving_in_depthₜ, vₜ, heightₜ, xₜ, yₜ, rₜ, exact_r, exact_ϕ, exact_θ))
     return (moving_in_depthₜ, vₜ, heightₜ, xₜ, yₜ, rₜ, exact_r, exact_ϕ, exact_θ)
 end
 
@@ -93,9 +102,7 @@ end
         moving_in_depthₜ ? onehot(heightₜ₋₁, Heights()) : truncated_discretized_gaussian(
             exact_height, 1.0, Heights()))
     yₜ = { :yₜ } ~ LCat(Ys())(truncated_discretized_gaussian(exact_y, 1.0, Ys()))
-    a = println("before vt")
     vₜ = { :vₜ } ~ LCat(Vels())(maybe_one_off(yₜ - yₜ₋₁, .4, Vels()))
-    b = println("after vt")
   #  return (moving_in_depthₜ, vₜ, heightₜ, xₜ, yₜ, rₜ, )
 end
 
@@ -103,28 +110,15 @@ end
     moving_in_depthₜ = { :moving_in_depthₜ } ~ bernoulli(.5)
     exact_θ = { :exact_θ } ~ LCat(θs())(truncated_discretized_gaussian(θₜ, 0.05, θs()))
     exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(ϕₜ, 0.05, ϕs()))
-    rₜ = { :rₜ } ~ LCat(Rs())(1/length(Rs()) * ones(length(Rs())))
+    rₜ = { :rₜ } ~ Cat(1/length(Rs()) * ones(length(Rs())))
     # now compute x, y, height (almost deterministically, plus some noise)
-    a = println("HERE")
-    r_max = minimum([Xs()[end] / (cos(exact_ϕ) * cos(exact_θ)),
-                     abs(Ys()[end] / (cos(exact_ϕ) * sin(exact_θ)))])
-#    r_max = 5
-    a = println(r_max)
-    # the uppder bound of rs_trunc is automatically rounded down using this syntax. 
-    #  rₜ = { :rₜ } ~ LCat(Rs_trunc())(1/length(Rs_trunc()) * ones(length(Rs_trunc())))
-#    rₜ = { :rₜ } ~ LCat(1:r_max)(1/r_max * ones(r_max))
     exact_x = rₜ * cos(exact_ϕ) * cos(exact_θ)
     exact_y = rₜ * cos(exact_ϕ) * sin(exact_θ)
     exact_height = rₜ * sin(exact_ϕ)
     # size in absolute terms is obtained by the az alt divs being discrete 
     # and az alt not having fixed xyz transforms when distant. 
     xₜ = { :xₜ } ~ LCat(Xs())(truncated_discretized_gaussian(exact_x, 1.0, Xs()))
-    b = println(exact_θ)
-    b = println(exact_ϕ)
-    b = println(exact_y)
-    b = println("before y")
     yₜ = { :yₜ } ~ LCat(Ys())(truncated_discretized_gaussian(exact_y, 1.0, Ys()))
-    b = println("after y")
     heightₜ = { :heightₜ } ~ LCat(Heights())(truncated_discretized_gaussian(exact_height, 1.0, Heights()))
     #    vₜ = { :vₜ } ~ LCat(Vels())(maybe_one_off(yₜ - yₜ₋₁, .4, Vels()))
     vₜ = { :vₜ } ~ LCat(Vels())(1/length(Vels()) * ones(length(Vels())))
