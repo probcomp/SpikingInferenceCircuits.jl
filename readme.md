@@ -18,15 +18,22 @@ and eventually implementing sequential monte carlo for these models.
 After cloning this repo, from the `SpikingInferenceCircuits.jl/` directory:
 ```zsh
 ] activate .
-] add https://github.com/probcomp/Gen.jl#20210615-marcoct-sml
-] add https://github.com/probcomp/Circuits.jl
-] add https://github.com/probcomp/SpikingCircuits.jl
-] dev src/CPTs
-] dev src/DiscreteIRTransforms
 ] build
 ```
+This should suffice!
+To test that the utilities for Gen simulation have been set up properly, you can run
+```julia
+julia> using Revise
+julia> include("experiments/coord_tracking_2d/gen_run.jl")
+```
+This may throw a couple errors, but should then succeed (and output a long stream of text,
+to display the last computed value in the script).
 
-(I haven't tested this recently; there may be some other work to do to get the envirnoment set up properly.)
+To test that spiking neural network simulations work, you can run
+```julia
+julia> using Revise
+julia> include("test/unit_tests/run_unit_tests.jl")
+```
 
 ### Repository Structure
 
