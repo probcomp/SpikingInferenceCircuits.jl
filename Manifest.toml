@@ -927,8 +927,8 @@ uuid = "276daf66-3868-5448-9aa4-cd146d93841b"
 version = "1.3.0"
 
 [[SpikingCircuits]]
-deps = ["AbstractPlotting", "Circuits", "Colors", "DataStructures", "Distributions", "GLMakie"]
-git-tree-sha1 = "b77b8d07daf4d3cd7fb8f7ad86e5e53f9d2a36fb"
+deps = ["AbstractPlotting", "Circuits", "Colors", "DataStructures", "Distributions", "GLMakie", "Printf"]
+git-tree-sha1 = "c1809df14309b206c89981630b7ab746b1a540a2"
 repo-rev = "main"
 repo-url = "https://github.com/probcomp/SpikingCircuits.jl"
 uuid = "549ce59a-75fd-4aaf-b0ba-30f73ee3de21"
