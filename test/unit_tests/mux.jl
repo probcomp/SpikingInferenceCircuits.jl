@@ -4,7 +4,7 @@ og = PoissonAsyncOnGate(
 )
 
 for num_in=0:5
-    events = Sim.simulate_for_time_and_get_events(
+    dict = simulate_get_output_evts(
         implement_deep(og, Spiking()),
         20,
         inputs=[
@@ -14,12 +14,7 @@ for num_in=0:5
                 for i=1:num_in
             )...
         ]
-    )
-    dict = spiketrain_dict(
-        filter(events) do (t, compname, event)
-            (compname === :ss || compname === nothing) && event isa Sim.OutputSpike
-        end
-    )
+    ) |> spiketrain_dict
     @test length(dict) == (num_in > 0 ? 1 : 0)
     if num_in > 0
         @test haskey(dict, "nothing: out")

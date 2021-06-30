@@ -4,7 +4,7 @@ og = PoissonAsyncOnGate(
 )
 
 for num_in=0:5
-    events = Sim.simulate_for_time_and_get_events(
+    events = simulate_get_output_evts(
         implement_deep(og, Spiking()),
         20,
         inputs=[

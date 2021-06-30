@@ -3,7 +3,7 @@ offgate = PoissonOffGate(
     0., 2.
 )
 
-events = Sim.simulate_for_time_and_get_events(
+events = simulate_get_output_evts(
     implement_deep(offgate, Spiking()),
     20,
     inputs=[
@@ -24,7 +24,7 @@ display(dict)
 
 @test length(dict) == 0
 
-events = Sim.simulate_for_time_and_get_events(
+events = simulate_get_output_evts(
     implement_deep(offgate, Spiking()),
     20,
     inputs=[
@@ -40,10 +40,12 @@ dict = spiketrain_dict(
     end
 )
 
+display(dict)
+
 @test length(dict) == 1
 @test length(dict["nothing: out"]) == 5
 
-events = Sim.simulate_for_time_and_get_events(
+dict = simulate_get_output_evts(
     implement_deep(offgate, Spiking()),
     20,
     inputs=[
@@ -57,12 +59,7 @@ events = Sim.simulate_for_time_and_get_events(
             for i=4:5
         )...
     ]
-)
-dict = spiketrain_dict(
-    filter(events) do (t, compname, event)
-        compname === nothing && event isa Sim.OutputSpike
-    end
-)
+) |> spiketrain_dict
 
 @test length(dict) == 1
 @test length(dict["nothing: out"]) == 2

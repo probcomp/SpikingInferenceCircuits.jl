@@ -12,12 +12,13 @@ sync = PulseIR.Sync([2, 1, 1])
 impl = implement_deep(sync, Spiking())
 println("Implemented.")
 
-get_events(impl) = SpikingSimulator.simulate_for_time_and_get_events(impl, 500.;
-    initial_inputs=(1 => 1, 2 => 1, 3 => 1)
+get_events(impl) = simulate_get_output_evts(impl, 500.;
+    inputs=[(0., (1 => 1, 2 => 1, 3 => 1))]
 )
 events = get_events(impl)
 
 dict = out_st_dict(events)
+display(dict)
 @test length(dict) == 3
 for v in values(dict)
     @test length(v) == 1
@@ -64,7 +65,7 @@ comp = CompositeComponent(
 
 impl = implement_deep(comp, Spiking())
 println("Implemented.")
-get_events(impl) = Sim.simulate_for_time_and_get_events(impl, 5000.; initial_inputs=(:go,))
+get_events(impl) = simulate_get_output_evts(impl, 5000.; inputs=[(0., (:go,),)])
 
 events = get_events(impl)
 
