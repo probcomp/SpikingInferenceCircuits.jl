@@ -48,16 +48,15 @@ includet("../utils/simulation_utils.jl")
 inputs = get_smc_circuit_inputs_with_initial_latents(
     RUNTIME(), INTER_OBS_INTERVAL(),
     (
-        xₜ₋₁ = 2, yₜ₋₁ = 18,
-        vxₜ₋₁ = 2 + (1 - first(Vels())),
-        vyₜ₋₁ = -2 + (1 - first(Vels()))
+        xₜ₋₁ = 2, yₜ₋₁ = 7,
+        vxₜ₋₁ = 1 + (1 - first(Vels())),
+        vyₜ₋₁ = -1 + (1 - first(Vels()))
     ), [
         (obsx = x, obsy = y)
         for (x, y) in [
-            (2, 16), (6, 14), (9, 11),
-            (11, 10), (11, 7), (12, 6),
-            (18, 6), (18, 4), (19, 1),
-            (19, 1), (19, 1), (19, 1)
+            (2, 8), (3, 7), (4, 5), (4, 4),
+            (6, 4), (6, 3), (7, 2), (8, 1),
+            (8, 1), (6, 1), (8, 1), (8, 2)
         ]
     ],
     NPARTICLES()
