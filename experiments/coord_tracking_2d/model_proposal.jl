@@ -35,7 +35,7 @@ end
 ### proposals
 @gen (static) function initial_proposal(obsx, obsy)
     xₜ ~ Cat(truncated_discretized_gaussian(obsx, 2., Positions()))
-    yₜ ~ Cat(truncated_discretized_gaussian(obsx, 2., Positions()))
+    yₜ ~ Cat(truncated_discretized_gaussian(obsy, 2., Positions()))
 
     vxₜ ~ LCat(Vels())(unif(Vels()))
     vyₜ ~ LCat(Vels())(unif(Vels()))
