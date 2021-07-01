@@ -19,7 +19,7 @@ observations = get_dynamic_model_obs(tr)
     ch -> (ch[:obs_θ => :val], ch[:obs_ϕ => :val]),
     initial_proposal, step_proposal,
     NPARTICLES, # n particles
-    ess_threshold=-Inf
+    ess_threshold=NPARTICLES
 )
 
 #OK next step is figuring out which particles are moving in depth vs not
@@ -37,4 +37,8 @@ heatmap_pf_results(unweighted_traces_at_each_step, tr, NSTEPS)
 # by a "trace for timestep T", I mean a trace which has choices
 # for every timestep up to and including T
 
+
+#tr_init = simulate(model, (0,))
+#proposed_choices, _ = propose(step_proposal, (tr_init, 0.0, 0.0))
+#[propose(step_proposal, (tr_init, 0.0, 0.0))[1][:steps => 1 => :latents => :moving_in_depthₜ] for i in 1:200]
 
