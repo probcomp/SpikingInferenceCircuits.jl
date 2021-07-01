@@ -78,7 +78,7 @@ macro compile_step_proposal(
     return quote
         @gen (static) function _step_proposal(prev_tr, $(obs_argnames...))
             T = get_args(prev_tr)[1] + 1
-            prev_latents = tr[$(latent_addr)(T - 1)]
+            prev_latents = prev_tr[$(latent_addr)(T - 1)]
             ($(prop_argnames...),) = prev_latents
 
             {:steps => T => :latents} ~ $(esc(step_proposal))($(prop_argnames...), $(obs_argnames...))
