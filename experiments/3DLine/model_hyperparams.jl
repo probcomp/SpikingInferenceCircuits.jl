@@ -13,6 +13,6 @@ Rs() = Int64(floor(sqrt(Xs()[1]^2 + Heights()[1]^2))):Int64(ceil(norm_3d(Xs()[en
 # x = 1, y = 5 takes up .19 radians that are unavailable in az.
 # vis field is 1.57 radians. 
 
-ϕs() = -1.4:ϕstep():1.4
+ϕs() = 0:ϕstep():1.4
 θs() = -1.4:θstep():1.4
 MinProb() = 0.1

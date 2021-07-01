@@ -4,8 +4,8 @@ using .DynamicModels: @DynamicModel, @compile_initial_proposal, @compile_step_pr
 
 include("model.jl")
 
-model = @DynamicModel(initial_model, step_model, obs_model, 9)
-step_proposal = @compile_step_proposal(step_proposal, 9, 2)
+model = @DynamicModel(initial_model, step_model, obs_model, 8)
+step_proposal = @compile_step_proposal(step_proposal, 8, 2)
 initial_proposal = @compile_initial_proposal(initial_proposal, 2)
 @load_generated_functions()
 

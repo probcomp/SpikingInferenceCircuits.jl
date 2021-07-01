@@ -44,3 +44,5 @@ truncate_dist_to_valrange(pvec, range, dom) = [
 ] |> normalize
 
 truncate_value(val, range) = max(min(val, last(range)), first(range))
+
+unif(range) = normalize([1. for _ in range])
