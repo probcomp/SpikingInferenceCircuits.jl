@@ -10,7 +10,7 @@ Gen.get_score(tr::PMDistTrace) = -recip_prob_estimate(tr)
 Gen.get_gen_fn(tr::PMDistTrace) = tr.gf
 
 # Not totally sure this is right--
-Gen.project(tr::CatTrace, ::EmptySelection) = 0.
+Gen.project(tr::PMDistTrace, ::EmptySelection) = 0.
 
 struct PseudoMarginalizedDist{R} <: Gen.GenerativeFunction{R, PMDistTrace}
     model::Gen.GenerativeFunction{R}
