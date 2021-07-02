@@ -73,4 +73,4 @@ println("Simulation completed!")
 
 includet("../utils/spiketrain_utils.jl")
 inferred_states = get_smc_states(events, NPARTICLES(), 4 #= num latent vars in model =#)
-@test length(inferred_states) == floor(RUNTIME()/INTER_OBS_INTERVAL())
+@test length(inferred_states) == Int(1 + floor(RUNTIME()/INTER_OBS_INTERVAL()))
