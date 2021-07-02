@@ -9,9 +9,21 @@ step_proposal = @compile_step_proposal(step_proposal, 8, 2)
 initial_proposal = @compile_initial_proposal(initial_proposal, 2)
 @load_generated_functions()
 
-NSTEPS = 5
-NPARTICLES = 2000
-tr = simulate(model, (NSTEPS,))
+NSTEPS = 10
+NPARTICLES = 20
+#tr = simulate(model, (NSTEPS,))
+
+tr, w = generate(model, (NSTEPS,), choicemap(
+    (:init => :latents => :moving_in_depthₜ, true),
+    (:init => :latents => :xₜ => :val, 5),
+    (:init => :latents => :yₜ => :val, -5),
+    (:init => :latents => :heightₜ => :val, 10),
+    (:init => :latents => :vₜ => :val, 1)))
+
+  # to constrain a step:
+#  (:steps => t => :latents => :x, val)
+#)
+
 observations = get_dynamic_model_obs(tr)
 
 (unweighted_traces_at_each_step, _) = dynamic_model_smc(

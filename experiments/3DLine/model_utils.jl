@@ -35,8 +35,6 @@ function truncate(pvec)
     end
 end
 
-
-truncated_lcat(valrange, truncrange) = Cat([i in truncrange ? 1/truncrange[end] : 0.0 for i in valrange])
 truncated_discretized_gaussian(args...) = discretized_gaussian(args...) |> truncate
 truncate_dist_to_valrange(pvec, range, dom) = [
     first(range) ≤ x ≤ last(range) ? p : 0.

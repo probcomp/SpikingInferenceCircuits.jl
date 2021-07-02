@@ -4,16 +4,17 @@ using Colors
 using GLMakie
 using StatsBase
 
+# try only a few particles, scoring and resampling useful story.
+# more complex renderer -- extend to the general case but dont expand the scope.
+# more arbitrary rotation pattern w x and y velocity.
+# output two points. 
+# stretching / shearing / etc. 
+# stick w coordinate observation
 
-# OK so all particles have inits of different latent states for moving_in_depth,
-# but by the end of the filter run, they have switched to all moving in depth if this is true in tr.
-# this doesn't appear to be possible. figure out why this happens tomorrow, but my guess right now
-# is it has something to do with the fact that NaN particles are present, and these are ones where
-# the proposal to moving in depth is wrong. in ess = -Inf, these keep going. in ess=nparticles, they dont.
-# so either way at the end you end up with nan particles that proposed incorrectly on the first pass,
-# and 
 
-# commit test
+# visualization? 
+# gershman background lit. 
+
 
 include("../../src/ProbEstimates/ProbEstimates.jl")
 ProbEstimates.use_perfect_weights!()
@@ -86,11 +87,22 @@ end
     moving_in_depthₜ₋₁, vₜ₋₁, heightₜ₋₁, xₜ₋₁, yₜ₋₁, rₜ₋₁, eϕ, eθ, θₜ, ϕₜ) # θ and ϕ are noisy
     # instead of sampling (x, y, h) then computing r (as we do in the model)
     # in the proposal we sample (r, x, y) and then compute h
-    a = println(moving_in_depthₜ₋₁)
     moving_in_depthₜ = { :moving_in_depthₜ } ~ bernoulli(moving_in_depthₜ₋₁ ? 1.0 : 0.0)
     exact_θ = { :exact_θ } ~ LCat(θs())(truncated_discretized_gaussian(θₜ, 0.2, θs()))
     exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(ϕₜ, 0.2, ϕs()))
-    rₜ = { :rₜ } ~ Cat(truncated_discretized_gaussian(rₜ₋₁, 3.0, Rs()))
+    r_max = minimum([Xs()[end] / (cos(exact_ϕ) * cos(exact_θ)),
+                     neg_to_inf(Ys()[end] / (cos(exact_ϕ) * sin(exact_θ))), 
+                     neg_to_inf(Ys()[1] / (cos(exact_ϕ) * sin(exact_θ))),
+                     Heights()[end] / sin(exact_ϕ)])
+    l = length(Rs())
+    r_range = 1:r_max
+    # here return a truncated discretized gaussian and zero out above r_max
+    r_probvec = normalize(
+        vcat(discretized_gaussian(rₜ₋₁, 3.0, Rs())[1:Int(r_range[end])],
+             zeros(l-Int(r_range[end]))))
+    # ok sometimes the truncated gaussian will sample outside the range of r_max.
+    # then it'll return a zero pvec which gets normalized and NaNd. use a discretized_gauss for now. 
+    rₜ = { :rₜ } ~ Cat(r_probvec)
     # now compute x, y, height (almost deterministically, plus some noise)
     exact_x = rₜ * cos(exact_ϕ) * cos(exact_θ)
     exact_y = rₜ * cos(exact_ϕ) * sin(exact_θ)
@@ -102,7 +114,9 @@ end
     heightₜ = { :heightₜ } ~ LCat(Heights())(
         moving_in_depthₜ ? onehot(heightₜ₋₁, Heights()) : truncated_discretized_gaussian(
             exact_height, 1.0, Heights()))
+    # some exact_y are out of bounds. this shouldn't be able to happen. yes it should -- R has a big standard dev. 
     yₜ = { :yₜ } ~ LCat(Ys())(truncated_discretized_gaussian(exact_y, 1.0, Ys()))
+    # there's a bug here where y can receive a nan pvec
     vₜ = { :vₜ } ~ LCat(Vels())(maybe_one_off(round_to_pt1(yₜ - yₜ₋₁), .4, Vels()))
 end
 
