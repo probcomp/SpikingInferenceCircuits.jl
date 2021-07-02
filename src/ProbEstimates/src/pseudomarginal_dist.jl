@@ -6,7 +6,10 @@ end
 Gen.get_args(tr::PMDistTrace) = tr.args
 Gen.get_retval(tr::PMDistTrace) = tr.retval
 Gen.get_choices(tr::PMDistTrace) = StaticChoiceMap((val=get_retval(tr),), (;))
-Gen.get_score(tr::PMDistTrace) = -recip_prob_estimate(tr)
+Gen.get_score(tr::PMDistTrace) = error("""
+        `get_score` not supported, since `get_score` is
+        used in `propose` mode, but propose-mode pseudomarginalization is currently not implemented.
+        """)
 Gen.get_gen_fn(tr::PMDistTrace) = tr.gf
 
 # Not totally sure this is right--
@@ -15,12 +18,14 @@ Gen.project(tr::PMDistTrace, ::EmptySelection) = 0.
 struct PseudoMarginalizedDist{R} <: Gen.GenerativeFunction{R, PMDistTrace}
     model::Gen.GenerativeFunction{R}
     proposal::Gen.GenerativeFunction
-    ret_trace_addr
     n_particles::Int
 end
-Base.:(==)
+Base.:(==)(a::PseudoMarginalizedDist, b::PseudoMarginalizedDist) =
+    a.model == b.model && a.proposal == b.proposal && a.n_particles == b.n_particles
 
-Gen.simulate(d::PseudoMarginalizedDist{R}, args) where {R} =
+(p::PseudoMarginalizedDist)(args...) = get_retval(simulate(p, args))
+
+Gen.simulate(d::PseudoMarginalizedDist{R}, args::Tuple) where {R} =
     PMDistTrace(d, args, get_retval(simulate(d.model, args)))
 function Gen.generate(d::PseudoMarginalizedDist{R}, args::Tuple, cm::Union{Gen.ChoiceMap, Gen.EmptyChoiceMap}) where {R}
     tr = if isempty(cm)
@@ -31,7 +36,7 @@ function Gen.generate(d::PseudoMarginalizedDist{R}, args::Tuple, cm::Union{Gen.C
         @assert length(collect(get_values_shallow(cm))) == 1
         PMDistTrace(d, args, cm[:val])
     end
-    return (tr, log_fwd_prob_estimate(tr))
+    return (tr, log_pseudomarginal_prob_estimate(tr))
 end
 function Gen.update(tr::PseudoMarginalizedDist, args::Tuple, ::Tuple, cm::Gen.ChoiceMap)
     if isempty(cm) && args == get_args(tr)
@@ -41,39 +46,14 @@ function Gen.update(tr::PseudoMarginalizedDist, args::Tuple, ::Tuple, cm::Gen.Ch
     end
 end
 
-log_fwd_prob_estimate(tr::PMDistTrace) =
-    n_propose_assess_cycles(get_gen_fn(tr), get_retval(tr), get_args(tr))
-function log_recip_prob_estimate(tr::PMDistTrace)
-    if weighttype == :noisy
-        # If we're using noisy weights, we need to invert how we take probability estimates,
-        # so that we use the reciprocal estimation method for the `assess` calls,
-        # and the fwd estimation method for the `propose` calls.
-        # This ensures that we end up outputting an unbiased reciprocal weight
-        # from the whole pseudo-marginalization procedure.
-        # (If we used recip weights for propose, and fwd for assess, as we usually would,
-        # then our estimate of the score of the trace will be unbiased--but the reciprocal
-        # of this estimate will be biased!)
-        est = -n_propose_assess_cycles(
-            get_gen_fn(tr), get_retval(tr), get_args(tr);
-            call_before_propose=use_only_fwd_weights!,
-            call_before_assess=use_only_recip_weights!
-        )
-        use_noisy_weights!()
-        return est
-    else
-        return -n_propose_assess_cycles(get_gen_fn(tr), get_retval(tr), get_args(tr))
-    end
-end
-
-function n_propose_assess_cycles(d, val, args;
-    call_before_propose=(() -> nothing),
-    call_before_assess=(() -> nothing)
-)
+log_pseudomarginal_prob_estimate(tr) =
+    log_pseudomarginal_prob_estimate(
+        get_gen_fn(tr), get_retval(tr), get_args(tr)
+    )
+function log_pseudomarginal_prob_estimate(d, val, args)
     weight_sum = 0.
     for _=1:d.n_particles
-        call_before_propose()
-        proposed_choices, proposed_score = propose(d.proposal, (val, args...))
-        call_before_assess()
+        proposed_choices, proposed_score = propose(d.proposal, (args..., val))
         assessed_score, v1 = assess(
             d.model, args, proposed_choices
         )
