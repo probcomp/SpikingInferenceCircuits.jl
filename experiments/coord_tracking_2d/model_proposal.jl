@@ -1,6 +1,5 @@
 # Include the library exposing `Cat` and `LCat`
-includet("../../src/ProbEstimates/ProbEstimates.jl")
-using .ProbEstimates
+using ProbEstimates
 
 # Include some utilities for defining discrete probability distributions
 includet("../utils/modeling_utils.jl")

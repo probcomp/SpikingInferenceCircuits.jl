@@ -87,9 +87,7 @@ version = "0.9.33"
 
 [[Circuits]]
 deps = ["Distributions", "LightGraphs", "Memoization"]
-git-tree-sha1 = "90c1f41a1d49c9945c91174c98f506f9c017a3fe"
-repo-rev = "main"
-repo-url = "https://github.com/probcomp/Circuits.jl"
+path = "../Circuits.jl"
 uuid = "f5b243b3-c95b-4650-9ac7-659d8f0b0982"
 version = "0.1.0"
 
@@ -807,6 +805,12 @@ version = "1.2.2"
 deps = ["Unicode"]
 uuid = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 
+[[ProbEstimates]]
+deps = ["DiscreteIRTransforms", "Distributions", "Gen"]
+path = "src/ProbEstimates"
+uuid = "2d348e2e-5879-4921-ab82-1eb01cb933ef"
+version = "0.1.0"
+
 [[ProgressMeter]]
 deps = ["Distributed", "Printf"]
 git-tree-sha1 = "afadeba63d90ff223a6a48d2009434ecee2ec9e8"
@@ -928,9 +932,7 @@ version = "1.3.0"
 
 [[SpikingCircuits]]
 deps = ["AbstractPlotting", "Circuits", "Colors", "DataStructures", "Distributions", "GLMakie", "Printf"]
-git-tree-sha1 = "c1809df14309b206c89981630b7ab746b1a540a2"
-repo-rev = "main"
-repo-url = "https://github.com/probcomp/SpikingCircuits.jl"
+path = "../SpikingCircuits.jl"
 uuid = "549ce59a-75fd-4aaf-b0ba-30f73ee3de21"
 version = "0.1.0"
 

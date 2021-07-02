@@ -1,6 +1,4 @@
-# Include the library exposing `Cat` and `LCat`
-includet("../../../src/ProbEstimates/ProbEstimates.jl")
-using .ProbEstimates
+using ProbEstimates: Cat, LCat
 
 # Include some utilities for defining discrete probability distributions
 includet("../../utils/modeling_utils.jl")
@@ -32,7 +30,7 @@ end
 
 ### proposals
 @gen (static) function initial_proposal(obsx)
-    xₜ ~ Cat(truncated_discretized_gaussian(obsx, 3., Positions()))
+    xₜ ~ Cat(truncated_discretized_gaussian(obsx, 8., Positions()))
     vxₜ ~ LCat(Vels())(unif(Vels()))
 end
 @gen (static) function step_proposal(xₜ₋₁, vxₜ₋₁, obsx)
