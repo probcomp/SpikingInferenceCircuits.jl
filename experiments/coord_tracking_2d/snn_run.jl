@@ -8,10 +8,18 @@ includet("model_proposal.jl")
 includet("../utils/default_implementation_rules.jl")
 println("Implementation rules loaded.")
 
+### Run-specific hyperparams:
+NSTEPS() = 2
+RUNTIME() = INTER_OBS_INTERVAL() * (NSTEPS() - 0.1)
+NPARTICLES() = 2
+
+### Log failure probability bound:
+failure_prob_bound = bound_on_overall_failure_prob(NSTEPS(), 6, NPARTICLES())
+println("Hyperparameters set so the probability the circuit fails due to an issue we check for is less than $failure_prob_bound.")
+
 latent_domains() = (Positions(), Vels(), Positions(), Vels())
 obs_domains() = (Positions(), Positions())
 latent_obs_domains() = (latent_domains()..., obs_domains()...)
-NPARTICLES() = 2
 
 # Construct an SMC circuit, by telling each model the domains of the input variables
 smc = SMC(
@@ -33,11 +41,10 @@ println("Circuit fully implemented using Poisson Process neurons.")
 
 includet("../utils/simulation_utils.jl")
 
-RUNTIME() = 2.0
 # `inputs` will be a vector specifying where to send inputs into the SNN at what time
 inputs = get_smc_circuit_inputs(
     RUNTIME(), # number of ms to simulate for
-    1000,      # send in a new observation every 1000 ms
+    INTER_OBS_INTERVAL(),      # send in a new observation every 1000 ms
     [          # vector giving the observations at each timestep.
                # at each timestep, give a named tuple mapping observation names to observation values
                # Enough observation values must be specified to send one in at each timestep until the end of the simulation
@@ -47,10 +54,9 @@ inputs = get_smc_circuit_inputs(
                # for the second value, "2", and so on). TODO: support giving observations in their true domains.
         (obsx = x, obsy = y)
         for (x, y) in [
-            (2, 16), (6, 14), (9, 11),
-            (11, 10), (11, 7), (12, 6),
-            (18, 6), (18, 4), (19, 1),
-            (19, 1), (19, 1), (19, 1)
+            (2, 8), (3, 7), (4, 5), (4, 4),
+            (6, 4), (6, 3), (7, 2), (8, 1),
+            (8, 1), (6, 1), (8, 1), (8, 2)
         ]
     ]
 )

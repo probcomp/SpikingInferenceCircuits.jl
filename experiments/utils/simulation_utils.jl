@@ -75,7 +75,13 @@ function get_smc_circuit_inputs(
 )
     first_obs, remaining_obs = Iterators.peel(observations)
     inputs = Tuple{Float64, Tuple}[
-        (0., ((:obs => key => val for (key, val) in pairs(first_obs))...,))
+        (
+            0.,
+            (
+                (:obs => key => val for (key, val) in pairs(first_obs))...,
+                :is_initial_obs
+            )
+        )
     ]
     t = 0
     while t < time_to_simulate_for
@@ -110,7 +116,7 @@ function get_smc_circuit_inputs_with_initial_latents(
                 for (key, val) in pairs(initial_latents)
                     for i=1:nparticles
             )...,
-            first_input[2]...
+            (input for input in first_input[2] if input != :is_initial_obs)...
         )),
         rest...
     ]
