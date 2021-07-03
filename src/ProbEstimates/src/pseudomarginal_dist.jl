@@ -6,10 +6,15 @@ end
 Gen.get_args(tr::PMDistTrace) = tr.args
 Gen.get_retval(tr::PMDistTrace) = tr.retval
 Gen.get_choices(tr::PMDistTrace) = StaticChoiceMap((val=get_retval(tr),), (;))
-Gen.get_score(tr::PMDistTrace) = error("""
-        `get_score` not supported, since `get_score` is
-        used in `propose` mode, but propose-mode pseudomarginalization is currently not implemented.
-        """)
+
+# This should be a "not implemented" error, but the Gen Static DSL calls `get_score` to accumulate trace model scores
+# even when they are never accessed.  So to prevent errors in this case, we will return NaN.  If users try to access
+# scores, hopefully they will realize something has gone wrong due to the NaN.
+Gen.get_score(tr::PMDistTrace) = NaN
+    # error("""
+    # `get_score` not supported, since `get_score` is
+    # used in `propose` mode, but propose-mode pseudomarginalization is currently not implemented.
+    # """)
 Gen.get_gen_fn(tr::PMDistTrace) = tr.gf
 
 # Not totally sure this is right--
