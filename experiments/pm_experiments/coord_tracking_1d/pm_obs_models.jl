@@ -1,3 +1,4 @@
+using ProbEstimates: PseudoMarginalizedDist
 ### Observation models involving pseudo-marginalization
 N_PM_PARTICLES() = 2
 
@@ -42,3 +43,4 @@ end
     obsx ~ PseudoMarginalizedDist(faulty_obs_model, intermediate_erroneous_proposal, N_PM_PARTICLES())(xₜ)
     return obsx
 end
+println("included pm file")

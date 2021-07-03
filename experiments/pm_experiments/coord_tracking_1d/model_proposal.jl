@@ -50,7 +50,7 @@ end
     far_from_projection = projected_x == :unset ? :unset : abs(obsx - projected_x) > 3
 
     xₜ ~ Cat(
-        vxₜ₋₁ == :unset ?
+        mean_x == :unset ?
                   discretized_gaussian(obsx, 3.0, Positions()) :
                   truncate_dist_to_valrange(
                       discretized_gaussian(mean_x, 3.0, Positions()),
@@ -59,8 +59,9 @@ end
                   ) |> truncate
     )
 
+    is_unset = vxₜ₋₁ == :unset
     vxₜ ~ LCat(Vels())(
-        vxₜ₋₁ == :unset ?
+        is_unset ?
             maybe_one_off(xₜ - xₜ₋₁, 0.3, Vels()) :
             onehot(vxₜ₋₁, Vels())
     )

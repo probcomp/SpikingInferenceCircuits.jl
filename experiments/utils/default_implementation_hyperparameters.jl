@@ -1,4 +1,4 @@
-INTER_OBS_INTERVAL() = 1000. # ms
+INTER_OBS_INTERVAL() = 2000. # ms
 
 SAMPLE_ONRATE() = 1.25
 SCORE_ONRATE() = 0.25
@@ -49,10 +49,12 @@ bound_on_overall_failure_prob(n_steps, n_vars, n_particles) = 1 - (
     * (1 - SYNC_FORGET_FAIL_PROB())                                                         # prob failure in sync
 )^n_steps
 
+ΔT_SAMPLE_RESET_TIME() = 2 * ΔT_SAMPLE() 
+# TODO: is it possible to have a tighter bound on this to check with?
+ΔT_SAMPLE_SCORE_RESAMPLE() = max(ΔT_SAMPLE(), ΔT()) + MULT_OUT_TIME_BOUND() + ΔT_THETA()
 function run_hyperparameter_checks()
     # check that none of the memory times are too log_interval
-    ΔT_SAMPLE_RESET_TIME() = 2 * ΔT_SAMPLE() 
-    for time_constant in (:ΔT, :ΔT_SAMPLE_RESET_TIME, :ΔT_THETA, :SYNC_TIMER_MEMORY, :ΔT_GATES)
+    for time_constant in (:ΔT, :ΔT_SAMPLE_SCORE_RESAMPLE, :ΔT_SAMPLE_RESET_TIME, :ΔT_THETA, :SYNC_TIMER_MEMORY, :ΔT_GATES)
         val = eval(:($time_constant()))
         @assert val < INTER_OBS_INTERVAL() "$time_constant() must be smaller than INTER_OBS_INTERVAL() so all circuitry resets before the next timestep"
     end
