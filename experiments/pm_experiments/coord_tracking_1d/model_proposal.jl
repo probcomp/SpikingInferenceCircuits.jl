@@ -1,3 +1,4 @@
+using Gen, Distributions
 using ProbEstimates: Cat, LCat
 
 # Include some utilities for defining discrete probability distributions
@@ -5,6 +6,7 @@ includet("../../utils/modeling_utils.jl")
 Positions() = 1:20; Vels() = -3:3;
 Bools() = [true, false]
 P_FAULTY_OBS() = 0.25
+OBS_GAUSSIAN_STD() = 3.0
 
 @gen (static) function initial_latent_model()
     xₜ ~ Cat(unif(Positions()))
@@ -19,9 +21,10 @@ end
     xₜ ~ Cat(maybe_one_off(exp_x, 0.3, Positions()))
     return (xₜ, vxₜ)
 end
-@gen (static) function obs_model(xₜ, vxₜ)
+
+@gen (static) function obs_model_direct(xₜ, vxₜ)
     obsx ~ Cat(
-        (1 - P_FAULTY_OBS()) * truncated_discretized_gaussian(xₜ, 3.0, Positions()) +
+        (1 - P_FAULTY_OBS()) * truncated_discretized_gaussian(xₜ, OBS_GAUSSIAN_STD(), Positions()) +
              P_FAULTY_OBS()  * unif(Positions())
     )
 
