@@ -1,11 +1,19 @@
 global weighttype = :noisy
 global assemblysize = DefaultAssemblySize()
+global latency      = DefaultLatency()
 
 function AssemblySize()
     return assemblysize
 end
 function set_assembly_size!(size)
     global assemblysize = size
+end
+
+function Latency()
+    return latency
+end
+function set_latency!(l)
+    global latency = l
 end
 
 """
@@ -63,9 +71,10 @@ end
 function use_constant_weights!() # always end up with score = 1
     global weighttype = :constant
 end
-function reset_weights_to!(typ)
+function set_weighttype_to!(typ)
     global weighttype = typ
 end
+reset_weights_to!(typ) = set_weighttype_to!(typ)
 function weight_type()
     return weighttype
 end
