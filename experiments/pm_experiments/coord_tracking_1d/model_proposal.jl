@@ -5,7 +5,7 @@ using ProbEstimates: Cat, LCat
 includet("../../utils/modeling_utils.jl")
 Positions() = 1:20; Vels() = [:unset, (-3:3)...];
 Bools() = [true, false]
-P_FAULTY_OBS() = 0.0
+P_FAULTY_OBS() = 0.2
 OBS_GAUSSIAN_STD() = 3.0
 
 unif_set_vel() = normalize([v == :unset ? 0. : 1. for v in Vels()])
