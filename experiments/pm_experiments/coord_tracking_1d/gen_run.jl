@@ -6,7 +6,7 @@ includet("model_proposal.jl")
 includet("naive_inference.jl")
 
 NSTEPS = 10
-model = @DynamicModel(initial_latent_model, step_latent_model, obs_model, 2)
+model = @DynamicModel(initial_latent_model, step_latent_model, obs_model_direct, 2)
 proposal_init = @compile_initial_proposal(initial_proposal, 1)
 proposal_step = @compile_step_proposal(step_proposal, 2, 1)
 naive_proposal_init = @compile_initial_proposal(naive_initial_proposal, 1)
@@ -22,7 +22,7 @@ ProbEstimates.use_perfect_weights!()
 
 do_smart_inference(obss, n_particles) = dynamic_model_smc(
     model, obss, cm -> (cm[:obsx => :val],),
-    proposal_init, proposal_step, n_particles; ess_threshold=n_particles/2
+    proposal_init, proposal_step, n_particles#; ess_threshold=n_particles/2
 )
 
 do_naive_inference(obss) = dynamic_model_smc(
@@ -82,4 +82,4 @@ function mean(vals)
     return sum(c)/length(c)
 end
 
-(dumb_avg_dists, smart_avg_dists) = avg_dists_from_ground_truth(20, 10, 5, 10); (mean(dumb_avg_dists), mean(smart_avg_dists))
+(dumb_avg_dists, smart_avg_dists) = avg_dists_from_ground_truth(10, 30, 30, 10); (mean(dumb_avg_dists), mean(smart_avg_dists))

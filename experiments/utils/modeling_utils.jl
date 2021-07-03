@@ -1,8 +1,12 @@
 MinProb() = ProbEstimates.MinProb()
 
+firstreal(dom) = dom |> reals |> first
+lastreal(dom)  = dom |> reals |> (last ∘ collect)
+reals(dom) = Iterators.filter(x -> x isa Real, dom)
+
 onehot(x, dom) =
-    x < first(dom) ? onehot(first(dom), dom) :
-    x > last(dom)  ? onehot(last(dom), dom)  :
+    x isa Real && x < firstreal(dom) ? onehot(firstreal(dom), dom) :
+    x isa Real && x > lastreal(dom)  ? onehot(lastreal(dom), dom)  :
                  [i == x ? 1. : 0. for i in dom]
 # prob vector to sample a value in `dom` which is 1 off
 # from `idx` with probability `prob`, and `idx` otherwise
