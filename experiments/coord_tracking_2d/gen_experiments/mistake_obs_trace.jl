@@ -23,11 +23,10 @@ tr, _ = generate(model, (length(observations) - 1,), choicemap(
 ))
 obss = get_dynamic_model_obs(tr)
 
-ProbEstimates.use_perfect_weights!()
-(unweighted_inferences, weighted_inferences) = dynamic_model_smc(
-    model, obss, cm -> (cm[:obsx => :val], cm[:obsy => :val]),
-    proposal_init, proposal_step, 20#; ess_threshold=10
-)
+ProbEstimates.set_latency!(20)
+ProbEstimates.set_assembly_size!(10)
+ProbEstimates.use_noisy_weights!()
+@assert ProbEstimates.K_fwd() == 40 && ProbEstimates.K_recip() == 4
 
 tr_to_latents(tr, t::Int) =
     t > 0 ? tr_to_latents(tr, :steps => t => :latents) : tr_to_latents(tr, :init => :latents)
@@ -37,10 +36,20 @@ tr_to_latents(tr, addr) =
         (pos=(x=ch[:xₜ => :val], y=ch[:yₜ => :val]), vel=(x=ch[:vxₜ => :val], y=ch[:vyₜ => :val]))
     end
 
-inferences = [
-    [tr_to_latents(tr, t - 1) for tr in trs]
-    for (t, trs) in enumerate(unweighted_inferences)
-]
+function get_inferences()
+    (unweighted_inferences, weighted_inferences) = dynamic_model_smc(
+        model, obss, cm -> (cm[:obsx => :val], cm[:obsy => :val]),
+        proposal_init, proposal_step, 6
+    )
+    inferences = [
+        [tr_to_latents(tr, t - 1) for tr in trs]
+        for (t, trs) in enumerate(unweighted_inferences)
+    ]
+    return (inferences, weighted_inferences)
+end
+
+inferences, _ = get_inferences()
+nothing
 
 # From here I manually examined `inferences` to check that it looks like
 # the inferences looked as I hoped

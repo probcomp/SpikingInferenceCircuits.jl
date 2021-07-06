@@ -23,12 +23,12 @@ end
     vxₜ ~ LCat(Vels())(
         vxₜ₋₁ == :unset ?
                 unif_set_vel() :
-                maybe_one_off(vxₜ₋₁, 0.1, Vels())
+                maybe_one_off(vxₜ₋₁, 0.2, Vels())
     )
     vyₜ ~ LCat(Vels())(
         vyₜ₋₁ == :unset ?
                   unif_set_vel() :
-                  maybe_one_off(vyₜ₋₁, 0.1, Vels())
+                  maybe_one_off(vyₜ₋₁, 0.2, Vels())
     )
 
     exp_x = xₜ₋₁ + vxₜ
@@ -45,13 +45,13 @@ end
 end
 
 posdist(x) = 
-    0.5 * onehot(x, Positions()) +
-    0.5 * truncated_discretized_gaussian(x, 2.0, Positions())
+    (0.5 * onehot(x, Positions()) +
+    0.5 * truncated_discretized_gaussian(x, 2.0, Positions())) |> truncate
 
 ### proposals
 @gen (static) function initial_proposal(obsx, obsy)
-    xₜ ~ Cat(discretized_gaussian(obsx, 0.5, Positions()))
-    yₜ ~ Cat(discretized_gaussian(obsy, 0.5, Positions()))
+    xₜ ~ Cat(truncated_discretized_gaussian(obsx, 0.5, Positions()))
+    yₜ ~ Cat(truncated_discretized_gaussian(obsy, 0.5, Positions()))
 
     vxₜ ~ LCat(Vels())(onehot(:unset, Vels()))
     vyₜ ~ LCat(Vels())(onehot(:unset, Vels()))
@@ -84,6 +84,7 @@ end
 #     end |> normalize
 vel_step_dist(_, diff_x) = onehot(diff_x, Vels())
 
-step_pos_dist(obsx, projected_x) =
+step_pos_dist(obsx, projected_x) = (
     0.5 * onehot(projected_x, Positions()) +
     0.5 * discretized_gaussian((obsx + projected_x)/2, 1.5, Positions())
+) |> truncate
