@@ -10,15 +10,17 @@ initial_proposal = @compile_initial_proposal(initial_proposal, 2)
 @load_generated_functions()
 
 NSTEPS = 10
-NPARTICLES = 20
+NPARTICLES = 2000
 #tr = simulate(model, (NSTEPS,))
 
 tr, w = generate(model, (NSTEPS,), choicemap(
     (:init => :latents => :moving_in_depthₜ, true),
     (:init => :latents => :xₜ => :val, 5),
     (:init => :latents => :yₜ => :val, -5),
-    (:init => :latents => :heightₜ => :val, 10),
-    (:init => :latents => :vₜ => :val, 1)))
+    (:init => :latents => :zₜ => :val, 10),
+    (:init => :latents => :vxₜ => :val, 1),
+    (:init => :latents => :vyₜ => :val, 1), 
+    (:init => :latents => :vzₜ => :val, 0))
 
   # to constrain a step:
 #  (:steps => t => :latents => :x, val)
@@ -31,7 +33,7 @@ observations = get_dynamic_model_obs(tr)
     ch -> (ch[:obs_θ => :val], ch[:obs_ϕ => :val]),
     initial_proposal, step_proposal,
     NPARTICLES, # n particles
-    ess_threshold=NPARTICLES
+    ess_threshold=NPARTICLES/2
 )
 
 #OK next step is figuring out which particles are moving in depth vs not

@@ -2,10 +2,10 @@
 # Ys() = -5:5
 # Heights() = 1:10
 ydiv = 1
-Vels() = -3:ydiv:3
+Vels() = 1:ydiv:3
 Xs() = 1:20
 Ys() = -5:ydiv:5
-Zs() = 1:20
+Heights() = 1:20
 Rs() = Int64(floor(sqrt(Xs()[1]^2 + Heights()[1]^2))):Int64(ceil(norm_3d(Xs()[end], Ys()[end], Heights()[end])))
 ϕstep() = 0.1
 θstep() = 0.1

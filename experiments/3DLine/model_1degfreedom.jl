@@ -30,39 +30,34 @@ round_to_pt1(x) = round(x, digits=1)
 @gen (static) function initial_model()
     xₜ = { :xₜ } ~ Cat(unif(Xs()))
     yₜ = { :yₜ } ~ LCat(Ys())(unif(Ys()))
-    zₜ = { :zₜ } ~ Cat(unif(Zs()))
-    exact_r = norm_3d(xₜ, yₜ, zₜ)
+    heightₜ = { :heightₜ } ~ Cat(unif(Heights()))
+    moving_in_depthₜ = { :moving_in_depthₜ } ~ bernoulli(.5)
+    exact_r = norm_3d(xₜ, yₜ, heightₜ)
     rₜ = { :rₜ } ~ LCat(Rs())(discretized_gaussian(exact_r, 1.0, Rs()))
-    exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(discretized_gaussian(asin(zₜ / exact_r), .1, ϕs()))
+    exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(discretized_gaussian(asin(heightₜ / exact_r), .1, ϕs()))
     exact_θ = { :exact_θ } ~ LCat(θs())(discretized_gaussian(atan(yₜ / xₜ), .1, θs()))
-    vxₜ = { :vxₜ } ~ LCat(Vels())(unif(Vels()))
-    vyₜ = { :vyₜ } ~ LCat(Vels())(unif(Vels()))
-    vzₜ = { :vzₜ } ~ LCat(Vels())(unif(Vels()))
-    return (vxₜ, vyₜ, vzₜ, xₜ, yₜ, zₜ, rₜ, exact_ϕ, exact_θ)
+    vₜ = { :vₜ } ~ LCat(Vels())(unif(Vels()))
+    return (moving_in_depthₜ, vₜ, heightₜ, xₜ, yₜ, rₜ, exact_ϕ, exact_θ)
 end
 
 # x = back and forth
 # y = left and right
 # z = up and down (held constant in this model)
-@gen (static) function step_model(vxₜ₋₁, vyₜ₋₁, vzₜ₋₁, xₜ₋₁, yₜ₋₁, zₜ₋₁, rₜ₋₁, ephi, etheta)
+@gen (static) function step_model(moving_in_depthₜ₋₁, vₜ₋₁, heightₜ₋₁, xₜ₋₁, yₜ₋₁, rₜ₋₁, ephi, etheta)
     # TODO: experiment with 0.9 : 0.1 instead of 1.0 : 0.0
-    vxₜ = { :vxₜ } ~ LCat(Vels())(discretized_gaussian(vxₜ₋₁, 0.2, Vels()))
-    vyₜ = { :vyₜ } ~ LCat(Vels())(discretized_gaussian(vyₜ₋₁, 0.2, Vels()))
-    vzₜ = { :vzₜ } ~ LCat(Vels())(discretized_gaussian(vzₜ₋₁, 0.2, Vels()))
-# might want to still keep a moving in depth draw     
-#    zₜ = { :zₜ } ~ Cat(moving_in_depthₜ ? onehot(zₜ₋₁, Zs()) : discretized_gaussian(zₜ₋₁ + vzₜ, 1.0, Heights()))
-#    xₜ = { :xₜ } ~ Cat(moving_in_depthₜ ? discretized_gaussian(xₜ₋₁ + vxₜ,  1.0, Xs()) : onehot(xₜ₋₁, Xs()))
-    zₜ = { :zₜ } ~ Cat(discretized_gaussian(zₜ₋₁ + vzₜ, 1.0, Zs()))
-    xₜ = { :xₜ } ~ Cat(discretized_gaussian(xₜ₋₁ + vxₜ,  1.0, Xs()))
-    yₜ = { :yₜ } ~ LCat(Ys())(discretized_gaussian(yₜ₋₁ + vyₜ, 1.0, Ys()))
+    moving_in_depthₜ = { :moving_in_depthₜ } ~ bernoulli(moving_in_depthₜ₋₁ ? 1.0 : 0.0)
+    vₜ = { :vₜ } ~ LCat(Vels())(discretized_gaussian(vₜ₋₁, 0.2, Vels()))
+    heightₜ = { :heightₜ } ~ Cat(moving_in_depthₜ ? onehot(heightₜ₋₁, Heights()) : discretized_gaussian(heightₜ₋₁ - vₜ, 1.0, Heights()))
+    xₜ = { :xₜ } ~ Cat(moving_in_depthₜ ? discretized_gaussian(xₜ₋₁ + vₜ,  1.0, Xs()) : onehot(xₜ₋₁, Xs()))
+    yₜ = { :yₜ } ~ LCat(Ys())(discretized_gaussian(yₜ₋₁ + vₜ, 1.0, Ys()))
     # Here: a stochastic mapping from (x, y, h) -> (r, θ, ϕ)
     # For now: just use dimension-wise discretized Gaussians.
-    exact_r = norm_3d(xₜ, yₜ, zₜ)
+    exact_r = norm_3d(xₜ, yₜ, heightₜ)
     rₜ = { :rₜ } ~ LCat(Rs())(discretized_gaussian(exact_r, 1.0, Rs()))
-    exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(discretized_gaussian(asin(zₜ / exact_r),
+    exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(discretized_gaussian(asin(heightₜ / exact_r),
                                                              ϕstep(), ϕs()))
     exact_θ = { :exact_θ } ~ LCat(θs())(discretized_gaussian(atan(yₜ / xₜ), θstep(), θs()))
-    return (vxₜ, vyₜ, vzₜ, xₜ, yₜ, zₜ, rₜ, exact_ϕ, exact_θ)
+    return (moving_in_depthₜ, vₜ, heightₜ, xₜ, yₜ, rₜ, exact_ϕ, exact_θ)
 end
 
 # TODO: possible improvements:
@@ -80,7 +75,7 @@ end
 # seems like we should pass those exact variables here. also this suffers from the same problem as above
 # if this is receiving a sample of r, then it could be shorter than x. 
 
-@gen (static) function obs_model(vxₜ, vyₜ, vzₜ, xₜ, yₜ, zₜ, rₜ, exact_ϕ, exact_θ)
+@gen (static) function obs_model(moving_in_depth, v, height, x, y, r, exact_ϕ, exact_θ)
     # can't propose to these b/c they are the final observations we're scoring.
     # have to propose to the exact theta and phi.
     obs_ϕ = { :obs_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(exact_ϕ, 0.4, ϕs()))
@@ -88,16 +83,17 @@ end
     return (obs_θ, obs_ϕ)
 end
 
-@gen (static) function step_proposal(vxₜ₋₁, vyₜ₋₁, vzₜ₋₁, xₜ₋₁, yₜ₋₁, zₜ₋₁,
-                                     rₜ₋₁, exact_ϕ, exact_θ, θₜ, ϕₜ) # θ and ϕ are noisy
+@gen (static) function step_proposal(
+    moving_in_depthₜ₋₁, vₜ₋₁, heightₜ₋₁, xₜ₋₁, yₜ₋₁, rₜ₋₁, eϕ, eθ, θₜ, ϕₜ) # θ and ϕ are noisy
     # instead of sampling (x, y, h) then computing r (as we do in the model)
     # in the proposal we sample (r, x, y) and then compute h
+    moving_in_depthₜ = { :moving_in_depthₜ } ~ bernoulli(moving_in_depthₜ₋₁ ? 1.0 : 0.0)
     exact_θ = { :exact_θ } ~ LCat(θs())(truncated_discretized_gaussian(θₜ, 0.2, θs()))
     exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(ϕₜ, 0.2, ϕs()))
     r_max = minimum([Xs()[end] / (cos(exact_ϕ) * cos(exact_θ)),
                      neg_to_inf(Ys()[end] / (cos(exact_ϕ) * sin(exact_θ))), 
                      neg_to_inf(Ys()[1] / (cos(exact_ϕ) * sin(exact_θ))),
-                     Zs()[end] / sin(exact_ϕ)])
+                     Heights()[end] / sin(exact_ϕ)])
     l = length(Rs())
     r_range = 1:r_max
     # here return a truncated discretized gaussian and zero out above r_max
@@ -113,25 +109,26 @@ end
     exact_height = rₜ * sin(exact_ϕ)
     # size in absolute terms is obtained by the az alt divs being discrete 
     # and az alt not having fixed xyz transforms when distant.
-    xₜ = { :xₜ } ~ LCat(Xs())(truncated_discretized_gaussian(exact_x, 1.0, Xs())) 
-    zₜ = { :zₜ } ~ LCat(Zs())(truncated_discretized_gaussian(
-        exact_height, 1.0, Zs()))
+    xₜ = { :xₜ } ~ LCat(Xs())(
+        moving_in_depthₜ ? truncated_discretized_gaussian(exact_x, 1.0, Xs()) : onehot(xₜ₋₁, Xs()))
+    heightₜ = { :heightₜ } ~ LCat(Heights())(
+        moving_in_depthₜ ? onehot(heightₜ₋₁, Heights()) : truncated_discretized_gaussian(
+            exact_height, 1.0, Heights()))
     # some exact_y are out of bounds. this shouldn't be able to happen. yes it should -- R has a big standard dev. 
     yₜ = { :yₜ } ~ LCat(Ys())(truncated_discretized_gaussian(exact_y, 1.0, Ys()))
     # there's a bug here where y can receive a nan pvec
-    vyₜ = { :vyₜ } ~ LCat(Vels())(maybe_one_off(round_to_pt1(yₜ - yₜ₋₁), .4, Vels()))
-    vxₜ = { :vxₜ } ~ LCat(Vels())(maybe_one_off(round_to_pt1(xₜ - xₜ₋₁), .4, Vels()))
-    vzₜ = { :vzₜ } ~ LCat(Vels())(maybe_one_off(round_to_pt1(zₜ - zₜ₋₁), .4, Vels()))
+    vₜ = { :vₜ } ~ LCat(Vels())(maybe_one_off(round_to_pt1(yₜ - yₜ₋₁), .4, Vels()))
 end
 
 @gen (static) function initial_proposal(θₜ, ϕₜ)
+    moving_in_depthₜ = { :moving_in_depthₜ } ~ bernoulli(.5)
     exact_θ = { :exact_θ } ~ LCat(θs())(truncated_discretized_gaussian(θₜ, 0.2, θs()))
     exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(ϕₜ, 0.2, ϕs()))
     # r_max on the first draw is guaranteed to not leave the cube
     r_max = minimum([Xs()[end] / (cos(exact_ϕ) * cos(exact_θ)),
                      neg_to_inf(Ys()[end] / (cos(exact_ϕ) * sin(exact_θ))), 
                      neg_to_inf(Ys()[1] / (cos(exact_ϕ) * sin(exact_θ))),
-                     Zs()[end] / sin(exact_ϕ)])
+                     Heights()[end] / sin(exact_ϕ)])
     l = length(Rs())
     r_range = 1:r_max
     r_probvec = normalize(vcat(ones(Int64(r_range[end])), zeros(Int64(l-r_range[end]))))
@@ -143,11 +140,9 @@ end
     # and az alt not having fixed xyz transforms when distant. 
     xₜ = { :xₜ } ~ LCat(Xs())(truncated_discretized_gaussian(exact_x, 1.0, Xs()))
     yₜ = { :yₜ } ~ LCat(Ys())(truncated_discretized_gaussian(exact_y, 1.0, Ys()))
-    zₜ = { :zₜ } ~ LCat(Zs())(truncated_discretized_gaussian(exact_height, 1.0, Zs()))
+    heightₜ = { :heightₜ } ~ LCat(Heights())(truncated_discretized_gaussian(exact_height, 1.0, Heights()))
     #    vₜ = { :vₜ } ~ LCat(Vels())(maybe_one_off(yₜ - yₜ₋₁, .4, Vels()))
-    vxₜ = { :vxₜ } ~ LCat(Vels())(unif(Vels()))
-    vyₜ = { :vyₜ } ~ LCat(Vels())(unif(Vels()))
-    vzₜ = { :vzₜ } ~ LCat(Vels())(unif(Vels()))
+    vₜ = { :vₜ } ~ LCat(Vels())(unif(Vels()))
 end
 
 function extract_submap_value(cmap, symlist) 
@@ -167,13 +162,13 @@ end
 function heatmap_pf_results(uw_traces, gt::Trace, nsteps)
     
     depth_indexer = [[:steps, i, :latents, :xₜ, :val] for i in 1:nsteps]
-    height_indexer = [[:steps, i, :latents, :zₜ, :val] for i in 1:nsteps]
+    height_indexer = [[:steps, i, :latents, :heightₜ, :val] for i in 1:nsteps]
                                   
     gray_cmap = range(colorant"white", stop=colorant"gray32", length=6)
     true_depth = [extract_submap_value(get_choices(gt), depth_indexer[i]) for i in 1:nsteps]
     true_height = [extract_submap_value(get_choices(gt), height_indexer[i]) for i in 1:nsteps]
     depth_matrix = zeros(nsteps, length(0:Xs()[end]) + 1)
-    height_matrix = zeros(nsteps, length(0:Zs()[end]) + 1)
+    height_matrix = zeros(nsteps, length(0:Heights()[end]) + 1)
     for t in 1:nsteps
         for tr in uw_traces[end]
             depth_matrix[t, Int64(extract_submap_value(get_choices(tr), depth_indexer[t]))] += 1
@@ -196,7 +191,7 @@ function heatmap_pf_results(uw_traces, gt::Trace, nsteps)
     ax_height.xlabel = "Time"
     xlims!(ax_height, (.5, nsteps))
     xlims!(ax_depth, (.5, nsteps))
-    ylims!(ax_height, (0.0, Zs()[end]+2))
+    ylims!(ax_height, (0.0, Heights()[end]+2))
     ylims!(ax_depth, (0.0, Xs()[end]+2))
     println("particle scores")
     println([get_score(tr) for tr in uw_traces[end]])
@@ -221,7 +216,7 @@ function render_pf_results(uw_traces, gt_trace, n_steps)
     c2 = colorant"rgba(0, 255, 255, .25)"
     cmap = range(c1, stop=c2, length=10)
     fig = Figure(resolution=(res, res), figure_padding=0)
-    lim = (Xs()[1], Xs()[end], Ys()[1], Ys()[end], Zs()[1], Zs()[end])
+    lim = (Xs()[1], Xs()[end], Ys()[1], Ys()[end], Heights()[1], Heights()[end])
     # note perspectiveness variable is 0.0 for orthographic, 1.0 for perspective, .5 for intermediate
     anim_axis = Axis3(fig[1,1], 
                       viewmode=:fit, aspect=(1,1,1), perspectiveness=0.0, protrusions=0, limits=lim)
@@ -270,4 +265,11 @@ function render_pf_results(uw_traces, gt_trace, n_steps)
     end
     return particle_coords, score_colors, [fs(i) for (i, b) in enumerate(score_colors)]
 end
+
+x = range(0, 10, length=10)
+y1 = sin.(x)
+y2 = cos.(x)
+scatter(x, y1, color = :red, markersize = range(5, 15, length=10))
+sc = scatter!(ax, x, y1, y2, color = rand(10), colormap = :thermal, markersize=5000)
+
 
