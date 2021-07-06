@@ -1,9 +1,9 @@
 INTER_OBS_INTERVAL() = 2000. # ms
 
 SAMPLE_ONRATE() = 1.25
-SCORE_ONRATE() = 0.25
-PEstDenom() = 20 # count denominator for ProbEstimates
-RecipPEstDenom() = 10 # count denominator for ReciprocalProbEstimates
+SCORE_ONRATE() = 0.5
+PEstDenom() = 40 # count denominator for ProbEstimates
+RecipPEstDenom() = 4 # count denominator for ReciprocalProbEstimates
 MultOutDenom() = 200 # count denominator for the output of a multiplier
 
 ΔT() = 240 # ms  -- memory time for scoring unit (also used by many other units)
@@ -43,11 +43,26 @@ P_FAILURE_MULT_INTO_THETA() = 5e-5
 SYNC_FORGET_FAIL_PROB() = 5e-5
 P_WTA_TOO_SLOW() = 5e-5
 
+prob_get_est_of_0(n_vars) = 1 - (1 - (1 - MinProb())^PEstDenom())^n_vars
+bound_on_overall_failure_prob_due_to_mistake(n_steps, n_vars, n_particles) = 1 - (
+    (
+        (
+            ((1 - SCORE_FAIL_PROB()) * (1 - SAMPLE_FAIL_PROB()) * (1 - P_WTA_TOO_SLOW()))^n_vars # prob failure due to sampling/scoring
+        * (1 - MULT_FAIL_PROB()) * (1 - P_FAILURE_MULT_INTO_THETA())                           # prob we have a failure on the multiplier or theta
+        )^n_particles                     
+        * (1 - SYNC_FORGET_FAIL_PROB())                                                        # prob failure in sync
+    )^n_steps
+)
 bound_on_overall_failure_prob(n_steps, n_vars, n_particles) = 1 - (
-  (    ((1 - SCORE_FAIL_PROB()) * (1 - SAMPLE_FAIL_PROB()) * (1 - P_WTA_TOO_SLOW()))^n_vars # prob failure due to sampling/scoring
-    * (1 - MULT_FAIL_PROB()) * (1 - P_FAILURE_MULT_INTO_THETA())    )^n_particles           # prob we have a failure on the multiplier or theta
-    * (1 - SYNC_FORGET_FAIL_PROB())                                                         # prob failure in sync
-)^n_steps
+    # P we don't have a component failure, on any step
+    (1 - bound_on_overall_failure_prob_due_to_mistake(n_steps, n_vars, n_particles)) * 
+    ( # P we don't have all failures, at every step
+            ( # P we don't have all failures, on a given step
+                1 -
+                prob_get_est_of_0(n_vars)^n_particles # P we do get all failures, on a given step
+            )
+    )^n_steps
+)
 
 ΔT_SAMPLE_RESET_TIME() = 2 * ΔT_SAMPLE() 
 # TODO: is it possible to have a tighter bound on this to check with?
