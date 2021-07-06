@@ -45,12 +45,12 @@ P_WTA_TOO_SLOW() = 5e-5
 
 prob_get_est_of_0(n_vars) = 1 - (1 - (1 - MinProb())^PEstDenom())^n_vars
 bound_on_overall_failure_prob_due_to_mistake(n_steps, n_vars, n_particles) = 1 - (
-    (
+    ( # prob failure
         (
             ((1 - SCORE_FAIL_PROB()) * (1 - SAMPLE_FAIL_PROB()) * (1 - P_WTA_TOO_SLOW()))^n_vars # prob failure due to sampling/scoring
-        * (1 - MULT_FAIL_PROB()) * (1 - P_FAILURE_MULT_INTO_THETA())                           # prob we have a failure on the multiplier or theta
+        * (1 - MULT_FAIL_PROB()) * (1 - P_FAILURE_MULT_INTO_THETA())                             # prob we have a failure on the multiplier or theta
         )^n_particles                     
-        * (1 - SYNC_FORGET_FAIL_PROB())                                                        # prob failure in sync
+        * (1 - SYNC_FORGET_FAIL_PROB())                                                          # prob failure in sync
     )^n_steps
 )
 bound_on_overall_failure_prob(n_steps, n_vars, n_particles) = 1 - (
