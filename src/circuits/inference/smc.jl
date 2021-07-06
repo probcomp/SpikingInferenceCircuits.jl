@@ -21,7 +21,7 @@ Circuits.implement(m::MultiParticleWithResample, ::Target) =
                 Input(:args => i) => CompIn(:particles => i, :args),
                 CompOut(:particles => i, :trace) => CompIn(:resample, :traces => i),
                 CompOut(:particles => i, :weight) => CompIn(:resample, :weights => i),
-                CompOut(:particles => i, :trace) => Output(i)
+                CompOut(:resample, :traces => i) => Output(i)
             )
             for i=1:m.num_particles
         ), m

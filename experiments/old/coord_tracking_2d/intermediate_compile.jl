@@ -8,9 +8,7 @@ using SpikingInferenceCircuits
 const SIC = SpikingInferenceCircuits
 using Circuits, SpikingCircuits
 using Gen, Distributions
-
-includet("../../src/ProbEstimates/ProbEstimates.jl")
-using .ProbEstimates: Cat, LCat
+using ProbEstimates: Cat, LCat
 
 include("modeling_utils.jl")
 include("model_hyperparams.jl")

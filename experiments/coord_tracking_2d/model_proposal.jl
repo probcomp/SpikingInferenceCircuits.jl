@@ -1,10 +1,10 @@
+using Gen, Distributions
 # Include the library exposing `Cat` and `LCat`
-includet("../../src/ProbEstimates/ProbEstimates.jl")
-using .ProbEstimates
+using ProbEstimates
 
 # Include some utilities for defining discrete probability distributions
 includet("../utils/modeling_utils.jl")
-Positions() = 1:20; Vels() = -3:3;
+Positions() = 1:8; Vels() = -1:1;
 Bools() = [true, false]
 
 @gen (static) function initial_latent_model()
@@ -35,7 +35,7 @@ end
 ### proposals
 @gen (static) function initial_proposal(obsx, obsy)
     xₜ ~ Cat(truncated_discretized_gaussian(obsx, 2., Positions()))
-    yₜ ~ Cat(truncated_discretized_gaussian(obsx, 2., Positions()))
+    yₜ ~ Cat(truncated_discretized_gaussian(obsy, 2., Positions()))
 
     vxₜ ~ LCat(Vels())(unif(Vels()))
     vyₜ ~ LCat(Vels())(unif(Vels()))

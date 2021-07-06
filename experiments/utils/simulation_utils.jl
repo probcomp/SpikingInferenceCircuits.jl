@@ -87,3 +87,31 @@ function get_smc_circuit_inputs(
     end
     return inputs
 end
+
+# latents and observations should be indexed (not labeled)
+function get_smc_circuit_inputs_with_initial_latents(
+    time_to_simulate_for,
+    interval_between_observations,
+    initial_latents,
+    observations,
+    nparticles
+)
+    obs_inputs = get_smc_circuit_inputs(
+        time_to_simulate_for,
+        interval_between_observations,
+        observations
+    )
+    first_input, rest = Iterators.peel(obs_inputs)
+    @assert first_input[1] == 0.
+    return [
+        (0., (
+            (
+                :initial_latents => i => key => val
+                for (key, val) in pairs(initial_latents)
+                    for i=1:nparticles
+            )...,
+            first_input[2]...
+        )),
+        rest...
+    ]
+end

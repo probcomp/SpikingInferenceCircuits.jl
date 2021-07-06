@@ -77,19 +77,19 @@ Circuits.implement(ta::SIC.SDCs.ToAssmts, ::Spiking) =
 Circuits.implement(m::SDCs.Mux, ::Spiking) =
     SDCs.PulseMux(m,
         PulseIR.PoissonAsyncOnGate(
-            PulseIR.ConcreteAsyncOnGate(ΔT_MUX(), 1, M()), # ΔT, max_delay, M
+            PulseIR.ConcreteAsyncOnGate(ΔT_GATES(), 1, M()), # ΔT, max_delay, M
             GATE_RATES()...
         )
     )
 
 Circuits.implement(::PulseIR.OnGate, ::Spiking) =
     PulseIR.PoissonAsyncOnGate(
-        PulseIR.ConcreteAsyncOnGate(ΔT_MUX(), 1, M()),
+        PulseIR.ConcreteAsyncOnGate(ΔT_GATES(), 1, M()),
         GATE_RATES()...
     )
 Circuits.implement(::PulseIR.OffGate, ::Spiking) =
     PulseIR.PoissonOffGate(
-        PulseIR.ConcreteOffGate(ΔT_MUX(), 2., M()),
+        PulseIR.ConcreteOffGate(ΔT_GATES(), 2., M()),
         GATE_RATES()...
     )
 
