@@ -106,19 +106,17 @@ end
              zeros(l-Int(r_range[end]))))
     # ok sometimes the truncated gaussian will sample outside the range of r_max.
     # then it'll return a zero pvec which gets normalized and NaNd. use a discretized_gauss for now. 
-    rₜ = { :rₜ } ~ Cat(r_probvec)
+    rₜ = { :rₜ } ~ LCat(Rs())(r_probvec)
     # now compute x, y, height (almost deterministically, plus some noise)
     exact_x = rₜ * cos(exact_ϕ) * cos(exact_θ)
     exact_y = rₜ * cos(exact_ϕ) * sin(exact_θ)
-    exact_height = rₜ * sin(exact_ϕ)
+    exact_z = rₜ * sin(exact_ϕ)
     # size in absolute terms is obtained by the az alt divs being discrete 
     # and az alt not having fixed xyz transforms when distant.
     xₜ = { :xₜ } ~ LCat(Xs())(truncated_discretized_gaussian(exact_x, 1.0, Xs())) 
     zₜ = { :zₜ } ~ LCat(Zs())(truncated_discretized_gaussian(
-        exact_height, 1.0, Zs()))
-    # some exact_y are out of bounds. this shouldn't be able to happen. yes it should -- R has a big standard dev. 
+        exact_z, 1.0, Zs()))
     yₜ = { :yₜ } ~ LCat(Ys())(truncated_discretized_gaussian(exact_y, 1.0, Ys()))
-    # there's a bug here where y can receive a nan pvec
     vyₜ = { :vyₜ } ~ LCat(Vels())(maybe_one_off(round_to_pt1(yₜ - yₜ₋₁), .4, Vels()))
     vxₜ = { :vxₜ } ~ LCat(Vels())(maybe_one_off(round_to_pt1(xₜ - xₜ₋₁), .4, Vels()))
     vzₜ = { :vzₜ } ~ LCat(Vels())(maybe_one_off(round_to_pt1(zₜ - zₜ₋₁), .4, Vels()))
@@ -138,13 +136,12 @@ end
     rₜ = { :rₜ } ~ LCat(Rs())(r_probvec)
     exact_x = rₜ * cos(exact_ϕ) * cos(exact_θ)
     exact_y = rₜ * cos(exact_ϕ) * sin(exact_θ)
-    exact_height = rₜ * sin(exact_ϕ)
+    exact_z = rₜ * sin(exact_ϕ)
     # size in absolute terms is obtained by the az alt divs being discrete 
     # and az alt not having fixed xyz transforms when distant. 
     xₜ = { :xₜ } ~ LCat(Xs())(truncated_discretized_gaussian(exact_x, 1.0, Xs()))
     yₜ = { :yₜ } ~ LCat(Ys())(truncated_discretized_gaussian(exact_y, 1.0, Ys()))
-    zₜ = { :zₜ } ~ LCat(Zs())(truncated_discretized_gaussian(exact_height, 1.0, Zs()))
-    #    vₜ = { :vₜ } ~ LCat(Vels())(maybe_one_off(yₜ - yₜ₋₁, .4, Vels()))
+    zₜ = { :zₜ } ~ LCat(Zs())(truncated_discretized_gaussian(exact_z, 1.0, Zs()))
     vxₜ = { :vxₜ } ~ LCat(Vels())(unif(Vels()))
     vyₜ = { :vyₜ } ~ LCat(Vels())(unif(Vels()))
     vzₜ = { :vzₜ } ~ LCat(Vels())(unif(Vels()))
@@ -199,13 +196,13 @@ function heatmap_pf_results(uw_traces, gt::Trace, nsteps)
     ylims!(ax_height, (0.0, Zs()[end]+2))
     ylims!(ax_depth, (0.0, Xs()[end]+2))
     println("particle scores")
-    println([get_score(tr) for tr in uw_traces[end]])
+  #  println([get_score(tr) for tr in uw_traces[end]])
     display(fig)
-    ax_moving_in_depth = fig[3, 1] = Axis(fig)
-    hist!(ax_moving_in_depth,
-          [extract_submap_value(
-              get_choices(tr),
-              [:steps, NSTEPS, :latents, :moving_in_depthₜ]) for tr in uw_traces[end]])
+#    ax_moving_in_depth = fig[3, 1] = Axis(fig)
+    # hist!(ax_moving_in_depth,
+    #       [extract_submap_value(
+    #           get_choices(tr),
+    #           [:steps, NSTEPS, :latents, :moving_in_depthₜ]) for tr in uw_traces[end]])
     return fig
 end
 
@@ -217,15 +214,17 @@ end
 function render_pf_results(uw_traces, gt_trace, n_steps)
     res = 1000
     msize = 7000
-    c1 = colorant"rgba(255, 0, 255, .25)"
-    c2 = colorant"rgba(0, 255, 255, .25)"
+    c2 = colorant"rgba(255, 0, 255, .25)"
+    c1 = colorant"rgba(0, 255, 255, .25)"
     cmap = range(c1, stop=c2, length=10)
     fig = Figure(resolution=(res, res), figure_padding=0)
     lim = (Xs()[1], Xs()[end], Ys()[1], Ys()[end], Zs()[1], Zs()[end])
     # note perspectiveness variable is 0.0 for orthographic, 1.0 for perspective, .5 for intermediate
     anim_axis = Axis3(fig[1,1], 
-                      viewmode=:fit, aspect=(1,1,1), perspectiveness=0.0, protrusions=0, limits=lim)
+                      viewmode=:fit, aspect=(1,1,1), perspectiveness=0.0, protrusions=0, limits=lim,
+                      elevation = 1.2*pi, azimuth= .7*pi)
     # scatter takes a list of tuples. want a list of lists of tuples as an f(t) and lift a node to that.
+    
     time_node = Node(1)
     gt_coords = []
     particle_coords = []
@@ -239,11 +238,11 @@ function render_pf_results(uw_traces, gt_trace, n_steps)
             if i == 1
                 x = extract_submap_value(ch, [:init, :latents, :xₜ, :val])
                 y = extract_submap_value(ch, [:init, :latents, :yₜ, :val])
-                z = extract_submap_value(ch, [:init, :latents, :heightₜ, :val])
+                z = extract_submap_value(ch, [:init, :latents, :zₜ, :val])
             else
                 x = extract_submap_value(ch, [:steps, i-1, :latents, :xₜ, :val])
                 y = extract_submap_value(ch, [:steps, i-1, :latents, :yₜ, :val])
-                z = extract_submap_value(ch, [:steps, i-1, :latents, :heightₜ, :val])
+                z = extract_submap_value(ch, [:steps, i-1, :latents, :zₜ, :val])
             end
             if tnum == 1
                 push!(gt_temp, (x, y, z))

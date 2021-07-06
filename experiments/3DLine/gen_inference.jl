@@ -4,8 +4,8 @@ using .DynamicModels: @DynamicModel, @compile_initial_proposal, @compile_step_pr
 
 include("model.jl")
 
-model = @DynamicModel(initial_model, step_model, obs_model, 8)
-step_proposal = @compile_step_proposal(step_proposal, 8, 2)
+model = @DynamicModel(initial_model, step_model, obs_model, 9)
+step_proposal = @compile_step_proposal(step_proposal, 9, 2)
 initial_proposal = @compile_initial_proposal(initial_proposal, 2)
 @load_generated_functions()
 
@@ -13,14 +13,33 @@ NSTEPS = 10
 NPARTICLES = 2000
 #tr = simulate(model, (NSTEPS,))
 
+X_init = 10
+Y_init = -5
+Z_init = 10
+
+
+x_traj = [(:steps => i => :latents => :xₜ => :val, X_init + i) for i in 1:NSTEPS]
+y_traj = [(:steps => i => :latents => :yₜ => :val, Y_init + i) for i in 1:NSTEPS]
+z_traj = [(:steps => i => :latents => :zₜ => :val, Z_init) for i in 1:NSTEPS]
+vz_traj = [(:steps => i => :latents => :vzₜ => :val, 0) for i in 1:NSTEPS]
+vx_traj = [(:steps => i => :latents => :vxₜ => :val, 1) for i in 1:NSTEPS]
+vy_traj = [(:steps => i => :latents => :vyₜ => :val, 1) for i in 1:NSTEPS]
+
 tr, w = generate(model, (NSTEPS,), choicemap(
-    (:init => :latents => :moving_in_depthₜ, true),
-    (:init => :latents => :xₜ => :val, 5),
-    (:init => :latents => :yₜ => :val, -5),
-    (:init => :latents => :zₜ => :val, 10),
+    (:init => :latents => :xₜ => :val, X_init),
+    (:init => :latents => :yₜ => :val, Y_init),
+    (:init => :latents => :zₜ => :val, Z_init),
     (:init => :latents => :vxₜ => :val, 1),
     (:init => :latents => :vyₜ => :val, 1), 
-    (:init => :latents => :vzₜ => :val, 0))
+    (:init => :latents => :vzₜ => :val, 0),
+    x_traj...,
+    y_traj...,
+    z_traj...,
+    vz_traj...,
+    vx_traj...,
+    vy_traj...
+))
+
 
   # to constrain a step:
 #  (:steps => t => :latents => :x, val)
