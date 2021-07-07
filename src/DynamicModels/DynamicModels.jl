@@ -126,6 +126,16 @@ get_dynamic_model_obs(tr) = (
         for t=1:get_args(tr)[1]
     ]
 )
+"""
+Choicemap from the obs model at the `t`th time step.
+"""
+obs_choicemap(tr, t) = get_submap(get_choices(tr), obs_addr(t))
+"""
+Choicemap from the latent model at the `t`th time step.
+(Either from the initial or step latent model.)
+"""
+latents_choicemap(tr, t) = get_submap(get_choices(tr), latent_addr(t))
+
 
 function dynamic_model_smc(
     model,
@@ -176,5 +186,6 @@ end
 
 export @DynamicModel, @compile_step_proposal, @compile_initial_proposal
 export dynamic_model_smc, get_dynamic_model_obs
+export obs_choicemap, latents_choicemap
 
 end
