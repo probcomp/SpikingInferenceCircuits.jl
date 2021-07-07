@@ -2,7 +2,8 @@
 # Ys() = -5:5
 # Heights() = 1:10
 ydiv = 1
-Vels() = -3:ydiv:3
+#Vels() = -3:ydiv:3
+Vels() = -1:ydiv:1
 Xs() = 1:20
 Ys() = -5:ydiv:5
 Zs() = 1:20

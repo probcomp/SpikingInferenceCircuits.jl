@@ -13,7 +13,7 @@ NSTEPS = 10
 NPARTICLES = 2000
 #tr = simulate(model, (NSTEPS,))
 
-X_init = 10
+X_init = 5
 Y_init = -5
 Z_init = 10
 
@@ -52,7 +52,7 @@ observations = get_dynamic_model_obs(tr)
     ch -> (ch[:obs_θ => :val], ch[:obs_ϕ => :val]),
     initial_proposal, step_proposal,
     NPARTICLES, # n particles
-    ess_threshold=NPARTICLES/2
+    ess_threshold=NPARTICLES
 )
 
 #OK next step is figuring out which particles are moving in depth vs not

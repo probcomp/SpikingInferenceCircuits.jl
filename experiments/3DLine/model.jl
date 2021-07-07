@@ -13,7 +13,9 @@ using StatsBase
 
 
 # visualization? 
-# gershman background lit. 
+# gershman background lit.
+
+# "exact" is another word for "true"
 
 
 include("../../src/ProbEstimates/ProbEstimates.jl")
@@ -52,9 +54,9 @@ end
 # might want to still keep a moving in depth draw     
 #    zₜ = { :zₜ } ~ Cat(moving_in_depthₜ ? onehot(zₜ₋₁, Zs()) : discretized_gaussian(zₜ₋₁ + vzₜ, 1.0, Heights()))
 #    xₜ = { :xₜ } ~ Cat(moving_in_depthₜ ? discretized_gaussian(xₜ₋₁ + vxₜ,  1.0, Xs()) : onehot(xₜ₋₁, Xs()))
-    zₜ = { :zₜ } ~ Cat(discretized_gaussian(zₜ₋₁ + vzₜ, 1.0, Zs()))
     xₜ = { :xₜ } ~ Cat(discretized_gaussian(xₜ₋₁ + vxₜ,  1.0, Xs()))
     yₜ = { :yₜ } ~ LCat(Ys())(discretized_gaussian(yₜ₋₁ + vyₜ, 1.0, Ys()))
+    zₜ = { :zₜ } ~ Cat(discretized_gaussian(zₜ₋₁ + vzₜ, 1.0, Zs()))
     # Here: a stochastic mapping from (x, y, h) -> (r, θ, ϕ)
     # For now: just use dimension-wise discretized Gaussians.
     exact_r = norm_3d(xₜ, yₜ, zₜ)
@@ -92,8 +94,10 @@ end
                                      rₜ₋₁, exact_ϕ, exact_θ, θₜ, ϕₜ) # θ and ϕ are noisy
     # instead of sampling (x, y, h) then computing r (as we do in the model)
     # in the proposal we sample (r, x, y) and then compute h
-    exact_θ = { :exact_θ } ~ LCat(θs())(truncated_discretized_gaussian(θₜ, 0.2, θs()))
-    exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(ϕₜ, 0.2, ϕs()))
+
+    # make variance based on r t minus 1 here. 
+    exact_θ = { :exact_θ } ~ LCat(θs())(truncated_discretized_gaussian(θₜ, 0.4, θs()))
+    exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(ϕₜ, 0.4, ϕs()))
     r_max = minimum([Xs()[end] / (cos(exact_ϕ) * cos(exact_θ)),
                      neg_to_inf(Ys()[end] / (cos(exact_ϕ) * sin(exact_θ))), 
                      neg_to_inf(Ys()[1] / (cos(exact_ϕ) * sin(exact_θ))),
@@ -104,6 +108,8 @@ end
     r_probvec = normalize(
         vcat(discretized_gaussian(rₜ₋₁, 3.0, Rs())[1:Int(r_range[end])],
              zeros(l-Int(r_range[end]))))
+
+    
     # ok sometimes the truncated gaussian will sample outside the range of r_max.
     # then it'll return a zero pvec which gets normalized and NaNd. use a discretized_gauss for now. 
     rₜ = { :rₜ } ~ LCat(Rs())(r_probvec)
@@ -113,13 +119,23 @@ end
     exact_z = rₜ * sin(exact_ϕ)
     # size in absolute terms is obtained by the az alt divs being discrete 
     # and az alt not having fixed xyz transforms when distant.
-    xₜ = { :xₜ } ~ LCat(Xs())(truncated_discretized_gaussian(exact_x, 1.0, Xs())) 
-    zₜ = { :zₜ } ~ LCat(Zs())(truncated_discretized_gaussian(
+    # xₜ = { :xₜ } ~ LCat(Xs())(truncated_discretized_gaussian(exact_x, 1.0, Xs()))
+    # yₜ = { :yₜ } ~ LCat(Ys())(truncated_discretized_gaussian(exact_y, 1.0, Ys()))
+    # zₜ = { :zₜ } ~ LCat(Zs())(truncated_discretized_gaussian(
+    #     exact_z, 1.0, Zs()))
+
+    xₜ = { :xₜ } ~ LCat(Xs())(discretized_gaussian(exact_x, 1.0, Xs()))
+    yₜ = { :yₜ } ~ LCat(Ys())(discretized_gaussian(exact_y, 1.0, Ys()))
+    zₜ = { :zₜ } ~ LCat(Zs())(discretized_gaussian(
         exact_z, 1.0, Zs()))
-    yₜ = { :yₜ } ~ LCat(Ys())(truncated_discretized_gaussian(exact_y, 1.0, Ys()))
+# consider adding onehot to these which says "given you've drawn a new x, y, z, the velocity is this. 
     vyₜ = { :vyₜ } ~ LCat(Vels())(maybe_one_off(round_to_pt1(yₜ - yₜ₋₁), .4, Vels()))
     vxₜ = { :vxₜ } ~ LCat(Vels())(maybe_one_off(round_to_pt1(xₜ - xₜ₋₁), .4, Vels()))
     vzₜ = { :vzₜ } ~ LCat(Vels())(maybe_one_off(round_to_pt1(zₜ - zₜ₋₁), .4, Vels()))
+  #  vyₜ = { :vyₜ } ~ LCat(Vels())(onehot(round(yₜ - yₜ₋₁), Vels()))
+  #  vxₜ = { :vxₜ } ~ LCat(Vels())(onehot(round(xₜ - xₜ₋₁), Vels()))
+  #  vzₜ = { :vzₜ } ~ LCat(Vels())(onehot(round(zₜ - zₜ₋₁), Vels()))
+    
 end
 
 @gen (static) function initial_proposal(θₜ, ϕₜ)
