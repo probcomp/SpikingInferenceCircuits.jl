@@ -70,7 +70,10 @@ function percentile(pvec, percentile)
 
 end
 mean(pvec) = sum(p * i for (i, p) in enumerate(pvec))
-function make_2d_posterior_figure(tr, posterior_probvec_at_times)
+function make_2d_posterior_figure(
+    tr, posterior_probvec_at_times;
+    inference_method_str=""
+)
     times = 0:(get_args(tr)[1])
     observations = map(getobs(tr), times)
     true_x       = map(getpos(tr), times)
@@ -146,10 +149,11 @@ function make_2d_posterior_figure(tr, posterior_probvec_at_times)
     leg.tellwidth = false
     trim!(fig.layout)
 
+    (fig[3, :] = Label(fig,
+        "Obs Std = $(ObsStd()), Step Std = $(StepStd())."
+    )).tellwidth = false
+    (fig[4, :] = Label(fig, inference_method_str)).tellwidth = false
+
+
     return fig
 end
-make_2d_posterior_figure(tr) = make_2d_posterior_figure(tr,
-    enumerate_latent_assmt_weights_from_groundtruth(
-            tr, initial_latent_model, step_latent_model, obs_model, (xₜ=Positions(),)
-        ) |> nest_all_addrs_at_val |> collect |> x->map(x->normalize(exp.(x)), x)
-)

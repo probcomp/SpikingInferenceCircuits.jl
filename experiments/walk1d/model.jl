@@ -8,7 +8,7 @@ includet("../utils/modeling_utils.jl")
 Positions() = 1:20
 Bools() = [true, false]
 StepStd() = 3.
-ObsStd() = 10.
+ObsStd() = 2.0
 
 @gen (static) function initial_latent_model()
     xₜ ~ Cat(unif(Positions()))

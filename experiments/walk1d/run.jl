@@ -43,8 +43,17 @@ function obs_pos_priorsmc_figure(tr; n_particles=1_000)
     return (fig, t)
 end
 
+make_true_2d_posterior_figure(tr) = make_2d_posterior_figure(tr,
+    enumerate_latent_assmt_weights_from_groundtruth(
+            tr, initial_latent_model, step_latent_model, obs_model, (xₜ=Positions(),)
+        ) |> nest_all_addrs_at_val |> collect |> x->map(x->normalize(exp.(x)), x);
+        inference_method_str="Exact posterior."
+)
+function make_smcprior_2d_posterior_figure(tr; n_particles=1_000)
+    (unweighted_trs, _) = smc_from_prior(tr, n_particles)
+    probs = [x_counts(unweighted_trs[t + 1], t) |> normalize for t=0:(get_args(tr)[1])]
+    make_2d_posterior_figure(tr, probs; inference_method_str="Approximate posterior from $n_particles Particle SMC proposing from prior")
+end
 # make_video(fig, t, 9, "anim.mp4")
 
 # fig, t = obs_pos_priorsmc_figure(tr); fig
-
-obs_pos_enumerated_figure(tr)
