@@ -159,7 +159,7 @@ function dynamic_model_smc(
 
     state = Gen.initialize_particle_filter(
         model, (0,),
-        nest_at(:init => :latents, first_obs_cm),
+        nest_at(:init => :obs, first_obs_cm),
         initial_proposal, obs_cm_to_proposal_input(first_obs_cm),
         n_particles
     )
