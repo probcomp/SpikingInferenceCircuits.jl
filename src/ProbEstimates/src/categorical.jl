@@ -45,11 +45,22 @@ function Gen.generate(c::LCat, (probs,)::Tuple, cm::Union{Gen.ChoiceMap, Gen.Emp
 end
 
 function Gen.update(tr::CatTrace, (probs,)::Tuple, _::Tuple, cm::Gen.ChoiceMap)
-    if isempty(cm)
-        @assert probs == get_args(tr)[1]
+    if isempty(cm) && probs == get_args(tr)[1]
         return (tr, 0., NoChange(), EmptyChoiceMap())
     else
-        error("Not expecting nontrivial `update` to be called on `Cat`.  Probs: $probs, cm: $cm")
+        if weight_type() == :perfect
+            @assert isempty(cm) || has_value(cm, :val)
+            newidx = isempty(cm) ? tr.idx : label_to_idx(get_gen_fn(tr), cm[:val])
+            newtr = CatTrace(get_gen_fn(tr), probs, newidx)
+            return (
+                newtr,
+                get_score(newtr) - get_score(tr),
+                tr.idx == newidx ? NoChange() : UnknownChange(),
+                isempty(cm) ? EmptyChoiceMap() : choicemap((:val, get_retval(tr)))
+            )
+        else
+            error("Not expecting nontrivial `update` to be called on `Cat` in a noisy weight mode.  Probs: $probs, cm: $cm")
+        end
     end
 end
 

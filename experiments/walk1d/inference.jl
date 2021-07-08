@@ -46,3 +46,36 @@ exact_step_proposal = @compile_step_proposal(_exact_step_proposal, 1, 1)
 @load_generated_functions()
 
 smc_exact_proposal(tr, n_particles) = smc(tr, n_particles, exact_init_proposal, exact_step_proposal)
+
+### Rejuvenation using exact posterior ##
+# Rejuvenate last x value
+@gen (static) function rejuv_proposal_init(tr)
+    {:init => :latents} ~ _exact_init_proposal(getobs(tr)(0))
+end
+@gen (static) function rejuv_proposal_step(tr)
+    t = get_args(tr)[1]
+    {:steps => t => :latents} ~ _exact_step_proposal(getpos(tr)(t - 1), getobs(tr)(t))
+end
+@load_generated_functions()
+
+function prior_smc_exact_rejuv(tr, n_particles; is_gibbs=true)
+    function rejuvenate(trace)
+        if get_args(trace)[1] == 0
+            newtrace, accepted = mh(trace, rejuv_proposal_init, ())
+        else
+            newtrace, accepted = mh(trace, rejuv_proposal_step, ())
+        end
+        if is_gibbs
+            @assert accepted "Should be a gibbs move."
+        end
+        return newtrace
+    end
+
+    obss = get_dynamic_model_obs(tr)
+    (unweighted_inferences, weighted_inferences) = dynamic_model_smc(
+        get_gen_fn(tr), obss, cm -> (cm[:obs => :val],),
+        prior_init_proposal, prior_step_proposal, n_particles;
+        rejuvenate
+    )
+    return (unweighted_inferences, weighted_inferences)
+end
