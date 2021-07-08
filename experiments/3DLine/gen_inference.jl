@@ -9,13 +9,13 @@ step_proposal = @compile_step_proposal(step_proposal, 9, 2)
 initial_proposal = @compile_initial_proposal(initial_proposal, 2)
 @load_generated_functions()
 
-NSTEPS = 10
-NPARTICLES = 2000
+NSTEPS = 9
+NPARTICLES = 10
 #tr = simulate(model, (NSTEPS,))
 
-X_init = 5
+X_init = 1
 Y_init = -5
-Z_init = 10
+Z_init = 3
 
 
 x_traj = [(:steps => i => :latents => :xₜ => :val, X_init + i) for i in 1:NSTEPS]

@@ -4,12 +4,12 @@
 ydiv = 1
 #Vels() = -3:ydiv:3
 Vels() = -1:ydiv:1
-Xs() = 1:20
+Xs() = 1:10
 Ys() = -5:ydiv:5
-Zs() = 1:20
+Zs() = 1:10
 Rs() = Int64(floor(sqrt(Xs()[1]^2 + Zs()[1]^2))):Int64(ceil(norm_3d(Xs()[end], Ys()[end], Zs()[end])))
-ϕstep() = 0.1
-θstep() = 0.1
+ϕstep() = 0.2
+θstep() = 0.2
 
 # x = 1, y = 5 takes up .19 radians that are unavailable in az.
 # vis field is 1.57 radians. 
