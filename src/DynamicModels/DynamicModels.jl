@@ -74,6 +74,7 @@ macro compile_step_proposal(
             T = get_args(prev_tr)[1] + 1
             prev_latents = prev_tr[$(latent_addr)(T - 1)]
             ($(prop_argnames...),) = prev_latents
+
             {:steps => T => :latents} ~ $(esc(step_proposal))($(prop_argnames...), $(obs_argnames...))
         end
     end
@@ -116,6 +117,16 @@ get_dynamic_model_obs(tr) = (
         for t=1:get_args(tr)[1]
     ]
 )
+"""
+Choicemap from the obs model at the `t`th time step.
+"""
+obs_choicemap(tr, t) = get_submap(get_choices(tr), obs_addr(t))
+"""
+Choicemap from the latent model at the `t`th time step.
+(Either from the initial or step latent model.)
+"""
+latents_choicemap(tr, t) = get_submap(get_choices(tr), latent_addr(t))
+
 
 function dynamic_model_smc(
     model,
@@ -139,7 +150,7 @@ function dynamic_model_smc(
 
     state = Gen.initialize_particle_filter(
         model, (0,),
-        nest_at(:init => :latents, first_obs_cm),
+        nest_at(:init => :obs, first_obs_cm),
         initial_proposal, obs_cm_to_proposal_input(first_obs_cm),
         n_particles
     )
@@ -166,5 +177,8 @@ end
 
 export @DynamicModel, @compile_step_proposal, @compile_initial_proposal
 export dynamic_model_smc, get_dynamic_model_obs
+export obs_choicemap, latents_choicemap
 
 end
+
+
