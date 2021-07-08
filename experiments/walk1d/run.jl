@@ -24,4 +24,4 @@ fig, t = line_visualizations([
     ],
     ["Pos", "Obs", "Posterior"]
 )
-fig
+make_video(fig, t, 9, "anim.mp4")

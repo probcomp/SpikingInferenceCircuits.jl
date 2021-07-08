@@ -64,3 +64,8 @@ function obs_pos_enumerated_figure(tr)
     Colorbar(fig[3, 2], hm)
     return (fig, t)
 end
+
+make_video(fig, t, T, filename) =
+    record(fig, filename, 0:T; framerate=FRAMERATE()) do _t
+        t[] = _t
+    end
