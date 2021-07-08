@@ -18,7 +18,7 @@ function obs_pos_enumerated_figure(tr)
     ) |> nest_all_addrs_at_val |> collect
 
     (fig, t) = obs_pos_inferences_figure(tr, [(
-        "Exact posterior log-probabilities",
+        "Exact posterior probabilities",
         t -> exp.(enumerated_weights[t + 1]) |> normalize
     )])
     
@@ -45,4 +45,6 @@ end
 
 # make_video(fig, t, 9, "anim.mp4")
 
-fig, t = obs_pos_priorsmc_figure(tr); fig
+# fig, t = obs_pos_priorsmc_figure(tr); fig
+
+obs_pos_enumerated_figure(tr)
