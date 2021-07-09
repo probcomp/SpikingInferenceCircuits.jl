@@ -1,5 +1,5 @@
-struct CatTrace <: Gen.Trace
-    gf::Gen.GenerativeFunction
+struct CatTrace{T} <: Gen.Trace
+    gf::Gen.GenerativeFunction{T}
     probs::Vector{Float64}
     idx::Int
 end
