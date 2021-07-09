@@ -26,11 +26,11 @@ smc_from_prior(tr, n_particles) = smc(tr, n_particles, prior_init_proposal, prio
 
 ### SMC with Exact Postrior as Proposal ###
 function init_posterior(obs)
-    logprobs, _ = enumerate_init(initial_latent_model, obs_model, choicemap((:obs => :val, obs)), Dict((:xₜ => :val) => Positions()))
+    logprobs, _ = enumeration_filter_init(initial_latent_model, obs_model, choicemap((:obs => :val, obs)), Dict((:xₜ => :val) => Positions()))
     return exp.(logprobs) |> normalize
 end
 function step_posterior(xₜ₋₁, obs)
-    logprobs, _ = enumerate_step(step_latent_model, obs_model, choicemap((:obs => :val, obs)), Dict((:xₜ => :val) => Positions()), [0.], [(xₜ₋₁,)])
+    logprobs, _ = enumeration_filter_step(step_latent_model, obs_model, choicemap((:obs => :val, obs)), Dict((:xₜ => :val) => Positions()), [0.], [(xₜ₋₁,)])
     return exp.(logprobs) |> normalize
 end
 @gen (static) function _exact_init_proposal(obs)

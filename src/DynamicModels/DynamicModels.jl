@@ -193,4 +193,9 @@ export @DynamicModel, @compile_step_proposal, @compile_initial_proposal
 export dynamic_model_smc, get_dynamic_model_obs
 export obs_choicemap, latents_choicemap
 
+include("enumeration_bayes_filter.jl")
+
+export EnumerationBayesFilter, enumeration_bayes_filter_from_groundtruth
+export enumeration_filter_init, enumeration_filter_step
+
 end

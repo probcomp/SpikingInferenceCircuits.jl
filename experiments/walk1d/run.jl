@@ -10,10 +10,8 @@ model = @DynamicModel(initial_latent_model, step_latent_model, obs_model, 1)
 
 tr, _ = generate(model, (10,))
 
-includet("enumerate_utils.jl")
-
 function obs_pos_enumerated_figure(tr)
-    enumerated_weights = enumerate_latent_assmt_weights_from_groundtruth(
+    enumerated_weights = enumeration_bayes_filter_from_groundtruth(
         tr, initial_latent_model, step_latent_model, obs_model, (xₜ=Positions(),)
     ) |> nest_all_addrs_at_val |> collect
 
@@ -44,7 +42,7 @@ function obs_pos_priorsmc_figure(tr; n_particles=1_000)
 end
 
 make_true_2d_posterior_figure(tr) = make_2d_posterior_figure(tr,
-    enumerate_latent_assmt_weights_from_groundtruth(
+    enumeration_bayes_filter_from_groundtruth(
             tr, initial_latent_model, step_latent_model, obs_model, (xₜ=Positions(),)
         ) |> nest_all_addrs_at_val |> collect |> x->map(x->normalize(exp.(x)), x);
         inference_method_str="Posterior from exact Bayes filter."
@@ -56,10 +54,6 @@ function make_smc_figure(smcfn, tr; n_particles, proposalstr)
 end
 make_smcprior_2d_posterior_figure(tr; n_particles=1_000) = make_smc_figure(smc_from_prior, tr; n_particles, proposalstr="proposing from prior")
 make_smcexact_2d_posterior_figure(tr; n_particles=10)    = make_smc_figure(smc_exact_proposal, tr; n_particles, proposalstr="proposing from exact posterior")
-
-# make_video(fig, t, 9, "anim.mp4")
-
-# fig, t = obs_pos_priorsmc_figure(tr); fig
 
 make_smc_prior_exactrejuv_2d_posterior_figure(tr; n_particles=10) =
     make_smc_figure(prior_smc_exact_rejuv, tr; n_particles, proposalstr="\nproposing from prior + using gibbs rejuvenation")
