@@ -1,62 +1,8 @@
 using GLMakie
-set_theme!(colormap=:grays)
-
-FRAMERATE() = 2 # frames per second
-
-### 1D visualizations ###
-
-to_matrix(x) = reshape(onehot(x, Positions()), (:, 1))
-
-function visualize_state!(ax, t, time_to_x)
-    ax.aspect = DataAspect()
-    heatmap!(ax, @lift(to_matrix(time_to_x($t))), colorrange=(0, 1))
-    hideydecorations!(ax)
-    return ax
-end
-function visualize_inference!(fig, figpos, t, maxt, time_to_pvec; title)
-    inf_matrix(_t) = reshape(time_to_pvec(_t), (:, 1))
-    maxprob = maximum(maximum(inf_matrix(_t)) for _t=1:maxt)
-
-    ax = fig[figpos, 1] = Axis(fig; title)
-    hm = heatmap!(ax, @lift(inf_matrix($t)), colorrange=(0, min(maxprob + 0.1, 1.0)))
-    hideydecorations!(ax)
-
-    Colorbar(fig[figpos, 2], hm)
-
-    return ax
-end
-
-getobs(tr) = t -> obs_choicemap(tr, t)[:obs => :val]
-getpos(tr) = t -> latents_choicemap(tr, t)[:xₜ => :val]
-
-function obs_pos_inferences_figure(tr, title_inferencefn_pairs)
-    fig = Figure(); t = Observable(0)
-    fig[1, 1] = visualize_state!(Axis(fig; title="Pos"), t, getpos(tr))
-    fig[2, 1] = visualize_state!(Axis(fig; title="Obs"), t, getobs(tr))
-
-    for (i, (title, time_to_pvec)) in enumerate(title_inferencefn_pairs)
-        visualize_inference!(fig, i+2, t, get_args(tr)[1], time_to_pvec; title)
-    end
-
-    return fig, t
-end
-
-
-function animate(t, T)
-    for _t = 0:T
-        t[] = _t
-        sleep(1/FRAMERATE())
-    end
-end
-
-make_video(fig, t, T, filename) =
-    record(fig, filename, 0:T; framerate=FRAMERATE()) do _t
-        t[] = _t
-    end
 
 ### 2D Visualizations ###
-median(pvec) = percentile(pvec, 0.5)
-function percentile(pvec, percentile)
+median_idx(pvec) = percentile_idx(pvec, 0.5)
+function percentile_idx(pvec, percentile)
     sum_to_here = 0
     for i=1:length(pvec)
         lsum = sum_to_here
@@ -69,53 +15,54 @@ function percentile(pvec, percentile)
     end
 
 end
-mean(pvec) = sum(p * i for (i, p) in enumerate(pvec))
-function make_2d_posterior_figure(
-    tr, posterior_probvec_at_times;
-    inference_method_str=""
+mean_idx(pvec) = sum(p * i for (i, p) in enumerate(pvec))
+
+median(varvals)     = pvec      -> median_idx(pvec)        + first(varvals) - 1
+mean(varvals)       = pvec      -> mean_idx(pvec)          + first(varvals) - 1
+percentile(varvals) = (pvec, p) -> percentile_idx(pvec, p) + first(varvals) - 1
+
+function time_variable_figure(
+    fig, i, layout, posterior_probvec_at_times;
+    times, groundtruth, observations=nothing, varname, varvals, markersize=15
 )
-    times = 0:(get_args(tr)[1])
-    observations = map(getobs(tr), times)
-    true_x       = map(getpos(tr), times)
-    medians      = map(median, posterior_probvec_at_times) 
-    means        = map(mean  , posterior_probvec_at_times) 
-    
-    fig = Figure()
-    main_layout = GridLayout()
-    fig[1, :] = main_layout
-    main_layout[1, 1] = ax = Axis(fig[1, 1], xlabel="Time", ylabel="Position", xticklabels=-1:(get_args(tr)[1] - 1))
-    
+    medians      = map(median(varvals), posterior_probvec_at_times) 
+    means        = map(mean(varvals)  , posterior_probvec_at_times) 
+
+    layout[1, 1] = ax = Axis(fig[1, 1], xlabel="Time", ylabel=varname)
     inf_matrix = hcat(posterior_probvec_at_times...) |> transpose
     maxprob = maximum(inf_matrix)
     hm = heatmap!(ax,
+        times, varvals,
         inf_matrix,
         colormap=cgrad([:white, :black], [0., 0.4, 1.0]),
         colorrange = (0, min(maxprob + 0.1, 1.0))
     )
-    main_layout[1, 2] = Colorbar(fig[1, 2], hm, label="Posterior probability")
+    layout[1, 2] = Colorbar(fig[i, 2], hm, label="Posterior probability")
 
-    markersize = 15.0
-    # Observations:
-    obsplt(f) = f(ax,
-        [t+1 for t in times],
-        [o for o in observations];
-        color=:gold,
-        markersize
-    )
-    obs_plts = [obsplt(lines!), obsplt(scatter!)]
+    if !isnothing(observations)
+        obsplt(f) = f(ax,
+            [t for t in times],
+            [o for o in observations];
+            color=:gold,
+            markersize
+        )
+        obs_plts = [obsplt(lines!), obsplt(scatter!)]
+    else
+        obs_plts = nothing
+    end
 
     # Ground truth pos:
     gtplt(f) = f(ax,
-        [t+1 for t in times],
-        [tx for tx in true_x];
+        [t for t in times],
+        [tx for tx in groundtruth];
         color=:seagreen,
         markersize
     )
     gt_plts = [gtplt(lines!), gtplt(scatter!)]
-    
+
     # Medians:
     medplt(f) = f(ax,
-        [t+1 for t in times],
+        [t for t in times],
         [med for med in medians];
         color=:navy,
         markersize,
@@ -125,34 +72,70 @@ function make_2d_posterior_figure(
 
     # Means:
     meanplt(f) = f(ax,
-        [t+1 for t in times],
+        [t for t in times],
         [m for m in means];
         color=:black,
         (f == scatter! ? (marker=:hline,) : ())...
     )
-    meanplts = [meanplt(lines!)] #, meanplt(scatter!)]
+    meanplts = [meanplt(lines!)]
 
     # percentiles:
     percplt(f, p) = f(ax,
-        [t + 1 for t in times],
-        [percentile(pvec, p) for pvec in posterior_probvec_at_times],
+        [t for t in times],
+        [percentile(varvals)(pvec, p) for pvec in posterior_probvec_at_times],
         color=:crimson
     )
     per5plts = [percplt(lines!, 0.05)]
     per95plts = [percplt(lines!, 0.95)]
 
-    leg = Legend(fig[2, 1],
+    return (ax, (obs_plts, gt_plts, medplts, meanplts, per5plts, per95plts))
+end
+
+function make_2d_posterior_figure(
+    tr, posterior_probability_grids;
+    inference_method_str=""
+)
+    times = 0:(get_args(tr)[1])
+    pos_observations = [obs_choicemap(tr, t)[:obs => :val] for t in times]
+    gt_pos           = [latents_choicemap(tr, t)[:xₜ => :val] for t in times]
+    gt_vel           = [latents_choicemap(tr, t)[:vₜ => :val] for t in times]
+    
+    fig = Figure(resolution=(800, 1000))
+    fig[1:2, :] = l = GridLayout()
+    vel_layout = GridLayout(); pos_layout = GridLayout()
+    l[1, :] = vel_layout; l[2, :] = pos_layout
+
+    velax, _ = time_variable_figure(
+        fig, 1, vel_layout,
+        [sum(grid, dims=1) |> normalize |> to_vector for grid in posterior_probability_grids];
+        times,
+        groundtruth=gt_vel,
+        observations=nothing,
+        varname="Velocity",
+        varvals=Vels()
+    )
+    posax, (obs_plts, gt_plts, medplts, meanplts, per5plts, per95plts) = time_variable_figure(
+        fig, 2, pos_layout,
+        [sum(grid, dims=2) |> normalize |> to_vector for grid in posterior_probability_grids];
+        times,
+        groundtruth=gt_pos,
+        observations=pos_observations,
+        varname="Position",
+        varvals=Positions()
+    )
+
+    leg = Legend(fig[3, 1],
         [obs_plts, gt_plts, medplts, meanplts, per5plts, per95plts],
-        ["Observation", "True Position", "Median position under posterior", "Mean position under posterior", "5th percentile position under posterior", "95th percentile position under posterior"]
+        ["Observation", "Ground truth", "Median under posterior", "Mean under posterior", "5th percentile under posterior", "95th percentile under posterior"]
     )
     leg.tellheight = true
     leg.tellwidth = false
     trim!(fig.layout)
 
-    (fig[3, :] = Label(fig,
-        "Obs Std = $(ObsStd()), Step Std = $(StepStd())."
+    (fig[4, :] = Label(fig,
+        "Obs Std = $(ObsStd()). Vel Step Std = $(VelStepStd()). Prob Vel Redrawn: $(SwitchProb())."
     )).tellwidth = false
-    (fig[4, :] = Label(fig, inference_method_str)).tellwidth = false
+    (fig[5, :] = Label(fig, inference_method_str)).tellwidth = false
 
 
     return fig

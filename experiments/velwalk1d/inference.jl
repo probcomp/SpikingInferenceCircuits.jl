@@ -65,12 +65,14 @@ smc_exact_proposal(tr, n_particles) = smc(tr, n_particles, exact_init_proposal, 
 
 ### Gibbs Rejuvenation ###
 @gen (static) function rejuv_proposal_init(tr)
-    {:init => :latents} ~ _exact_init_proposal(getobs(tr)(0))
+    {:init => :latents} ~ _exact_init_proposal(obs_choicemap(tr, 0)[:obs => :val])
 end
 @gen (static) function rejuv_proposal_step(tr)
     t = get_args(tr)[1]
     {:steps => t => :latents} ~ _exact_step_proposal(
-        getpos(tr)(t - 1), latents_choicemap(tr, t - 1)[:vₜ => :val], getobs(tr)(t)
+        latents_choicemap(tr, t - 1)[:xₜ => :val],
+        latents_choicemap(tr, t - 1)[:vₜ => :val],
+        obs_choicemap(tr, t)[:obs => :val]
     )
 end
 @load_generated_functions()

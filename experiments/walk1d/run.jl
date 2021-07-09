@@ -44,7 +44,7 @@ end
 make_true_2d_posterior_figure(tr) = make_2d_posterior_figure(tr,
     enumeration_bayes_filter_from_groundtruth(
             tr, initial_latent_model, step_latent_model, obs_model, (xₜ=Positions(),)
-        ) |> nest_all_addrs_at_val |> collect |> x->map(x->normalize(exp.(x)), x);
+        ) |> DynamicModels.nest_all_addrs_at_val |> collect |> x->map(x->normalize(exp.(x)), x);
         inference_method_str="Posterior from exact Bayes filter."
 )
 function make_smc_figure(smcfn, tr; n_particles, proposalstr)
