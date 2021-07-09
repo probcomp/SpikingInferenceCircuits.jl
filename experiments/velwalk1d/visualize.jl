@@ -124,6 +124,8 @@ function make_2d_posterior_figure(
         varvals=Positions()
     )
 
+    rowsize!(l, 1, Relative(1/3))
+
     leg = Legend(fig[3, 1],
         [obs_plts, gt_plts, medplts, meanplts, per5plts, per95plts],
         ["Observation", "Ground truth", "Median under posterior", "Mean under posterior", "5th percentile under posterior", "95th percentile under posterior"]
