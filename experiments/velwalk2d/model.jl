@@ -5,10 +5,10 @@ ProbEstimates.use_perfect_weights!()
 
 # Include some utilities for defining discrete probability distributions
 includet("../utils/modeling_utils.jl")
-Positions() = 1:8
-Vels() = -1:1
-VelStepStd() = 0.5
-ObsStd() = 1.0
+Positions() = 1:20
+Vels() = -2:2
+VelStepStd() = 1.0
+ObsStd() = 2.0
 SwitchProb() = 0.
 
 @gen (static) function initial_latent_model()

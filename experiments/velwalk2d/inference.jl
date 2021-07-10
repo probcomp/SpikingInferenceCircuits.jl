@@ -1,10 +1,10 @@
 # TODO: refector so we don't repeat ourselves so much!
 
-function smc(tr, n_particles, initprop, stepprop)
+function smc(tr, n_particles, initprop, stepprop; always_resample=true)
     obss = get_dynamic_model_obs(tr)
     (unweighted_inferences, weighted_inferences) = dynamic_model_smc(
         get_gen_fn(tr), obss, cm -> (cm[:obsx => :val], cm[:obsy => :val]),
-        initprop, stepprop, n_particles
+        initprop, stepprop, n_particles; ess_threshold=(always_resample ? Inf : n_particles/2)
     )
     return (unweighted_inferences, weighted_inferences)
 end
@@ -29,3 +29,4 @@ prior_step_proposal = @compile_step_proposal(_prior_step_proposal, 4, 2)
 @load_generated_functions()
 
 smc_from_prior(tr, n_particles) = smc(tr, n_particles, prior_init_proposal, prior_step_proposal)
+smc_from_prior_dont_always_resample(tr, n_particles) = smc(tr, n_particles, prior_init_proposal, prior_step_proposal, always_resample=false)

@@ -36,8 +36,8 @@ x_probs(trs, t) = x_counts(trs, t) |> normalize |> a->reshape(a, size(a)[1:2])
 
 function make_smc_figure(smcfn, tr; n_particles, proposalstr)
     (unweighted_trs, _) = smcfn(tr, n_particles)
-    probs = [x_probs(unweighted_trs[t + 1], t) for t=0:(get_args(tr)[1])]
-    plot_gt_obs_probs(tr, probs)
+    probs = [x_vel_counts(unweighted_trs[t + 1], t) for t=0:(get_args(tr)[1])]
+    vel_pos_plot(tr, probs; inference_str="$n_particles-particle SMC $proposalstr.")
 end
 make_smcprior_fig(tr; n_particles=1_000) =
     make_smc_figure(smc_from_prior, tr; n_particles, proposalstr="proposing from prior")
@@ -45,10 +45,6 @@ make_smcprior_fig(tr; n_particles=1_000) =
 tr, _ = generate(model, (10,))
 println("Trace generated.")
 fig, t = make_smcprior_fig(tr); fig
+
 # grids = get_enumeration_grids(tr)
 # println("Grids produced.")
-
-
-
-# fig, t = plot_gt_obs(tr)
-# fig
