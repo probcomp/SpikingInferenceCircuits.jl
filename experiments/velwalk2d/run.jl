@@ -12,11 +12,15 @@ domains() = (xₜ=Positions(), yₜ=Positions(), vxₜ=Vels(), vyₜ=Vels())
 
 function get_enumeration_grids(tr)
     logweight_grids = enumeration_bayes_filter_from_groundtruth(
-            tr, initial_latent_model, step_latent_model, obs_model, domains()
+            tr, initial_latent_model, step_latent_model, obs_model, domains(),
+            2 # first 2 addrs (xₜ, yₜ) are deterministic in the step model
         ) |> DynamicModels.nest_all_addrs_at_val
     weight_grids = [exp.(logweight_grid) for logweight_grid in logweight_grids]
     return weight_grids
 end
+make_exact_filter_figure(tr) = make_exact_filter_figure(tr, get_enumeration_grids(tr))
+make_exact_filter_figure(tr, grids) =
+    vel_pos_plot(tr, grids; inference_str="exact Bayes filter.")
 
 function x_vel_counts(trs, t)
     counts = Int[0 for _ in Positions(), _ in Positions(), _ in Vels(), _ in Vels()]
@@ -44,7 +48,9 @@ make_smcprior_fig(tr; n_particles=1_000) =
 
 tr, _ = generate(model, (10,))
 println("Trace generated.")
-fig, t = make_smcprior_fig(tr); fig
+# fig, t = make_smcprior_fig(tr); fig
 
-# grids = get_enumeration_grids(tr)
-# println("Grids produced.")
+grids = get_enumeration_grids(tr);
+println("Grids produced.")
+
+(fig, t) = make_exact_filter_figure(tr, grids); fig
