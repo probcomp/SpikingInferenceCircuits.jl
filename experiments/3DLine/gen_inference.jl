@@ -5,25 +5,24 @@ using .DynamicModels: @DynamicModel, @compile_initial_proposal, @compile_step_pr
 include("model.jl")
 
 model = @DynamicModel(initial_model, step_model, obs_model, 9)
-step_proposal = @compile_step_proposal(step_proposal, 9, 2)
-initial_proposal = @compile_initial_proposal(initial_proposal, 2)
+step_proposal_compiled = @compile_step_proposal(step_proposal, 9, 2)
+initial_proposal_compiled = @compile_initial_proposal(initial_proposal, 2)
 @load_generated_functions()
 
 NSTEPS = 9
-NPARTICLES = 10
+NPARTICLES = 20
 #tr = simulate(model, (NSTEPS,))
 
 X_init = 1
 Y_init = -5
-Z_init = 3
-
+Z_init = 8
 
 x_traj = [(:steps => i => :latents => :xₜ => :val, X_init + i) for i in 1:NSTEPS]
 y_traj = [(:steps => i => :latents => :yₜ => :val, Y_init + i) for i in 1:NSTEPS]
 z_traj = [(:steps => i => :latents => :zₜ => :val, Z_init) for i in 1:NSTEPS]
-vz_traj = [(:steps => i => :latents => :vzₜ => :val, 0) for i in 1:NSTEPS]
 vx_traj = [(:steps => i => :latents => :vxₜ => :val, 1) for i in 1:NSTEPS]
 vy_traj = [(:steps => i => :latents => :vyₜ => :val, 1) for i in 1:NSTEPS]
+vz_traj = [(:steps => i => :latents => :vzₜ => :val, 0) for i in 1:NSTEPS]
 
 tr, w = generate(model, (NSTEPS,), choicemap(
     (:init => :latents => :xₜ => :val, X_init),
@@ -50,7 +49,7 @@ observations = get_dynamic_model_obs(tr)
 (unweighted_traces_at_each_step, _) = dynamic_model_smc(
     model, observations,
     ch -> (ch[:obs_θ => :val], ch[:obs_ϕ => :val]),
-    initial_proposal, step_proposal,
+    initial_proposal_compiled, step_proposal_compiled,
     NPARTICLES, # n particles
     ess_threshold=NPARTICLES
 )

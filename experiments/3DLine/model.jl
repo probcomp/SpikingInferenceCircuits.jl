@@ -3,9 +3,8 @@ using Distributions
 using Colors
 using GLMakie
 using StatsBase
-using AbstractPlotting
 using GeometryBasics
-
+import AbstractPlotting as AP
 # try only a few particles, scoring and resampling useful story.
 # more complex renderer -- extend to the general case but dont expand the scope.
 # more arbitrary rotation pattern w x and y velocity.
@@ -14,13 +13,17 @@ using GeometryBasics
 # stick w coordinate observation
 
 
-# visualization? 
-# gershman background lit.
+
+# Next steps: make sure that every proposal is consistent under the model.
+# if its not, figure out a way around it. go step by step, starting with the
+# initial proposal. 
+
 
 # "exact" is another word for "true"
 
 # i think the bug here is that the model accounts for all distances, while
-# the proposal is bound by the grid. also make the model bound by the grid when
+# the proposal is bound by the grid. what can happen is that at the edges, the
+# model will assign probabilities to impossible distances. also make the model bound by the grid whenplacre
 # choosing distances!
 
 
@@ -35,19 +38,35 @@ neg_to_inf(x) = x <= 0 ? Inf : x
 norm_3d(x, y, z) = sqrt(x^2 + y^2 + z^2)
 round_to_pt1(x) = round(x, digits=1)
 
+
+
+# x, y, zₜ are the current positions at time t.
+# vx vy and vz are the velocities that move the animal from xt-1 to xt
+# in the first step, these have no impact b/c the initial position is drawn. 
+# helpful to think of v here as VThatLeadtoXYZInit
+
 @gen (static) function initial_model()
-    xₜ = { :xₜ } ~ Cat(unif(Xs()))
-    yₜ = { :yₜ } ~ LCat(Ys())(unif(Ys()))
-    zₜ = { :zₜ } ~ Cat(unif(Zs()))
-    exact_r = norm_3d(xₜ, yₜ, zₜ)
-    a = println("before r")
-    rₜ = { :rₜ } ~ LCat(Rs())(maybe_one_off(round(exact_r), .5, Rs()))
-    a = println("before angles")
-    exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(maybe_one_or_two_off(round_to_pt1(asin(zₜ / exact_r)), .5, ϕs()))
-    exact_θ = { :exact_θ } ~ LCat(θs())(maybe_one_or_two_off(round_to_pt1(atan(yₜ / xₜ)), .5, θs()))
     vxₜ = { :vxₜ } ~ LCat(Vels())(unif(Vels()))
     vyₜ = { :vyₜ } ~ LCat(Vels())(unif(Vels()))
     vzₜ = { :vzₜ } ~ LCat(Vels())(unif(Vels()))
+    xₜ = { :xₜ } ~ Cat(unif(Xs()))
+    yₜ = { :yₜ } ~ LCat(Ys())(unif(Ys()))
+    zₜ = { :zₜ } ~ Cat(unif(Zs()))
+    exact_r = round(norm_3d(xₜ, yₜ, zₜ))
+    # exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(
+    #     onehot(round_to_pt1(asin(zₜ / exact_r)), ϕs()))
+    # exact_θ = { :exact_θ } ~ LCat(θs())(
+    #     onehot(round_to_pt1(atan(yₜ / xₜ)), θs()))
+    exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(
+         maybe_one_off(round_to_pt1(asin(zₜ / exact_r)), .4, ϕs()))
+    exact_θ = { :exact_θ } ~ LCat(θs())(
+         maybe_one_off(round_to_pt1(atan(yₜ / xₜ)), .4, θs()))
+    r_max = max_distance_inside_grid(exact_ϕ, exact_θ)
+    r_probvec = normalize(
+        vcat(maybe_one_or_two_off(
+            exact_r <= r_max ? exact_r : r_max, .2, Rs())[1:Int(r_max)],
+             zeros(length(Rs())-Int(r_max))))
+    rₜ = { :rₜ } ~ LCat(Rs())(r_probvec)
     return (vxₜ, vyₜ, vzₜ, xₜ, yₜ, zₜ, rₜ, exact_ϕ, exact_θ)
 end
 
@@ -55,30 +74,27 @@ end
 # y = left and right
 # z = up and down (held constant in this model)
 @gen (static) function step_model(vxₜ₋₁, vyₜ₋₁, vzₜ₋₁, xₜ₋₁, yₜ₋₁, zₜ₋₁, rₜ₋₁, ephi, etheta)
-    # TODO: experiment with 0.9 : 0.1 instead of 1.0 : 0.0
-    # vxₜ = { :vxₜ } ~ LCat(Vels())(discretized_gaussian(vxₜ₋₁, 0.2, Vels()))
-    # vyₜ = { :vyₜ } ~ LCat(Vels())(discretized_gaussian(vyₜ₋₁, 0.2, Vels()))
-    # vzₜ = { :vzₜ } ~ LCat(Vels())(discretized_gaussian(vzₜ₋₁, 0.2, Vels()))
-# might want to still keep a moving in depth draw     
-#    zₜ = { :zₜ } ~ Cat(moving_in_depthₜ ? onehot(zₜ₋₁, Zs()) : discretized_gaussian(zₜ₋₁ + vzₜ, 1.0, Heights()))
-#    xₜ = { :xₜ } ~ Cat(moving_in_depthₜ ? discretized_gaussian(xₜ₋₁ + vxₜ,  1.0, Xs()) : onehot(xₜ₋₁, Xs()))
-    # xₜ = { :xₜ } ~ Cat(discretized_gaussian(xₜ₋₁ + vxₜ,  1.0, Xs()))
-    # yₜ = { :yₜ } ~ LCat(Ys())(discretized_gaussian(yₜ₋₁ + vyₜ, 1.0, Ys()))
-    # zₜ = { :zₜ } ~ Cat(discretized_gaussian(zₜ₋₁ + vzₜ, 1.0, Zs()))
-    vxₜ = { :vxₜ } ~ LCat(Vels())(maybe_one_off(vxₜ₋₁, 0.8, Vels()))
-    vyₜ = { :vyₜ } ~ LCat(Vels())(maybe_one_off(vyₜ₋₁, 0.8, Vels()))
-    vzₜ = { :vzₜ } ~ LCat(Vels())(maybe_one_off(vzₜ₋₁, 0.8, Vels()))
-    xₜ = { :xₜ } ~ Cat(onehot(xₜ₋₁ + vxₜ, Xs()))
-    yₜ = { :yₜ } ~ LCat(Ys())(onehot(yₜ₋₁ + vyₜ, Ys()))
-    zₜ = { :zₜ } ~ Cat(onehot(zₜ₋₁ + vzₜ, Zs()))
+    vxₜ = { :vxₜ } ~ LCat(Vels())(maybe_one_or_two_off(vxₜ₋₁, 0.2, Vels()))
+    vyₜ = { :vyₜ } ~ LCat(Vels())(maybe_one_or_two_off(vyₜ₋₁, 0.2, Vels()))
+    vzₜ = { :vzₜ } ~ LCat(Vels())(maybe_one_or_two_off(vzₜ₋₁, 0.2, Vels()))
+    xₜ = { :xₜ } ~ Cat(maybe_one_off(xₜ₋₁ + vxₜ, .2, Xs()))
+    yₜ = { :yₜ } ~ LCat(Ys())(maybe_one_off(yₜ₋₁ + vyₜ, .2, Ys()))
+    zₜ = { :zₜ } ~ Cat(maybe_one_off(zₜ₋₁ + vzₜ, .2, Zs()))
     # Here: a stochastic mapping from (x, y, h) -> (r, θ, ϕ)
     # For now: just use dimension-wise discretized Gaussians.
-    exact_r = norm_3d(xₜ, yₜ, zₜ)
-    rₜ = { :rₜ } ~ LCat(Rs())(discretized_gaussian(exact_r, 1.0, Rs()))
-#    rₜ = { :rₜ } ~ LCat(Rs())(maybe_one_or_two_off(exact_r, .8, Rs()))
-    exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(discretized_gaussian(asin(zₜ / exact_r),
-                                                             ϕstep(), ϕs()))
-    exact_θ = { :exact_θ } ~ LCat(θs())(discretized_gaussian(atan(yₜ / xₜ), θstep(), θs()))
+    exact_r = round(norm_3d(xₜ, yₜ, zₜ))
+    # exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(onehot(round_to_pt1(asin(zₜ / exact_r)), ϕs()))
+    # exact_θ = { :exact_θ } ~ LCat(θs())(onehot(round_to_pt1(atan(yₜ / xₜ)), θs()))
+    exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(maybe_one_off(round_to_pt1(asin(zₜ / exact_r)), .2, ϕs()))
+    exact_θ = { :exact_θ } ~ LCat(θs())(maybe_one_off(round_to_pt1(atan(yₜ / xₜ)), .2, θs()))
+
+
+    r_max = max_distance_inside_grid(exact_ϕ, exact_θ)
+    r_probvec = normalize(
+        vcat(maybe_one_or_two_off(
+            exact_r <= r_max ? exact_r : r_max, .2, Rs())[1:Int(r_max)],
+             zeros(length(Rs())-Int(r_max))))
+    rₜ = { :rₜ } ~ LCat(Rs())(r_probvec)
     return (vxₜ, vyₜ, vzₜ, xₜ, yₜ, zₜ, rₜ, exact_ϕ, exact_θ)
 end
 
@@ -102,9 +118,10 @@ end
     # have to propose to the exact theta and phi.
  #   obs_ϕ = { :obs_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(exact_ϕ, 0.4, ϕs()))
     #    obs_θ = { :obs_θ } ~ LCat(θs())(truncated_discretized_gaussian(exact_θ, 0.4, θs()))
-     obs_ϕ = { :obs_ϕ } ~ LCat(ϕs())(maybe_one_off(exact_ϕ, 0.4, ϕs()))
-     obs_θ = { :obs_θ } ~ LCat(θs())(maybe_one_off(exact_θ, 0.4, θs()))
-
+    obs_ϕ = { :obs_ϕ } ~ LCat(ϕs())(maybe_one_off(exact_ϕ, 0.4, ϕs()))
+    obs_θ = { :obs_θ } ~ LCat(θs())(maybe_one_off(exact_θ, 0.4, θs()))
+#    obs_ϕ = { :obs_ϕ } ~ LCat(ϕs())(onehot(exact_ϕ, ϕs()))
+#    obs_θ = { :obs_θ } ~ LCat(θs())(onehot(exact_θ, θs()))
     return (obs_θ, obs_ϕ)
 end
 
@@ -112,77 +129,67 @@ end
                                      rₜ₋₁, exact_ϕ, exact_θ, θₜ, ϕₜ) # θ and ϕ are noisy
     # instead of sampling (x, y, h) then computing r (as we do in the model)
     # in the proposal we sample (r, x, y) and then compute h
+    exact_θ = { :exact_θ } ~ LCat(θs())(maybe_one_off(θₜ, 0.2, θs()))
+    exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(maybe_one_off(ϕₜ, 0.2, ϕs()))
+  #  exact_θ = { :exact_θ } ~ LCat(θs())(onehot(θₜ, θs()))
+  #  exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(onehot(ϕₜ, ϕs()))
 
-    # make variance based on r t minus 1 here. 
-#    exact_θ = { :exact_θ } ~ LCat(θs())(truncated_discretized_gaussian(θₜ, 0.4, θs()))
-#    exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(ϕₜ, 0.4, ϕs()))
-    
-    exact_θ = { :exact_θ } ~ LCat(θs())(maybe_one_off(θₜ, 0.8, θs()))
-    exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(maybe_one_off(ϕₜ, 0.8, ϕs()))
-    
-    r_max = minimum([Xs()[end] / (cos(exact_ϕ) * cos(exact_θ)),
-                     neg_to_inf(Ys()[end] / (cos(exact_ϕ) * sin(exact_θ))), 
-                     neg_to_inf(Ys()[1] / (cos(exact_ϕ) * sin(exact_θ))),
-                     Zs()[end] / sin(exact_ϕ)])
-    l = length(Rs())
-    r_range = 1:r_max
-    
-    # here return a truncated discretized gaussian and zero out above r_max
-    # r_probvec = normalize(
-    #    vcat(discretized_gaussian(rₜ₋₁, 5.0, Rs())[1:Int(r_range[end])],
-    #         zeros(l-Int(r_range[end]))))
-
-    # this should be fine. not sure why this wouldn't yield a probvec.
-#    a = println("Rs")
- #   a = println(r_max)
-  #  a = println(rₜ₋₁)
+    r_max = max_distance_inside_grid(exact_ϕ, exact_θ)
     r_probvec = normalize(
         vcat(maybe_one_or_two_off(
-            rₜ₋₁ <= r_range[end] ? rₜ₋₁ : r_range[end], .9, Rs())[1:Int(r_range[end])],
-             zeros(l-Int(r_range[end]))))
-
-    
-    # ok sometimes the truncated gaussian will sample outside the range of r_max.
-    # then it'll return a zero pvec which gets normalized and NaNd. use a discretized_gauss for now. 
+            rₜ₋₁ <= r_max ? rₜ₋₁ : r_max, .6, Rs())[1:Int(r_max)],
+             zeros(length(Rs())-Int(r_max))))
     rₜ = { :rₜ } ~ LCat(Rs())(r_probvec)
-    # now compute x, y, height (almost deterministically, plus some noise)
     exact_x = rₜ * cos(exact_ϕ) * cos(exact_θ)
     exact_y = rₜ * cos(exact_ϕ) * sin(exact_θ)
     exact_z = rₜ * sin(exact_ϕ)
-    # size in absolute terms is obtained by the az alt divs being discrete 
-    # and az alt not having fixed xyz transforms when distant.
-    # xₜ = { :xₜ } ~ LCat(Xs())(truncated_discretized_gaussian(exact_x, 1.0, Xs()))
-    # yₜ = { :yₜ } ~ LCat(Ys())(truncated_discretized_gaussian(exact_y, 1.0, Ys()))
-    # zₜ = { :zₜ } ~ LCat(Zs())(truncated_discretized_gaussian(
-    #     exact_z, 1.0, Zs()))
+    # should the proposal balance the model? i.e. incorporate data and the past?
+    
+    # likely issue here is its very possible that delta
+    # x y and z could be larger than the velocity. this prob creates nans. think about
+    # how to address this problem.
 
-    xₜ = { :xₜ } ~ LCat(Xs())(discretized_gaussian(exact_x, 1.0, Xs()))
-    yₜ = { :yₜ } ~ LCat(Ys())(discretized_gaussian(exact_y, 1.0, Ys()))
-    zₜ = { :zₜ } ~ LCat(Zs())(discretized_gaussian(
-        exact_z, 1.0, Zs()))
+    # if velocity is 1, x can only be 2 greater, one greater, or 0 greater than x prev.
+    # if velocity is 0, can only be 1 greater, equal, or one less.
+    # if velocity is -1, can be two less, one less, or equal to xprev
+    # v can only be one off vprev
+
+    # here compare exact vals to t-1 vals
+    # if round(exact) - pos t-1 = 1,  x = maybe one off this delta + pos t-1
+
+    vx_prop = limit_delta_pos(round(exact_x), xₜ₋₁)
+    vy_prop = limit_delta_pos(round(exact_y), yₜ₋₁)
+    vz_prop = limit_delta_pos(round(exact_z), zₜ₋₁)
+    
+    xₜ = { :xₜ } ~ LCat(Xs())(maybe_one_off(xₜ₋₁ + vx_prop, .1, Xs()))
+    yₜ = { :yₜ } ~ LCat(Ys())(maybe_one_off(yₜ₋₁ + vy_prop, .1, Ys()))
+    zₜ = { :zₜ } ~ LCat(Zs())(maybe_one_off(zₜ₋₁ + vz_prop, .1, Zs()))
 # consider adding onehot to these which says "given you've drawn a new x, y, z, the velocity is this. 
  #   vyₜ = { :vyₜ } ~ LCat(Vels())(maybe_one_off(round_to_pt1(yₜ - yₜ₋₁), .4, Vels()))
  #   vxₜ = { :vxₜ } ~ LCat(Vels())(maybe_one_off(round_to_pt1(xₜ - xₜ₋₁), .4, Vels()))
- #   vzₜ = { :vzₜ } ~ LCat(Vels())(maybe_one_off(round_to_pt1(zₜ - zₜ₋₁), .4, Vels()))
-    vyₜ = { :vyₜ } ~ LCat(Vels())(onehot(round(yₜ - yₜ₋₁), Vels()))
-    vxₜ = { :vxₜ } ~ LCat(Vels())(onehot(round(xₜ - xₜ₋₁), Vels()))
-    vzₜ = { :vzₜ } ~ LCat(Vels())(onehot(round(zₜ - zₜ₋₁), Vels()))
+    #   vzₜ = { :vzₜ } ~ LCat(Vels())(maybe_one_off(round_to_pt1(zₜ - zₜ₋₁), .4, Vels()))
+
+    # any choice of v here will be consistent with the model b/c its one or two off in the model.
+    vxₜ = { :vxₜ } ~ LCat(Vels())(onehot(vx_prop, Vels()))
+    vyₜ = { :vyₜ } ~ LCat(Vels())(onehot(vy_prop, Vels()))
+    vzₜ = { :vzₜ } ~ LCat(Vels())(onehot(vz_prop, Vels()))
+
+    # if i propose 1 for the vel but the x is off by 2, 0 score? nope but off by 3 is.
+    # if v proposed is 1 and x-xt is 3, get a NaN score. 
     
 end
 
 @gen (static) function initial_proposal(θₜ, ϕₜ)
-    exact_θ = { :exact_θ } ~ LCat(θs())(truncated_discretized_gaussian(θₜ, 0.2, θs()))
-    exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(ϕₜ, 0.2, ϕs()))
+    exact_θ = { :exact_θ } ~ LCat(θs())(maybe_one_off(θₜ, 0.2, θs()))
+    exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(maybe_one_off(ϕₜ, 0.2, ϕs()))
     # r_max on the first draw is guaranteed to not leave the cube
-    r_max = minimum([Xs()[end] / (cos(exact_ϕ) * cos(exact_θ)),
-                     neg_to_inf(Ys()[end] / (cos(exact_ϕ) * sin(exact_θ))), 
-                     neg_to_inf(Ys()[1] / (cos(exact_ϕ) * sin(exact_θ))),
-                     Zs()[end] / sin(exact_ϕ)])
+    r_max = max_distance_inside_grid(exact_ϕ, exact_θ)
     l = length(Rs())
-    r_range = 1:r_max
-    r_probvec = normalize(vcat(ones(Int64(r_range[end])), zeros(Int64(l-r_range[end]))))
+    r_probvec = normalize(vcat(ones(Int64(r_max)), zeros(Int64(l-r_max))))
   #  rₜ = { :rₜ } ~ LCat(Rs())(r_probvec)
-    rₜ = { :rₜ } ~ LCat(Rs())(maybe_one_or_two_off(round(norm_3d(X_init, Y_init, Z_init)), .6, Rs()))
+    rₜ = { :rₜ } ~ LCat(Rs())(maybe_one_or_two_off(round(norm_3d(X_init, Y_init, Z_init)),
+                                                   .6, Rs()))
+    
     exact_x = rₜ * cos(exact_ϕ) * cos(exact_θ)
     exact_y = rₜ * cos(exact_ϕ) * sin(exact_θ)
     exact_z = rₜ * sin(exact_ϕ)
@@ -195,6 +202,61 @@ end
     vyₜ = { :vyₜ } ~ LCat(Vels())(unif(Vels()))
     vzₜ = { :vzₜ } ~ LCat(Vels())(unif(Vels()))
 end
+
+
+
+
+
+
+function max_distance_inside_grid(ϕ, θ)
+    max_x_boundary = Xs()[end] / (cos(ϕ) * cos(θ))
+    max_y_pos_boundary = neg_to_inf(Ys()[end] / (cos(ϕ) * sin(θ)))
+    max_y_neg_boundary = neg_to_inf(Ys()[1] / (cos(ϕ) * sin(θ)))
+    max_z_boundary = Zs()[end] / sin(ϕ)
+    r_max = floor(minimum([max_x_boundary, max_y_pos_boundary,
+                     max_y_neg_boundary, max_z_boundary]))
+    return r_max
+end
+
+function limit_delta_pos(p_prop, p_prev)
+    if p_prop - p_prev > Vels()[end]
+        return Vels()[end]
+    elseif p_prop - p_prev < Vels()[1]
+        return Vels()[1]
+    else
+        return p_prop - p_prev
+    end
+end
+
+    
+function animate_azalt_movement(tr_list)
+    azalt_matrices = zeros(NSTEPS, length(θs()), length(ϕs()))
+    for tr in tr_list
+        choices = get_choices(tr)
+        for step in 1:NSTEPS
+            obs_θ = choices[:steps => step => :latents => :exact_θ => :val]
+            obs_ϕ = choices[:steps => step => :latents => :exact_ϕ => :val]
+            azalt_matrices[step,
+                           findfirst(map(x -> x == obs_θ, θs())),
+                           findfirst(map(x -> x == obs_ϕ, ϕs()))] += 1
+        end
+    end
+    fig = Figure(resolution=(1000,1000))
+    azalt_ax = fig[1,1] = Axis(fig)
+    time = Node(1)
+    hm(t) = azalt_matrices[t, :, :]
+    heatmap!(azalt_ax, θs(), ϕs(), lift(t -> hm(t), time))
+    azalt_ax.aspect = DataAspect()
+    azalt_ax.xlabel = "Azimuth"
+    azalt_ax.ylabel = "Altitude"
+    display(fig)
+    for i in 1:NSTEPS
+        time[] = i
+        sleep(.2)
+    end
+    return azalt_matrices
+end
+
 
 function extract_submap_value(cmap, symlist) 
     lv = first(symlist)
@@ -245,7 +307,7 @@ function heatmap_pf_results(uw_traces, gt::Trace, nsteps)
     ylims!(ax_height, (0.0, Zs()[end]+2))
     ylims!(ax_depth, (0.0, Xs()[end]+2))
     println("particle scores")
-  #  println([get_score(tr) for tr in uw_traces[end]])
+    println([get_score(tr) for tr in uw_traces[end]])
     display(fig)
 #    ax_moving_in_depth = fig[3, 1] = Axis(fig)
     # hist!(ax_moving_in_depth,
@@ -270,7 +332,7 @@ function render_pf_results(uw_traces, gt_trace, n_steps)
     lim = (Xs()[1], Xs()[end], Ys()[1], Ys()[end], Zs()[1], Zs()[end])
     # note perspectiveness variable is 0.0 for orthographic, 1.0 for perspective, .5 for intermediate
     anim_axis = Axis3(fig[1,1], 
-                      viewmode=:fit, aspect=(1,1,1), perspectiveness=0.0, protrusions=0, limits=lim,
+                              viewmode=:fit, aspect=(1,1,1), perspectiveness=0.0, protrusions=0, limits=lim,
                       elevation = 1.2*pi, azimuth= .7*pi)
     # scatter takes a list of tuples. want a list of lists of tuples as an f(t) and lift a node to that.
     
@@ -311,7 +373,7 @@ function render_pf_results(uw_traces, gt_trace, n_steps)
     scatter!(anim_axis, lift(t -> fp(t), time_node), color=lift(t -> fs(t), time_node), colormap=cmap, markersize=msize, alpha=.5)
 #    scatter!(anim_axis, lift(t -> fp(t), time_node), color=rand(10), markersize=msize, colormap=:thermal)
     scatter!(anim_axis, lift(t -> f_gt(t), time_node), color=:red, markersize=msize, marker='o')
-    translate_camera(anim_axis)
+#    translate_camera(anim_axis)
     display(fig)
     for i in 1:n_steps
         sleep(.5)
@@ -325,10 +387,10 @@ function translate_camera(anim_axis)
     hidedecorations!(anim_axis)
     hidespines!(anim_axis)
     cam = cam3d!(anim_axis.scene)
-    cam.projectiontype[] = AbstractPlotting.Orthographic
-    cam.upvector[] = Vec3f0(1, 0, 0)
-    cam.lookat[] = Vec3f0(0, 0, 0)
-    cam.eyeposition[] = Vec3f0(0, 700, 0)
+    cam.projectiontype[] = Makie.Orthographic
+    cam.upvector[] = Vec3f0(0, 0, 1)
+    cam.lookat[] = Vec3f0(50, 0, 0)
+    cam.eyeposition[] = Vec3f0(-5000, -5000, 3000)
     update_cam!(anim_axis.scene, cam)
 end
 
