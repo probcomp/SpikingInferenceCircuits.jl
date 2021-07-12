@@ -18,7 +18,7 @@ struct LCat{T} <: Gen.GenerativeFunction{T, CatTrace}
 end
 labels(l::LCat, pvec) = l.is_indexed ? (1:length(pvec)) : l.labels
 idx_to_label(c::LCat, idx) = c.is_indexed ? idx : c.labels[idx]
-label_to_idx(c::LCat, lab) = c.is_indexed ? lab : findfirst(c.labels .== lab)
+label_to_idx(c::LCat, lab) = c.is_indexed ? lab : findfirst([l == lab for l in c.labels])
 Base.:(==)(a::LCat{T}, b::LCat{T}) where {T} = (
         a.is_indexed && b.is_indexed || a.labels == b.labels
     )
