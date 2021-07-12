@@ -47,12 +47,12 @@ function enumeration_filter_step(
     latent_addr_to_domain, prev_latent_weights, prev_latent_retvals,
     num_determ_addrs
 ) where {T}
-    (_, _, assmt_choicemaps) = unpack_assmts(latent_addr_to_domain, num_determ_addrs)
+    (b, c, assmt_choicemaps) = unpack_assmts(latent_addr_to_domain, num_determ_addrs)
 
     # convert the values of the deterministic addresses into the indices in the array for those variables
     to_idxs(vals) = (v - first(dom) + 1 for (v, dom) in zip(vals, values(latent_addr_to_domain)))
 
-    step_weights = [0. for _ in Iterators.product(values(latent_addr_to_domain)...)]
+    step_weights = [-Inf for _ in Iterators.product(values(latent_addr_to_domain)...)]
     retvals      = Array{Union{T, Nothing}}(nothing, map(length, values(latent_addr_to_domain))...)
 
     for (prev_ret, prev_weight) in zip(prev_latent_retvals, prev_latent_weights)
