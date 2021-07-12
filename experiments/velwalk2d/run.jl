@@ -45,6 +45,8 @@ function make_smc_figure(smcfn, tr; n_particles, proposalstr)
 end
 make_smcprior_fig(tr; n_particles=1_000) =
     make_smc_figure(smc_from_prior, tr; n_particles, proposalstr="proposing from prior")
+make_smcprior_fig(tr; n_particles=10) =
+    make_smc_figure(smc_exact_proposal, tr; n_particles, proposalstr="proposing from exact posterior")
 
 tr, _ = generate(model, (10,))
 println("Trace generated.")
