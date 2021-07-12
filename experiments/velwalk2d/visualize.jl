@@ -29,7 +29,7 @@ function plot_probs!(ax, t, fig, colorbar_location, probgrids, domain)
     hm = heatmap!(ax,
         domain, domain,
         @lift(probgrids[$t + 1]);
-        colormap=cgrad([:white, :black], [0, 0.4, 1.0]),
+        colormap=cgrad([:white, :black], [0, 0.2, 1.0]),
         colorrange = @lift((0, min(maximum(probgrids[$t + 1]), 1.0)))
     )
     fig[colorbar_location...] = Colorbar(

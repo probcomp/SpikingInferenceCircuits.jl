@@ -7,7 +7,7 @@ ProbEstimates.use_perfect_weights!()
 includet("../utils/modeling_utils.jl")
 Positions() = 1:10
 Vels() = -2:2
-VelStepStd() = 0.5
+VelStepStd() = 0.0
 ObsStd() = 0.5
 SwitchProb() = 0.
 
@@ -24,8 +24,8 @@ v_step_dist(vₜ₋₁) = (
          SwitchProb()  * unif(Vels())
 )
 @gen (static) function step_latent_model(xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁)
-    vxₜ ~ LCat(Vels())(v_step_dist(vxₜ₋₁))
-    vyₜ ~ LCat(Vels())(v_step_dist(vyₜ₋₁))
+    vxₜ ~ LCat(Vels())(discretized_gaussian(vxₜ₋₁, VelStepStd(), Vels()))
+    vyₜ ~ LCat(Vels())(discretized_gaussian(vyₜ₋₁, VelStepStd(), Vels()))
 
     xₜ ~ Cat(onehot(xₜ₋₁ + vxₜ, Positions()))
     yₜ ~ Cat(onehot(yₜ₋₁ + vyₜ, Positions()))
