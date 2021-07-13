@@ -54,12 +54,12 @@ occ_probs(img) = normalize([
 
 ### INITIAL PROPOSAL ###
 
+vsd2(loc_probs) =vec(sum(loc_probs, dims=2))
 @gen (static) function _initial_proposal(img)
     occₜ ~ Cat(occ_probs(img))
-    loc_probs = prob_square_at_locations(img, occ)
-    xₜ ~ Cat(vec(sum(loc_probs, dims=2)))
-    yₜ ~ Cat(normalize(loc_probs[x, :]))
-
+    loc_probs = prob_square_at_locations(img, occₜ)
+    xₜ ~ Cat(vsd2(loc_probs))
+    yₜ ~ Cat(normalize(loc_probs[xₜ, :]))
 end
 
 ### STEP PROPOSAL ###
@@ -105,11 +105,11 @@ function occ_probs(occₜ₋₁, new_img)
 end
 
 @gen (static) function _step_proposal(occₜ₋₁, xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, imgₜ)
-    occₜ ~ Cat(normalize(truncate(occ_probs(occₜ₋₁, new_img))))
+    occₜ ~ Cat(normalize(truncate(occ_probs(occₜ₋₁, imgₜ))))
 
     xprobs, for_y = x_step_probs(xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, imgₜ, occₜ)
     xₜ ~ Cat(normalize(truncate(xprobs)))
-    yₜ ~ Cat(normalize(truncate(y_step_probs(x, for_y))))
+    yₜ ~ Cat(normalize(truncate(y_step_probs(xₜ, for_y))))
 
     vx_probs, vy_probs = vel_probs(xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, xₜ, yₜ)
     vxₜ ~ VelCat(normalize(truncate(vx_probs)))

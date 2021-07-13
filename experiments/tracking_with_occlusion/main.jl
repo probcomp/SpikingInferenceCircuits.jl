@@ -1,5 +1,6 @@
 using DynamicModels
 include("model.jl")
+include("groundtruth_rendering.jl")
 include("proposal.jl")
 
 model = @DynamicModel(init_latent_model, step_latent_model, obs_model, 5)
@@ -18,9 +19,11 @@ obs_choicemap_to_matrix(ch) =
 
 unweighted_trs, _ = dynamic_model_smc(
     model, get_dynamic_model_obs(tr),
-    obs_choicemap_to_matrix,
+    cm -> (obs_choicemap_to_matrix(cm),),
     init_prob, step_prop, 10
-)
+);
+
+nothing
 
 # TODO: enumerate.  Performance will probably be an issue.
 # Maybe using Marco's factor-graph library could help...but getting it set up
