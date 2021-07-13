@@ -1,6 +1,5 @@
 using Gen, Distributions
-includet("../../../src/DynamicModels/DynamicModels.jl")
-using .DynamicModels
+using DynamicModels
 
 includet("model_proposal.jl")
 includet("naive_inference.jl")

@@ -1,9 +1,8 @@
-includet("../../src/DynamicModels/DynamicModels.jl")
-using .DynamicModels
+using DynamicModels
 
-includet("model.jl")
-includet("visualize.jl")
-includet("inference.jl")
+include("model.jl")
+include("visualize.jl")
+include("inference.jl")
 
 model = @DynamicModel(initial_latent_model, step_latent_model, obs_model, 4)
 @load_generated_functions()
@@ -55,4 +54,4 @@ println("Trace generated.")
 grids = get_enumeration_grids(tr);
 println("Grids produced.")
 
-(fig, t) = make_exact_filter_figure(tr, grids); fig
+# (fig, t) = make_exact_filter_figure(tr, grids); fig

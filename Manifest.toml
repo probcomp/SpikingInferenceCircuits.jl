@@ -229,6 +229,12 @@ version = "0.8.5"
 deps = ["ArgTools", "LibCURL", "NetworkOptions"]
 uuid = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
 
+[[DynamicModels]]
+deps = ["Gen"]
+path = "src/DynamicModels"
+uuid = "53cfae49-06f6-4efc-9340-34155828b855"
+version = "0.1.0"
+
 [[EarCut_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "92d8f9f208637e8d2d28c664051a00569c01493d"

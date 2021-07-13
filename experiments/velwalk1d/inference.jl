@@ -30,14 +30,14 @@ prior_step_proposal = @compile_step_proposal(_prior_step_proposal, 2, 1)
 smc_from_prior(tr, n_particles) = smc(tr, n_particles, prior_init_proposal, prior_step_proposal)
 
 ### Exact Proposal ###
-to_vector(v) = reshape(v, (:,))
+to_vect(v) = reshape(v, (:,))
 # TODO: better abstractions for these functions
 function init_posterior(obs)
     logprobs, _ = enumeration_filter_init(initial_latent_model, obs_model,
         choicemap((:obs => :val, obs)),
         Dict((:xₜ => :val) => Positions(), (:vₜ => :val) => [0]) # vel shouldn't matter, so keep constant to speed this up # Vels())
     )
-    return sum(exp.(logprobs), dims=2) |> normalize |> to_vector
+    return sum(exp.(logprobs), dims=2) |> normalize |> to_vect
 end
 function vel_step_posterior(xₜ₋₁, vₜ₋₁, obs)
     logprobs, _ = enumeration_filter_step(
@@ -47,7 +47,7 @@ function vel_step_posterior(xₜ₋₁, vₜ₋₁, obs)
         [0.], [(xₜ₋₁, vₜ₋₁)]
     )
     # return the probs for the different velocity values
-    return sum(exp.(logprobs), dims=1) |> normalize |> to_vector
+    return sum(exp.(logprobs), dims=1) |> normalize |> to_vect
 end
 @gen (static) function _exact_init_proposal(obs)
     xₜ ~ Cat(init_posterior(obs))

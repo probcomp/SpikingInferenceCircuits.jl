@@ -4,7 +4,7 @@ using ProbEstimates
 ProbEstimates.use_perfect_weights!()
 
 # Include some utilities for defining discrete probability distributions
-includet("../utils/modeling_utils.jl")
+include("../utils/modeling_utils.jl")
 Positions() = 1:20
 Vels() = -3:3
 Bools() = [true, false]

@@ -1,9 +1,8 @@
-includet("../../src/DynamicModels/DynamicModels.jl")
-using .DynamicModels
+using DynamicModels
 
-includet("model.jl")
-includet("visualize.jl")
-includet("inference.jl")
+include("model.jl")
+include("visualize.jl")
+include("inference.jl")
 
 model = @DynamicModel(initial_latent_model, step_latent_model, obs_model, 3)
 @load_generated_functions()

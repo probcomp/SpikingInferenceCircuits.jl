@@ -1,9 +1,8 @@
-includet("../../src/DynamicModels/DynamicModels.jl")
-using .DynamicModels
+using DynamicModels
 
-includet("model.jl")
-includet("inference.jl")
-includet("visualize.jl")
+include("model.jl")
+include("inference.jl")
+include("visualize.jl")
 
 model = @DynamicModel(initial_latent_model, step_latent_model, obs_model, 2)
 @load_generated_functions()
@@ -42,5 +41,5 @@ make_smcexact_2d_posterior_figure(tr; n_particles=10)    = make_smc_figure(smc_e
 make_smc_prior_exactrejuv_2d_posterior_figure(tr; n_particles=10) =
     make_smc_figure(prior_smc_exact_rejuv, tr; n_particles, proposalstr="\nproposing from prior + using gibbs rejuvenation")
 
-tr, _ = generate(model, (10,));
-make_smcexact_2d_posterior_figure(tr)
+# tr, _ = generate(model, (10,));
+# make_smcexact_2d_posterior_figure(tr)
