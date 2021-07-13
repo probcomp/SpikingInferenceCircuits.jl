@@ -45,7 +45,7 @@ end
 function enumeration_filter_step(
     step_model::GenerativeFunction{T}, obs_model, obs_choicemap,
     latent_addr_to_domain, prev_latent_weights, prev_latent_retvals,
-    num_determ_addrs
+    num_determ_addrs=0
 ) where {T}
     (b, c, assmt_choicemaps) = unpack_assmts(latent_addr_to_domain, num_determ_addrs)
 

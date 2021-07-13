@@ -76,7 +76,13 @@ end
 
 time_to_pos(tr) = t -> (latents_choicemap(tr, t)[:xₜ => :val], latents_choicemap(tr, t)[:yₜ => :val])
 time_to_obs(tr) = t -> (obs_choicemap(tr, t)[:obsx => :val], obs_choicemap(tr, t)[:obsy => :val])
-time_to_vel(tr) = t -> latents_choicemap(tr, t)[:vₜ => :val]
+time_to_vel(tr) = t ->
+    if !has_value(latents_choicemap(tr, t), :vₜ => :val)
+        display(latents_choicemap(tr, t))
+        error()
+    else
+        latents_choicemap(tr, t)[:vₜ => :val]
+    end
 
 plot_gt_obs(tr) = plot_gt_obs(time_to_pos(tr), time_to_obs(tr))
 

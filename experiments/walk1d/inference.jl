@@ -30,7 +30,11 @@ function init_posterior(obs)
     return exp.(logprobs) |> normalize
 end
 function step_posterior(xₜ₋₁, obs)
-    logprobs, _ = enumeration_filter_step(step_latent_model, obs_model, choicemap((:obs => :val, obs)), Dict((:xₜ => :val) => Positions()), [0.], [(xₜ₋₁,)])
+    logprobs, _ = enumeration_filter_step(
+        step_latent_model, obs_model,
+        choicemap((:obs => :val, obs)), Dict((:xₜ => :val) => Positions()),
+        [0.], [(xₜ₋₁,)]
+    )
     return exp.(logprobs) |> normalize
 end
 @gen (static) function _exact_init_proposal(obs)

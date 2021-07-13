@@ -63,6 +63,17 @@ exact_step_proposal = @compile_step_proposal(_exact_step_proposal, 2, 1)
 
 smc_exact_proposal(tr, n_particles) = smc(tr, n_particles, exact_init_proposal, exact_step_proposal)
 
+### Good proposal w/ smaller branching factor ###
+function good_probs(apparent_step, obs)
+    # gaussian around apparent_step
+    # gaussian around obs
+end
+@gen (static) function _good_step_proposal(xₜ₋₁, vₜ₋₁, obs)
+    apparent_step = obs - xₜ₋₁
+    vₜ ~ LCat(Vels())(good_probs(apparent_step, obs))
+    xₜ ~ Cat(onehot(xₜ₋₁ + vₜ, Positions()))
+end
+
 ### Gibbs Rejuvenation ###
 @gen (static) function rejuv_proposal_init(tr)
     {:init => :latents} ~ _exact_init_proposal(obs_choicemap(tr, 0)[:obs => :val])

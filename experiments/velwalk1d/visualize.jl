@@ -107,7 +107,7 @@ function make_2d_posterior_figure(
 
     velax, _ = time_variable_figure(
         fig, 1, vel_layout,
-        [sum(grid, dims=1) |> normalize |> to_vector for grid in posterior_probability_grids];
+        [sum(grid, dims=1) |> normalize |> to_vect for grid in posterior_probability_grids];
         times,
         groundtruth=gt_vel,
         observations=nothing,
@@ -116,7 +116,7 @@ function make_2d_posterior_figure(
     )
     posax, (obs_plts, gt_plts, medplts, meanplts, per5plts, per95plts) = time_variable_figure(
         fig, 2, pos_layout,
-        [sum(grid, dims=2) |> normalize |> to_vector for grid in posterior_probability_grids];
+        [sum(grid, dims=2) |> normalize |> to_vect for grid in posterior_probability_grids];
         times,
         groundtruth=gt_pos,
         observations=pos_observations,
