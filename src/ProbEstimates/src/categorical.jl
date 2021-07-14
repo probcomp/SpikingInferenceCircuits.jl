@@ -48,19 +48,24 @@ function Gen.update(tr::CatTrace, (probs,)::Tuple, _::Tuple, cm::Gen.ChoiceMap)
     if isempty(cm) && probs == get_args(tr)[1]
         return (tr, 0., NoChange(), EmptyChoiceMap())
     else
-        if weight_type() == :perfect
-            @assert isempty(cm) || has_value(cm, :val)
-            newidx = isempty(cm) ? tr.idx : label_to_idx(get_gen_fn(tr), cm[:val])
-            newtr = CatTrace(get_gen_fn(tr), probs, newidx)
-            return (
-                newtr,
-                get_score(newtr) - get_score(tr),
-                tr.idx == newidx ? NoChange() : UnknownChange(),
-                isempty(cm) ? EmptyChoiceMap() : choicemap((:val, get_retval(tr)))
-            )
-        else
-            error("Not expecting nontrivial `update` to be called on `Cat` in a noisy weight mode.  Probs: $probs, cm: $cm")
-        end
+        @assert isempty(cm) || has_value(cm, :val)
+        newidx = isempty(cm) ? tr.idx : label_to_idx(get_gen_fn(tr), cm[:val])
+        newtr = CatTrace(get_gen_fn(tr), probs, newidx)
+        score =
+            if weight_type() == :perfect
+                get_score(newtr) - get_score(tr)
+            elseif weight_type() == :noisy
+                # Return an unbiased estimate of P(x')/P(x)
+                log(fwd_prob_estimate(newtr)) + log(recip_prob_estimate(tr))
+            else
+                error("`update` not implemented for this weight-type.")
+            end
+
+        return (
+            newtr, score,
+            tr.idx == newidx ? NoChange() : UnknownChange(),
+            isempty(cm) ? EmptyChoiceMap() : StaticChoiceMap((val=get_retval(tr),), (;))
+        )
     end
 end
 
