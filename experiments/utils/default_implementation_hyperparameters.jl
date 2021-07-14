@@ -1,9 +1,17 @@
+ExpectedLatency()    = 50
+SampleAssemblySize() = 10
+ScoreAssemblySize()  = 10
+MaxNeuronRate()      = 0.2 # KHz
+MinProb()            = 0.1
+
 INTER_OBS_INTERVAL() = 2000. # ms
 
-SAMPLE_ONRATE() = 1.25
-SCORE_ONRATE() = 0.5
-PEstDenom() = 40 # count denominator for ProbEstimates
-RecipPEstDenom() = 4 # count denominator for ReciprocalProbEstimates
+SAMPLE_ONRATE() = SampleAssemblySize() * MaxNeuronRate()
+SCORE_ONRATE()  = ScoreAssemblySize()  * MaxNeuronRate()
+# count denominator for ProbEstimates
+PEstDenom() = ExpectedLatency() * SCORE_ONRATE()
+# count denominator for ReciprocalProbEstimates
+RecipPEstDenom() = ExpectedLatency() *  SAMPLE_ONRATE() * MinProb()
 MultOutDenom() = 200 # count denominator for the output of a multiplier
 
 ΔT() = 240 # ms  -- memory time for scoring unit (also used by many other units)
@@ -27,6 +35,8 @@ THETA_RATE() = SAMPLE_ONRATE()
 MULT_EXPECTED_OUT_TIME() = ΔT()/2
 MULT_OUT_TIME_BOUND() = 2 * MULT_EXPECTED_OUT_TIME()
 MULT_MAX_INPUT_MEMORY() = ΔT_THETA()
+
+# TODO: understand how the timer & mult n spikes, rate, denominator, etc., relate to assembly size
 TIMER_N_SPIKES() = 30
 
 SYNC_ΔT_TIMER() = ΔT()/4; NSPIKES_SYNC_TIMER() = TIMER_N_SPIKES()
