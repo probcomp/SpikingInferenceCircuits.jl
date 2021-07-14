@@ -2,6 +2,7 @@ using Gen, Distributions
 # Include the library exposing `Cat` and `LCat`
 using ProbEstimates
 ProbEstimates.use_perfect_weights!()
+ProbEstimates.DoRecipPECheck() = false
 
 # Include some utilities for defining discrete probability distributions
 include("../utils/modeling_utils.jl")

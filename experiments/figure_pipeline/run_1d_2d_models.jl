@@ -77,6 +77,8 @@ VelWalk1D.figures(tr, name -> fig -> VelWalk1D.save(joinpath(ngf, to_img_name(na
 println("VelWalk1D NeuralGenFast figures created.")
 
 include("velwalk2d.jl")
+VelWalk2D.ProbEstimates.DoRecipPECheck() = false
+VelWalk2D.SwitchProb() = 0.
 VelWalk2D.ProbEstimates.use_perfect_weights!()
 velwalk2d = dir(base, "velwalk2d")
 tr = VelWalk2D.gettr()
@@ -94,3 +96,22 @@ VelWalk2D.figures(
     name -> ((fig, t),) -> VelWalk2D.make_video(fig, t, 10, joinpath(ngf, to_vid_name(name)))
 )
 println("VelWalk2D NeuralGenFast figures created.")
+
+VelWalk2D.SwitchProb() = 0.15
+VelWalk2D.ProbEstimates.use_perfect_weights!()
+velwalk2d = dir(base, "velwalk2d_with_velswitch")
+tr = VelWalk2D.get_tr_with_sharp_velchange()
+println("VelWalk2D trace generated with sharp velocity change.")
+gen = dir(velwalk2d, "Gen")
+VelWalk2D.figures(
+    tr,
+    name -> ((fig, t),) -> VelWalk2D.make_video(fig, t, 10, joinpath(gen, to_vid_name(name)))
+)
+println("VelWalk2D sharp velchange Gen figures created.")
+VelWalk2D.ProbEstimates.use_noisy_weights!()
+ngf = dir(velwalk2d, "NeuralGenFast")
+VelWalk2D.figures(
+    tr,
+    name -> ((fig, t),) -> VelWalk2D.make_video(fig, t, 10, joinpath(ngf, to_vid_name(name)))
+)
+println("VelWalk2D sharp velchange NeuralGenFast figures created.")

@@ -7,6 +7,19 @@ module VelWalk2D
             (:init => :latents => :vₜ => :val, (1, 2))
         )
     )[1]
+    get_tr_with_sharp_velchange() = generate(model, (10,), choicemap(
+        (:init => :latents => :xₜ => :val, 2),
+        (:init => :latents => :yₜ => :val, 1),
+        (:init => :latents => :vₜ => :val, (1, 2)),
+        (:steps => 1 => :latents => :vₜ => :val, (1, 2)),
+        (:steps => 2 => :latents => :vₜ => :val, (1, 2)),
+        (:steps => 3 => :latents => :vₜ => :val, (1, 2)),
+        (:steps => 4 => :latents => :vₜ => :val, (1, 2)),
+        (:steps => 5 => :latents => :vₜ => :val, (1, 2)),
+        (:steps => 6 => :latents => :vₜ => :val, (-2, -2)),
+        (:steps => 7 => :latents => :vₜ => :val, (-2, -2)),
+        (:steps => 8 => :latents => :vₜ => :val, (-2, -2))
+    ))[1]
 
     function figures(tr, callback)
         make_exact_filter_figure(tr)            |> callback(:ebf)

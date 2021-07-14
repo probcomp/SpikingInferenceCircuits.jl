@@ -50,8 +50,10 @@ function recip_pe(p)
     if p < 0.000001
         Inf
     else
-        @assert p > zero(p)
-        @assert K_recip() > zero(K_recip())
+        if DoRecipPECheck()
+            @assert p ≥ MinProb() * (1 - 1e-6)
+            @assert K_recip() > zero(K_recip())
+        end
         rand(NegativeBinomial(K_recip(), p))/K_recip() + 1
     end
 end

@@ -1,8 +1,9 @@
 using DynamicModels
-
 include("model.jl")
 include("inference.jl")
 include("visualize.jl")
+
+ProbEstimates.DoRecipPECheck() = false
 
 model = @DynamicModel(initial_latent_model, step_latent_model, obs_model, 1)
 @load_generated_functions()

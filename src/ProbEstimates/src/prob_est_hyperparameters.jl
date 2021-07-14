@@ -13,3 +13,7 @@ MultAssemblySize() = 20
 
 TimerNSpikes() = TimerExpectedT() * TimerAssemblySize() * MaxRate() |> Int
 MultOutDenominator() = TimerExpectedT() * MultAssemblySize() * MaxRate()
+
+# Should we check that the probability ranges make it possible to actually compile
+# the model, and that the probabilities are actually greater than the MinProb value
+DoRecipPECheck() = true
