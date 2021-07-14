@@ -1,6 +1,6 @@
 using GLMakie, Colors
 
-FRAMERATE() = 2
+FRAMERATE() = 1
 
 function plot_gt_obs(time_to_gt, time_to_obs)
     fig = Figure()

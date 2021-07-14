@@ -26,15 +26,23 @@ smc_from_prior(tr, n_particles) = smc(tr, n_particles, prior_init_proposal, prio
 
 ### SMC with Exact Postrior as Proposal ###
 function init_posterior(obs)
+    orig_typ = ProbEstimates.weight_type()
+    ProbEstimates.use_perfect_weights!()
     logprobs, _ = enumeration_filter_init(initial_latent_model, obs_model, choicemap((:obs => :val, obs)), Dict((:xₜ => :val) => Positions()))
+    ProbEstimates.reset_weights_to!(orig_typ)
+
     return exp.(logprobs) |> normalize
 end
 function step_posterior(xₜ₋₁, obs)
+    orig_typ = ProbEstimates.weight_type()
+    ProbEstimates.use_perfect_weights!()
     logprobs, _ = enumeration_filter_step(
         step_latent_model, obs_model,
         choicemap((:obs => :val, obs)), Dict((:xₜ => :val) => Positions()),
         [0.], [(xₜ₋₁,)]
     )
+    ProbEstimates.reset_weights_to!(orig_typ)
+
     return exp.(logprobs) |> normalize
 end
 @gen (static) function _exact_init_proposal(obs)
@@ -62,15 +70,36 @@ end
 end
 @load_generated_functions()
 
+function gibbs(
+    trace, proposal::GenerativeFunction, proposal_args::Tuple;
+    # check the MH score iff we are using perfect weights;
+    # we expect imperfect scores otherwise
+    check_score=(ProbEstimates.weight_type() === :perfect)
+    )
+    # TODO add a round trip check
+    model_args = get_args(trace)
+    argdiffs = map((_) -> NoChange(), model_args)
+    proposal_args_forward = (trace, proposal_args...,)
+    (fwd_choices, fwd_weight, _) = propose(proposal, proposal_args_forward)
+    (new_trace, weight, _, discard) = update(trace,
+    model_args, argdiffs, fwd_choices
+    )
+    if check_score
+        proposal_args_backward = (new_trace, proposal_args...,)
+        (bwd_weight, _) = assess(proposal, proposal_args_backward, discard)
+        alpha = weight - fwd_weight + bwd_weight
+        @assert abs(alpha) < 1e-4 "Is not a gibbs move."
+    end
+    return (new_trace, true)
+end
+mcmc_fn(is_gibbs) = is_gibbs ? gibbs : Gen.mh
+
 function prior_smc_exact_rejuv(tr, n_particles; is_gibbs=true)
     function rejuvenate(trace)
         if get_args(trace)[1] == 0
-            newtrace, accepted = mh(trace, rejuv_proposal_init, ())
+            newtrace, accepted = mcmc_fn(is_gibbs)(trace, rejuv_proposal_init, ())
         else
-            newtrace, accepted = mh(trace, rejuv_proposal_step, ())
-        end
-        if is_gibbs
-            @assert accepted "Should be a gibbs move."
+            newtrace, accepted = mcmc_fn(is_gibbs)(trace, rejuv_proposal_step, ())
         end
         return newtrace
     end

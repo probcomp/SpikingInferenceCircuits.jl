@@ -33,19 +33,25 @@ smc_from_prior(tr, n_particles) = smc(tr, n_particles, prior_init_proposal, prio
 to_vect(v) = reshape(v, (:,))
 # TODO: better abstractions for these functions
 function init_posterior(obs)
+    orig_typ = ProbEstimates.weight_type()
+    ProbEstimates.use_perfect_weights!()
     logprobs, _ = enumeration_filter_init(initial_latent_model, obs_model,
-    choicemap((:obs => :val, obs)),
-    Dict((:xₜ => :val) => Positions(), (:vₜ => :val) => [0]) # vel shouldn't matter, so keep constant to speed this up # Vels())
+        choicemap((:obs => :val, obs)),
+        Dict((:xₜ => :val) => Positions(), (:vₜ => :val) => [0]) # vel shouldn't matter, so keep constant to speed this up # Vels())
     )
+    ProbEstimates.reset_weights_to!(orig_typ)
     return sum(exp.(logprobs), dims=2) |> normalize |> to_vect
 end
 function vel_step_posterior(xₜ₋₁, vₜ₋₁, obs)
+    orig_typ = ProbEstimates.weight_type()
+    ProbEstimates.use_perfect_weights!()
     logprobs, _ = enumeration_filter_step(
-    step_latent_model, obs_model,
-    choicemap((:obs => :val, obs)),
-    Dict((:xₜ => :val) => Positions(), (:vₜ => :val) => Vels()),
-    [0.], [(xₜ₋₁, vₜ₋₁)]
-    )
+        step_latent_model, obs_model,
+        choicemap((:obs => :val, obs)),
+        Dict((:xₜ => :val) => Positions(), (:vₜ => :val) => Vels()),
+        [0.], [(xₜ₋₁, vₜ₋₁)]
+        )
+    ProbEstimates.reset_weights_to!(orig_typ)
     # return the probs for the different velocity values
     return sum(exp.(logprobs), dims=1) |> normalize |> to_vect
 end
@@ -93,14 +99,14 @@ function gibbs(
     # check the MH score iff we are using perfect weights;
     # we expect imperfect scores otherwise
     check_score=(ProbEstimates.weight_type() === :perfect)
-)
+    )
     # TODO add a round trip check
     model_args = get_args(trace)
     argdiffs = map((_) -> NoChange(), model_args)
     proposal_args_forward = (trace, proposal_args...,)
     (fwd_choices, fwd_weight, _) = propose(proposal, proposal_args_forward)
     (new_trace, weight, _, discard) = update(trace,
-        model_args, argdiffs, fwd_choices
+    model_args, argdiffs, fwd_choices
     )
     if check_score
         proposal_args_backward = (new_trace, proposal_args...,)

@@ -32,6 +32,9 @@ smc_from_prior_dont_always_resample(tr, n_particles) = smc(tr, n_particles, prio
 
 ### Exact posterior ###
 function init_posterior(obsx, obsy)
+    orig_typ = ProbEstimates.weight_type()
+    ProbEstimates.use_perfect_weights!()
+
     logprobs, _ = enumeration_filter_init(initial_latent_model, obs_model,
         choicemap((:obsx => :val, obsx), (:obsy => :val, obsy)),
         Dict(
@@ -41,6 +44,9 @@ function init_posterior(obsx, obsy)
             (:vₜ => :val) => [(0, 0)],
         )
     )
+    
+    ProbEstimates.reset_weights_to!(orig_typ)
+
     return reshape(
         sum(exp.(logprobs), dims=3),
         size(logprobs)[1:2]
@@ -48,6 +54,9 @@ function init_posterior(obsx, obsy)
 end
 
 function vel_step_posterior(xₜ₋₁, yₜ₋₁, vₜ₋₁, obsx, obsy)
+    orig_typ = ProbEstimates.weight_type()
+    ProbEstimates.use_perfect_weights!()
+
     logprobs, _ = enumeration_filter_step(
         step_latent_model, obs_model,
         choicemap((:obsx => :val, obsx), (:obsy => :val, obsy)),
@@ -58,6 +67,9 @@ function vel_step_posterior(xₜ₋₁, yₜ₋₁, vₜ₋₁, obsx, obsy)
         ),
         [0.], [(xₜ₋₁, yₜ₋₁, vₜ₋₁)], 2
     )
+
+    ProbEstimates.reset_weights_to!(orig_typ)
+
     # return the probs for the different velocity values
     return reshape(
             sum(exp.(logprobs), dims=(1, 2)),
