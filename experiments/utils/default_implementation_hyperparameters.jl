@@ -9,9 +9,9 @@ INTER_OBS_INTERVAL() = 2000. # ms
 SAMPLE_ONRATE() = SampleAssemblySize() * MaxNeuronRate()
 SCORE_ONRATE()  = ScoreAssemblySize()  * MaxNeuronRate()
 # count denominator for ProbEstimates
-PEstDenom() = ExpectedLatency() * SCORE_ONRATE()
+PEstDenom() = ExpectedLatency() * SCORE_ONRATE() |> Int
 # count denominator for ReciprocalProbEstimates
-RecipPEstDenom() = ExpectedLatency() *  SAMPLE_ONRATE() * MinProb()
+RecipPEstDenom() = ExpectedLatency() *  SAMPLE_ONRATE() * MinProb() |> Int
 MultOutDenom() = 200 # count denominator for the output of a multiplier
 
 ΔT() = 240 # ms  -- memory time for scoring unit (also used by many other units)

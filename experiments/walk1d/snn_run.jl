@@ -1,6 +1,7 @@
 using SpikingInferenceCircuits
 const SIC = SpikingInferenceCircuits
 using Circuits, SpikingCircuits
+using DynamicModels
 
 includet("model.jl")
 includet("inference.jl")
