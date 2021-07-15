@@ -51,16 +51,25 @@ struct ISParticle <: GenericComponent
 end
 ISParticle(
     proposal::ImplementableGenFn, latent_model::ImplementableGenFn,
-    obs_model::ImplementableGenFn, latent_addr_order, obs_addr_order
-) = ISParticle(
+    obs_model::ImplementableGenFn, latent_addr_order, obs_addr_order;
+    truncate_proposal_dists = true  :: Bool              ,
+    truncate_model_dists    = false :: Bool              ,
+    truncation_minprob      = NaN   :: Float64
+) = begin
+    println("in is_particle, truncation_minprob = $truncation_minprob")
+    ISParticle(
     # Replace the return nodes since (1) the top-level return nodes don't matter to this circuit, and (2)
     # the return nodes may be tuples of values, which are currently not handled well by the compiler.
     # (They are treated as EnumeratedDomains spanning every possible assignment to the tuple, so there could be a huge
     # number of possible values.)
     # The return nodes will just be replaced with some node from within the IR.
-    gen_fn_circuit(replace_return_node(proposal), Propose()), gen_fn_circuit(replace_return_node(latent_model), Assess()),
-    gen_fn_circuit(replace_return_node(obs_model), Assess()), latent_addr_order, obs_addr_order
+    gen_fn_circuit(replace_return_node(proposal) |> maybe_truncate(truncate_proposal_dists, truncation_minprob), Propose()),
+    gen_fn_circuit(replace_return_node(latent_model) |> maybe_truncate(truncate_model_dists, truncation_minprob), Assess()),
+    gen_fn_circuit(replace_return_node(obs_model) |> maybe_truncate(truncate_model_dists, truncation_minprob), Assess()),
+    latent_addr_order, obs_addr_order
 )
+end
+maybe_truncate(do_it, truncation_minprob) = do_it ? gf -> truncate_implementable_gf(gf, truncation_minprob) : identity
 
 Circuits.inputs(p::ISParticle) = NamedValues(
     :args => inputs(p.assess_latents)[:inputs],

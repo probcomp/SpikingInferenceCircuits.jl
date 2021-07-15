@@ -50,6 +50,8 @@ export EnumeratedDomain, ProductDomain
 # - is_cpts
 # - get_ret_domain
 # - with_constant_inputs_at_indices
+# - truncate
+# TODO: refactor by implementing a more generic `map` function
 
 # Implementations for static GFs & IRs:
 include("is_cpts.jl")
@@ -69,5 +71,7 @@ include("combinators/apply.jl")
 
 include("replace_return_node.jl")
 include("add_activator_input.jl")
+
+include("truncate.jl")
 
 end # module

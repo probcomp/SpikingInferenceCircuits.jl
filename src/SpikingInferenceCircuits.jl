@@ -5,6 +5,7 @@ using SpikingCircuits
 using CPTs
 using DiscreteIRTransforms
 using Distributions: ncategories
+using Setfield: @set
 
 include("circuits/pulse_ir/pulse_ir.jl")
 include("circuits/stochastic_digital_circuits/SDCs.jl")

@@ -50,14 +50,15 @@ SMCStep(
     step_model_bundle               :: ImplementableGenFn,
     obs_model_bundle                :: ImplementableGenFn,
     step_proposal_bundle            :: ImplementableGenFn,
-    latent_var_addrs_for_obs        :: Vector               ,
-    obs_addr_order                  :: Vector               ,
-    num_particles                   :: Int
+    latent_var_addrs_for_obs        :: Vector            ,
+    obs_addr_order                  :: Vector            ,
+    num_particles                   :: Int               ;
+    is_kwargs...
 ) = MultiParticleWithResample(
         num_particles,
         ISParticle(
             step_proposal_bundle, step_model_bundle, obs_model_bundle,
-            latent_var_addrs_for_obs, obs_addr_order
+            latent_var_addrs_for_obs, obs_addr_order; is_kwargs...
         )
     )
 
@@ -162,10 +163,13 @@ SMC(
     obs_model_bundle                :: ImplementableGenFn,
     initial_proposal_bundle         :: ImplementableGenFn,
     step_proposal_bundle            :: ImplementableGenFn,
-    latent_var_addrs_for_obs        :: Vector               ,
-    obs_addr_order                  :: Vector               ,
-    latent_var_addrs_for_recurrence :: Vector               ,
-    num_particles                   :: Int
+    latent_var_addrs_for_obs        :: Vector            ,
+    obs_addr_order                  :: Vector            ,
+    latent_var_addrs_for_recurrence :: Vector            ,
+    num_particles                   :: Int               ;
+    truncate_proposal_dists = true  :: Bool              ,
+    truncate_model_dists    = false :: Bool              ,
+    truncation_minprob      = NaN   :: Float64
 ) = SMC(
         ISParticle(
             # an initial model will have 0 inputs, but we need there to be an input line
@@ -176,12 +180,14 @@ SMC(
             add_activator_input(initial_proposal_bundle, :in),
             add_activator_input(initial_model_bundle, :in),
             obs_model_bundle,
-            latent_var_addrs_for_obs, obs_addr_order
+            latent_var_addrs_for_obs, obs_addr_order;
+            truncate_proposal_dists, truncate_model_dists, truncation_minprob
        ),
        RecurrentSMCStep(
            SMCStep(
                 step_model_bundle, obs_model_bundle, step_proposal_bundle,
-                latent_var_addrs_for_obs, obs_addr_order, num_particles
+                latent_var_addrs_for_obs, obs_addr_order, num_particles;
+                truncate_proposal_dists, truncate_model_dists, truncation_minprob
            ),
            latent_var_addrs_for_recurrence
        )

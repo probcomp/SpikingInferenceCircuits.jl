@@ -203,6 +203,15 @@ digital circuit.
 To implement it to perform operation `op`, call `gen_fn_circuit(gf, op::GenFnOp)`.
 """
 abstract type ImplementableGenFn end
+icpts(::ImplementableGenFn) = error("Not implemented.")
+input_domains(::ImplementableGenFn) = error("Not implemented.")
+
+"""
+    gen_fn_circuit(gf::ImplementableGenFn, op::GenFnOp)
+
+A GenFnCircuit for the given generative function with associated metadata (including input domain labels).
+"""
+gen_fn_circuit(gf::ImplementableGenFn, op::GenFnOp) = gen_fn_circuit(icpts(gf), input_domains(gf), op)
 
 """
     GenFnWithInputDomains(gen_fn::GenerativeFunction, input_domains::Vector{DiscreteIRTransforms.Domain})
@@ -226,18 +235,7 @@ GenFnWithInputDomains(gen_fn::GenerativeFunction, input_domains) =
     )
 
 icpts(gf::GenFnWithInputDomains) = to_indexed_cpts(gf.gen_fn, gf.input_domains)[1]
-
-"""
-    gen_fn_circuit(gf::GenFnWithInputDomains, op::GenFnOp)
-
-A GenFnCircuit for the given generative function with the given input domain labels.
-"""
-gen_fn_circuit(gf::GenFnWithInputDomains, op::GenFnOp) =
-    gen_fn_circuit(
-        icpts(gf),
-        [FiniteDomain((length ∘ DiscreteIRTransforms.vals)(x)) for x in gf.input_domains],
-        op
-    )
+input_domains(gf::GenFnWithInputDomains) = [FiniteDomain((length ∘ DiscreteIRTransforms.vals)(x)) for x in gf.input_domains]
 
 replace_return_node(gf::GenFnWithInputDomains) =
     GenFnWithInputDomains(DiscreteIRTransforms.replace_return_node(gf.gen_fn), gf.input_domains)
@@ -256,14 +254,18 @@ end
 add_activator_input(gf::GenFnWithInputDomains, activator_input_name) =
     WithActivatorInput(gf, activator_input_name)
 
-gen_fn_circuit(gf::WithActivatorInput, op::GenFnOp) =
-    gen_fn_circuit(
-        DiscreteIRTransforms.add_activator_input(icpts(gf.gf), gf.activator_input_name),
-        [
-            FiniteDomain(1), # activator input
-            (FiniteDomain((length ∘ DiscreteIRTransforms.vals)(x)) for x in gf.gf.input_domains)...
-        ],
-        op
-    )
+icpts(gf::WithActivatorInput) = DiscreteIRTransforms.add_activator_input(icpts(gf.gf), gf.activator_input_name)
+input_domains(gf::WithActivatorInput) = [
+    FiniteDomain(1), # activator input
+    (FiniteDomain((length ∘ DiscreteIRTransforms.vals)(x)) for x in gf.gf.input_domains)...
+]
 
 replace_return_node(gf::WithActivatorInput) = WithActivatorInput(replace_return_node(gf.gf), gf.activator_input_name)
+
+struct TruncatedIGF <: ImplementableGenFn
+    minprob::Float64
+    gf::ImplementableGenFn
+end
+icpts(gf::TruncatedIGF)         = DiscreteIRTransforms.truncate(icpts(gf.gf), gf.minprob)
+input_domains(gf::TruncatedIGF) = input_domains(gf.gf)
+truncate_implementable_gf(gf::ImplementableGenFn, minprob) = TruncatedIGF(minprob, gf)
