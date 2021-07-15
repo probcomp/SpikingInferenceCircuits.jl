@@ -17,7 +17,7 @@ MultOutDenom() = 200 # count denominator for the output of a multiplier
 ΔT() = 240 # ms  -- memory time for scoring unit (also used by many other units)
 
 MinProb() = 0.1
-ΔT_SAMPLE() = ΔT() * SCORE_ONRATE() / SAMPLE_ONRATE() / MinProb()
+ΔT_SAMPLE() = ΔT() * SCORE_ONRATE()
 
 OFFRATE() = 10e-20
 

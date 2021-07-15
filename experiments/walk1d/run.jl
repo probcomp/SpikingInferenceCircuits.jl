@@ -59,3 +59,6 @@ make_smc_prior_exactrejuv_2d_posterior_figure(tr; n_particles=10) =
     make_smc_figure(prior_smc_exact_rejuv, tr; n_particles, proposalstr="\nproposing from prior + using gibbs rejuvenation")
 
 # make_smc_prior_exactrejuv_2d_posterior_figure(tr)
+
+tr, _ = generate(model, (10,))
+fig = make_smcexact_2d_posterior_figure(tr; n_particles=2)
