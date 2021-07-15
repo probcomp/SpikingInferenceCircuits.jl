@@ -3,9 +3,27 @@ using Gen
 using Distributions
 using DiscreteIRTransforms
 
-include("categorical.jl")
+include("hyperparameters.jl")
 
-include("prob_est_hyperparameters.jl")
+recip_truncate(probs) = TruncateRecipDists() ? truncate(probs) : probs
+fwd_truncate(probs)   = TruncateFwdDists()   ? truncate(probs) : probs
+function truncate(pvec)
+    if !isprobvec(pvec)
+        error("pvec = $pvec is not a probability vector")
+    end
+    mininvec = minimum(p for p in pvec if p != 0)
+    if mininvec ≥ MinProb()
+        return pvec
+    else
+        first_to_truncate = findfirst(pvec .== mininvec)
+        return truncate(
+            normalize([i == first_to_truncate ? 0. : p for (i, p) in enumerate(pvec)])
+        )
+    end
+end
+normalize(vec) = vec/sum(vec)
+
+include("categorical.jl")
 
 K_fwd() = Latency() * AssemblySize() * MaxRate() |> Int ∘ round
 K_recip() = Latency() * (MaxRate() * MinProb()) * AssemblySize() |> Int ∘ round

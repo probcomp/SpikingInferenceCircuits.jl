@@ -17,3 +17,7 @@ MultOutDenominator() = TimerExpectedT() * MultAssemblySize() * MaxRate()
 # Should we check that the probability ranges make it possible to actually compile
 # the model, and that the probabilities are actually greater than the MinProb value
 DoRecipPECheck() = true
+
+# By default, don't truncate fwd dists, and truncate recip dists if we are not using perfect weights
+TruncateFwdDists()   = false
+TruncateRecipDists() = weight_type() !== :perfect

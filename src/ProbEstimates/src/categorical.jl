@@ -27,10 +27,10 @@ Cat = LCat{Int}(true, Int[])
 LCat(labels::Vector{T}) where {T} = LCat{T}(false, labels)
 LCat(labels) = LCat(collect(labels))
 
-Gen.simulate(c::LCat, (probs,)::Tuple) = CatTrace(c, probs, categorical(probs))
+Gen.simulate(c::LCat, (probs,)::Tuple) = CatTrace(c, probs, categorical(recip_truncate(probs)))
 function Gen.generate(c::LCat, (probs,)::Tuple, cm::Union{Gen.ChoiceMap, Gen.EmptyChoiceMap})
     if isempty(cm)
-        tr = simulate(c, (probs,))
+        tr = CatTrace(c, probs, categorical(fwd_truncate(probs)))
         return (
             tr,
             log(fwd_prob_estimate(tr)) + log(recip_prob_estimate(tr))
@@ -69,5 +69,5 @@ function Gen.update(tr::CatTrace, (probs,)::Tuple, _::Tuple, cm::Gen.ChoiceMap)
     end
 end
 
-fwd_prob_estimate(tr::CatTrace) = fwd_prob_estimate(tr.probs[tr.idx])
-recip_prob_estimate(tr::CatTrace) = recip_prob_estimate(tr.probs[tr.idx])
+fwd_prob_estimate(tr::CatTrace) = fwd_prob_estimate(fwd_truncate(tr.probs)[tr.idx])
+recip_prob_estimate(tr::CatTrace) = recip_prob_estimate(recip_truncate(tr.probs)[tr.idx])

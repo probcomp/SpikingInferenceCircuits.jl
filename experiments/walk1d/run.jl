@@ -61,4 +61,5 @@ make_smc_prior_exactrejuv_2d_posterior_figure(tr; n_particles=10) =
 # make_smc_prior_exactrejuv_2d_posterior_figure(tr)
 
 tr, _ = generate(model, (10,))
-fig = make_smcexact_2d_posterior_figure(tr; n_particles=2)
+ProbEstimates.use_noisy_weights!()
+fig = make_smcexact_2d_posterior_figure(tr; n_particles=5)
