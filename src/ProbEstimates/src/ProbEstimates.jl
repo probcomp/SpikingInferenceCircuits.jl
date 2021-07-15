@@ -22,4 +22,6 @@ export LCat, Cat, PseudoMarginalizedDist
 
 include("compilation_compatibility.jl")
 
+include("to_single_line.jl")
+
 end # module

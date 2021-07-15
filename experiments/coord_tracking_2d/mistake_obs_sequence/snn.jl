@@ -2,16 +2,16 @@ using SpikingInferenceCircuits
 const SIC = SpikingInferenceCircuits
 using Circuits, SpikingCircuits
 
-includet("model_proposal.jl")
+includet("../model_proposal.jl")
 
 # Load hyperparameter assignments, etc., for the spiking neural network compiler.
-includet("../utils/default_implementation_rules.jl")
+includet("../../utils/default_implementation_rules.jl")
 println("Implementation rules loaded.")
 
 ### Run-specific hyperparams:
-NSTEPS() = 2
+NSTEPS() = 6
 RUNTIME() = INTER_OBS_INTERVAL() * (NSTEPS() - 0.1)
-NPARTICLES() = 2
+NPARTICLES() = 6
 
 ### Log failure probability bound:
 failure_prob_bound = bound_on_overall_failure_prob(NSTEPS(), 6, NPARTICLES())
@@ -39,7 +39,7 @@ println("SMC Circuit Constructed.")
 impl = Circuits.memoized_implement_deep(smc, Spiking());
 println("Circuit fully implemented using Poisson Process neurons.")
 
-includet("../utils/simulation_utils.jl")
+includet("../../utils/simulation_utils.jl")
 
 # `inputs` will be a vector specifying where to send inputs into the SNN at what time
 inputs = get_smc_circuit_inputs(
@@ -54,9 +54,7 @@ inputs = get_smc_circuit_inputs(
                # for the second value, "2", and so on). TODO: support giving observations in their true domains.
         (obsx = x, obsy = y)
         for (x, y) in [
-            (2, 8), (3, 7), (4, 5), (4, 4),
-            (6, 4), (6, 3), (7, 2), (8, 1),
-            (8, 1), (6, 1), (8, 1), (8, 2)
+            (1, 1), (2, 2), (3, 3), (4, 4), (3, 3), (6, 6)
         ]
     ]
 )
@@ -67,8 +65,7 @@ println("Constructed input spike sequence.")
 # Give it the directory of this experiment so it saves in `experiments/this_experiment_directory/saves`.
 # (If no dir is given, it will save in `experiments/saves`.)
 events = simulate_and_get_events(impl, RUNTIME(), inputs; dir=@__DIR__)
-println("Simulation completed!")
 
 # get the inferred latent states from the simulation
-includet("../utils/spiketrain_utils.jl")
+includet("../../utils/spiketrain_utils.jl")
 inferred_states = get_smc_states(events, NPARTICLES(), 4 #= num latent vars in model =#)

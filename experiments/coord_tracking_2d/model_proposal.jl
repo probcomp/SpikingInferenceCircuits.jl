@@ -4,72 +4,87 @@ using ProbEstimates
 
 # Include some utilities for defining discrete probability distributions
 includet("../utils/modeling_utils.jl")
-Positions() = 1:8; Vels() = -1:1;
+Positions() = 1:8; Vels() = [:unset, (-1:1)...];
 Bools() = [true, false]
+
+unif_set_vel() = normalize([v == :unset ? 0. : 1. for v in Vels()])
 
 @gen (static) function initial_latent_model()
     xₜ ~ Cat(unif(Positions()))
     yₜ ~ Cat(unif(Positions()))
-    vxₜ ~ LCat(Vels())(unif(Vels()))
-    vyₜ ~ LCat(Vels())(unif(Vels()))
+
+    # velocity gets set during second timestep
+    vxₜ ~ LCat(Vels())(onehot(:unset, Vels()))
+    vyₜ ~ LCat(Vels())(onehot(:unset, Vels()))
 
     return (xₜ, vxₜ, yₜ, vyₜ)
 end
 @gen (static) function step_latent_model(xₜ₋₁, vxₜ₋₁, yₜ₋₁, vyₜ₋₁)
-    vxₜ ~ LCat(Vels())(maybe_one_off(vxₜ₋₁, 0.3, Vels()))
-    vyₜ ~ LCat(Vels())(maybe_one_off(vyₜ₋₁, 0.3, Vels()))
+    vxₜ ~ LCat(Vels())(
+        vxₜ₋₁ == :unset ?
+                unif_set_vel() :
+                maybe_one_off(vxₜ₋₁, 0.2, Vels())
+    )
+    vyₜ ~ LCat(Vels())(
+        vyₜ₋₁ == :unset ?
+                  unif_set_vel() :
+                  maybe_one_off(vyₜ₋₁, 0.2, Vels())
+    )
 
     exp_x = xₜ₋₁ + vxₜ
     exp_y = yₜ₋₁ + vyₜ
-    xₜ ~ Cat(maybe_one_off(exp_x, 0.3, Positions()))
-    yₜ ~ Cat(maybe_one_off(exp_y, 0.3, Positions()))
+    xₜ ~ Cat(maybe_one_off(exp_x, 0.0, Positions()))
+    yₜ ~ Cat(maybe_one_off(exp_y, 0.0, Positions()))
     return (xₜ, vxₜ, yₜ, vyₜ)
 end
 @gen (static) function obs_model(xₜ, vxₜ, yₜ, vyₜ)
-    obsx ~ Cat(truncated_discretized_gaussian(xₜ, 4.0, Positions()))
-    obsy ~ Cat(truncated_discretized_gaussian(yₜ, 4.0, Positions()))
+    obsx ~ Cat(posdist(xₜ))
+    obsy ~ Cat(posdist(yₜ))
 
     return (obsx, obsy)
 end
 
+posdist(x) = 
+    (0.5 * onehot(x, Positions()) +
+    0.5 * truncated_discretized_gaussian(x, 2.0, Positions())) |> truncate
+
 ### proposals
 @gen (static) function initial_proposal(obsx, obsy)
-    xₜ ~ Cat(truncated_discretized_gaussian(obsx, 2., Positions()))
-    yₜ ~ Cat(truncated_discretized_gaussian(obsy, 2., Positions()))
+    xₜ ~ Cat(truncated_discretized_gaussian(obsx, 0.5, Positions()))
+    yₜ ~ Cat(truncated_discretized_gaussian(obsy, 0.5, Positions()))
 
-    vxₜ ~ LCat(Vels())(unif(Vels()))
-    vyₜ ~ LCat(Vels())(unif(Vels()))
+    vxₜ ~ LCat(Vels())(onehot(:unset, Vels()))
+    vyₜ ~ LCat(Vels())(onehot(:unset, Vels()))
 end
 @gen (static) function step_proposal(xₜ₋₁, vxₜ₋₁, yₜ₋₁, vyₜ₋₁, obsx, obsy)
-    projected_x = truncate_value(xₜ₋₁ + vxₜ₋₁, Positions())
-    mean_x = 0.5 * obsx + 0.5 * projected_x
-
+    projected_x = vxₜ₋₁ == :unset ? :unset : truncate_value(xₜ₋₁ + vxₜ₋₁, Positions())
     xₜ ~ Cat(
-        # it is possible to be up to 2 away from the projected_x
-        truncate_dist_to_valrange(
-            discretized_gaussian(mean_x, 2.5, Positions()),
-            (projected_x - 2):(projected_x + 2),
-            Positions()
-        ) |> truncate
+        projected_x == :unset ?
+            posdist(obsx) : 
+            truncate_dist_to_valrange(step_pos_dist(obsx, projected_x), (projected_x - 1):(projected_x + 1), Positions())
     )
     
     diff_x = xₜ - xₜ₋₁
     vxₜ ~ LCat(Vels())(vel_step_dist(vxₜ₋₁, diff_x))
 
-    projected_y = truncate_value(yₜ₋₁ + vyₜ₋₁, Positions())
-    mean_y = (obsy + projected_y)/2
+    projected_y = vyₜ₋₁ == :unset ? :unset : truncate_value(yₜ₋₁ + vyₜ₋₁, Positions())
     yₜ ~ Cat(
-        truncate_dist_to_valrange(
-            discretized_gaussian(mean_y, 2.5, Positions()),
-            (projected_y - 2):(projected_y + 2),
-            Positions()
-        ) |> truncate
+        projected_y == :unset ?
+            posdist(obsy) :
+            truncate_dist_to_valrange(step_pos_dist(obsy, projected_y), (projected_y - 1):(projected_y + 1), Positions())
     )
     diff_y = yₜ - yₜ₋₁
     vyₜ ~ LCat(Vels())(vel_step_dist(vyₜ₋₁, diff_y))
 end
 
-vel_step_dist(vxₜ₋₁, diff_x) =
-    let probs = maybe_one_off(vxₜ₋₁, 0.3, Vels()) .* maybe_one_off(diff_x, 0.5, Vels())
-        isprobvec(probs) ? probs : maybe_one_off(vxₜ₋₁, 0.3, Vels())
-    end |> normalize
+# vel_step_dist(vxₜ₋₁, diff_x) =
+#     vxₜ₋₁ == :unset ? maybe_one_off(diff_x, 0.1, Vels()) :
+#     let probs = maybe_one_off(vxₜ₋₁, 0.2, Vels()) .* maybe_one_off(diff_x, 0.2, Vels())
+#         isprobvec(probs) ? probs : maybe_one_off(vxₜ₋₁, 0.3, Vels())
+#     end |> normalize
+vel_step_dist(_, diff_x) = onehot(diff_x, Vels())
+
+step_pos_dist(obsx, projected_x) = (
+    0.5 * onehot(projected_x, Positions()) +
+    0.5 * discretized_gaussian((obsx + projected_x)/2, 1.5, Positions())
+) |> truncate

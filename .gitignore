@@ -6,3 +6,5 @@ visualization/frontend/renders/**/*
 .vscode/**/*
 experiments/saves/**/*
 experiments/**/saves/**/*
+experiments/figure_saves/**/*
+*.mp4

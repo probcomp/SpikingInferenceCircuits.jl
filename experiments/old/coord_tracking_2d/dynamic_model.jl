@@ -2,8 +2,7 @@ using Gen, Distributions
 using ProbEstimates
 ProbEstimates.use_perfect_weights!()
 
-includet("../../src/DynamicModels/DynamicModels.jl")
-using .DynamicModels
+using DynamicModels
 
 includet("modeling_utils.jl")
 includet("model_hyperparams.jl")

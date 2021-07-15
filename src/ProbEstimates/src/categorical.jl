@@ -1,5 +1,5 @@
-struct CatTrace <: Gen.Trace
-    gf::Gen.GenerativeFunction
+struct CatTrace{T} <: Gen.Trace
+    gf::Gen.GenerativeFunction{T}
     probs::Vector{Float64}
     idx::Int
 end
@@ -18,7 +18,7 @@ struct LCat{T} <: Gen.GenerativeFunction{T, CatTrace}
 end
 labels(l::LCat, pvec) = l.is_indexed ? (1:length(pvec)) : l.labels
 idx_to_label(c::LCat, idx) = c.is_indexed ? idx : c.labels[idx]
-label_to_idx(c::LCat, lab) = c.is_indexed ? lab : findfirst(c.labels .== lab)
+label_to_idx(c::LCat, lab) = c.is_indexed ? lab : findfirst([l == lab for l in c.labels])
 Base.:(==)(a::LCat{T}, b::LCat{T}) where {T} = (
         a.is_indexed && b.is_indexed || a.labels == b.labels
     )
@@ -45,11 +45,27 @@ function Gen.generate(c::LCat, (probs,)::Tuple, cm::Union{Gen.ChoiceMap, Gen.Emp
 end
 
 function Gen.update(tr::CatTrace, (probs,)::Tuple, _::Tuple, cm::Gen.ChoiceMap)
-    if isempty(cm)
-        @assert probs == get_args(tr)[1]
+    if isempty(cm) && probs == get_args(tr)[1]
         return (tr, 0., NoChange(), EmptyChoiceMap())
     else
-        error("Not expecting nontrivial `update` to be called on `Cat`.  Probs: $probs, cm: $cm")
+        @assert isempty(cm) || has_value(cm, :val)
+        newidx = isempty(cm) ? tr.idx : label_to_idx(get_gen_fn(tr), cm[:val])
+        newtr = CatTrace(get_gen_fn(tr), probs, newidx)
+        score =
+            if weight_type() == :perfect
+                get_score(newtr) - get_score(tr)
+            elseif weight_type() == :noisy
+                # Return an unbiased estimate of P(x')/P(x)
+                log(fwd_prob_estimate(newtr)) + log(recip_prob_estimate(tr))
+            else
+                error("`update` not implemented for this weight-type.")
+            end
+
+        return (
+            newtr, score,
+            tr.idx == newidx ? NoChange() : UnknownChange(),
+            isempty(cm) ? EmptyChoiceMap() : StaticChoiceMap((val=get_retval(tr),), (;))
+        )
     end
 end
 

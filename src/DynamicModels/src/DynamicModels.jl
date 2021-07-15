@@ -143,16 +143,21 @@ function dynamic_model_smc(
     obs_cm_to_proposal_input, # obs choicemap -> arg sequence for proposal
     initial_proposal, step_proposal,
     n_particles;
-    ess_threshold=Inf
+    ess_threshold=Inf,
+    rejuvenate=identity
 )
     unweighted_traces = []
     weighted_traces = []
 
-    function resample_and_track_traces!(state)
+    function resample_rejuvenate_and_track_traces!(state)
         push!(weighted_traces, collect(zip(state.traces, state.log_weights)))
 
         # always resample
         Gen.maybe_resample!(state, ess_threshold=ess_threshold)
+
+        for i=1:n_particles
+            state.traces[i] = rejuvenate(state.traces[i])
+        end
 
         push!(unweighted_traces, copy(state.traces))
     end
@@ -163,7 +168,7 @@ function dynamic_model_smc(
         initial_proposal, obs_cm_to_proposal_input(first_obs_cm),
         n_particles
     )
-    resample_and_track_traces!(state)
+    resample_rejuvenate_and_track_traces!(state)
 
     for (t, o) in enumerate(obs_cms)
         Gen.particle_filter_step!(
@@ -172,7 +177,7 @@ function dynamic_model_smc(
             step_proposal,
             obs_cm_to_proposal_input(o)
         )
-        resample_and_track_traces!(state)
+        resample_rejuvenate_and_track_traces!(state)
     end
 
     return (unweighted_traces, weighted_traces)
@@ -187,5 +192,10 @@ end
 export @DynamicModel, @compile_step_proposal, @compile_initial_proposal
 export dynamic_model_smc, get_dynamic_model_obs
 export obs_choicemap, latents_choicemap
+
+include("enumeration_bayes_filter.jl")
+
+export EnumerationBayesFilter, enumeration_bayes_filter_from_groundtruth
+export enumeration_filter_init, enumeration_filter_step
 
 end
