@@ -98,3 +98,20 @@ exact_step_proposal = @compile_step_proposal(_exact_step_proposal, 3, 2)
 @load_generated_functions()
 
 smc_exact_proposal(tr, n_particles) = smc(tr, n_particles, exact_init_proposal, exact_step_proposal)
+
+### More efficient step proposal (in terms of BN size) ###
+# @gen (static) function _exact_step_proposal(xₜ₋₁, yₜ₋₁, vₜ₋₁, obsx, obsy)
+#     xdiff = obsx - xₜ₋₁
+#     ydiff = obsy - yₜ₋₁
+#     x_diff_with_vel = xdiff - vₜ₋₁[1] # zero if velocity does not change and obs is perfect
+#     y_diff_with_vel = ydiff - vₜ₋₁[2] # zero if velocity does not change and obs is perfect
+
+#     sq_distance_from_mean = x_diff_with_vel^2 + y_diff_with_vel^2
+
+
+#     probs = vel_step_posterior(xₜ₋₁, yₜ₋₁, vₜ₋₁, , obsy)
+#     vₜ ~ LCat(Vels2D())(probs)
+#     (vxₜ, vyₜ) = vₜ
+#     xₜ ~ Cat(onehot(xₜ₋₁ + vxₜ, Positions()))
+#     yₜ ~ Cat(onehot(yₜ₋₁ + vyₜ, Positions()))
+# end

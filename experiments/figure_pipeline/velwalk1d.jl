@@ -25,6 +25,7 @@ module VelWalk1D
     function figures(tr, callback)
         make_true_2d_posterior_figure(tr)                                 |> callback(:ebf)
         make_smcexact_2d_posterior_figure(tr, n_particles=10)             |> callback(:smcexact10)
+        make_smcapprox_2d_posterior_figure(tr, n_particles=10)            |> callback("smc_approx_10")
         make_smcprior_2d_posterior_figure(tr, n_particles=10)             |> callback(:prior10)
         make_smcprior_2d_posterior_figure(tr, n_particles=1000)           |> callback(:prior1000)
         make_smc_prior_exactrejuv_2d_posterior_figure(tr, n_particles=10) |> callback(:priorgrejuv10)

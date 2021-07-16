@@ -37,7 +37,11 @@ make_smcprior_2d_posterior_figure(tr; n_particles=1_000) = make_smc_figure(smc_f
 make_true_2d_posterior_figure(tr) = make_2d_posterior_figure(tr, get_enumeration_grids(tr);
     inference_method_str="Posterior from exact Bayes filter."
 )
-make_smcexact_2d_posterior_figure(tr; n_particles=10)    = make_smc_figure(smc_exact_proposal, tr; n_particles, proposalstr="proposing from exact posterior")
+make_smcexact_2d_posterior_figure(tr; n_particles=10) =
+    make_smc_figure(smc_exact_proposal, tr; n_particles, proposalstr="proposing from exact posterior")
+make_smcapprox_2d_posterior_figure(tr; n_particles=10) =
+    make_smc_figure(smc_approx_proposal, tr; n_particles, proposalstr="\nproposing from efficiently-encoded approximate posterior")
+
 make_smc_prior_exactrejuv_2d_posterior_figure(tr; n_particles=10) =
     make_smc_figure(prior_smc_exact_rejuv, tr; n_particles, proposalstr="\nproposing from prior + using gibbs rejuvenation")
 

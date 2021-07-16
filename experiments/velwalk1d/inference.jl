@@ -56,41 +56,58 @@ function vel_step_posterior(xₜ₋₁, vₜ₋₁, obs)
     return sum(exp.(logprobs), dims=1) |> normalize |> to_vect
 end
 @gen (static) function _exact_init_proposal(obs)
-xₜ ~ Cat(init_posterior(obs))
-vₜ ~ LCat(Vels())(unif(Vels()))
+    xₜ ~ Cat(init_posterior(obs))
+    vₜ ~ LCat(Vels())(unif(Vels()))
 end
 @gen (static) function _exact_step_proposal(xₜ₋₁, vₜ₋₁, obs)
-vₜ ~ LCat(Vels())(vel_step_posterior(xₜ₋₁, vₜ₋₁, obs))
-xₜ ~ Cat(onehot(xₜ₋₁ + vₜ, Positions()))
+    vₜ ~ LCat(Vels())(vel_step_posterior(xₜ₋₁, vₜ₋₁, obs))
+    xₜ ~ Cat(onehot(xₜ₋₁ + vₜ, Positions()))
 end
+
 exact_init_proposal = @compile_initial_proposal(_exact_init_proposal, 1)
 exact_step_proposal = @compile_step_proposal(_exact_step_proposal, 2, 1)
 @load_generated_functions()
 
 smc_exact_proposal(tr, n_particles) = smc(tr, n_particles, exact_init_proposal, exact_step_proposal)
 
-### Good proposal w/ smaller branching factor ###
-function good_probs(apparent_step, obs)
-    # gaussian around apparent_step
-    # gaussian around obs
+### Approximate step proposal, written with branching factor of 2 (rather than 3) ###
+function v_t_dist(obs_prev_diff, vₜ₋₁)
+    unnormalized_prior_probs =
+        (1 - SwitchProb()) * discretized_gaussian(vₜ₋₁, VelStepStd(), Vels()) +
+             SwitchProb()  * unif(Vels())
+
+    # This is not quite the exact obs probs, since we don't handle the boundary conditions.
+    # (This would be exact if there were no boundaries.)
+    errs = -(last(Positions()) - 1):(last(Positions()) - 1)
+    unnormalized_obs_probs  = [
+        discretized_gaussian(0, ObsStd(), errs)[obs_prev_diff - vₜ + last(Positions())]
+        for vₜ in Vels()
+    ]
+    unnormalized_probs = unnormalized_prior_probs .* unnormalized_obs_probs
+    return normalize(unnormalized_probs)
 end
-@gen (static) function _good_step_proposal(xₜ₋₁, vₜ₋₁, obs)
-apparent_step = obs - xₜ₋₁
-vₜ ~ LCat(Vels())(good_probs(apparent_step, obs))
-xₜ ~ Cat(onehot(xₜ₋₁ + vₜ, Positions()))
+@gen (static) function _approx_step_proposal(xₜ₋₁, vₜ₋₁, obs)
+    obs_prev_diff = obs - xₜ₋₁
+    vₜ ~ LCat(Vels())(v_t_dist(obs_prev_diff, vₜ₋₁))
+    xₜ ~ Cat(onehot(xₜ₋₁ + vₜ, Positions()))
+
+    # a = (@assert v_t_dist(a, vₜ₋₁) == vel_step_posterior(xₜ₋₁, vₜ₋₁, obs))
 end
+approx_step_proposal = @compile_step_proposal(_approx_step_proposal, 2, 1)
+@load_generated_functions()
+smc_approx_proposal(tr, n_particles) = smc(tr, n_particles, exact_init_proposal, approx_step_proposal)
 
 ### Gibbs Rejuvenation ###
 @gen (static) function rejuv_proposal_init(tr)
-{:init => :latents} ~ _exact_init_proposal(obs_choicemap(tr, 0)[:obs => :val])
+    {:init => :latents} ~ _exact_init_proposal(obs_choicemap(tr, 0)[:obs => :val])
 end
 @gen (static) function rejuv_proposal_step(tr)
-t = get_args(tr)[1]
-{:steps => t => :latents} ~ _exact_step_proposal(
-latents_choicemap(tr, t - 1)[:xₜ => :val],
-latents_choicemap(tr, t - 1)[:vₜ => :val],
-obs_choicemap(tr, t)[:obs => :val]
-)
+    t = get_args(tr)[1]
+    {:steps => t => :latents} ~ _exact_step_proposal(
+        latents_choicemap(tr, t - 1)[:xₜ => :val],
+        latents_choicemap(tr, t - 1)[:vₜ => :val],
+        obs_choicemap(tr, t)[:obs => :val]
+    )
 end
 @load_generated_functions()
 
