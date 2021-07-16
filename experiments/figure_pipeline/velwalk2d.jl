@@ -24,6 +24,7 @@ module VelWalk2D
     function figures(tr, callback)
         make_exact_filter_figure(tr)            |> callback(:ebf)
         make_smcexact_fig(tr, n_particles=10)   |> callback(:smcexact10)
+        make_smcapprox_fig(tr, n_particles=10)  |> callback("smc_approx_10")
         make_smcprior_fig(tr, n_particles=10)   |> callback(:prior10)
         make_smcprior_fig(tr, n_particles=1000) |> callback(:prior1000)
     end

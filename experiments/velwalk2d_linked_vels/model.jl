@@ -17,7 +17,11 @@ SwitchProb() = 0.1
     xₜ ~ Cat(unif(Positions()))
     yₜ ~ Cat(unif(Positions()))
     vₜ ~ LCat(Vels2D())(unif(Vels2D()))
-    return (xₜ, yₜ, vₜ)
+    (vx, vy) = vₜ
+    vxₜ ~ LCat(Vels())(onehot(vx, Vels()))
+    vyₜ ~ LCat(Vels())(onehot(vy, Vels()))
+
+    return (xₜ, yₜ, vxₜ, vyₜ)
 end
 
 function vel_step_dist(vₜ₋₁)
@@ -30,16 +34,18 @@ function vel_step_dist(vₜ₋₁)
         (1 - SwitchProb()) * walk_dist
     )
 end
-@gen (static) function step_latent_model(xₜ₋₁, yₜ₋₁, vₜ₋₁)
-    vₜ ~ LCat(Vels2D())(vel_step_dist(vₜ₋₁))
-    (vxₜ, vyₜ) = vₜ
+@gen (static) function step_latent_model(xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁)
+    vₜ ~ LCat(Vels2D())(vel_step_dist((vxₜ₋₁, vyₜ₋₁)))
+    (vx, vy) = vₜ
+    vxₜ ~ LCat(Vels())(onehot(vx, Vels()))
+    vyₜ ~ LCat(Vels())(onehot(vy, Vels()))
 
     xₜ ~ Cat(onehot(xₜ₋₁ + vxₜ, Positions()))
     yₜ ~ Cat(onehot(yₜ₋₁ + vyₜ, Positions()))
 
-    return (xₜ, yₜ, vₜ)
+    return (xₜ, yₜ, vxₜ, vyₜ)
 end
-@gen (static) function obs_model(xₜ, yₜ, vₜ)
+@gen (static) function obs_model(xₜ, yₜ, vxₜ, vyₜ)
     obsx ~ Cat(discretized_gaussian(xₜ, ObsStd(), Positions()))
     obsy ~ Cat(discretized_gaussian(yₜ, ObsStd(), Positions()))
     return (obsx, obsy)

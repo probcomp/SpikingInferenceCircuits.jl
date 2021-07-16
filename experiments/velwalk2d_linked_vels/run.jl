@@ -5,23 +5,21 @@ include("visualize.jl")
 include("inference.jl")
 
 ProbEstimates.DoRecipPECheck() = false
+ProbEstimates.use_perfect_weights!()
 
-model = @DynamicModel(initial_latent_model, step_latent_model, obs_model, 3)
+model = @DynamicModel(initial_latent_model, step_latent_model, obs_model, 4)
 @load_generated_functions()
 
-domains() = (xₜ=Positions(), yₜ=Positions(), vₜ=Vels2D())
+domains() = (xₜ=Positions(), yₜ=Positions(), vxₜ=Vels(), vyₜ=Vels(), vₜ=Vels2D())
 
 function get_enumeration_grids(tr)
     logweight_grids = enumeration_bayes_filter_from_groundtruth(
             tr, initial_latent_model, step_latent_model, obs_model, domains(),
-            2 # first 2 addrs (xₜ, yₜ) are deterministic in the step model
+            4 # first 2 addrs (xₜ, yₜ, vxₜ, vyₜ) are deterministic in the step model
         ) |> DynamicModels.nest_all_addrs_at_val;
     weight_grids = [exp.(logweight_grid) for logweight_grid in logweight_grids];
     return [
-        permutedims(reshape(
-            grid,
-            (length(Positions()), length(Positions()), length(Vels()), length(Vels()))
-        ), [1, 2, 4, 3]) # needed so x and y velocities are in the correct order
+        sum(grid, dims=5)
         for grid in weight_grids
     ]
 end
@@ -54,10 +52,12 @@ make_smcprior_fig(tr; n_particles=1_000) =
     make_smc_figure(smc_from_prior, tr; n_particles, proposalstr="proposing from prior")
 make_smcexact_fig(tr; n_particles=10) =
     make_smc_figure(smc_exact_proposal, tr; n_particles, proposalstr="proposing from exact posterior")
+make_smcapprox_fig(tr; n_particles=10) =
+    make_smc_figure(smc_approx_proposal, tr; n_particles, proposalstr="\nproposing from efficiently-encodable approximate posterior")
 
-tr, _ = generate(model, (10,));
-println("Trace generated.")
-fig, t = make_smcprior_fig(tr, n_particles=10); fig
+# tr, _ = generate(model, (10,));
+# println("Trace generated.")
+# fig, t = make_smcprior_fig(tr, n_particles=10); fig
 
 # grids = get_enumeration_grids(tr);
 # println("Grids produced.")
