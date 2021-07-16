@@ -78,20 +78,24 @@ function v_t_dist(obs_prev_diff, vₜ₋₁)
 
     # This is not quite the exact obs probs, since we don't handle the boundary conditions.
     # (This would be exact if there were no boundaries.)
-    errs = -(last(Positions()) - 1):(last(Positions()) - 1)
+    errs = (first(Positions()) - last(Positions()) - last(Vels())):(
+        last(Positions()) - first(Positions()) - first(Vels())
+    )
+    
     unnormalized_obs_probs  = [
-        discretized_gaussian(0, ObsStd(), errs)[obs_prev_diff - vₜ + last(Positions())]
+        discretized_gaussian(0, ObsStd(), errs)[obs_prev_diff - vₜ + last(Positions()) + last(Vels())]
         for vₜ in Vels()
     ]
     unnormalized_probs = unnormalized_prior_probs .* unnormalized_obs_probs
     return normalize(unnormalized_probs)
 end
+kl(pv1, pv2) = sum(
+    p1 * log(p1/p2) for (p1, p2) in zip(pv1, pv2)
+)
 @gen (static) function _approx_step_proposal(xₜ₋₁, vₜ₋₁, obs)
     obs_prev_diff = obs - xₜ₋₁
     vₜ ~ LCat(Vels())(v_t_dist(obs_prev_diff, vₜ₋₁))
     xₜ ~ Cat(onehot(xₜ₋₁ + vₜ, Positions()))
-
-    # a = (@assert v_t_dist(a, vₜ₋₁) == vel_step_posterior(xₜ₋₁, vₜ₋₁, obs))
 end
 approx_step_proposal = @compile_step_proposal(_approx_step_proposal, 2, 1)
 @load_generated_functions()
