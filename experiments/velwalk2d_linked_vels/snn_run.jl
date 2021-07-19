@@ -7,6 +7,7 @@ includet("model.jl")
 includet("inference.jl")
 
 latent_domains()     = (xₜ=Positions(), yₜ=Positions(), vxₜ=Vels(), vyₜ=Vels(), vₜ=Vels2D())
+latent_args_domains() = (xₜ=Positions(), yₜ=Positions(), vxₜ=Vels(), vyₜ=Vels())
 obs_domains()         = (obsx=Positions(), obsy=Positions())
 latent_obs_domains() = (latent_domains()..., obs_domains()...)
 
@@ -25,12 +26,12 @@ NPARTICLES() = 2
 failure_prob_bound = bound_on_overall_failure_prob(NSTEPS(), NVARS(), NPARTICLES())
 println("Hyperparameters set so the probability the circuit fails due to an issue we check for is less than $failure_prob_bound.")
 
-smccircuit = SMC(
+ smccircuit = SMC(
     GenFnWithInputDomains(initial_latent_model, ()),
-    GenFnWithInputDomains(step_latent_model, latent_domains()),
-    GenFnWithInputDomains(obs_model, latent_domains()),
+    GenFnWithInputDomains(step_latent_model, latent_args_domains()),
+    GenFnWithInputDomains(obs_model, latent_args_domains()),
     GenFnWithInputDomains(_exact_init_proposal, obs_domains()),
-    GenFnWithInputDomains(_approx_step_proposal, latent_obs_domains()),
+    GenFnWithInputDomains(_approx_step_proposal, (latent_args_domains()..., obs_domains()...)),
     [:xₜ, :yₜ, :vxₜ, :vyₜ], [:obsx, :obsy], [:xₜ, :yₜ, :vxₜ, :vyₜ], NPARTICLES();
     truncation_minprob=MinProb()
 )

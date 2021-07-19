@@ -89,12 +89,31 @@ to_vect(v) = reshape(v, (:,))
 xprobs(grid) = sum(grid, dims=2) |> normalize |> to_vect
 yprobs(grid, x) = grid[x, :]     |> normalize |> to_vect
 
-@gen (static) function _exact_init_proposal(obsx, obsy)
-    probgrid = init_posterior(obsx, obsy)
-    xₜ ~ Cat(xprobs(probgrid))
-    yₜ ~ Cat(yprobs(probgrid, xₜ))
-    vₜ ~ LCat(Vels2D())(unif(Vels2D()))
+# @gen (static) function _exact_init_proposal(obsx, obsy)
+#     probgrid = init_posterior(obsx, obsy)
+#     xₜ ~ Cat(xprobs(probgrid))
+#     yₜ ~ Cat(yprobs(probgrid, xₜ))
+#     vₜ ~ LCat(Vels2D())(unif(Vels2D()))
+#     (vx, vy) = vₜ
+#     vxₜ ~ LCat(Vels())(onehot(vx, Vels()))
+#     vyₜ ~ LCat(Vels())(onehot(vy, Vels()))
+# end
+
+function init_posterior_1d(obs)
+    posterior = [discretized_gaussian(x, ObsStd(), Positions())[obs] for x in Positions()] |> normalize
+    true_posterior = reshape(sum(init_posterior(obs, 1), dims=2), (:,)) |> normalize # 4 is random, should work for any element of Positions()
+    @assert isapprox(posterior, true_posterior) "computed posterior = $posterior ; enumerated posterior = $true_posterior" 
+    return posterior
 end
+@gen (static) function _exact_init_proposal(obsx, obsy)
+    xₜ ~ Cat(init_posterior_1d(obsx))
+    yₜ ~ Cat(init_posterior_1d(obsx))
+    vₜ ~ LCat(Vels2D())(unif(Vels2D()))
+    (vx, vy) = vₜ
+    vxₜ ~ LCat(Vels())(onehot(vx, Vels()))
+    vyₜ ~ LCat(Vels())(onehot(vy, Vels()))
+end
+
 @gen (static) function _exact_step_proposal(xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, obsx, obsy)
     probs = vel_step_posterior(xₜ₋₁, yₜ₋₁, (vxₜ₋₁, vyₜ₋₁), obsx, obsy)
     vₜ ~ LCat(Vels2D())(probs)
@@ -125,6 +144,15 @@ function vel_dist_1d(obs_prev_diff, vₜ₋₁)
         discretized_gaussian(0, ObsStd(), errs)[obs_prev_diff - vₜ + last(Positions()) + last(Vels())]
         for vₜ in Vels()
     ]
+
+    # If this is totally impossible [due to floating-point error in computing the discretized_gaussian], the velocity would
+    # have to be way out of bounds to bring the point to the observation. instead use the following surrogate distribution
+    if sum(unnormalized_obs_probs) == 0.
+        unnormalized_obs_probs = discretized_gaussian(
+            truncate_value(obs_prev_diff, ObsStd()), 1.0, Vels()
+        )
+    end
+
     unnormalized_probs = unnormalized_prior_probs .* unnormalized_obs_probs
     return normalize(unnormalized_probs)
 end
@@ -135,7 +163,7 @@ end
 
     vxₜ ~ LCat(Vels())(vel_dist_1d(xobs_prev_diff, vxₜ₋₁))
     vyₜ ~ LCat(Vels())(vel_dist_1d(yobs_prev_diff, vyₜ₋₁))
-    vₜ ~ LCat(Vels2D())(onehot((vxₜ, vyₜ), Vels2D()), Vels2D())
+    vₜ ~ LCat(Vels2D())(onehot((vxₜ, vyₜ), Vels2D()))
 
     xₜ ~ Cat(onehot(xₜ₋₁ + vxₜ, Positions()))
     yₜ ~ Cat(onehot(yₜ₋₁ + vyₜ, Positions()))
