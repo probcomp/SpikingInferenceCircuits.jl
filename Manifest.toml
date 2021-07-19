@@ -12,6 +12,11 @@ git-tree-sha1 = "320f1c13006a9011cdd40ee6826c928249132ca0"
 uuid = "537997a7-5e4e-5d89-9595-2241ea00577e"
 version = "0.18.3"
 
+[[AbstractTrees]]
+git-tree-sha1 = "03e0550477d86222521d254b741d470ba17ea0b5"
+uuid = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
+version = "0.3.4"
+
 [[Adapt]]
 deps = ["LinearAlgebra"]
 git-tree-sha1 = "84918055d15b3114ede17ac6a7182f68870c16f7"
@@ -35,12 +40,18 @@ version = "0.1.0"
 
 [[ArrayInterface]]
 deps = ["IfElse", "LinearAlgebra", "Requires", "SparseArrays", "Static"]
-git-tree-sha1 = "045ff5e1bc8c6fb1ecb28694abba0a0d55b5f4f5"
+git-tree-sha1 = "a71d224f61475b93c9e196e83c17c6ac4dedacfa"
 uuid = "4fba245c-0d91-5ea0-9b3e-6abc04ee57a9"
-version = "3.1.17"
+version = "3.1.18"
 
 [[Artifacts]]
 uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
+
+[[Automa]]
+deps = ["Printf", "ScanByte", "TranscodingStreams"]
+git-tree-sha1 = "d50976f217489ce799e366d9561d56a98a30d7fe"
+uuid = "67c07d97-cdcb-5c2c-af73-a7f9c32a568b"
+version = "0.8.2"
 
 [[AxisAlgorithms]]
 deps = ["LinearAlgebra", "Random", "SparseArrays", "WoodburyMatrices"]
@@ -73,18 +84,6 @@ path = "src/CPTs"
 uuid = "b537e094-b773-4c3d-913e-03cd2b143e52"
 version = "0.1.0"
 
-[[Cairo]]
-deps = ["Cairo_jll", "Colors", "Glib_jll", "Graphics", "Libdl", "Pango_jll"]
-git-tree-sha1 = "d0b3f8b4ad16cb0a2988c6788646a5e6a17b6b1b"
-uuid = "159f3aea-2a34-519c-b102-8c37f9878175"
-version = "1.0.5"
-
-[[CairoMakie]]
-deps = ["Base64", "Cairo", "Colors", "FFTW", "FileIO", "FreeType", "GeometryBasics", "LinearAlgebra", "Makie", "SHA", "StaticArrays"]
-git-tree-sha1 = "68628add03c2c7c2235834902aad96876f07756a"
-uuid = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
-version = "0.6.2"
-
 [[Cairo_jll]]
 deps = ["Artifacts", "Bzip2_jll", "Fontconfig_jll", "FreeType2_jll", "Glib_jll", "JLLWrappers", "LZO_jll", "Libdl", "Pixman_jll", "Pkg", "Xorg_libXext_jll", "Xorg_libXrender_jll", "Zlib_jll", "libpng_jll"]
 git-tree-sha1 = "f2202b55d816427cd385a9a4f3ffb226bee80f99"
@@ -99,7 +98,9 @@ version = "0.10.12"
 
 [[Circuits]]
 deps = ["Distributions", "LightGraphs", "Memoization"]
-path = "../Circuits.jl"
+git-tree-sha1 = "50cf83e1aba651a77449d6d3e4c1e18eaab12b3d"
+repo-rev = "main"
+repo-url = "https://github.com/probcomp/Circuits.jl.git"
 uuid = "f5b243b3-c95b-4650-9ac7-659d8f0b0982"
 version = "0.1.0"
 
@@ -369,9 +370,9 @@ version = "3.3.5+0"
 
 [[GLMakie]]
 deps = ["ColorTypes", "Colors", "FileIO", "FixedPointNumbers", "FreeTypeAbstraction", "GLFW", "GeometryBasics", "LinearAlgebra", "Makie", "Markdown", "MeshIO", "ModernGL", "Observables", "Printf", "Serialization", "ShaderAbstractions", "StaticArrays"]
-git-tree-sha1 = "f98f16b0be185dbf0f744e004f75a4ab72739813"
+git-tree-sha1 = "ef6b2599a755101af901bc9e5e2c535e9e2a0543"
 uuid = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
-version = "0.4.2"
+version = "0.4.4"
 
 [[Gen]]
 deps = ["Compat", "DataStructures", "Distributions", "ForwardDiff", "FunctionalCollections", "JSON", "LinearAlgebra", "MacroTools", "Parameters", "Random", "ReverseDiff", "SpecialFunctions"]
@@ -529,6 +530,11 @@ git-tree-sha1 = "e5b909bcf985c5e2605737d2ce278ed791b89be6"
 uuid = "dd4b983a-f0e5-5f8d-a1b7-129d4a5fb1ac"
 version = "2.10.1+0"
 
+[[LaTeXStrings]]
+git-tree-sha1 = "c7f1c695e06c01b95a67f0cd1d34994f3e7db104"
+uuid = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
+version = "1.2.1"
+
 [[LazyArtifacts]]
 deps = ["Artifacts", "Pkg"]
 uuid = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
@@ -632,10 +638,10 @@ uuid = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
 version = "0.5.6"
 
 [[Makie]]
-deps = ["Animations", "Artifacts", "ColorBrewer", "ColorSchemes", "ColorTypes", "Colors", "Contour", "Distributions", "DocStringExtensions", "FFMPEG", "FileIO", "FixedPointNumbers", "Formatting", "FreeType", "FreeTypeAbstraction", "GeometryBasics", "GridLayoutBase", "ImageIO", "IntervalSets", "Isoband", "KernelDensity", "LinearAlgebra", "MakieCore", "Markdown", "Match", "Observables", "Packing", "PlotUtils", "PolygonOps", "Printf", "Random", "Serialization", "Showoff", "SignedDistanceFields", "SparseArrays", "StaticArrays", "Statistics", "StatsBase", "StatsFuns", "StructArrays", "UnicodeFun"]
-git-tree-sha1 = "82f9d9de6892e5470372720d23913d14a08991fd"
+deps = ["Animations", "Artifacts", "Base64", "ColorBrewer", "ColorSchemes", "ColorTypes", "Colors", "Contour", "Distributions", "DocStringExtensions", "FFMPEG", "FileIO", "FixedPointNumbers", "Formatting", "FreeType", "FreeTypeAbstraction", "GeometryBasics", "GridLayoutBase", "ImageIO", "IntervalSets", "Isoband", "KernelDensity", "LaTeXStrings", "LinearAlgebra", "MakieCore", "Markdown", "Match", "MathTeXEngine", "Observables", "Packing", "PlotUtils", "PolygonOps", "Printf", "Random", "Serialization", "Showoff", "SignedDistanceFields", "SparseArrays", "StaticArrays", "Statistics", "StatsBase", "StatsFuns", "StructArrays", "UnicodeFun"]
+git-tree-sha1 = "5761bfd21ad271efd7e134879e39a2289a032fc8"
 uuid = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
-version = "0.14.2"
+version = "0.15.0"
 
 [[MakieCore]]
 deps = ["Observables"]
@@ -657,15 +663,21 @@ git-tree-sha1 = "5cf525d97caf86d29307150fcba763a64eaa9cbe"
 uuid = "7eb4fadd-790c-5f42-8a69-bfa0b872bfbf"
 version = "1.1.0"
 
+[[MathTeXEngine]]
+deps = ["AbstractTrees", "Automa", "DataStructures", "FreeTypeAbstraction", "GeometryBasics", "LaTeXStrings", "REPL", "Test"]
+git-tree-sha1 = "69b565c0ca7bf9dae18498b52431f854147ecbf3"
+uuid = "0a4f8689-d25c-4efe-a92b-7142dfc1aa53"
+version = "0.1.2"
+
 [[MbedTLS_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "c8ffd9c3-330d-5841-b78e-0817d7145fa1"
 
 [[Memoization]]
 deps = ["MacroTools"]
-git-tree-sha1 = "386301687df0742ee02a2ea880d3be66a952c4f0"
+git-tree-sha1 = "42d48cac95e0fee730ba2fff477adc68c52c65f4"
 uuid = "6fafb56a-5788-4b4e-91ca-c0cea6611c73"
-version = "0.1.12"
+version = "0.1.13"
 
 [[MeshIO]]
 deps = ["ColorTypes", "FileIO", "GeometryBasics", "Printf"]
@@ -780,12 +792,6 @@ deps = ["OffsetArrays"]
 git-tree-sha1 = "0fa5e78929aebc3f6b56e1a88cf505bb00a354c4"
 uuid = "5432bcbf-9aad-5242-b902-cca2824c8663"
 version = "0.5.8"
-
-[[Pango_jll]]
-deps = ["Artifacts", "Cairo_jll", "Fontconfig_jll", "FreeType2_jll", "FriBidi_jll", "Glib_jll", "HarfBuzz_jll", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "9bc1871464b12ed19297fbc56c4fb4ba84988b0d"
-uuid = "36c8627f-9965-5494-a995-c6b170f724f3"
-version = "1.47.0+0"
 
 [[Parameters]]
 deps = ["OrderedCollections", "UnPack"]
@@ -905,6 +911,17 @@ version = "0.3.0+0"
 [[SHA]]
 uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
 
+[[SIMD]]
+git-tree-sha1 = "9ba33637b24341aba594a2783a502760aa0bff04"
+uuid = "fdea26ae-647d-5447-a871-4b548cad5224"
+version = "3.3.1"
+
+[[ScanByte]]
+deps = ["Libdl", "SIMD"]
+git-tree-sha1 = "9cc2955f2a254b18be655a4ee70bc4031b2b189e"
+uuid = "7b38b023-a4d7-4c5e-8d43-3f3097f304eb"
+version = "0.3.0"
+
 [[Serialization]]
 uuid = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
 
@@ -963,7 +980,9 @@ version = "1.5.1"
 
 [[SpikingCircuits]]
 deps = ["AbstractPlotting", "Circuits", "Colors", "DataStructures", "Distributions", "GLMakie", "Printf"]
-path = "../SpikingCircuits.jl"
+git-tree-sha1 = "6091b0f6f2255f0b0b4c0fb2a888f9067bbd6141"
+repo-rev = "main"
+repo-url = "https://github.com/probcomp/SpikingCircuits.jl.git"
 uuid = "549ce59a-75fd-4aaf-b0ba-30f73ee3de21"
 version = "0.1.0"
 
@@ -975,9 +994,9 @@ version = "0.1.1"
 
 [[Static]]
 deps = ["IfElse"]
-git-tree-sha1 = "2740ea27b66a41f9d213561a04573da5d3823d4b"
+git-tree-sha1 = "62701892d172a2fa41a1f829f66d2b0db94a9a63"
 uuid = "aedffcd0-7271-4cad-89d0-dc628f76c6d3"
-version = "0.2.5"
+version = "0.3.0"
 
 [[StaticArrays]]
 deps = ["LinearAlgebra", "Random", "Statistics"]
@@ -1051,6 +1070,12 @@ deps = ["ColorTypes", "DocStringExtensions", "FileIO", "FixedPointNumbers", "Ind
 git-tree-sha1 = "03fb246ac6e6b7cb7abac3b3302447d55b43270e"
 uuid = "731e570b-9d59-4bfa-96dc-6df516fadf69"
 version = "0.4.1"
+
+[[TranscodingStreams]]
+deps = ["Random", "Test"]
+git-tree-sha1 = "7c53c35547de1c5b9d46a4797cf6d8253807108c"
+uuid = "3bb67fe8-82b1-5028-8e26-92a6c54297fa"
+version = "0.9.5"
 
 [[UUIDs]]
 deps = ["Random", "SHA"]
