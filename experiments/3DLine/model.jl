@@ -186,10 +186,9 @@ end
     r_max = max_distance_inside_grid(exact_ϕ, exact_θ)
     l = length(Rs())
     r_probvec = normalize(vcat(ones(Int64(r_max)), zeros(Int64(l-r_max))))
-  #  rₜ = { :rₜ } ~ LCat(Rs())(r_probvec)
+#    rₜ = { :rₜ } ~ LCat(Rs())(r_probvec)
     rₜ = { :rₜ } ~ LCat(Rs())(maybe_one_or_two_off(round(norm_3d(X_init, Y_init, Z_init)),
-                                                   .6, Rs()))
-    
+                                                    .6, Rs()))
     exact_x = rₜ * cos(exact_ϕ) * cos(exact_θ)
     exact_y = rₜ * cos(exact_ϕ) * sin(exact_θ)
     exact_z = rₜ * sin(exact_ϕ)
@@ -230,25 +229,43 @@ end
 
     
 function animate_azalt_movement(tr_list)
-    azalt_matrices = zeros(NSTEPS, length(θs()), length(ϕs()))
+    azalt_matrices = zeros(NSTEPS+1, length(θs()), length(ϕs()))
+    obs_matrices = zeros(NSTEPS+1, length(θs()), length(ϕs()))
+    gt_obs_choices = get_choices(tr_list[1])
+    obs_matrices[1, findfirst(map(x -> x == gt_obs_choices[:init => :obs => :obs_θ => :val], θs())),
+                    findfirst(map(x -> x == gt_obs_choices[:init => :obs => :obs_ϕ => :val], ϕs()))] += 1
+    for step in 1:NSTEPS
+        obs_θ = gt_obs_choices[:steps => step => :obs => :obs_θ => :val]
+        obs_ϕ = gt_obs_choices[:steps => step => :obs => :obs_ϕ => :val]
+        obs_matrices[step+1,
+                     findfirst(map(x -> x == obs_θ, θs())),
+                     findfirst(map(x -> x == obs_ϕ, ϕs()))] += 1
+    end
+    
     for tr in tr_list
         choices = get_choices(tr)
+        azalt_matrices[1, findfirst(map(x -> x == choices[:init => :latents => :exact_θ => :val], θs())),
+                        findfirst(map(x -> x == choices[:init => :latents => :exact_ϕ => :val], ϕs()))] += 1
         for step in 1:NSTEPS
             obs_θ = choices[:steps => step => :latents => :exact_θ => :val]
             obs_ϕ = choices[:steps => step => :latents => :exact_ϕ => :val]
-            azalt_matrices[step,
+            azalt_matrices[step+1,
                            findfirst(map(x -> x == obs_θ, θs())),
                            findfirst(map(x -> x == obs_ϕ, ϕs()))] += 1
         end
     end
-    fig = Figure(resolution=(1000,1000))
-    azalt_ax = fig[1,1] = Axis(fig)
+    fig = Figure(resolution=(2000,1000))
+    obs_ax = fig[1,1] = Axis(fig)
+    azalt_ax = fig[1,2] = Axis(fig)
     time = Node(1)
-    hm(t) = azalt_matrices[t, :, :]
-    heatmap!(azalt_ax, θs(), ϕs(), lift(t -> hm(t), time))
+    hm_exact(t) = azalt_matrices[t, :, :]
+    hm_obs(t) = obs_matrices[t, :, :]
+    heatmap!(obs_ax, θs(), ϕs(), lift(t -> hm_obs(t), time))
+    heatmap!(azalt_ax, θs(), ϕs(), lift(t -> hm_exact(t), time))
     azalt_ax.aspect = DataAspect()
-    azalt_ax.xlabel = "Azimuth"
-    azalt_ax.ylabel = "Altitude"
+    obs_ax.aspect = DataAspect()
+    obs_ax.xlabel = azalt_ax.xlabel = "Azimuth"
+    obs_ax.ylabel = azalt_ax.ylabel = "Altitude"
     display(fig)
     for i in 1:NSTEPS
         time[] = i
@@ -335,7 +352,6 @@ function render_pf_results(uw_traces, gt_trace, n_steps)
                               viewmode=:fit, aspect=(1,1,1), perspectiveness=0.0, protrusions=0, limits=lim,
                       elevation = 1.2*pi, azimuth= .7*pi)
     # scatter takes a list of tuples. want a list of lists of tuples as an f(t) and lift a node to that.
-    
     time_node = Node(1)
     gt_coords = []
     particle_coords = []
