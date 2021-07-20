@@ -42,12 +42,9 @@ Circuits.implement(d::PseudoMarginalizedGenFn, ::Target) =
         inputs(d), outputs(d),
         (particle=d.particle,),
         (
-            Input(:inputs)                   => CompIn(:particle, :args),
-            CompOut(:particle, :weight)      => Output(:score),
-            Input(:obs) => Output(:value)
-
-            # TODO: remove these comments -
-            # Currently we expect that there is exactly 1 observed value which is output, so this is the return value
-            # CompOut(:particle, :trace => d.output_var_addr) => Output(:value)
+            Input(:inputs)              => CompIn(:particle, :args),
+            Input(:obs)                 => CompIn(:particle, :obs => d.output_var_addr),
+            CompOut(:particle, :weight) => Output(:score),
+            Input(:obs)                 => Output(:value)
         ), d
     )
