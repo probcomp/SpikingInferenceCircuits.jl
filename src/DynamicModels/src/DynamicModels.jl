@@ -1,6 +1,6 @@
 module DynamicModels
-
 using Gen
+include("prev_timestep_mh.jl")
 
 """
     model = @DynamicModel(initial_latent_model, latent_step_model, obs_model, num_latent_variables)
@@ -56,8 +56,9 @@ macro DynamicModel(
     end
 end
 
-obs_addr(t)    = t == 0 ? :init => :obs     : :steps => t => :obs
-latent_addr(t) = t == 0 ? :init => :latents : :steps => t => :latents
+addr_for_timestep(t) = t == 0 ? :init : :steps => t
+obs_addr(t)          = t == 0 ? :init => :obs     : :steps => t => :obs
+latent_addr(t)       = t == 0 ? :init => :latents : :steps => t => :latents
 """
     @compile_step_proposal(step_proposal, num_latent_variables, num_obs_variables)
 
@@ -131,7 +132,7 @@ macro compile_rejuvenation_proposal(kernel, n_latents, n_obs)
         
         function rejuvenate_trace(trace)
             proposal = get_args(trace)[1] == 0 ? init_rejuv_proposal : step_rejuv_proposal
-            newtr, _ = Gen.mh(trace, proposal, ())
+            newtr, _ = $(last_timestep_mh)(trace, proposal, ())
             return newtr
         end
 

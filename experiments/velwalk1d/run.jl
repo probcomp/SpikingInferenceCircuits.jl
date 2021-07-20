@@ -50,4 +50,4 @@ make_smc_approx_mhrejuv_2d_posterior_figure(tr; n_particles=10) =
     make_smc_figure(approx_smc_mh_rejuv, tr; n_particles, proposalstr="\napproximate proposal + custom mh rejuvenation")
 
 tr, _ = generate(model, (10,));
-make_smcexact_2d_posterior_figure(tr)
+make_smc_approx_mhrejuv_2d_posterior_figure(tr)

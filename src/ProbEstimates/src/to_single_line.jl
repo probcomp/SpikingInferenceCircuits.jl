@@ -53,3 +53,15 @@ function Gen.maybe_resample!(
     end
     return do_resample
 end
+
+import DynamicModels
+# MH to introduce approximation error as the Spiking circuit will
+DynamicModels.mh_p_accept(new_weight, bwd_weight, fwd_weight, old_tr_weight; update_weight) =
+    if weight_type() == :perfect
+        @assert isapprox(new_weight - old_tr_weight, update_weight)
+        exp(new_weight + bwd_weight - fwd_weight - old_tr_weight)
+    else
+        new_weight = new_weight + bwd_weight - fwd_weight |> exp # |> product_to_single_line
+        old_weight = old_tr_weight |> exp # |> product_to_single_line
+        new_weight / (new_weight + old_weight)
+    end
