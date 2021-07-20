@@ -73,11 +73,11 @@ A tuple of `Domain`s giving the domain for each input of the GenFn.
 input_domains(::GenFn) = error("Not implemented.")
 
 """
-    output_domain(::GenFn)::Int
+    output_domain(::GenFn)
 
 The output `Domain` for the GenFn.
 """
-output_domain(::GenFn)::Int = error("Not implemented.")
+output_domain(::GenFn) = error("Not implemented.")
 
 """
     has_traceable_value(::GenFn)::Bool

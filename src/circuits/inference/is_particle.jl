@@ -48,16 +48,16 @@ struct ISParticle <: GenericComponent
     assess_obs        :: GenFn{Generate}
     latent_addr_order :: Vector
     obs_addr_order    :: Vector
+    multiply_scores   :: Bool
 end
 ISParticle(
     proposal::ImplementableGenFn, latent_model::ImplementableGenFn,
     obs_model::ImplementableGenFn, latent_addr_order, obs_addr_order;
+    multiply_scores         = true  :: Bool              ,
     truncate_proposal_dists = true  :: Bool              ,
     truncate_model_dists    = false :: Bool              ,
     truncation_minprob      = NaN   :: Float64
-) = begin
-    println("in is_particle, truncation_minprob = $truncation_minprob")
-    ISParticle(
+) = ISParticle(
     # Replace the return nodes since (1) the top-level return nodes don't matter to this circuit, and (2)
     # the return nodes may be tuples of values, which are currently not handled well by the compiler.
     # (They are treated as EnumeratedDomains spanning every possible assignment to the tuple, so there could be a huge
@@ -66,9 +66,8 @@ ISParticle(
     gen_fn_circuit(replace_return_node(proposal) |> maybe_truncate(truncate_proposal_dists, truncation_minprob), Propose()),
     gen_fn_circuit(replace_return_node(latent_model) |> maybe_truncate(truncate_model_dists, truncation_minprob), Assess()),
     gen_fn_circuit(replace_return_node(obs_model) |> maybe_truncate(truncate_model_dists, truncation_minprob), Assess()),
-    latent_addr_order, obs_addr_order
+    latent_addr_order, obs_addr_order, multiply_scores
 )
-end
 maybe_truncate(do_it, truncation_minprob) = do_it ? gf -> truncate_implementable_gf(gf, truncation_minprob) : identity
 
 Circuits.inputs(p::ISParticle) = NamedValues(
@@ -77,20 +76,42 @@ Circuits.inputs(p::ISParticle) = NamedValues(
 )
 Circuits.outputs(p::ISParticle) = NamedValues(
     :trace => outputs(p.propose)[:trace],
-    :weight => SingleNonnegativeReal()
+    :weight => weight_outval(p)
 )
+weight_outval(p) =
+    if p.multiply_scores
+        SingleNonnegativeReal()
+    else
+        ProductNonnegativeReal((
+            outputs(p.propose)[:score],
+            outputs(p.assess_latents)[:score],
+            outputs(p.assess_obs)[:score]
+        ))
+    end
+implemented_weight_outval(p, t) = p.multiply_scores ? weight_outval(p) : implement(weight_outval(p), t)
 
-Circuits.implement(p::ISParticle, ::Target) =
+# no circuits if we don't multiply; a namedtuple with 1 multiplier if we do!
+multiplier_circuits(p) =
+    !p.multiply_scores ? () : (
+                multiplier=SDCs.NonnegativeRealMultiplier((
+                    outputs(p.propose)[:score],
+                    outputs(p.assess_latents)[:score],
+                    outputs(p.assess_obs)[:score]
+                )),
+            )
+
+Circuits.implement(p::ISParticle, t::Target) =
     CompositeComponent(
-        inputs(p), outputs(p), (
+        inputs(p),
+        NamedValues(
+            :trace => outputs(p.propose)[:trace],
+            :weight => implemented_weight_outval(p, t)
+        ), 
+        (
             propose=p.propose,
             assess_latents=p.assess_latents,
             assess_obs=p.assess_obs,
-            multiplier=SDCs.NonnegativeRealMultiplier((
-                outputs(p.propose)[:score],
-                outputs(p.assess_latents)[:score],
-                outputs(p.assess_obs)[:score]
-            ))
+            multiplier_circuits(p)...
         ), (
             ( # Input args -> propose args
                 Input(:args => addr) => CompIn(:propose, :inputs => addr)
@@ -110,10 +131,22 @@ Circuits.implement(p::ISParticle, ::Target) =
                 )
             )...,
             Input(:obs) => CompIn(:assess_obs, :obs),
-            CompOut(:propose, :score) => CompIn(:multiplier, 1),
-            CompOut(:assess_latents, :score) => CompIn(:multiplier, 2),
-            CompOut(:assess_obs, :score) => CompIn(:multiplier, 3),
-            CompOut(:multiplier, :out) => Output(:weight),
+            score_out_edges(p)...,
             CompOut(:propose, :trace) => Output(:trace)
         ), p
     )
+score_out_edges(d) =
+    if d.multiply_scores
+        (
+            CompOut(:propose, :score) => CompIn(:multiplier, 1),
+            CompOut(:assess_latents, :score) => CompIn(:multiplier, 2),
+            CompOut(:assess_obs, :score) => CompIn(:multiplier, 3),
+            CompOut(:multiplier, :out) => Output(:weight)
+        )
+    else
+        (
+            CompOut(:propose, :score)        => Output(:weight => 1),
+            CompOut(:assess_latents, :score) => Output(:weight => 2),
+            CompOut(:assess_obs, :score)     => Output(:weight => 3),
+        )
+    end

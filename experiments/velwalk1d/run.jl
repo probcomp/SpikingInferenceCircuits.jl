@@ -1,10 +1,11 @@
 using DynamicModels
 include("model.jl")
+include("pm_model.jl")
 include("inference.jl")
 include("visualize.jl")
 ProbEstimates.DoRecipPECheck() = false
 
-model = @DynamicModel(initial_latent_model, step_latent_model, obs_model, 2)
+model = @DynamicModel(initial_latent_model, pm_step_model, obs_model, 2)
 @load_generated_functions()
 
 function get_enumeration_grids(tr)
@@ -45,5 +46,5 @@ make_smcapprox_2d_posterior_figure(tr; n_particles=10) =
 make_smc_prior_exactrejuv_2d_posterior_figure(tr; n_particles=10) =
     make_smc_figure(prior_smc_exact_rejuv, tr; n_particles, proposalstr="\nproposing from prior + using gibbs rejuvenation")
 
-# tr, _ = generate(model, (10,));
-# make_smcexact_2d_posterior_figure(tr)
+tr, _ = generate(model, (10,));
+make_smcexact_2d_posterior_figure(tr)

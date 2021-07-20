@@ -4,7 +4,9 @@ using Circuits, SpikingCircuits
 using DynamicModels
 
 includet("model.jl")
+includet("pm_model.jl")
 includet("inference.jl")
+@load_generated_functions()
 
 latent_domains()     = (xₜ=Positions(), vₜ=Vels())
 obs_domains()         = (obs=Positions(),)
@@ -27,7 +29,7 @@ println("Hyperparameters set so the probability the circuit fails due to an issu
 
 smccircuit = SMC(
     GenFnWithInputDomains(initial_latent_model, ()),
-    GenFnWithInputDomains(step_latent_model, latent_domains()),
+    GenFnWithInputDomains(pm_step_model, latent_domains()),
     GenFnWithInputDomains(obs_model, latent_domains()),
     GenFnWithInputDomains(_exact_init_proposal, obs_domains()),
     GenFnWithInputDomains(_approx_step_proposal, latent_obs_domains()),

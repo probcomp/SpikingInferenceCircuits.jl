@@ -1,7 +1,6 @@
 module ProbEstimates
 using Gen
 using Distributions
-using DiscreteIRTransforms
 
 include("hyperparameters.jl")
 

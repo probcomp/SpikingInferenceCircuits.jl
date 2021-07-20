@@ -9,3 +9,5 @@ include("composite/composite.jl")
 include("composite/graph.jl")
 include("composite/static.jl")
 include("composite/apply.jl")
+
+include("pseudomarginal.jl")

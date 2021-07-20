@@ -21,17 +21,30 @@ Gen.get_gen_fn(tr::PMDistTrace) = tr.gf
 Gen.project(tr::PMDistTrace, ::EmptySelection) = 0.
 
 struct PseudoMarginalizedDist{R} <: Gen.GenerativeFunction{R, PMDistTrace}
-    model::Gen.GenerativeFunction{R}
-    proposal::Gen.GenerativeFunction
-    n_particles::Int
+    latent_model         :: Gen.GenerativeFunction
+    obs_model            :: Gen.GenerativeFunction{R}
+    proposal             :: Gen.GenerativeFunction
+    val_to_obs_choicemap
+    n_particles          :: Int
+    args_for_compilation
 end
 Base.:(==)(a::PseudoMarginalizedDist, b::PseudoMarginalizedDist) =
-    a.model == b.model && a.proposal == b.proposal && a.n_particles == b.n_particles
+    a.latent_model == b.latent_model && a.obs_model == b.obs_model && a.proposal == b.proposal && a.n_particles == b.n_particles
+
+latent_domains(      d :: PseudoMarginalizedDist) = d.args_for_compilation[1]
+latent_addr_order(   d :: PseudoMarginalizedDist) = d.args_for_compilation[2]
+obs_addr_order(      d :: PseudoMarginalizedDist) = d.args_for_compilation[3]
+args_for_compilation(d :: PseudoMarginalizedDist) = d.args_for_compilation[4]
+obs_arg_domains(d :: PseudoMarginalizedDist, arg_domains) = (arg_domains..., latent_domains(d)...)
 
 (p::PseudoMarginalizedDist)(args...) = get_retval(simulate(p, args))
 
 Gen.simulate(d::PseudoMarginalizedDist{R}, args::Tuple) where {R} =
-    PMDistTrace(d, args, get_retval(simulate(d.model, args)))
+    let latent_vals = get_retval(simulate(d.latent_model, args))
+        PMDistTrace(d, args,
+            simulate(d.obs_model, (args..., latent_vals...)) |> get_retval
+        )
+    end
 function Gen.generate(d::PseudoMarginalizedDist{R}, args::Tuple, cm::Union{Gen.ChoiceMap, Gen.EmptyChoiceMap}) where {R}
     tr = if isempty(cm)
         simulate(d, args)
@@ -59,9 +72,10 @@ function log_pseudomarginal_prob_estimate(d, val, args)
     weight_sum = 0.
     for _=1:d.n_particles
         proposed_choices, proposed_score = propose(d.proposal, (args..., val))
-        assessed_score, v1 = assess(
-            d.model, args, proposed_choices
-        )
+
+        latent_assessed_score, latent_vals = assess(d.latent_model, args, proposed_choices)
+        obs_assessed_score,   v1 = assess(d.obs_model, (args..., latent_vals...), d.val_to_obs_choicemap(val))
+        assessed_score = latent_assessed_score + obs_assessed_score
         @assert v1 == val "val = $val, v1 = $v1"
 
         weight_sum += exp(assessed_score - proposed_score)
