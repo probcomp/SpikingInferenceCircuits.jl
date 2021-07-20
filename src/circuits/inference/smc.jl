@@ -3,7 +3,7 @@
 """
 struct MultiParticleWithResample <: GenericComponent
     num_particles::Int
-    is_particle::ISParticle
+    is_particle::Union{ISParticle, RejuvenatedISParticle}
 end
 Circuits.inputs(m::MultiParticleWithResample) = NamedValues(
     :args => IndexedValues(inputs(m.is_particle)[:args] for _=1:m.num_particles),
@@ -34,7 +34,8 @@ Circuits.implement(m::MultiParticleWithResample, ::Target) =
         step_proposal_bundle            :: ImplementableGenFn,
         latent_var_addrs_for_obs        :: Vector               ,
         obs_addr_order                  :: Vector               ,
-        num_particles                   :: Int
+        num_particles                   :: Int                  ;
+        rejuv_proposal = nothing        :: Union{Nothing, ImplementableGenFn}
     )
 
 A circuit for performing an SMC step under the given step model and proposal.
@@ -45,6 +46,9 @@ then resample according to the importance weights, and output the resampled trac
 after the previous timesteps' latents.
 `latent_var_addrs_for_obs` gives the order in which latent variables should be input into the observation
 model.
+
+If a `rejuv_proposal` is provided, the circuit will additionally rejuvenate the current timestep
+latents after resampling at each step.
 """
 SMCStep(
     step_model_bundle               :: ImplementableGenFn,
@@ -53,14 +57,17 @@ SMCStep(
     latent_var_addrs_for_obs        :: Vector            ,
     obs_addr_order                  :: Vector            ,
     num_particles                   :: Int               ;
+    rejuv_proposal = nothing                             ,
     is_kwargs...
 ) = MultiParticleWithResample(
         num_particles,
         ISParticle(
             step_proposal_bundle, step_model_bundle, obs_model_bundle,
             latent_var_addrs_for_obs, obs_addr_order; is_kwargs...
-        )
+        ) |> maybe_add_mh_rejuv(rejuv_proposal)
     )
+
+maybe_add_rejuvenation(rejuv) = isnothing(rejuv) ? identity : particle -> RejuvenatedISParticle(particle, rejuv)
 
 # for a `smc_step` (which is a `MultiParticleWithResample`):
 prev_latents_val(step)    = inputs(step.is_particle)[:args]
@@ -153,7 +160,7 @@ with `:is_initial_obs` set to false.  For each obs, an unweighted particle cloud
 of inferred assignments to the latent variables will be output.
 """
 struct SMC <: GenericComponent
-    initial_step_particle :: ISParticle
+    initial_step_particle :: Union{ISParticle, RejuvenatedISParticle}
     subsequent_steps      :: RecurrentSMCStep
 end
 
@@ -167,6 +174,7 @@ SMC(
     obs_addr_order                  :: Vector            ,
     latent_var_addrs_for_recurrence :: Vector            ,
     num_particles                   :: Int               ;
+    rejuv_proposal = nothing                                      ,
     truncate_proposal_dists = true  :: Bool              ,
     truncate_model_dists    = false :: Bool              ,
     truncation_minprob      = NaN   :: Float64
@@ -182,16 +190,16 @@ SMC(
             obs_model_bundle,
             latent_var_addrs_for_obs, obs_addr_order;
             truncate_proposal_dists, truncate_model_dists, truncation_minprob
-       ),
+       ) |> maybe_add_mh_rejuv(rejuv_proposal),
        RecurrentSMCStep(
            SMCStep(
                 step_model_bundle, obs_model_bundle, step_proposal_bundle,
                 latent_var_addrs_for_obs, obs_addr_order, num_particles;
-                truncate_proposal_dists, truncate_model_dists, truncation_minprob
+                rejuv_proposal, truncate_proposal_dists, truncate_model_dists, truncation_minprob
            ),
            latent_var_addrs_for_recurrence
        )
-)
+    )
 
 num_particles(s::SMC) = s.subsequent_steps.step.num_particles
 

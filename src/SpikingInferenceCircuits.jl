@@ -21,6 +21,8 @@ export FiniteDomain, IndexedProductDomain
 export GenFnWithInputDomains
 
 include("circuits/inference/is_particle.jl")
+include("circuits/inference/mh.jl")
+include("circuits/inference/rejuvenated_is_particle.jl")
 include("circuits/inference/resample.jl")
 include("circuits/inference/smc.jl")
 

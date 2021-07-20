@@ -25,7 +25,8 @@ RUNTIME() = INTER_OBS_INTERVAL() * (NSTEPS() - 0.1)
 NPARTICLES() = 2
 
 failure_prob_bound = bound_on_overall_failure_prob(NSTEPS(), NVARS(), NPARTICLES())
-println("Hyperparameters set so the probability the circuit fails due to an issue we check for is less than $failure_prob_bound.")
+# println("Hyperparameters set so the probability the circuit fails due to an issue we check for is less than $failure_prob_bound.")
+println("Warning! Failure checks are not tuned yet for the case with rejuvenation!")
 
 smccircuit = SMC(
     GenFnWithInputDomains(initial_latent_model, ()),
@@ -34,7 +35,8 @@ smccircuit = SMC(
     GenFnWithInputDomains(_exact_init_proposal, obs_domains()),
     GenFnWithInputDomains(_approx_step_proposal, latent_obs_domains()),
     [:xₜ, :vₜ], [:obs], [:xₜ, :vₜ], NPARTICLES();
-    truncation_minprob=MinProb()
+    truncation_minprob=MinProb(),
+    rejuv_proposal=GenFnWithInputDomains(mh_kernel, latent_obs_domains())
 )
 println("SMC Circuit Constructed.")
 

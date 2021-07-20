@@ -159,4 +159,10 @@ function prior_smc_exact_rejuv(tr, n_particles; is_gibbs=true)
 end
 
 ### MH Rejuvenation ###
-# TODO
+@gen (static) function mh_kernel(prev_xₜ, prev_vₜ, obsₜ)
+    obsdiff = obsₜ - prev_xₜ
+    mean = truncate_value(prev_vₜ + obsdiff/2, Vels()) # pull the proposal a bit closer to the observation than the current vₜ
+    vₜ ~ LCat(Vels())(discretized_gaussian(mean, 1.0, Vels()))
+    veldiff = vₜ - prev_vₜ
+    xₜ ~ Cat(onehot(prev_xₜ + veldiff, Positions()))
+end
