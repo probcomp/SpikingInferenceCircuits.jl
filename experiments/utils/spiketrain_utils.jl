@@ -1,4 +1,4 @@
-using SpikingCircuits.SpiketrainViz
+# using SpikingCircuits.SpiketrainViz
 
 function extract_valname_and_val(valname_and_val)
     @assert valname_and_val isa Pair
@@ -59,17 +59,17 @@ function smc_get_names_and_trains(dict)
     return (names, spiketrains)
 end
 
-function draw_smc_figure(dict::Dict; endtime=nothing)
-    names, trains = smc_get_names_and_trains(dict)
-    if !isnothing(endtime)
-        draw_spiketrain_figure(trains; names=names, xmin=0, xmax=endtime)
-    else
-        draw_spiketrain_figure(trains; names=names, xmin=0)
-    end
-end
-draw_smc_figure(events::Vector; endtime=nothing) = draw_smc_figure(
-    smc_output_spiketrain_dict(filter(is_root_outspike, events)); endtime
-)
+# function draw_smc_figure(dict::Dict; endtime=nothing)
+#     names, trains = smc_get_names_and_trains(dict)
+#     if !isnothing(endtime)
+#         draw_spiketrain_figure(trains; names=names, xmin=0, xmax=endtime)
+#     else
+#         draw_spiketrain_figure(trains; names=names, xmin=0)
+#     end
+# end
+# draw_smc_figure(events::Vector; endtime=nothing) = draw_smc_figure(
+#     smc_output_spiketrain_dict(filter(is_root_outspike, events)); endtime
+# )
 
 is_root_outspike((t, compname, evt)) = 
     compname === nothing && evt isa SpikingSimulator.OutputSpike
