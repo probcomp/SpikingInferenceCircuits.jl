@@ -1,3 +1,5 @@
+import SpikingInferenceCircuits
+
 @gen (static) function _pm_ischangepoint_aux_model(vₜ₋₁)
     vₜ₋₁ ~ LCat(Vels())(onehot(vₜ₋₁, Vels()))
     is_changepoint ~ LCat([true, false])( (vₜ₋₁ -> [SwitchProb(), 1 - SwitchProb()])(vₜ₋₁) )
@@ -28,7 +30,7 @@ pm_vel_dist = PseudoMarginalizedDist(
     1,
     # args for compilation:
     (
-        (SIC.DiscreteIRTransforms.EnumeratedDomain([true, false]),),
+        (SpikingInferenceCircuits.DiscreteIRTransforms.EnumeratedDomain([true, false]),),
         [:vₜ₋₁, :is_changepoint], [:vₜ], :vₜ
     )
 )

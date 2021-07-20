@@ -166,3 +166,15 @@ end
     veldiff = vₜ - prev_vₜ
     xₜ ~ Cat(onehot(prev_xₜ + veldiff, Positions()))
 end
+mh_rejuvenate = @compile_rejuvenation_proposal(mh_kernel, 2, 1)
+@load_generated_functions
+
+function approx_smc_mh_rejuv(tr, n_particles)
+    obss = get_dynamic_model_obs(tr)
+    (unweighted_inferences, weighted_inferences) = dynamic_model_smc(
+        get_gen_fn(tr), obss, cm -> (cm[:obs => :val],),
+        prior_init_proposal, prior_step_proposal, n_particles;
+        rejuvenate=mh_rejuvenate
+    )
+    return (unweighted_inferences, weighted_inferences)
+end

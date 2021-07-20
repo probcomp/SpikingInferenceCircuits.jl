@@ -107,7 +107,37 @@ macro compile_initial_proposal(
     end
 end
 
-# TODO: @compile_initial_proposal
+function get_args_for_rejuv_from_trace(trace)
+    T = get_args(trace)[1]
+    latent_ret = trace[latent_addr(T)]
+    obs_ret    = trace[obs_addr(T)]
+    return (latent_ret..., obs_ret...)
+end
+macro compile_rejuvenation_proposal(kernel, n_latents, n_obs)
+    latent_argnames = [Symbol("a$i") for i=1:n_latents]
+    obs_argnames = [Symbol("o$i") for i=1:n_obs]
+    argnames = [latent_argnames..., obs_argnames...]
+
+    return quote
+        @gen (static) function init_rejuv_proposal(trace)
+            ($(argnames...),) = $(get_args_for_rejuv_from_trace)(trace)
+            {:init => :latents} ~ $(esc(kernel))($(argnames...))
+        end
+        @gen (static) function step_rejuv_proposal(trace)
+            ($(argnames...),) = $(get_args_for_rejuv_from_trace)(trace)
+            T = get_args(trace)[1]
+            {:steps => T => :latents} ~ $(esc(kernel))($(argnames...))
+        end
+        
+        function rejuvenate_trace(trace)
+            proposal = get_args(trace)[1] == 0 ? init_rejuv_proposal : step_rejuv_proposal
+            newtr, _ = Gen.mh(trace, proposal, ())
+            return newtr
+        end
+
+        rejuvenate_trace
+    end
+end
 
 """
 Given a trace `tr` from a dynamic model,
@@ -192,6 +222,7 @@ end
 export @DynamicModel, @compile_step_proposal, @compile_initial_proposal
 export dynamic_model_smc, get_dynamic_model_obs
 export obs_choicemap, latents_choicemap
+export @compile_rejuvenation_proposal
 
 include("enumeration_bayes_filter.jl")
 
