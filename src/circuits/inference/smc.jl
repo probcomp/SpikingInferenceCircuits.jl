@@ -1,10 +1,38 @@
 """
-    MultiParticleWithResample(num_particles::Int, is_particle::ISParticle)
+    MultiParticleWithResample(
+        num_particles::Int,
+        is_particle::ISParticle,
+        rejuvenation :: Union{  # Possible rejuvenation specifications:
+            RejuvenationKernel, # use this kernel circuit
+            ImplementableGenFn, # use this proposal gen fn for MH rejuvenation
+            Nothing             # no rejuvenation
+        }
+    )
 """
 struct MultiParticleWithResample <: GenericComponent
-    num_particles::Int
-    is_particle::Union{ISParticle, RejuvenatedISParticle}
+    num_particles:: Int
+    is_particle  :: ISParticle
+    rejuv        :: RejuvenationKernel
 end
+
+# Constructor with MH rejuvenation
+MultiParticleWithResample(
+    num_particles::Int, is_particle::ISParticle, rejuv_proposal::ImplementableGenFn
+) = MultiParticleWithResample(num_particles, is_particle,
+        MHKernel(
+            rejuv_proposal,
+            is_particle.assess_latents, is_particle.assess_obs,
+            is_particle.latent_addr_order, is_particle.obs_addr_order
+        )
+    )
+# Constructor with no rejuvenation
+MultiParticleWithResample(
+    num_particles::Int, is_particle::ISParticle, ::Nothing
+) = MultiParticleWithResample(num_particles, is_particle,
+    NoChangeRejuvKernel(inputs(is_particle)[:args], inputs(is_particle)[:obs], outputs(is_particle)[:trace])
+)
+MultiParticleWithResample(num_particles::Int, is_particle::ISParticle) = MultiParticleWithResample(num_particles, is_particle, nothing)
+
 Circuits.inputs(m::MultiParticleWithResample) = NamedValues(
     :args => IndexedValues(inputs(m.is_particle)[:args] for _=1:m.num_particles),
     :obs => inputs(m.is_particle)[:obs]
@@ -15,13 +43,19 @@ Circuits.implement(m::MultiParticleWithResample, ::Target) =
         inputs(m), outputs(m), (
             particles=IndexedComponentGroup(m.is_particle for _=1:m.num_particles),
             resample=Resample(m.num_particles, outputs(m.is_particle)[:trace]),
+            rejuv=IndexedComponentGroup(m.rejuv for _=1:m.num_particles)
         ), Iterators.flatten(
             (
                 Input(:obs) => CompIn(:particles => i, :obs),
                 Input(:args => i) => CompIn(:particles => i, :args),
                 CompOut(:particles => i, :trace) => CompIn(:resample, :traces => i),
                 CompOut(:particles => i, :weight) => CompIn(:resample, :weights => i),
-                CompOut(:resample, :traces => i) => Output(i)
+
+                Input(:obs)       => CompIn(:rejuv => i, :obs),
+                Input(:args => i) => CompIn(:rejuv => i, :model_args),
+                CompOut(:resample, :traces => i) => CompIn(:rejuv => i, :prev_latents),
+
+                CompOut(:rejuv => i, :next_latents) => Output(i)
             )
             for i=1:m.num_particles
         ), m
@@ -64,10 +98,9 @@ SMCStep(
         ISParticle(
             step_proposal_bundle, step_model_bundle, obs_model_bundle,
             latent_var_addrs_for_obs, obs_addr_order; is_kwargs...
-        ) |> maybe_add_mh_rejuv(rejuv_proposal)
+        ),
+        rejuv_proposal
     )
-
-maybe_add_rejuvenation(rejuv) = isnothing(rejuv) ? identity : particle -> RejuvenatedISParticle(particle, rejuv)
 
 # for a `smc_step` (which is a `MultiParticleWithResample`):
 prev_latents_val(step)    = inputs(step.is_particle)[:args]
@@ -150,7 +183,7 @@ Circuits.implement(s::RecurrentSMCStep, ::Target) =
         num_particles                   :: Int
     )
 
-    SMC(initial_step_particle::ISParticle, subsequent_steps::RecurrentSMCStep)
+    SMC(initial_step::MultiParticleWithResample, subsequent_steps::RecurrentSMCStep)
 
 A circuit to perform SMC in a dynamical model.
 
@@ -160,7 +193,7 @@ with `:is_initial_obs` set to false.  For each obs, an unweighted particle cloud
 of inferred assignments to the latent variables will be output.
 """
 struct SMC <: GenericComponent
-    initial_step_particle :: Union{ISParticle, RejuvenatedISParticle}
+    initial_step          :: MultiParticleWithResample
     subsequent_steps      :: RecurrentSMCStep
 end
 
@@ -179,6 +212,8 @@ SMC(
     truncate_model_dists    = false :: Bool              ,
     truncation_minprob      = NaN   :: Float64
 ) = SMC(
+    MultiParticleWithResample(
+        num_particles,
         ISParticle(
             # an initial model will have 0 inputs, but we need there to be an input line
             # so the circuit knows when to output scores!  so update the IR to include an
@@ -190,7 +225,9 @@ SMC(
             obs_model_bundle,
             latent_var_addrs_for_obs, obs_addr_order;
             truncate_proposal_dists, truncate_model_dists, truncation_minprob
-       ) |> maybe_add_mh_rejuv(rejuv_proposal),
+       ),
+       rejuv_proposal
+    ),
        RecurrentSMCStep(
            SMCStep(
                 step_model_bundle, obs_model_bundle, step_proposal_bundle,
@@ -204,14 +241,14 @@ SMC(
 num_particles(s::SMC) = s.subsequent_steps.step.num_particles
 
 Circuits.inputs(s::SMC) = NamedValues(
-    :obs => inputs(s.initial_step_particle)[:obs],
+    :obs => inputs(s.initial_step)[:obs],
     :is_initial_obs => Binary()
 )
 Circuits.outputs(s::SMC) = outputs(s.subsequent_steps)
 Circuits.implement(s::SMC, ::Spiking) =
     CompositeComponent(
         inputs(s), outputs(s), (
-            initial_step=MultiParticleWithResample(num_particles(s), s.initial_step_particle),
+            initial_step=s.initial_step,
             subsequent_steps=s.subsequent_steps,
             initial_obs_gate=ValuePasser(inputs(s)[:obs]),
             step_obs_gate=ValueBlocker(inputs(s)[:obs]),

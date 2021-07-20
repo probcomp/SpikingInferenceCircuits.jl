@@ -2,20 +2,20 @@ abstract type RejuvenationKernel <: GenericComponent end
 
 # Rejuvenation kernel which does not change the latent values
 # (using this means no rejuvenation occurs).
-# struct NoChangeRejuvKernel <: RejuvenationKernel
-#     args_input  :: CompositeValue
-#     obs_input   :: CompositeValue
-#     latents_val :: CompositeValue
-# end
-# Circuits.inputs(r::NoChangeRejuvKernel) = NamedValues(
-#     :prev_latents => r.latents_val,
-#     :obs => r.obs_input,
-#     :model_args => r.args_input
-# )
-# Circuits.outputs(r::NoChangeRejuvKernel) = NamedValues(:next_latents => r.latents_val)
-# Circuits.implement(r::NoChangeRejuvKernel, ::Target) = CompositeComponent(
-#     inputs(r), outputs(r), (), (Input(:prev_latents) => Output(:next_latents)), r
-# )
+struct NoChangeRejuvKernel <: RejuvenationKernel
+    args_input  :: CompositeValue
+    obs_input   :: CompositeValue
+    latents_val :: CompositeValue
+end
+Circuits.inputs(r::NoChangeRejuvKernel) = NamedValues(
+    :prev_latents => r.latents_val,
+    :obs => r.obs_input,
+    :model_args => r.args_input
+)
+Circuits.outputs(r::NoChangeRejuvKernel) = NamedValues(:next_latents => r.latents_val)
+Circuits.implement(r::NoChangeRejuvKernel, ::Target) = CompositeComponent(
+    inputs(r), outputs(r), (), (Input(:prev_latents) => Output(:next_latents)), r
+)
 
 struct MHKernel <: RejuvenationKernel
     latent_model      ::GenFn{Generate} # Assess
@@ -43,8 +43,8 @@ to_assess(gf::ImplementableGenFn) = gen_fn_circuit(gf, Assess())
 
 Circuits.inputs(mh::MHKernel) = NamedValues(
     :prev_latents => traceable_value(mh.latent_model),
-    :model_args   => inputs(mh.latent_model)[:inputs]
-    :obs          => inputs(p.obs_model)[:obs]
+    :model_args   => inputs(mh.latent_model)[:inputs],
+    :obs          => inputs(mh.obs_model)[:obs]
 )
 Circuits.outputs(mh::MHKernel) = NamedValues(
     :next_latents => traceable_value(mh.latent_model)
@@ -88,7 +88,7 @@ Circuits.implement(mh::MHKernel, ::Target) =
             CompOut(:assess_new_latents, :score) => CompIn(:new_trace_mult, 1),
             CompOut(:assess_obs_new, :score)     => CompIn(:new_trace_mult, 2),
             CompOut(:propose, :score)            => CompIn(:new_trace_mult, 3),
-            CompOut(:assess_proposal, :score)    => CompIn(:new_trace_mult, 4),
+            CompOut(:assess_bwd_proposal, :score)    => CompIn(:new_trace_mult, 4),
 
             CompOut(:assess_old_latents, :score) => CompIn(:old_trace_mult, 1),
             CompOut(:assess_obs_old, :score)     => CompIn(:old_trace_mult, 2),
@@ -137,7 +137,7 @@ edges_from_new_latents_to(mh, receiver) = (
 new_latents_to_assess_bwd(mh) = (
     new_latent_val(mh, tracekey) => CompIn(:assess_bwd_proposal, :inputs => propkey)
     for (propkey, tracekey) in zip(
-        inputs(mh.assess_proposal)[:inputs],
+        keys(inputs(mh.assess_proposal)[:inputs]),
         mh.latent_addr_order
     )
 )
