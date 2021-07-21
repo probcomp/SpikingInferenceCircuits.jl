@@ -1,7 +1,3 @@
-using ANNDistributions
-using Distributions
-using Flux
-
 normalize(pvec) = pvec/sum(pvec)
 discretized_gaussian(mean, std, dom) = normalize([
     cdf(Normal(mean, std), i + .5) - cdf(Normal(mean, std), i - .5) for i in dom
@@ -35,5 +31,3 @@ function train_a_model(; model=simple_cpt_ann(cpt), n_iters=10)
     end
     return model
 end
-model = train_a_model()
-model = train_a_model(;model, n_iters=30)
