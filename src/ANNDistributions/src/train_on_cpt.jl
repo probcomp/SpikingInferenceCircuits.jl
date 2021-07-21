@@ -10,8 +10,8 @@ assmt_to_onehots(assmt, dims) =
     vcat((onehot(v, dimsize) for (v, dimsize) in zip(assmt, dims))...)
 
 function cpt_to_training_pairs(cpt)
-    assmts = [assmt_to_onehots(Tuple(assmt), size(cpt)) for assmt in keys(cpt)] |> flatten |> x->reduce(hcat, x)
-    vals   = collect(values(cpt)) |> flatten |> x->reduce(hcat, x)
+    assmts = [assmt_to_onehots(Tuple(assmt), size(cpt)) for assmt in keys(cpt)] |> Flux.flatten |> x->reduce(hcat, x)
+    vals   = collect(values(cpt)) |> Flux.flatten |> x->reduce(hcat, x)
     return (assmts, vals)
 end
 cpt_to_dataloader(cpt; batchsize=5) =
@@ -25,9 +25,14 @@ simple_cpt_ann(cpt) = Chain(
     Dense(16, 16, σ),
     Dense(16, outsize(cpt), σ)
 )
+simpler_cpt_ann(cpt) = Chain(Dense(insize(cpt), 8, σ), Dense(8, outsize(cpt), σ))
 kl_loss(model) =
     (x, y) -> let
-        modelprobs = normalize(model(x))
+        modelprobs = model(x)
+        p = normalize(modelprobs)
         # for the fwd KL, set 0 probs to 1e-10 so we don't have things go to infinity
-        KL(modelprobs, map(x -> max(1e-10, x), y)) + KL(y, modelprobs)
+        (
+            KL(p, map(x -> max(1e-10, x), y)) + KL(y, modelprobs) +
+            (sum(modelprobs) - 1)^2 # Try to output sums close to 1
+        )
     end

@@ -16,10 +16,10 @@ Circuits.implement(n::FullyConnectedANN, ::Spiking) = CompositeComponent(
     inputs(n), outputs(n),
     Tuple( # layers
         IndexedComponentGroup(
-            neuron(n.neuron_memory, layer.weight[i, :], layer.bias[i], layer.σ)
+            neuron(n.neuron_memory, layer.weight[i, :], layer.bias[i], layer.σ, layeridx == 1)
             for i=1:size(layer.weight)[1]
         )
-        for layer in n.layers
+        for (layeridx, layer) in enumerate(n.layers)
     ),
     (
         # input to first layer:
@@ -44,7 +44,14 @@ Circuits.implement(n::FullyConnectedANN, ::Spiking) = CompositeComponent(
         )...
     ), n
 )
-neuron(ΔT, W, b, σ) = SIC.PulseIR.PoissonNeuron([c -> w*c/ΔT for w in W], ΔT, u -> σ(u + b))
+function neuron(ΔT, W, b, σ, is_first_layer)
+    infn = (if is_first_layer # if first layer, gets one-hot input, not a rate, so we don't normalize by ΔT
+                w -> c -> w*min(c, 1)
+           else
+                w -> c -> w*c/ΔT
+           end)
+    return SIC.PulseIR.PoissonNeuron([infn(w) for w in W], ΔT, u -> σ(u + b))
+end
 
 ###
 struct FullyConnectedANNWithDelay <: GenericComponent
