@@ -8,4 +8,7 @@ include("to_snn.jl")
 include("ann_cpt_sample_score.jl")
 export ANNCPTSample
 
+include("gen_dist.jl")
+export ANN_LCPT
+
 end # module
