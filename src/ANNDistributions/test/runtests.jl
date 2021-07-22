@@ -87,22 +87,29 @@ extend_vector_to_length(v, l)= [i ≤ length(v) ? v[i] : 0 for i=1:l]
 
 do_sim_get_val_score(args...; kwargs...) = get_val_score(get_events(args...; kwargs...))
 do_sim_inspect_counts(args...; kwargs)   = inspect_counts(get_events(args...; kwargs...))
-function do_sim_get_counts_val_score(args...; kwargs...)
+function do_sim_get_counts_val_score(args...; allow_no_score, kwargs...)
     events = get_events(args...; kwargs...)
-    return (inspect_counts(events), get_val_score(events))
+    val_score = get_val_score(events)
+    if !allow_no_score && isnothing(val_score[2])
+        # if we got no score and this isn't allowed, try again!
+        println("Redoing a run since we got no score from it!")
+        return do_sim_get_counts_val_score(args...; allow_no_score, kwargs...)
+    else
+        return (inspect_counts(events), val_score)
+    end
 end
 
 average(list) = sum(list)/length(list)
 function test_for_assmt(impl, assmt; n_runs=5)
     runs = [
-        do_sim_get_counts_val_score(impl, assmt)
+        do_sim_get_counts_val_score(impl, assmt; allow_no_score = false)
         for _=1:n_runs
     ]
     samples = [s for (_, (s, _)) in runs]
     sample_counts = samples |> counts_of_vals |> dict_to_vector
 
     truedist = cpt[assmt...]
-    anndist  = ann_on_assmt(assmt)
+    anndist  = normalize(ann_on_assmt(assmt))
     sampled_dist = extend_vector_to_length(sample_counts / sum(sample_counts), length(anndist))
 
     scores_per_sample = [[score for (_, (sample, score)) in runs if sample == i] for i=1:length(anndist)]
@@ -110,7 +117,7 @@ function test_for_assmt(impl, assmt; n_runs=5)
     biases = [emp_mean - 1/annprob for (emp_mean, annprob) in zip(empirical_mean_scores, anndist)]
     mses = [
         average(map(score -> (score - 1/annprob)^2, scores))
-        for (scores, annprob) in zip(empirical_mean_scores, anndist)
+        for (scores, annprob) in zip(scores_per_sample, anndist)
     ]
 
     kl_ann_to_sampled = ANNDistributions.KL(anndist, sampled_dist)
@@ -139,5 +146,13 @@ function test_random_assmts(impl; n_runs_per_assmt=50, n_assmts=10)
     return tests
 end
 
+println("running small test:")
+small_result = test_random_assmts(impl; n_runs_per_assmt=2, n_assmts=2)
+BSON.@save "small_test_result.bson" small_result
+println("small test result saved.  result:")
+display(small_result)
+println()
+
+println("Now starting larger test run.")
 result = test_random_assmts(impl)
 BSON.@save "test_result.bson" result
