@@ -9,9 +9,10 @@ end
 ANNCPTSample(
     layers::Vector{<:Flux.Dense},
     neuron_memory::Real,
+    network_memory::Real,
     timer_params,
     input_ncategories::Tuple
-) = ANNCPTSample(FullyConnectedANNWithDelay(FullyConnectedANN(layers, neuron_memory), timer_params), input_ncategories)
+) = ANNCPTSample(FullyConnectedANNWithDelay(FullyConnectedANN(layers, neuron_memory), network_memory, timer_params), input_ncategories)
 ANNCPTSample(
     chain::Flux.Chain, args...
 ) = ANNCPTSample(chain.layers |> collect, args...)

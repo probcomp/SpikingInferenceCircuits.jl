@@ -30,9 +30,13 @@ kl_loss(model) =
     (x, y) -> let
         modelprobs = model(x)
         p = normalize(modelprobs)
+
+        # try to push to 0; penalize more for being too low than too high
+        probsum = sum(modelprobs)
+        normalization_penalty = probsum < 1 ? 5*(1 - probsum) : probsum - 1
+
         # for the fwd KL, set 0 probs to 1e-10 so we don't have things go to infinity
-        (
-            KL(p, map(x -> max(1e-10, x), y)) + KL(y, modelprobs) +
-            (sum(modelprobs) - 1)^2 # Try to output sums close to 1
-        )
+        kl_penalty = KL(p, map(x -> max(1e-10, x), y)) + KL(y, modelprobs)
+        
+        kl_penalty + normalization_penalty
     end

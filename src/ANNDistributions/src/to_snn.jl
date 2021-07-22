@@ -1,18 +1,31 @@
+"""
+Compile ANN → sSNN.
+
+Circuit types:
+- FullyConnectedANN : Direct compilation of each neuron in an ANN to a neuron in a SNN.
+Configured so that the first layer receives binary input (either 1 spike or 0 spike), and multiple input
+spikes are treated as 1.  Will initially output incorrect rates until internal rates stabilize;
+furthermore, will quickly forget inputted values unless the inputs are repeated.
+
+- FullyConnectedANNWithDelay : FullyConnectedANN which enforces a delay before the output layer
+begins spiking, to ensure that the rate values have stabilized before the output layer begins spiking.
+"""
+
 using Circuits, SpikingCircuits, SpikingInferenceCircuits
 const SIC = SpikingInferenceCircuits
 
 # For now, specialize this to the spiking target - we can generalize later if we want
 struct FullyConnectedANN <: GenericComponent
-    layers::Vector{<:Flux.Dense}
-    neuron_memory::Float64
+    layers         :: Vector{<:Flux.Dense}
+    neuron_memory  :: Float64
     # TODO: customize the neuron rate range! currently is always [0, 1]
 end
-n_input_lines(n::FullyConnectedANN) = size(n.layers[1].weight)[2]
-n_output_lines(n::FullyConnectedANN) = size(last(n.layers).weight)[1]
-Circuits.target(::FullyConnectedANN) = Spiking()
-Circuits.inputs(n::FullyConnectedANN) = IndexedValues(SpikeWire() for _=1:n_input_lines(n))
-Circuits.outputs(n::FullyConnectedANN) = IndexedValues(SpikeWire() for _=1:n_output_lines(n))
-Circuits.implement(n::FullyConnectedANN, ::Spiking) = CompositeComponent(
+n_input_lines(n      :: FullyConnectedANN) = size(n.layers[1].weight)[2]
+n_output_lines(n     :: FullyConnectedANN) = size(last(n.layers).weight)[1]
+Circuits.target(     :: FullyConnectedANN) = Spiking()
+Circuits.inputs(n    :: FullyConnectedANN) = IndexedValues(SpikeWire() for _=1:n_input_lines(n))
+Circuits.outputs(n   :: FullyConnectedANN) = IndexedValues(SpikeWire() for _=1:n_output_lines(n))
+Circuits.implement(n :: FullyConnectedANN, ::Spiking) = CompositeComponent(
     inputs(n), outputs(n),
     Tuple( # layers
         IndexedComponentGroup(
@@ -55,12 +68,13 @@ end
 
 ###
 struct FullyConnectedANNWithDelay <: GenericComponent
-    ann   :: FullyConnectedANN
-    delay :: Float64
+    ann            :: FullyConnectedANN
+    network_memory :: Float64
+    delay          :: Float64
     timer_params
 end
-FullyConnectedANNWithDelay(ann::FullyConnectedANN, timer_params) = FullyConnectedANNWithDelay(
-    ann, ann.neuron_memory * length(ann.layers), timer_params
+FullyConnectedANNWithDelay(ann::FullyConnectedANN, network_memory::Real, timer_params) = FullyConnectedANNWithDelay(
+    ann, network_memory, ann.neuron_memory * length(ann.layers), timer_params
 )
 Circuits.target(n::FullyConnectedANNWithDelay) = target(n.ann)
 Circuits.inputs(n::FullyConnectedANNWithDelay) = inputs(n.ann)
@@ -106,12 +120,23 @@ function Circuits.implement(n::FullyConnectedANNWithDelay, ::Spiking)
 
     return CompositeComponent(
         inputs(n), outputs(n),
-        (ann=ann_circuit, timer=SIC.PulseIR.PoissonTimer(
-            n.delay, n.timer_params...
-        )),
+        (
+            ann         = ann_circuit,
+            # Input layer to repeat input spikes for `network_memory`
+            # Currently rate is set so we expect to get 10 spikes per neuron memory
+            input_layer = IndexedComponentGroup(
+                InputFunctionPoisson((c -> min(c, 1.),), (n.network_memory,), u -> u * 10/n.ann.neuron_memory)
+                for _=1:n_input_lines(n.ann)
+            ),
+            timer       = SIC.PulseIR.PoissonTimer(n.delay, n.timer_params...)
+        ),
         (
             (
-                Input(i) => CompIn(:ann, i)
+                Input(i) => CompIn(:input_layer => i, 1)
+                for i=1:length(inputs(n))
+            )...,
+            (
+                CompOut(:input_layer => i, :out) => CompIn(:ann, i)
                 for i=1:length(inputs(n))
             )...,
             (
