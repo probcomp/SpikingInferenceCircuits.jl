@@ -13,7 +13,7 @@ import BSON
 # model-checkpoint = 3 layer SNN with sizes 45->16->16->5
 # simpler_model-checkpoint = 2 layer SNN with sizes 45->8->5
 # model = BSON.load("model-checkpoint.bson")[:model]
-# model = BSON.load("simpler_model-checkpoint.bson")[:model]
+model = BSON.load("simpler_model-checkpoint.bson")[:model]
 
 ann_on_assmt(assmt) = model(ANNDistributions.assmt_to_onehots(assmt, size(cpt)))
 # # To continue training a model
@@ -83,6 +83,7 @@ counts_of_vals(vals) = Dict(
 dict_to_vector(d) = [
     get(d, i, 0) for i=1:maximum(keys(d))
 ]
+extend_vector_to_length(v, l)= [i ≤ length(v) ? v[i] : 0 for i=1:l]
 
 do_sim_get_val_score(args...; kwargs...) = get_val_score(get_events(args...; kwargs...))
 do_sim_inspect_counts(args...; kwargs)   = inspect_counts(get_events(args...; kwargs...))
@@ -90,3 +91,53 @@ function do_sim_get_counts_val_score(args...; kwargs...)
     events = get_events(args...; kwargs...)
     return (inspect_counts(events), get_val_score(events))
 end
+
+average(list) = sum(list)/length(list)
+function test_for_assmt(impl, assmt; n_runs=5)
+    runs = [
+        do_sim_get_counts_val_score(impl, assmt)
+        for _=1:n_runs
+    ]
+    samples = [s for (_, (s, _)) in runs]
+    sample_counts = samples |> counts_of_vals |> dict_to_vector
+
+    truedist = cpt[assmt...]
+    anndist  = ann_on_assmt(assmt)
+    sampled_dist = extend_vector_to_length(sample_counts / sum(sample_counts), length(anndist))
+
+    scores_per_sample = [[score for (_, (sample, score)) in runs if sample == i] for i=1:length(anndist)]
+    empirical_mean_scores = map(average, scores_per_sample)
+    biases = [emp_mean - 1/annprob for (emp_mean, annprob) in zip(empirical_mean_scores, anndist)]
+    mses = [
+        average(map(score -> (score - 1/annprob)^2, scores))
+        for (scores, annprob) in zip(empirical_mean_scores, anndist)
+    ]
+
+    kl_ann_to_sampled = ANNDistributions.KL(anndist, sampled_dist)
+    kl_sampled_to_ann = ANNDistributions.KL(sampled_dist, anndist)
+    kl_true_to_ann = ANNDistributions.KL(truedist, anndist)
+    kl_ann_to_true = ANNDistributions.KL(anndist, truedist)
+    return (;
+        kl_ann_to_sampled, kl_sampled_to_ann, kl_true_to_ann, kl_ann_to_true,
+        sampled_dist, scores_per_sample, biases, mses, anndist, truedist
+    )
+end
+
+function test_random_assmts(impl; n_runs_per_assmt=50, n_assmts=10)
+    assmts = collect(Iterators.product(Positions(), 1:length(Vels()), Positions()))
+    tests = Dict()
+    for i=1:n_assmts
+        assmt = assmts[rand(DiscreteUniform(1, length(assmts)))]
+        while assmt in keys(tests)
+            assmt = assmts[rand(DiscreteUniform(1, length(assmts)))]
+        end
+        tests[assmt] = test_for_assmt(impl, assmt; n_runs=n_runs_per_assmt)
+        println("Test for $assmt :")
+        display(tests[assmt])
+        println()
+    end
+    return tests
+end
+
+result = test_random_assmts(impl)
+BSON.@save "test_result.bson" result
