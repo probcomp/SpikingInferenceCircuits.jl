@@ -43,16 +43,22 @@ function Gen.update(tr::ANN_LCPT_Trace, new_assmt::Tuple, diffs::Tuple, cm::Gen.
     return (newtr, weight, retdiff, discard)
 end
 
-### Compilation Interface ###
-# DiscreteIRTransforms.is_cpts(::ANN_LCPT) = true
-# DiscreteIRTransforms.get_ret_domain(a::ANN_LCPT, arg_domains) =
-#     DiscreteIRTransforms.EnumeratedDomain(a.out_labels)
-# DiscreteIRTransforms.get_domain(a::ANN_LCPT, arg_domains) = DiscreteIRTransforms.get_ret_domain(a, arg_domains)
-# # TODO: to indexed cpts
+### DiscreteIRTransforms support ###
+import DiscreteIRTransforms
+using Bijections
+DiscreteIRTransforms.is_cpts(::ANN_LCPT) = true
+DiscreteIRTransforms.get_ret_domain(a::ANN_LCPT, arg_domains) =
+    DiscreteIRTransforms.EnumeratedDomain(a.out_labels)
+DiscreteIRTransforms.get_domain(a::ANN_LCPT, arg_domains) = DiscreteIRTransforms.get_ret_domain(a, arg_domains)
+DiscreteIRTransforms.to_indexed_cpts(a::ANN_LCPT, arg_domains) =
+    (
+        ANN_LCPT(
+            map(d -> 1:length(d), a.in_domains),
+            1:length(a.out_labels),
+            a.ann
+        ),
+        Dict(), Bijection(Dict(enumerate(a.out_labels)))
+    )
 
-# struct ANNDistGenFn{Op} <: SIC.GenFn{Op}
-#     ANN_LCPT
-# end
-
-# SpikingInferenceCircuits.gen_fn_circuit(d::ANN_LCPT, arg_domains, op) =
-    
+# Currently, we can't truncate ANNs.
+DiscreteIRTransforms.truncate(a::ANN_LCPT, minprob) = a

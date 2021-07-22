@@ -9,6 +9,7 @@ include("ann_cpt_sample_score.jl")
 export ANNCPTSample
 
 include("gen_dist.jl")
+include("gen_dist_circuit.jl")
 export ANN_LCPT
 
 end # module

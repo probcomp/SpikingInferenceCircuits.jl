@@ -5,25 +5,6 @@ include("../../../../experiments/velwalk1d/model.jl")
 include("../../../../experiments/velwalk1d/inference.jl")
 include("../../../../experiments/velwalk1d/visualize.jl")
 
-function x_vel_counts(trs, t)
-    counts = Int[0 for _ in Positions(), _ in Vels()]
-    for tr in trs
-        counts[
-            latents_choicemap(tr, t)[:xₜ => :val],
-            latents_choicemap(tr, t)[:vₜ => :val] - first(Vels()) + 1
-        ] += 1
-    end
-    return counts
-end
-
-function make_smc_figure(smcfn, tr; n_particles, proposalstr)
-    (unweighted_trs, _) = smcfn(tr, n_particles)
-    probs = [x_vel_counts(unweighted_trs[t + 1], t) |> normalize for t=0:(get_args(tr)[1])]
-    make_2d_posterior_figure(tr, probs; inference_method_str="Approximate posterior from $n_particles particle SMC $proposalstr")
-end
-
-make_smcprior_2d_posterior_figure(tr; n_particles=1_000) = make_smc_figure(smc_from_prior, tr; n_particles, proposalstr="proposing from prior")
-
 model = @DynamicModel(initial_latent_model, step_latent_model, obs_model, 2)
 @load_generated_functions()
 
