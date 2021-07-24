@@ -85,7 +85,9 @@ version = "0.10.13"
 
 [[Circuits]]
 deps = ["Distributions", "LightGraphs", "Memoization"]
-path = "../../../Circuits.jl"
+git-tree-sha1 = "50cf83e1aba651a77449d6d3e4c1e18eaab12b3d"
+repo-rev = "main"
+repo-url = "https://github.com/probcomp/Circuits.jl"
 uuid = "f5b243b3-c95b-4650-9ac7-659d8f0b0982"
 version = "0.1.0"
 
@@ -588,7 +590,9 @@ version = "1.5.1"
 
 [[SpikingCircuits]]
 deps = ["Circuits", "DataStructures", "Distributions", "Printf"]
-path = "../../../SpikingCircuits.jl"
+git-tree-sha1 = "983a1f34937f603b84f8446a9004d23d10363688"
+repo-rev = "main"
+repo-url = "https://github.com/probcomp/SpikingCircuits.jl"
 uuid = "549ce59a-75fd-4aaf-b0ba-30f73ee3de21"
 version = "0.1.0"
 

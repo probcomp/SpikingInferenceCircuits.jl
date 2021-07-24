@@ -6,6 +6,8 @@ version = "0.1.0"
 [deps]
 BSON = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
 Circuits = "f5b243b3-c95b-4650-9ac7-659d8f0b0982"
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
+Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
 SpikingCircuits = "549ce59a-75fd-4aaf-b0ba-30f73ee3de21"
 SpikingInferenceCircuits = "ef694985-0566-4478-a48d-fa3dba6654f1"
