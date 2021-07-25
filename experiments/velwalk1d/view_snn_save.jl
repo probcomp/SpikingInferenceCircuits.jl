@@ -37,11 +37,11 @@ _inferred_traces_for_time(obs, states) = [
     generate_tr(obs, [s[:xₜ][i] for s in states], [vel_idx_to_label(s[:vₜ][i]) for s in states])
     for i=1:NPARTICLES()
 ]
-_inferred_traces(obs) = [
-    _inferred_traces_for_time(obs, @view(inferred_states[1:i]))
-    for i=1:length(inferred_states)
+_inferred_traces(obs, states) = [
+    _inferred_traces_for_time(obs, @view(states[1:i]))
+    for i=1:length(states)
 ]
-inferred_traces(obs) = (_, _) -> (_inferred_traces(obs), nothing)
+inferred_traces(obs, states) = (_, _) -> (_inferred_traces(obs, states), nothing)
 
 figure_for_smc_snn_run(snn_events_filename::String, args...) = figure_for_smc_snn_run(deserialize(snn_events_filename),  args...)
 function figure_for_smc_snn_run(
@@ -55,7 +55,7 @@ function figure_for_smc_snn_run(
     groundtruth_tr = generate_tr(obs, groundtruth_x, groundtruth_v);
     
     return make_smc_figure(
-        inferred_traces(obs), groundtruth_tr;
+        inferred_traces(obs, inferred_states), groundtruth_tr;
         n_particles,
         proposalstr="proposing from approx proposal IN SNN SIMULATION"
     )
@@ -64,14 +64,16 @@ end
 ### Script to create the figure for a particular run: ###
 NPARTICLES() = 2
 # save_file() = "snn_runs/better_organized/velwalk1d/2timesteps2000interval/2021-07-19__18-23"
-save_file() = "snn_runs/better_organized/velwalk1d/10timesteps2000interval/2021-07-20__02-42"
+# save_file() = "snn_runs/better_organized/velwalk1d/10timesteps2000interval/2021-07-20__02-42"
+# save_file() = "snn_runs/better_organized/velwalk1d_pm/2timesteps2000interval/2021-07-20__18-46"
+save_file() = "snn_runs/better_organized/velwalk1d_pm/10timesteps2000interval--failed/2021-07-21__01-30"
 
 obs           = [16, 15, 11, 10, 8, 14, 11, 17, 18, 18, 18]
 groundtruth_x = [16, 14, 12, 10, 8, 10, 12, 14, 16, 19, 20]
 groundtruth_v = [-2, -2, -2, -2, -2, 2, 2, 2, 2, 3, 1]
 
-events = deserialize(save_file())
+# events = deserialize(save_file())
 
 figure_for_smc_snn_run(
-    save_file(), NPARTICLES(), obs, groundtruth_x, groundtruth_v
+    events, NPARTICLES(), obs, groundtruth_x, groundtruth_v
 )
