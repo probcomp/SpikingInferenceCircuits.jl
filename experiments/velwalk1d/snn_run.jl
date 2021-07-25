@@ -29,7 +29,7 @@ println("Hyperparameters set so the probability the circuit fails due to an issu
 
 smccircuit = SMC(
     GenFnWithInputDomains(initial_latent_model, ()),
-    GenFnWithInputDomains(pm_step_model, latent_domains()),
+    GenFnWithInputDomains(latent_step_model, latent_domains()),
     GenFnWithInputDomains(obs_model, latent_domains()),
     GenFnWithInputDomains(_exact_init_proposal, obs_domains()),
     GenFnWithInputDomains(_approx_step_proposal, latent_obs_domains()),
