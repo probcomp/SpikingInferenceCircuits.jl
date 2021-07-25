@@ -23,7 +23,7 @@ OFFRATE() = 10e-20
 
 # rates for neurons in logic gates like TI, OFFGATE, ASYNC_ON_GATE
 GATE_OFFRATE() = 0.
-GATE_ONRATE() = 200. # KHz
+GATE_ONRATE() = 50_000. # KHz
 LOWER_GATE_ONRATE() = 50_000. # KHz -- not realistic at all.  making this realistic: TODO
 GATE_RATES() = (GATE_OFFRATE(), GATE_ONRATE())
 
@@ -51,14 +51,16 @@ SAMPLE_FAIL_PROB() = 1e-8
 MULT_FAIL_PROB() = 5e-5
 P_FAILURE_MULT_INTO_THETA() = 5e-5
 SYNC_FORGET_FAIL_PROB() = 5e-5
-P_WTA_TOO_SLOW() = 5e-5
+P_SAMPLE_WTA_TOO_SLOW() = 5e-5
+P_THETA_WTA_TOO_SLOW() = 5e-5
 
 prob_get_est_of_0(n_vars) = 1 - (1 - (1 - MinProb())^PEstDenom())^n_vars
 bound_on_overall_failure_prob_due_to_mistake(n_steps, n_vars, n_particles) = 1 - (
     ( # prob failure
         (
-            ((1 - SCORE_FAIL_PROB()) * (1 - SAMPLE_FAIL_PROB()) * (1 - P_WTA_TOO_SLOW()))^n_vars # prob failure due to sampling/scoring
+            ((1 - SCORE_FAIL_PROB()) * (1 - SAMPLE_FAIL_PROB()) * (1 - P_SAMPLE_WTA_TOO_SLOW()))^n_vars # prob failure due to sampling/scoring
         * (1 - MULT_FAIL_PROB()) * (1 - P_FAILURE_MULT_INTO_THETA())                             # prob we have a failure on the multiplier or theta
+        * (1 - P_THETA_WTA_TOO_SLOW())
         )^n_particles                     
         * (1 - SYNC_FORGET_FAIL_PROB())                                                          # prob failure in sync
     )^n_steps
@@ -90,7 +92,9 @@ function run_hyperparameter_checks()
     # Low probability of multiple spikes into a WTA before it can output a spike
     # P[exponential(LOWER_GATE_ONRATE()) > exponential(SAMPLE_ONRATE())]
     # = 1 - LOWER_GATE_ONRATE()/(SAMPLE_ONRATE() + LOWER_GATE_ONRATE())
-    @assert 1 - (LOWER_GATE_ONRATE()/(SAMPLE_ONRATE() + LOWER_GATE_ONRATE())) < P_WTA_TOO_SLOW()  "Probability of WTA receving multiple spikes before output is too high!"
+    @assert 1 - (LOWER_GATE_ONRATE()/(SAMPLE_ONRATE() + LOWER_GATE_ONRATE())) < P_SAMPLE_WTA_TOO_SLOW()  "Probability of Sampling WTA receving multiple spikes before output is too high!"
+
+    @assert 1 - (GATE_ONRATE()/(THETA_RATE() + GATE_ONRATE())) < P_SAMPLE_WTA_TOO_SLOW()  "Probability of Theta Gate WTA receving multiple spikes before output is too high!"
 
     # We need PEstDenom() spikes to occur from an assembly with rate SCORE_ONRATE() when sampling.
     # So we need P[spikes from P.P. with rate SCORE_ONRATE() in ΔT > PEstDenom()] > SCORER_FAILUREPROB
