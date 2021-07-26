@@ -1,3 +1,10 @@
+#=
+This is a test script to test the quality of the SNN compiled from an ANN which
+approximates a CPT.
+It compares the distribution an SNN samples from to the ANN distribution,
+and inspects the scores from the circuit as well.
+=#
+
 using ANNDistributions
 using Distributions
 using Flux
@@ -5,7 +12,6 @@ using Circuits, SpikingCircuits
 Sim = SpikingCircuits.SpikingSimulator
 
 include("cpt_surrogate.jl")
-include("ann_cpt_sample.jl")
 
 # # model = train_a_model(n_iters=30)
 import BSON

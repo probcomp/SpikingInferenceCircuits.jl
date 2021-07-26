@@ -1,5 +1,11 @@
 # This file is machine-generated - editing it directly is not advised
 
+[[ANNDistributions]]
+deps = ["BSON", "Circuits", "Flux", "Gen", "ProbEstimates", "Revise", "SpikingCircuits", "SpikingInferenceCircuits"]
+path = "/Users/georgematheos/Developer/research/SpikingInferenceCircuits.jl/src/ANNDistributions"
+uuid = "3a3d2a55-e1fd-4b08-9be6-dd5b39fef32b"
+version = "0.1.0"
+
 [[AbstractFFTs]]
 deps = ["LinearAlgebra"]
 git-tree-sha1 = "485ee0867925449198280d4af84bdb46a2a404d0"
@@ -265,7 +271,9 @@ version = "0.12.5"
 
 [[Gen]]
 deps = ["Compat", "DataStructures", "Distributions", "ForwardDiff", "FunctionalCollections", "JSON", "LinearAlgebra", "MacroTools", "Parameters", "Random", "ReverseDiff", "SpecialFunctions"]
-git-tree-sha1 = "1cb2c362f919eea17c93e1c3c819f56376aba30f"
+git-tree-sha1 = "d95d86a4a2f8697c029bca30bbbadd0f4b814c72"
+repo-rev = "20210615-marcoct-sml"
+repo-url = "https://github.com/probcomp/Gen.jl"
 uuid = "ea4f424c-a589-11e8-07c0-fd5c91b9da4a"
 version = "0.4.3"
 
@@ -593,7 +601,7 @@ uuid = "549ce59a-75fd-4aaf-b0ba-30f73ee3de21"
 version = "0.1.0"
 
 [[SpikingInferenceCircuits]]
-deps = ["Bijections", "CPTs", "Circuits", "DiscreteIRTransforms", "Distributions", "DynamicModels", "Gen", "InteractiveUtils", "ProbEstimates", "Revise", "Setfield", "SpikingCircuits"]
+deps = ["ANNDistributions", "BSON", "Bijections", "CPTs", "Circuits", "DiscreteIRTransforms", "Distributions", "DynamicModels", "Gen", "InteractiveUtils", "ProbEstimates", "Revise", "Setfield", "SpikingCircuits"]
 path = "../.."
 uuid = "ef694985-0566-4478-a48d-fa3dba6654f1"
 version = "0.1.0"

@@ -1,11 +1,8 @@
 using SpikingInferenceCircuits
 const SIC = SpikingInferenceCircuits
 using Circuits, SpikingCircuits
-using DynamicModels
 
-include("../../../../experiments/velwalk1d/model.jl")
-include("../../../../experiments/velwalk1d/inference.jl")
-include("../../../../experiments/velwalk1d/visualize.jl")
+include("setup.jl")
 
 latent_domains()     = (xₜ=Positions(), vₜ=Vels())
 obs_domains()         = (obs=Positions(),)
@@ -16,6 +13,14 @@ NOBS()     = length(obs_domains())
 NVARS()    = NLATENTS() + NOBS()
 
 includet("../../../../experiments/utils/default_implementation_rules.jl")
+Circuits.implement(a::ANNCPTSample, ::Spiking) =
+    ANNDistributions.ConcreteANNCPTSample(
+        a; neuron_memory=ΔT()/2, network_memory_per_layer=ΔT(),
+        timer_params=(
+            NSPIKES_SYNC_TIMER(),  # N_spikes_timer
+            (1, M(), GATE_RATES()...), 0. # timer TI params (maxdelay M gaterates...) | offrate
+        )
+    )
 println("Implementation rules loaded.")
 
 ### Run-specific hyperparams:

@@ -68,13 +68,14 @@ end
 
 ###
 struct FullyConnectedANNWithDelay <: GenericComponent
-    ann            :: FullyConnectedANN
-    network_memory :: Float64
-    delay          :: Float64
-    timer_params
+    ann               :: FullyConnectedANN
+    network_memory    :: Float64
+    delay             :: Float64
+    timer_params      :: Tuple{Real, Tuple{Real, Real, Real, Real}, Real}
+    timer_memory_mult :: Real# how many times the `delay` should the timer remember?
 end
-FullyConnectedANNWithDelay(ann::FullyConnectedANN, network_memory::Real, timer_params) = FullyConnectedANNWithDelay(
-    ann, network_memory, ann.neuron_memory * length(ann.layers), timer_params
+FullyConnectedANNWithDelay(ann::FullyConnectedANN, network_memory::Real, timer_params, timer_memory_mult) = FullyConnectedANNWithDelay(
+    ann, network_memory, ann.neuron_memory * length(ann.layers), timer_params, timer_memory_mult
 )
 Circuits.target(n::FullyConnectedANNWithDelay) = target(n.ann)
 Circuits.inputs(n::FullyConnectedANNWithDelay) = inputs(n.ann)
@@ -128,7 +129,7 @@ function Circuits.implement(n::FullyConnectedANNWithDelay, ::Spiking)
                 InputFunctionPoisson((c -> min(c, 1.),), (n.network_memory,), u -> u * 10/n.ann.neuron_memory)
                 for _=1:n_input_lines(n.ann)
             ),
-            timer       = SIC.PulseIR.PoissonTimer(n.delay, n.timer_params...)
+            timer       = SIC.PulseIR.PoissonTimer(n.delay, n.timer_params..., n.timer_memory_mult * n.delay)
         ),
         (
             (
