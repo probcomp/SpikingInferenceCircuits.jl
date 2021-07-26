@@ -10,9 +10,9 @@ include("../utils/spiketrain_utils.jl")
 # Include the file with the Gen model & visualization utils
 include("run.jl")
 
-function generate_tr(obs, xs, vs)
+function generate_tr(obs, xs, vs, nsteps=(min(length(obs), length(xs), length(vs)) - 1))
     (o0, x0, v0), rest = Iterators.peel(zip(obs, xs, vs))
-    tr, _ = generate(model, (NSTEPS() - 1,), choicemap(
+    tr, _ = generate(model, (nsteps,), choicemap(
         (:init => :latents => :xₜ => :val, x0),
         (:init => :latents => :vₜ => :val, v0),
         (:init => :obs => :obs => :val, o0),
@@ -50,10 +50,11 @@ function figure_for_smc_snn_run(
 )
     inferred_states = get_smc_states(events, n_particles, NLATENTS())
     println("Obtained inferred states.")
-    NSTEPS() = length(inferred_states)
 
-    groundtruth_tr = generate_tr(obs, groundtruth_x, groundtruth_v);
+    groundtruth_tr = generate_tr(obs, groundtruth_x, groundtruth_v, length(inferred_states) - 1);
     
+    println(get_args(last(inferred_traces(obs, inferred_states)(nothing, nothing)[1])[1]))
+    println(get_args(groundtruth_tr))
     return make_smc_figure(
         inferred_traces(obs, inferred_states), groundtruth_tr;
         n_particles,
@@ -64,7 +65,8 @@ end
 ### Script to create the figure for a particular run: ###
 NPARTICLES() = 2
 # save_file() = "snn_runs/better_organized/velwalk1d/2timesteps2000interval/2021-07-19__18-23"
-save_file() = "snn_runs/better_organized/velwalk1d/10timesteps2000interval/2021-07-20__02-42"
+# save_file() = "snn_runs/better_organized/velwalk1d/10timesteps2000interval/2021-07-20__02-42"
+save_file() = "snn_runs/better_organized/velwalk1d/10timesteps200interval/2021-07-26__02-02"
 # save_file() = "snn_runs/better_organized/velwalk1d_pm/2timesteps2000interval/2021-07-20__18-46"
 # save_file() = "snn_runs/better_organized/velwalk1d_pm/10timesteps2000interval--failed/2021-07-21__01-30"
 # save_file() = "snn_runs/better_organized/velwalk1d_mh/2timesteps2000interval/2021-07-20__18-58"
@@ -73,7 +75,7 @@ obs           = [16, 15, 11, 10, 8, 14, 11, 17, 18, 18, 18]
 groundtruth_x = [16, 14, 12, 10, 8, 10, 12, 14, 16, 19, 20]
 groundtruth_v = [-2, -2, -2, -2, -2, 2, 2, 2, 2, 3, 1]
 
-events = deserialize(save_file())
+# events = deserialize(save_file())
 
 figure_for_smc_snn_run(
     events, NPARTICLES(), obs, groundtruth_x, groundtruth_v
