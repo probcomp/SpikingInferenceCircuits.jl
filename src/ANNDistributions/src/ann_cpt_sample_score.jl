@@ -32,7 +32,8 @@ function ConcreteANNCPTSample(
     network_memory_per_layer=missing::Union{Real, Missing},
     network_memory=(length(a.layers) * network_memory_per_layer)::Union{Real, Missing},
     timer_params,
-    timer_memory_mult=2. # how many times the expected timer time should the timer remember?
+    timer_memory_mult=2., # how many times the expected timer time should the timer remember?
+    internal_maxrate, output_maxrate=internal_maxrate
 )
     if ismissing(network_memory)
         error("Kwarg `network_memory` or `network_memory_per_layer` must be provided.")
@@ -40,7 +41,7 @@ function ConcreteANNCPTSample(
     
     return ConcreteANNCPTSample(
         FullyConnectedANNWithDelay(
-            FullyConnectedANN(a.layers, neuron_memory), network_memory, timer_params, timer_memory_mult),
+            FullyConnectedANN(a.layers, neuron_memory, internal_maxrate, output_maxrate), network_memory, timer_params, timer_memory_mult),
             a.input_ncategories
         )
 end

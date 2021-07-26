@@ -17,11 +17,14 @@ ann_step_proposal = @compile_step_proposal(_ann_step_proposal, 2, 1)
 @load_generated_functions()
 
 ### Additional implementation rule needed for ANN: ###
+output_maxrate() = 50. # KHz - rate of output from the ANN [e.g. from 100 neuron assemblies with each neuron at 500Hz]
 Circuits.implement(a::ANNCPTSample, ::Spiking) =
     ANNDistributions.ConcreteANNCPTSample(
         a; neuron_memory=ΔT()/2, network_memory_per_layer=ΔT(),
         timer_params=(
             NSPIKES_SYNC_TIMER(),  # N_spikes_timer
             (1, M(), GATE_RATES()...), 0. # timer TI params (maxdelay M gaterates...) | offrate
-        )
+        ),
+        internal_maxrate=10.0, output_maxrate=output_maxrate()
     )
+@assert cdf(Poisson(output_maxrate() * MinProb() * ΔT()), RecipPEstDenom()) < 5e-5 "Too high a probability the ANN does not output a score!"

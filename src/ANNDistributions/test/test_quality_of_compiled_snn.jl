@@ -27,7 +27,7 @@ ann_on_assmt(assmt) = model(ANNDistributions.assmt_to_onehots(assmt, size(cpt)))
 # # model = ANNDistributions.simple_cpt_ann(cpt)
 # # train_a_model(;model, n_iters=30)
 
-neuron_ΔT() = 100
+neuron_ΔT() = 10.
 
 using SpikingInferenceCircuits
 const SIC = SpikingInferenceCircuits
@@ -35,8 +35,7 @@ include("../../../experiments/utils/default_implementation_rules.jl")
 # # TODO: deal with these parameters in a better way!
 timer_params = (
     NSPIKES_SYNC_TIMER(),  #N_spikes_timer
-    (1, M(), GATE_RATES()...), 0., # timer TI params (maxdelay M gaterates...) | offrate
-    neuron_ΔT() * 10 # TODO: this should depend on n_layers!!!
+    (1, M(), GATE_RATES()...), 0. # timer TI params (maxdelay M gaterates...) | offrate
 )
 
 assmt = (20, 4, 19)
@@ -44,14 +43,24 @@ truedist = cpt[assmt...]
 anndist = ann_on_assmt(assmt)
 
 # cptsample = ANNDistributions.ANNCPTSample(ANNDistributions.FullyConnectedANNWithDelay(ANNDistributions.FullyConnectedANN(model.layers |> collect, neuron_ΔT()), 50.,  timer_params), size(cpt))
-cptsample = ANNCPTSample(model, neuron_ΔT(), 1000., timer_params, size(cpt))
+output_maxrate() = 50.
+cptsample = ANNDistributions.ConcreteANNCPTSample(
+    ANNCPTSample(model, size(cpt));
+    neuron_memory=neuron_ΔT(), network_memory=100., timer_params,
+    internal_maxrate=10.0, output_maxrate=output_maxrate()
+)
+@assert cdf(Poisson(output_maxrate() * MinProb() * neuron_ΔT()), RecipPEstDenom()) < 5e-5 "Too high a probability the ANN does not output a score!"
+
 impl = implement_deep(cptsample, Spiking())
 
 function get_val_score(events)
     val_evts = filter(events) do (t, c, e); c === nothing && e.name isa Pair && e.name.first == :value; end
     if length(val_evts) < 1
-        println("no value found, so going to redo it!")
+        @warn("no value found, so going to redo it!")
         return do_sim_get_val(impl, assmt)
+    end
+    if length(val_evts) > 1
+        @error "Multiple val evts : $val_evts"
     end
     val_evt = only(val_evts)
 
@@ -75,11 +84,14 @@ function inspect_counts(events)
     )
 
 end
-get_events(impl, assmt; simlen=400.) = Sim.simulate_for_time_and_get_events(
+get_events(impl, assmt; simlen=100.) = Sim.simulate_for_time_and_get_events(
     impl, simlen, initial_inputs=(
         :in_vals => varidx => varval
         for (varidx, varval) in enumerate(assmt)
-    )
+    ),
+    log=true,
+    log_filter=get_log_filter(400),
+    log_str=time_log_str
 )
 
 counts_of_vals(vals) = Dict(
@@ -152,13 +164,26 @@ function test_random_assmts(impl; n_runs_per_assmt=50, n_assmts=10)
     return tests
 end
 
+using Printf: @sprintf
+function get_log_filter(log_interval)
+    cnt = 0
+    function log_filter(time, compname, event)
+        cnt += 1
+        return (cnt - 1) % log_interval == 0
+    end
+    return log_filter
+end
+function time_log_str(time, compname, event)
+    @sprintf("%.4f", time)
+end
+
 println("running small test:")
-small_result = test_random_assmts(impl; n_runs_per_assmt=2, n_assmts=2)
-BSON.@save "small_test_result.bson" small_result
-println("small test result saved.  result:")
+small_result = test_random_assmts(impl; n_runs_per_assmt=1, n_assmts=1)
+# BSON.@save "small_test_result.bson" small_result
+# println("small test result saved.  result:")
 display(small_result)
 println()
 
-println("Now starting larger test run.")
-result = test_random_assmts(impl)
-BSON.@save "test_result.bson" result
+# println("Now starting larger test run.")
+# result = test_random_assmts(impl)
+# BSON.@save "test_result.bson" result

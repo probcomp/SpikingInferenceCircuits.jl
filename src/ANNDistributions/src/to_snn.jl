@@ -16,9 +16,10 @@ const SIC = SpikingInferenceCircuits
 
 # For now, specialize this to the spiking target - we can generalize later if we want
 struct FullyConnectedANN <: GenericComponent
-    layers         :: Vector{<:Flux.Dense}
-    neuron_memory  :: Float64
-    # TODO: customize the neuron rate range! currently is always [0, 1]
+    layers                  :: Vector{<:Flux.Dense}
+    neuron_memory           :: Float64
+    internal_neuron_maxrate :: Float64
+    output_neuron_maxrate   :: Float64
 end
 n_input_lines(n      :: FullyConnectedANN) = size(n.layers[1].weight)[2]
 n_output_lines(n     :: FullyConnectedANN) = size(last(n.layers).weight)[1]
@@ -29,7 +30,7 @@ Circuits.implement(n :: FullyConnectedANN, ::Spiking) = CompositeComponent(
     inputs(n), outputs(n),
     Tuple( # layers
         IndexedComponentGroup(
-            neuron(n.neuron_memory, layer.weight[i, :], layer.bias[i], layer.σ, layeridx == 1)
+            neuron(n.neuron_memory, layer.weight[i, :], layer.bias[i], layer.σ, layeridx == 1, layeridx == length(n.layers), n.internal_neuron_maxrate, n.output_neuron_maxrate)
             for i=1:size(layer.weight)[1]
         )
         for (layeridx, layer) in enumerate(n.layers)
@@ -57,13 +58,14 @@ Circuits.implement(n :: FullyConnectedANN, ::Spiking) = CompositeComponent(
         )...
     ), n
 )
-function neuron(ΔT, W, b, σ, is_first_layer)
+function neuron(ΔT, W, b, σ, is_first_layer, is_last_layer, internal_maxrate, out_maxrate)
     infn = (if is_first_layer # if first layer, gets one-hot input, not a rate, so we don't normalize by ΔT
-                w -> c -> w*min(c, 1)
+                w -> c -> w*min(c, 1) / internal_maxrate
            else
-                w -> c -> w*c/ΔT
+                w -> c -> w*c/ΔT / internal_maxrate
            end)
-    return SIC.PulseIR.PoissonNeuron([infn(w) for w in W], ΔT, u -> σ(u + b))
+    ratemult = is_last_layer ? out_maxrate : internal_maxrate
+    return SIC.PulseIR.PoissonNeuron([infn(w) for w in W], ΔT, u -> σ(u + b) * ratemult)
 end
 
 ###
@@ -89,7 +91,7 @@ function add_delay_line(neuron_layer::Circuits.ComponentGroup)
 end
 add_delay_line(neuron::InputFunctionPoisson) = InputFunctionPoisson(
     (neuron.input_functions..., c -> 1000 * min(c, 1)),
-    (neuron.memories..., neuron.memories[1]), 
+    (neuron.memories..., neuron.memories[1]),
     u -> neuron.rate_fn(u - 1000)
 )
 
