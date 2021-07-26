@@ -64,15 +64,16 @@ end
 ### Script to create the figure for a particular run: ###
 NPARTICLES() = 2
 # save_file() = "snn_runs/better_organized/velwalk1d/2timesteps2000interval/2021-07-19__18-23"
-# save_file() = "snn_runs/better_organized/velwalk1d/10timesteps2000interval/2021-07-20__02-42"
+save_file() = "snn_runs/better_organized/velwalk1d/10timesteps2000interval/2021-07-20__02-42"
 # save_file() = "snn_runs/better_organized/velwalk1d_pm/2timesteps2000interval/2021-07-20__18-46"
-save_file() = "snn_runs/better_organized/velwalk1d_pm/10timesteps2000interval--failed/2021-07-21__01-30"
+# save_file() = "snn_runs/better_organized/velwalk1d_pm/10timesteps2000interval--failed/2021-07-21__01-30"
+# save_file() = "snn_runs/better_organized/velwalk1d_mh/2timesteps2000interval/2021-07-20__18-58"
 
 obs           = [16, 15, 11, 10, 8, 14, 11, 17, 18, 18, 18]
 groundtruth_x = [16, 14, 12, 10, 8, 10, 12, 14, 16, 19, 20]
 groundtruth_v = [-2, -2, -2, -2, -2, 2, 2, 2, 2, 3, 1]
 
-# events = deserialize(save_file())
+events = deserialize(save_file())
 
 figure_for_smc_snn_run(
     events, NPARTICLES(), obs, groundtruth_x, groundtruth_v
