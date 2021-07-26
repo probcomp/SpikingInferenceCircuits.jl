@@ -3,6 +3,9 @@ const SIC = SpikingInferenceCircuits
 using Circuits, SpikingCircuits
 using DynamicModels
 
+includet("../utils/default_implementation_rules.jl")
+println("Implementation rules loaded.")
+
 includet("model.jl")
 # includet("pm_model.jl")
 includet("ann_proposal.jl")
@@ -16,9 +19,6 @@ latent_obs_domains() = (latent_domains()..., obs_domains()...)
 NLATENTS() = length(latent_domains())
 NOBS()     = length(obs_domains())
 NVARS()    = NLATENTS() + NOBS()
-
-includet("../utils/default_implementation_rules.jl")
-println("Implementation rules loaded.")
 
 ### Run-specific hyperparams:
 NSTEPS() = 2
