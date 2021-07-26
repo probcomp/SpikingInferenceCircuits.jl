@@ -86,7 +86,7 @@ function get_smc_circuit_inputs(
     t = 0
     while t < time_to_simulate_for
         t += interval_between_observations
-        obs, remaining_obs = Iterators.peel(observations)
+        obs, remaining_obs = Iterators.peel(remaining_obs)
         push!(inputs, 
             (t, ((:obs => key => val for (key, val) in pairs(obs))...,))
         )

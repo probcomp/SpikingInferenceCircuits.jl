@@ -91,15 +91,19 @@ function get_smc_states(events, nparticles, nlatents)
     particle_approximations = []
 
     for idx_var_vals in Iterators.partition(idx_var_vals_full, nlatents * nparticles)
-        display(collect(idx_var_vals))
         latents = Set(varname for (_, varname, _) in idx_var_vals)
-        display(latents)
-        @assert length(latents) == nlatents
-        @assert Set(
+        satisfies_expected_conditions = (
+            length(latents) == nlatents &&
+            Set(
                 (part_idx, varname) for (part_idx, varname, _) in idx_var_vals
             ) == Set(
                 Iterators.product(1:nparticles, latents)
             )
+        )
+        if !satisfies_expected_conditions
+            @warn "Latents did not satisfy expected conditions!  Returning particle approximations obtained until this erroneous timestep."
+            return particle_approximations
+        end
 
         assmts_t = Dict(
             varname => [-1 for _=1:nparticles]
