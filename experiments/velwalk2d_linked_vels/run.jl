@@ -55,9 +55,9 @@ make_smcexact_fig(tr; n_particles=10) =
 make_smcapprox_fig(tr; n_particles=10) =
     make_smc_figure(smc_approx_proposal, tr; n_particles, proposalstr="\nproposing from efficiently-encodable approximate posterior")
 
-# tr, _ = generate(model, (10,));
+tr, _ = generate(model, (10,));
 # println("Trace generated.")
-# fig, t = make_smcprior_fig(tr, n_particles=10); fig
+fig, t = make_smcapprox_fig(tr, n_particles=10); fig
 
 # grids = get_enumeration_grids(tr);
 # println("Grids produced.")
