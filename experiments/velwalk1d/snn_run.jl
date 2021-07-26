@@ -4,7 +4,8 @@ using Circuits, SpikingCircuits
 using DynamicModels
 
 includet("model.jl")
-includet("pm_model.jl")
+# includet("pm_model.jl")
+includet("ann_proposal.jl")
 includet("inference.jl")
 @load_generated_functions()
 
@@ -25,15 +26,15 @@ RUNTIME() = INTER_OBS_INTERVAL() * (NSTEPS() - 0.1)
 NPARTICLES() = 2
 
 failure_prob_bound = bound_on_overall_failure_prob(NSTEPS(), NVARS(), NPARTICLES())
-# println("Hyperparameters set so the probability the circuit fails due to an issue we check for is less than $failure_prob_bound.")
-println("Warning! Failure checks are not tuned yet for the case with rejuvenation!")
+println("Hyperparameters set so the probability the circuit fails due to an issue we check for is less than $failure_prob_bound.")
+println("Warning! Failure checks are not tuned yet for the use of ANNs!")
 
 smccircuit = SMC(
     GenFnWithInputDomains(initial_latent_model, ()),
-    GenFnWithInputDomains(latent_step_model, latent_domains()),
+    GenFnWithInputDomains(step_latent_model, latent_domains()),
     GenFnWithInputDomains(obs_model, latent_domains()),
     GenFnWithInputDomains(_exact_init_proposal, obs_domains()),
-    GenFnWithInputDomains(_approx_step_proposal, latent_obs_domains()),
+    GenFnWithInputDomains(_ann_step_proposal, latent_obs_domains()),
     [:xₜ, :vₜ], [:obs], [:xₜ, :vₜ], NPARTICLES();
     truncation_minprob=MinProb(),
     rejuv_proposal=GenFnWithInputDomains(mh_kernel, latent_obs_domains())

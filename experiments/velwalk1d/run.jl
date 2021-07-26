@@ -10,10 +10,5 @@ model = @DynamicModel(initial_latent_model, step_latent_model, obs_model, 2)
 
 include("run_utils.jl")
 
-<<<<<<< HEAD
-tr, _ = generate(model, (10,));
-make_smc_approx_mhrejuv_2d_posterior_figure(tr)
-=======
 # tr, _ = generate(model, (10,));
 # make_smcexact_2d_posterior_figure(tr)
->>>>>>> main

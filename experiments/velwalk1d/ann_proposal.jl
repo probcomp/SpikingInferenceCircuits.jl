@@ -1,0 +1,27 @@
+##### Step proposal using ANN #####
+using ANNDistributions
+
+### Write ANN proposal ###
+
+# This assumes we have already trained the ANN we'll use --
+ann = BSON.load("model-checkpoint.bson")[:model]
+
+VelStepDist = ANN_LCPT((Positions(), Vels(), Positions()), Vels(), ann)
+@gen (static) function _ann_step_proposal(xₜ₋₁, vₜ₋₁, obs)
+    vₜ ~ VelStepDist(xₜ₋₁, vₜ₋₁, obs)
+    xₜ ~ Cat(onehot(xₜ₋₁ + vₜ, Positions()))
+end
+
+exact_init_proposal = @compile_initial_proposal(_exact_init_proposal, 1)
+ann_step_proposal = @compile_step_proposal(_ann_step_proposal, 2, 1)
+@load_generated_functions()
+
+### Additional implementation rule needed for ANN: ###
+Circuits.implement(a::ANNCPTSample, ::Spiking) =
+    ANNDistributions.ConcreteANNCPTSample(
+        a; neuron_memory=ΔT()/2, network_memory_per_layer=ΔT(),
+        timer_params=(
+            NSPIKES_SYNC_TIMER(),  # N_spikes_timer
+            (1, M(), GATE_RATES()...), 0. # timer TI params (maxdelay M gaterates...) | offrate
+        )
+    )
