@@ -1,11 +1,5 @@
 # This file is machine-generated - editing it directly is not advised
 
-[[ANNDistributions]]
-deps = ["BSON", "Circuits", "Flux", "Gen", "ProbEstimates", "Revise", "SpikingCircuits", "SpikingInferenceCircuits"]
-path = "/Users/georgematheos/Developer/research/SpikingInferenceCircuits.jl/src/ANNDistributions"
-uuid = "3a3d2a55-e1fd-4b08-9be6-dd5b39fef32b"
-version = "0.1.0"
-
 [[AbstractFFTs]]
 deps = ["LinearAlgebra"]
 git-tree-sha1 = "485ee0867925449198280d4af84bdb46a2a404d0"
@@ -91,7 +85,9 @@ version = "0.10.13"
 
 [[Circuits]]
 deps = ["Distributions", "LightGraphs", "Memoization"]
-path = "../../../Circuits.jl"
+git-tree-sha1 = "50cf83e1aba651a77449d6d3e4c1e18eaab12b3d"
+repo-rev = "main"
+repo-url = "https://github.com/probcomp/Circuits.jl"
 uuid = "f5b243b3-c95b-4650-9ac7-659d8f0b0982"
 version = "0.1.0"
 
@@ -197,12 +193,6 @@ version = "0.8.5"
 [[Downloads]]
 deps = ["ArgTools", "LibCURL", "NetworkOptions"]
 uuid = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
-
-[[DynamicModels]]
-deps = ["Gen"]
-path = "../DynamicModels"
-uuid = "53cfae49-06f6-4efc-9340-34155828b855"
-version = "0.1.0"
 
 [[ExprTools]]
 git-tree-sha1 = "b7e3d17636b348f005f11040025ae8c6f645fe92"
@@ -596,14 +586,10 @@ version = "1.5.1"
 
 [[SpikingCircuits]]
 deps = ["Circuits", "DataStructures", "Distributions", "Printf"]
-path = "../../../SpikingCircuits.jl"
+git-tree-sha1 = "983a1f34937f603b84f8446a9004d23d10363688"
+repo-rev = "main"
+repo-url = "https://github.com/probcomp/SpikingCircuits.jl"
 uuid = "549ce59a-75fd-4aaf-b0ba-30f73ee3de21"
-version = "0.1.0"
-
-[[SpikingInferenceCircuits]]
-deps = ["ANNDistributions", "BSON", "Bijections", "CPTs", "Circuits", "DiscreteIRTransforms", "Distributions", "DynamicModels", "Gen", "InteractiveUtils", "ProbEstimates", "Revise", "Setfield", "SpikingCircuits"]
-path = "../.."
-uuid = "ef694985-0566-4478-a48d-fa3dba6654f1"
 version = "0.1.0"
 
 [[Static]]

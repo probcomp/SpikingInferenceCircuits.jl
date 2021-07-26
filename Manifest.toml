@@ -1,7 +1,7 @@
 # This file is machine-generated - editing it directly is not advised
 
 [[ANNDistributions]]
-deps = ["BSON", "Circuits", "Flux", "SpikingCircuits", "SpikingInferenceCircuits"]
+deps = ["BSON", "Circuits", "Flux", "Gen", "ProbEstimates", "Revise", "SpikingCircuits"]
 path = "src/ANNDistributions"
 uuid = "3a3d2a55-e1fd-4b08-9be6-dd5b39fef32b"
 version = "0.1.0"
@@ -85,15 +85,15 @@ version = "0.8.23"
 
 [[ChainRulesCore]]
 deps = ["Compat", "LinearAlgebra", "SparseArrays"]
-git-tree-sha1 = "0b0aa9d61456940511416b59a0e902c57b154956"
+git-tree-sha1 = "f53ca8d41e4753c41cdafa6ec5f7ce914b34be54"
 uuid = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
-version = "0.10.12"
+version = "0.10.13"
 
 [[Circuits]]
 deps = ["Distributions", "LightGraphs", "Memoization"]
 git-tree-sha1 = "50cf83e1aba651a77449d6d3e4c1e18eaab12b3d"
 repo-rev = "main"
-repo-url = "https://github.com/probcomp/Circuits.jl.git"
+repo-url = "https://github.com/probcomp/Circuits.jl"
 uuid = "f5b243b3-c95b-4650-9ac7-659d8f0b0982"
 version = "0.1.0"
 
@@ -228,9 +228,9 @@ version = "0.8.4"
 
 [[Flux]]
 deps = ["AbstractTrees", "Adapt", "ArrayInterface", "CUDA", "CodecZlib", "Colors", "DelimitedFiles", "Functors", "Juno", "LinearAlgebra", "MacroTools", "NNlib", "NNlibCUDA", "Pkg", "Printf", "Random", "Reexport", "SHA", "Statistics", "StatsBase", "Test", "ZipFile", "Zygote"]
-git-tree-sha1 = "c58d1f9c9640f0bcb6869c6c9254d090b13c1908"
+git-tree-sha1 = "1286e5dd0b4c306108747356a7a5d39a11dc4080"
 uuid = "587475ba-b771-5e3f-ad9e-33799f191a9c"
-version = "0.12.5"
+version = "0.12.6"
 
 [[ForwardDiff]]
 deps = ["CommonSubexpressions", "DiffResults", "DiffRules", "LinearAlgebra", "NaNMath", "Printf", "Random", "SpecialFunctions", "StaticArrays"]
@@ -604,12 +604,6 @@ repo-url = "https://github.com/probcomp/SpikingCircuits.jl.git"
 uuid = "549ce59a-75fd-4aaf-b0ba-30f73ee3de21"
 version = "0.1.0"
 
-[[SpikingInferenceCircuits]]
-deps = ["ANNDistributions", "BSON", "Bijections", "CPTs", "Circuits", "DiscreteIRTransforms", "Distributions", "DynamicModels", "Gen", "InteractiveUtils", "ProbEstimates", "Revise", "Setfield", "SpikingCircuits"]
-path = "/Users/georgematheos/Developer/research/SpikingInferenceCircuits.jl"
-uuid = "ef694985-0566-4478-a48d-fa3dba6654f1"
-version = "0.1.0"
-
 [[Static]]
 deps = ["IfElse"]
 git-tree-sha1 = "62701892d172a2fa41a1f829f66d2b0db94a9a63"
@@ -618,9 +612,9 @@ version = "0.3.0"
 
 [[StaticArrays]]
 deps = ["LinearAlgebra", "Random", "Statistics"]
-git-tree-sha1 = "a43a7b58a6e7dc933b2fa2e0ca653ccf8bb8fd0e"
+git-tree-sha1 = "1b9a0f17ee0adde9e538227de093467348992397"
 uuid = "90137ffa-7385-5640-81b9-e52037218182"
-version = "1.2.6"
+version = "1.2.7"
 
 [[Statistics]]
 deps = ["LinearAlgebra", "SparseArrays"]
