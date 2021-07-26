@@ -1,10 +1,10 @@
-ExpectedLatency()    = 50
-SampleAssemblySize() = 10
-ScoreAssemblySize()  = 10
+ExpectedLatency()    = 5
+SampleAssemblySize() = 100
+ScoreAssemblySize()  = 100
 MaxNeuronRate()      = 0.2 # KHz
 MinProb()            = 0.1
 
-INTER_OBS_INTERVAL() = 2000. # ms
+INTER_OBS_INTERVAL() = 200. # ms
 
 SAMPLE_ONRATE() = SampleAssemblySize() * MaxNeuronRate()
 SCORE_ONRATE()  = ScoreAssemblySize()  * MaxNeuronRate()
@@ -14,17 +14,17 @@ PEstDenom() = ExpectedLatency() * SCORE_ONRATE() |> Int
 RecipPEstDenom() = ExpectedLatency() *  SAMPLE_ONRATE() * MinProb() |> Int
 MultOutDenom() = 200 # count denominator for the output of a multiplier
 
-ΔT() = 240 # ms  -- memory time for scoring unit (also used by many other units)
+ΔT() = 24 # ms  -- memory time for scoring unit (also used by many other units)
 
 MinProb() = 0.1
-ΔT_SAMPLE() = ΔT() * SCORE_ONRATE()
+ΔT_SAMPLE() = ΔT() * 2
 
 OFFRATE() = 10e-20
 
 # rates for neurons in logic gates like TI, OFFGATE, ASYNC_ON_GATE
 GATE_OFFRATE() = 0.
-GATE_ONRATE() = 50_000. # KHz
-LOWER_GATE_ONRATE() = 50_000. # KHz -- not realistic at all.  making this realistic: TODO
+GATE_ONRATE() = 500_000. # KHz
+LOWER_GATE_ONRATE() = 500_000. # KHz -- not realistic at all.  making this realistic: TODO
 GATE_RATES() = (GATE_OFFRATE(), GATE_ONRATE())
 
 M() = 1000 # number of spikes to override off/on gate
@@ -112,7 +112,7 @@ function run_hyperparameter_checks()
     @assert cdf(Erlang(TIMER_N_SPIKES(), 1/timer_rate_for_time(MULT_EXPECTED_OUT_TIME())), MULT_OUT_TIME_BOUND()) > 1 - MULT_FAIL_PROB()
 
     # similar check to above, but for reset timer in sync units
-    @assert cdf(Erlang(NSPIKES_SYNC_TIMER(), NSPIKES_SYNC_TIMER()/SYNC_ΔT_TIMER()), SYNC_TIMER_MEMORY()) > 1 - SYNC_FORGET_FAIL_PROB()
+    @assert cdf(Erlang(NSPIKES_SYNC_TIMER(), 1/(NSPIKES_SYNC_TIMER()/SYNC_ΔT_TIMER())), SYNC_TIMER_MEMORY()) > 1 - SYNC_FORGET_FAIL_PROB()
 
     # Time to sample & score + multiply values < memory of Theta and Muxes in resample unit
     @assert max(ΔT(), ΔT_SAMPLE()) + MULT_OUT_TIME_BOUND() < min(ΔT_THETA(), ΔT_GATES())
