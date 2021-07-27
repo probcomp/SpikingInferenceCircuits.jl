@@ -7,7 +7,7 @@ include("model.jl")
 include("model_hyperparams.jl")
 
 # TODO: CHANGEME: fill in the latent variables and obs variables and the domains
-latent_domains() = (Xs(), Ys(), Zs(), Rs(), Vels(), θs(), ϕs())
+latent_domains() = (Vels(), Vels(), Vels(), Xs(), Ys(), Zs(), Rs(), ϕs(), θs())
 obs_domains() = (θs(), ϕs())
 
 
@@ -31,12 +31,12 @@ RUNTIME() = INTER_OBS_INTERVAL() * (NEURAL_NSTEPS() - 0.1)
 
 function extract_angle_indices(gt_tr)
     gt_obs_choices = get_choices(gt_tr)
-    θ1 = findfirst(gt_obs_choices[:init => :obs => :obs_θ => :val], θs())
-    ϕ1 = findfirst(gt_obs_choices[:init => :obs => :obs_ϕ => :val], ϕs())
+    θ1 = findfirst(map(x -> x == gt_obs_choices[:init => :obs => :obs_θ => :val], θs()))
+    ϕ1 = findfirst(map(x -> x == gt_obs_choices[:init => :obs => :obs_ϕ => :val], ϕs()))
     obs_list = [(θ1, ϕ1)]                   
     for step in 1:NEURAL_NSTEPS()
-        obs_θ = findfirst(gt_obs_choices[:steps => step => :obs => :obs_θ => :val], θs())
-        obs_ϕ = findfirst(gt_obs_choices[:steps => step => :obs => :obs_ϕ => :val], ϕs())
+        obs_θ = findfirst(map(x -> x == gt_obs_choices[:steps => step => :obs => :obs_θ => :val], θs()))
+        obs_ϕ = findfirst(map(x -> x == gt_obs_choices[:steps => step => :obs => :obs_ϕ => :val], ϕs()))
         push!(obs_list, (obs_θ, obs_ϕ))
     end
     return obs_list
@@ -63,7 +63,7 @@ smc = SMC(
     # Order in which to feed in variables to proposal
     [:vxₜ, :vyₜ, :vzₜ, :xₜ, :yₜ, :zₜ, :rₜ, :exact_ϕ, :exact_θ, :obs_θ, :obs_ϕ],
     # order in which to feed latent variables into the step proposal
-    [:θₜ, :ϕₜ],       # order in which to feed observations into the proposals
+    [:obs_θ, :obs_ϕ],       # order in which to feed observations into the proposals
     
     # Order in which to recur variables:
     [:vxₜ, :vyₜ, :vzₜ, :xₜ, :yₜ, :zₜ, :rₜ, :exact_ϕ, :exact_θ],
@@ -95,10 +95,6 @@ inputs = get_smc_circuit_inputs(
     # TODO: CHANGEME: put in the actual observations you want to run on
     # Make sure they are indexed via 1...N, not some other domain (like, e.g. radians)
 
-    # { -1, -.9, ..., .9, 1 }
-    # { 1, 2,   ...,  20, 21 }
-    # Feed in observations from {1, ..., 21}, not {-1, ..., 1}
-
     [          # vector giving the observations at each timestep.
                # at each timestep, give a named tuple mapping observation names to observation values
                # Enough observation values must be specified to send one in at each timestep until the end of the simulation
@@ -106,7 +102,7 @@ inputs = get_smc_circuit_inputs(
                # If an observed value comes from a domain other than {1, ..., N},
                # the observations must be fed in as the indexed version (ie. for the first value of the domain, feed in "1";
                # for the second value, "2", and so on). TODO: support giving observations in their true domains.
-        (obs_θ = θ, obs_ϕ = θ)
+        (obs_θ = θ, obs_ϕ = ϕ)
                for (θ, ϕ) in extract_angle_indices(tr)
 
 
@@ -126,3 +122,10 @@ println("Simulation completed!")
 # get the inferred latent states from the simulation
 include("../utils/spiketrain_utils.jl")
 inferred_states = get_smc_states(events, NEURAL_NPARTICLES(), NLATENTS() #= num latent vars in model =#)
+
+
+
+# domains = SIC.DiscreteIRTransforms.get_domains(
+#     SIC.DiscreteIRTransforms.get_ir(SIC.DiscreteIRTransforms.replace_return_node(step_model)).nodes, latent_domains())
+
+maybe_one_off(round_to_pt1(nm.asin(6 / 5)), .4, ϕs()))

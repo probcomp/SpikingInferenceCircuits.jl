@@ -5,6 +5,7 @@ using GLMakie
 using StatsBase
 using GeometryBasics
 import AbstractPlotting as AP
+import NaNMath as nm
 # try only a few particles, scoring and resampling useful story.
 # more complex renderer -- extend to the general case but dont expand the scope.
 # more arbitrary rotation pattern w x and y velocity.
@@ -63,9 +64,9 @@ round_to_pt1(x) = round(x, digits=1)
     # exact_θ = { :exact_θ } ~ LCat(θs())(
     #     onehot(round_to_pt1(atan(yₜ / xₜ)), θs()))
     exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(
-         maybe_one_off(round_to_pt1(asin(zₜ / exact_r)), .4, ϕs()))
+         maybe_one_off(round_to_pt1(nm.asin(zₜ / exact_r)), .4, ϕs()))
     exact_θ = { :exact_θ } ~ LCat(θs())(
-         maybe_one_off(round_to_pt1(atan(yₜ / xₜ)), .4, θs()))
+         maybe_one_off(round_to_pt1(nm.atan(yₜ / xₜ)), .4, θs()))
     r_max = max_distance_inside_grid(exact_ϕ, exact_θ)
     r_probvec = normalize(
         vcat(maybe_one_or_two_off(
@@ -90,8 +91,8 @@ end
     exact_r = round(norm_3d(xₜ, yₜ, zₜ))
     # exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(onehot(round_to_pt1(asin(zₜ / exact_r)), ϕs()))
     # exact_θ = { :exact_θ } ~ LCat(θs())(onehot(round_to_pt1(atan(yₜ / xₜ)), θs()))
-    exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(maybe_one_off(round_to_pt1(asin(zₜ / exact_r)), .2, ϕs()))
-    exact_θ = { :exact_θ } ~ LCat(θs())(maybe_one_off(round_to_pt1(atan(yₜ / xₜ)), .2, θs()))
+    exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(maybe_one_off(round_to_pt1(nm.asin(zₜ / exact_r)), .2, ϕs()))
+    exact_θ = { :exact_θ } ~ LCat(θs())(maybe_one_off(round_to_pt1(nm.atan(yₜ / xₜ)), .2, θs()))
     r_max = max_distance_inside_grid(exact_ϕ, exact_θ)
     r_probvec = normalize(
         vcat(maybe_one_or_two_off(

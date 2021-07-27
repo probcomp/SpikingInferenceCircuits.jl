@@ -10,7 +10,7 @@ initial_proposal_compiled = @compile_initial_proposal(initial_proposal, 2)
 @load_generated_functions()
 
 NSTEPS = 9
-NPARTICLES = 10
+NPARTICLES = 200
 
 #tr = simulate(model, (NSTEPS,))
 

@@ -28,6 +28,7 @@ function get_domains(
     return name_to_domain
 end
 
+
 ## handle_node!(node::StaticIRNode, name_to_domain::Dict{Symbol, Domain}, domain_type_constraint::Type{<:Domain})
 ## add an entry to `name_to_domain` for this node, where the domain must be of the type `domain_type_constraint`
 
