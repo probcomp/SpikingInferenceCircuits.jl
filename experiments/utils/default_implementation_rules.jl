@@ -1,4 +1,4 @@
-includet("default_implementation_hyperparameters.jl")
+include("default_implementation_hyperparameters.jl")
 
 Circuits.implement(cs::SIC.SDCs.ConditionalScore, ::Spiking) =      # max_delay
     SDCs.PoissonPulseConditionalScore((cs, PEstDenom(), SCORE_ONRATE(), ΔT(),    2,     M()), OFFRATE(), (GATE_OFFRATE(), LOWER_GATE_ONRATE()))

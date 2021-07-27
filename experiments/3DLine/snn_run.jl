@@ -23,10 +23,10 @@ println("Implementation rules loaded.")
 
 ### Run-specific hyperparams:
 # Things you set:
-NSTEPS() = 2
-NPARTICLES() = 2
+NEURAL_NSTEPS() = 2
+NEURAL_NPARTICLES() = 2
 # don't change this:
-RUNTIME() = INTER_OBS_INTERVAL() * (NSTEPS() - 0.1)
+RUNTIME() = INTER_OBS_INTERVAL() * (NEURAL_NSTEPS() - 0.1)
 
 
 function extract_angle_indices(gt_tr)
@@ -34,7 +34,7 @@ function extract_angle_indices(gt_tr)
     θ1 = findfirst(gt_obs_choices[:init => :obs => :obs_θ => :val], θs())
     ϕ1 = findfirst(gt_obs_choices[:init => :obs => :obs_ϕ => :val], ϕs())
     obs_list = [(θ1, ϕ1)]                   
-    for step in 1:NSTEPS()
+    for step in 1:NEURAL_NSTEPS()
         obs_θ = findfirst(gt_obs_choices[:steps => step => :obs => :obs_θ => :val], θs())
         obs_ϕ = findfirst(gt_obs_choices[:steps => step => :obs => :obs_ϕ => :val], ϕs())
         push!(obs_list, (obs_θ, obs_ϕ))
@@ -47,7 +47,7 @@ end
 
                        
 ### Log failure probability bound:
-failure_prob_bound = bound_on_overall_failure_prob(NSTEPS(), NVARS(), NPARTICLES())
+failure_prob_bound = bound_on_overall_failure_prob(NEURAL_NSTEPS(), NVARS(), NEURAL_NPARTICLES())
 println("Hyperparameters set so the probability the circuit fails due to an issue we check for is less than $failure_prob_bound.")
 
 # Construct an SMC circuit, by telling each model the domains of the input variables
@@ -66,10 +66,10 @@ smc = SMC(
     [:θₜ, :ϕₜ],       # order in which to feed observations into the proposals
     
     # Order in which to recur variables:
-    [:vxₜ, :vyₜ, :vzₜ, :xₜ, :yₜ, :zₜ, :rₜ, :exact_ϕ, :exact_θ]
+    [:vxₜ, :vyₜ, :vzₜ, :xₜ, :yₜ, :zₜ, :rₜ, :exact_ϕ, :exact_θ],
     # order in which to feed latent variables back into the step model for the next timestep
     
-    NPARTICLES();
+    NEURAL_NPARTICLES();
     
     # If you add this, the proposal will automatically be truncated so it never proposes a value
     # with proposal probablity < MinProb.
@@ -125,4 +125,4 @@ println("Simulation completed!")
 
 # get the inferred latent states from the simulation
 include("../utils/spiketrain_utils.jl")
-inferred_states = get_smc_states(events, NPARTICLES(), NLATENTS() #= num latent vars in model =#)
+inferred_states = get_smc_states(events, NEURAL_NPARTICLES(), NLATENTS() #= num latent vars in model =#)
