@@ -20,7 +20,7 @@ includet("../utils/default_implementation_rules.jl")
 println("Implementation rules loaded.")
 
 ### Run-specific hyperparams:
-NSTEPS() = 2
+NSTEPS() = 10
 RUNTIME() = INTER_OBS_INTERVAL() * (NSTEPS() - 0.1)
 NPARTICLES() = 2
 
@@ -29,7 +29,7 @@ println("Hyperparameters set so the probability the circuit fails due to an issu
 
 smccircuit = SMC(
     GenFnWithInputDomains(initial_latent_model, ()),
-    GenFnWithInputDomains(latent_step_model, latent_domains()),
+    GenFnWithInputDomains(step_latent_model, latent_domains()),
     GenFnWithInputDomains(obs_model, latent_domains()),
     GenFnWithInputDomains(_exact_init_proposal, obs_domains()),
     GenFnWithInputDomains(_approx_step_proposal, latent_obs_domains()),

@@ -45,14 +45,10 @@ Circuits.implement(w::ConcreteWTA, ::Spiking) =
                 Input(i) => CompIn(:offs => i, :in)
                 for i=1:w.n_inputs
             ),
-            ( # Input spike immediately turns of all other repeaters
-                Input(i) => CompIn(:offs => j, :off)
+            ( # Repeated spike turns everything off!
+                CompOut(:offs => i, :out) => CompIn(:offs => j, :off)
                 for i=1:w.n_inputs
-                    for j=1:w.n_inputs if j != i
-            ),
-            ( # After spike is repeated, that repeater is turned off
-                CompOut(:offs => i, :out) => CompIn(:offs => i, :off)
-                for i=1:w.n_inputs
+                    for j=1:w.n_inputs
             ),
             (
                 CompOut(:offs => i, :out) => Output(i)
