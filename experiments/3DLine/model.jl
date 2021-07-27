@@ -27,6 +27,11 @@ import AbstractPlotting as AP
 # choosing distances!
 
 
+# biorealistic 15 min writeup
+# visualizations on the 3D model
+# compile the 3D model to the neural net. 
+
+
 include("../../src/ProbEstimates/ProbEstimates.jl")
 ProbEstimates.use_perfect_weights!()
 using .ProbEstimates: Cat, LCat
@@ -87,8 +92,6 @@ end
     # exact_θ = { :exact_θ } ~ LCat(θs())(onehot(round_to_pt1(atan(yₜ / xₜ)), θs()))
     exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(maybe_one_off(round_to_pt1(asin(zₜ / exact_r)), .2, ϕs()))
     exact_θ = { :exact_θ } ~ LCat(θs())(maybe_one_off(round_to_pt1(atan(yₜ / xₜ)), .2, θs()))
-
-
     r_max = max_distance_inside_grid(exact_ϕ, exact_θ)
     r_probvec = normalize(
         vcat(maybe_one_or_two_off(
@@ -125,24 +128,12 @@ end
     return (obs_θ, obs_ϕ)
 end
 
-@gen (static) function step_proposal(vxₜ₋₁, vyₜ₋₁, vzₜ₋₁, xₜ₋₁, yₜ₋₁, zₜ₋₁,
-                                     rₜ₋₁, exact_ϕ, exact_θ, θₜ, ϕₜ) # θ and ϕ are noisy
-    # instead of sampling (x, y, h) then computing r (as we do in the model)
-    # in the proposal we sample (r, x, y) and then compute h
-    exact_θ = { :exact_θ } ~ LCat(θs())(maybe_one_off(θₜ, 0.2, θs()))
-    exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(maybe_one_off(ϕₜ, 0.2, ϕs()))
-  #  exact_θ = { :exact_θ } ~ LCat(θs())(onehot(θₜ, θs()))
-  #  exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(onehot(ϕₜ, ϕs()))
 
-    r_max = max_distance_inside_grid(exact_ϕ, exact_θ)
-    r_probvec = normalize(
-        vcat(maybe_one_or_two_off(
-            rₜ₋₁ <= r_max ? rₜ₋₁ : r_max, .6, Rs())[1:Int(r_max)],
-             zeros(length(Rs())-Int(r_max))))
-    rₜ = { :rₜ } ~ LCat(Rs())(r_probvec)
-    exact_x = rₜ * cos(exact_ϕ) * cos(exact_θ)
-    exact_y = rₜ * cos(exact_ϕ) * sin(exact_θ)
-    exact_z = rₜ * sin(exact_ϕ)
+# here you probably can run into proposing an unrealistic r xyz combination because
+# you're directly making sure you don't propose unrealistic steps for x y and z. but should be fine
+# since r is one or two off. 
+
+
     # should the proposal balance the model? i.e. incorporate data and the past?
     
     # likely issue here is its very possible that delta
@@ -157,6 +148,31 @@ end
     # here compare exact vals to t-1 vals
     # if round(exact) - pos t-1 = 1,  x = maybe one off this delta + pos t-1
 
+  #  exact_θ = { :exact_θ } ~ LCat(θs())(onehot(θₜ, θs()))
+  #  exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(onehot(ϕₜ, ϕs()))
+ #   vyₜ = { :vyₜ } ~ LCat(Vels())(maybe_one_off(round_to_pt1(yₜ - yₜ₋₁), .4, Vels()))
+ #   vxₜ = { :vxₜ } ~ LCat(Vels())(maybe_one_off(round_to_pt1(xₜ - xₜ₋₁), .4, Vels()))
+    #   vzₜ = { :vzₜ } ~ LCat(Vels())(maybe_one_off(round_to_pt1(zₜ - zₜ₋₁), .4, Vels()))
+
+
+
+@gen (static) function step_proposal(vxₜ₋₁, vyₜ₋₁, vzₜ₋₁, xₜ₋₁, yₜ₋₁, zₜ₋₁,
+                                     rₜ₋₁, exact_ϕ, exact_θ, θₜ, ϕₜ) # θ and ϕ are noisy
+    # instead of sampling (x, y, h) then computing r (as we do in the model)
+    # in the proposal we sample (r, x, y) and then compute h
+    exact_θ = { :exact_θ } ~ LCat(θs())(maybe_one_off(θₜ, 0.2, θs()))
+    exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(maybe_one_off(ϕₜ, 0.2, ϕs()))
+
+    r_max = max_distance_inside_grid(exact_ϕ, exact_θ)
+    r_probvec = normalize(
+        vcat(maybe_one_or_two_off(
+            rₜ₋₁ <= r_max ? rₜ₋₁ : r_max, .6, Rs())[1:Int(r_max)],
+             zeros(length(Rs())-Int(r_max))))
+    rₜ = { :rₜ } ~ LCat(Rs())(r_probvec)
+    exact_x = rₜ * cos(exact_ϕ) * cos(exact_θ)
+    exact_y = rₜ * cos(exact_ϕ) * sin(exact_θ)
+    exact_z = rₜ * sin(exact_ϕ)
+
     vx_prop = limit_delta_pos(round(exact_x), xₜ₋₁)
     vy_prop = limit_delta_pos(round(exact_y), yₜ₋₁)
     vz_prop = limit_delta_pos(round(exact_z), zₜ₋₁)
@@ -164,19 +180,10 @@ end
     xₜ = { :xₜ } ~ LCat(Xs())(maybe_one_off(xₜ₋₁ + vx_prop, .1, Xs()))
     yₜ = { :yₜ } ~ LCat(Ys())(maybe_one_off(yₜ₋₁ + vy_prop, .1, Ys()))
     zₜ = { :zₜ } ~ LCat(Zs())(maybe_one_off(zₜ₋₁ + vz_prop, .1, Zs()))
-# consider adding onehot to these which says "given you've drawn a new x, y, z, the velocity is this. 
- #   vyₜ = { :vyₜ } ~ LCat(Vels())(maybe_one_off(round_to_pt1(yₜ - yₜ₋₁), .4, Vels()))
- #   vxₜ = { :vxₜ } ~ LCat(Vels())(maybe_one_off(round_to_pt1(xₜ - xₜ₋₁), .4, Vels()))
-    #   vzₜ = { :vzₜ } ~ LCat(Vels())(maybe_one_off(round_to_pt1(zₜ - zₜ₋₁), .4, Vels()))
-
     # any choice of v here will be consistent with the model b/c its one or two off in the model.
     vxₜ = { :vxₜ } ~ LCat(Vels())(onehot(vx_prop, Vels()))
     vyₜ = { :vyₜ } ~ LCat(Vels())(onehot(vy_prop, Vels()))
     vzₜ = { :vzₜ } ~ LCat(Vels())(onehot(vz_prop, Vels()))
-
-    # if i propose 1 for the vel but the x is off by 2, 0 score? nope but off by 3 is.
-    # if v proposed is 1 and x-xt is 3, get a NaN score. 
-    
 end
 
 @gen (static) function initial_proposal(θₜ, ϕₜ)
