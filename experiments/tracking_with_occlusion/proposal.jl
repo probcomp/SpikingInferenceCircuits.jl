@@ -1,96 +1,124 @@
-@gen (static) function step_proposal(occₜ₋₁, xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, imgₜ)
-    occ ~ occ_pos_dist(occₜ₋₁, imgₜ)
-    expected_x = truncate(xₜ₋₁ + vxₜ₋₁, positions(SquareSideLength()))
+### UTIL ###
+squarestart_given_center(val) = val - Int((SquareSideLength()-1)/2)
 
-    # TODO: do this with nested `Map`
-    square_should_overlap = [
-        occ_overlaps(pixx, occ) ? :indifferent :
-        imgₜ[pixx, pixy] ? :yes : :no
-        for pixx=1:ImageSideLength(),
-            pixy=1:ImageSideLength()
+function prob_square_at_locations(img, occluder_pos)
+    image_with_sq_pos(x, y) = image_determ(occluder_pos, x, y) .> 0
+    error_with_sq_pos(x, y) = abs.(image_with_sq_pos(x, y) - img)
+
+    n_flipped_with_sq_pos(x, y) = sum(error_with_sq_pos(x, y))
+    log_likelihood_with_sq_pos(x, y) = 
+        let nflip = n_flipped_with_sq_pos(x, y)
+            nflip * log(p_flip()) + ImageSideLength()^2 * log(1 - p_flip())
+        end
+
+    log_likelihoods = [
+        log_likelihood_with_sq_pos(x, y)
+        for x in positions(SquareSideLength()),
+            y in positions(SquareSideLength())
     ]
-
-    x ~ SumProductDist(
-        possible_values=positions(SquareSideLength()),
-        sum_over=positions(SquareSideLength()),
-        product_terms = [
-            (x, y, expected_x) -> movement_dist(expected_x)[x],
-            [ # unpack array
-                [ # unpack array
-                    (x, y, square_should_overlap_here, pixx, pixy) ->
-                        square_should_overlap_here == :indifferent ? 1. :
-                        (
-                            (square_should_overlap_here == :yes && square_covers(x, y, pixx, pixy)) ||
-                            (square_should_overlap_here == :no && !square_covers(x, y, pixx, pixy))
-                        ) ? 0.9 : 0.1
-                ]
-            ]
-        ]
-    )(expected_x, square_should_overlap)
-
-    expected_y = truncate(yₜ₋₁ + vyₜ₋₁, positions(SquareSideLength()))
-    y_should_overlap = [
-        square_should_overlap[x, pixy]
-        for pixy=1:ImageSideLength()
-    ]
-
-    y ~ ProductDist(
-        possible_values=positions(SquareSideLength()),
-        product_terms = [
-            (y, expected_y) -> movement_dist(expected_y)[y],
-            (y, y_should_overlap) ->
-                y_should_overlap == :indifferent ? 1. :
-                (
-                    (y_should_overlap == :yes && square_side_covers(y, pixy)) ||
-                    (y_should_overlap == :no && !square_side_covers(y, pixy))
-                ) ? 0.9 : 0.1
-        ]
-    )(expected_y, y_should_overlap)
-
-    expected_vx = truncate(x - xₜ₋₁, Vels())
-    expected_vy = truncate(y - yₜ₋₁, Vels())
-    vx ~ vel_step_proposal_dist(vxₜ₋₁, expected_vx)
-    vy ~ vel_step_proposal_dist(vyₜ₋₁, expected_vy)
+    probs = exp.(log_likelihoods .- logsumexp(log_likelihoods))
+    return probs
 end
-vel_step_proposal_dist = ProductDist(
-    possible_values=Vels(),
-    product_terms=[
-        (v, prev_v) -> prob_v_transition(prev_v)[v],
-        # TODO: be exact with the below so it is the same as the probability of having gotten this transition given the velocity
-        (v, expected_v_from_pos) -> truncated_discretized_gaussian(expected_v_from_pos, 2.)
+
+function possible_square_locations(img)
+    [ (squarestart_given_center(x), squarestart_given_center(y))
+        for x=2:ImageSideLength()-2, y=2:ImageSideLength()-2
+        if (
+            sum(img[x-1:x+1, y-1:y+1]) ≥ 6 &&
+            sum(img[x-1:x+1, :]) ≤ 30
+        )
     ]
-)
+end
 
+function x_probs(locations)
+    counts = zeros(length(positions(SquareSideLength())))
+    for (x, _) in locations
+        counts[x] += 1
+    end
+    return counts/sum(counts)
+end
 
+function y_probs(selected_x, locations)
+    counts = zeros(length(positions(SquareSideLength())))
+    for (x, y) in locations
+        if x == selected_x
+            counts[y] += 1
+        end
+    end
+    return counts/sum(counts)
+end
 
-#=
-First draft:
-    x ~ SumProductDist(
-        possible_values=positions(SquareSideLength()),
-        sum_over=positions(SquareSideLength()),
+occ_probs(img) = normalize([
+    sum(img[x:x+OccluderLength(), :]) for x in positions(OccluderLength())	
+])
 
-        # TODO: probably don't need to put in dependent_types?  since it can be inferred?
-        dependent_types=( # types of inputs, and their groupings
-            (positions(SquareSideLength())),
-            (Product(Product([:indifferent, :yes, :no])))
-        ),
+### INITIAL PROPOSAL ###
 
-        (x, y, (expected_x,), (pixels_expecting_square_overlap,)) ->
-        # first = sampled val; second = summed over val; rest = passed in args
-            [ # terms to multiply together
-                x_move_dist(expected_x)[x],
-                (
-                    pixels_expecting_square_overlap[pixx][pixy] == :indifferent ? 1. :
-                    (
-                        (pixels_expecting_square_overlap[pixx][pixy] == :yes &&
-                        square_over(x, y, pixx, pixy))
-                        || (pixels_expecting_square_overlap[pixx][pixy] == :no &&
-                        !square_over(x, y, pixx, pixy))
-                    ) ? 0.9 : 0.1
-                    for pixx=1:ImageSideLength(),
-                        pixy=1:ImageSideLength()
-                )...
-            ]
-    )((expected_x,), (occ, imgₜ))
+vsd2(loc_probs) =vec(sum(loc_probs, dims=2))
+@gen (static) function _initial_proposal(img)
+    occₜ ~ Cat(occ_probs(img))
+    loc_probs = prob_square_at_locations(img, occₜ)
+    xₜ ~ Cat(vsd2(loc_probs))
+    yₜ ~ Cat(normalize(loc_probs[xₜ, :]))
+end
 
-=#
+### STEP PROPOSAL ###
+function x_step_probs(xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, imgₜ, occₜ)
+    x_probs_from_velocity = truncated_discretized_gaussian(
+        xₜ₋₁ + vxₜ₋₁, 2., positions(SquareSideLength())
+    )
+    y_probs_from_velocity = truncated_discretized_gaussian(
+        yₜ₋₁ + vyₜ₋₁, 2., positions(SquareSideLength())
+    )
+
+    probs_from_img = prob_square_at_locations(imgₜ, occₜ)
+    x_probs_from_img = vec(sum(probs_from_img, dims=2))
+    xprobs = normalize(x_probs_from_img.^2 .* x_probs_from_velocity)
+
+    return (xprobs, (y_probs_from_velocity, probs_from_img))
+end
+function y_step_probs(x, (y_probs_from_velocity, probs_from_img))
+    return normalize(probs_from_img[x, :].^2 .* y_probs_from_velocity)
+end
+
+function vel_probs(xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, xₜ, yₜ)
+    deltax = xₜ - xₜ₋₁
+    deltay = yₜ - yₜ₋₁
+    
+    vx_probs = normalize((
+        maybe_one_off(vxₜ₋₁, 0.4, Vels()) .*
+        discretized_gaussian(deltax, 2., Vels())
+    ))
+    vy_probs = normalize((
+        maybe_one_off(vyₜ₋₁, 0.4, Vels()) .*
+        discretized_gaussian(deltay, 2., Vels())
+    ))
+
+    return (vx_probs, vy_probs)
+end
+function occ_probs(occₜ₋₁, new_img)
+    oneoff_probs = maybe_one_off(
+        occₜ₋₁, 0.6, positions(OccluderLength())
+    )
+    oprobs = normalize(occ_probs(new_img) .* oneoff_probs)
+    oprobs = isapprox(sum(oprobs), 1.) ? oprobs : oneoff_probs
+end
+
+@gen (static) function _step_proposal(occₜ₋₁, xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, imgₜ)
+    occₜ ~ Cat(normalize(truncate(occ_probs(occₜ₋₁, imgₜ))))
+
+    xprobs, for_y = x_step_probs(xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, imgₜ, occₜ)
+    xₜ ~ Cat(normalize(truncate(xprobs)))
+    yₜ ~ Cat(normalize(truncate(y_step_probs(xₜ, for_y))))
+
+    vx_probs, vy_probs = vel_probs(xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, xₜ, yₜ)
+    vxₜ ~ VelCat(normalize(truncate(vx_probs)))
+    vyₜ ~ VelCat(normalize(truncate(vy_probs)))
+end
+# @gen (static) function step_proposal(prev_tr, new_img)
+#     T = get_args(prev_tr)[1] + 1
+#     prev_latents = get_submap(get_choices(prev_tr), latents_addr(T - 1))
+
+#     {:steps => T => :latents} ~ _step_proposal(prev_latents, new_img)
+# end
+# latents_addr(t) = t == 0 ? :initial_latents : :steps => t => :latents

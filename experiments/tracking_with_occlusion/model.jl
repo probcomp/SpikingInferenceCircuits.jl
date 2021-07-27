@@ -1,78 +1,51 @@
-includet("model_hyperparams.jl")
-includet("model_utils.jl")
-
-### initial & step model ###
-@gen (static) function initial_latents(go::Nothing)
-	occ ~ categorical(uniform(positions(let _=go; OccluderLength(); end)))
-	x ~ categorical(uniform(positions(let _=go; SquareSideLength(); end)))
-	y ~ categorical(uniform(positions(let _=go; SquareSideLength(); end)))
-	vx ~ LabeledCategorical(Vels(), uniform(Vels()))(go)
-	vy ~ LabeledCategorical(Vels(), uniform(Vels()))(go)
-
-	return go
-end
-@load_generated_functions
-println(initial_latents)
-
-VStepDist = LabeledCPT{Int}([Vels()], Vels(), ((v,),) -> maybe_one_off(v, 0.4, Vels()))
-@gen (static) function step(occ, x, y, vx, vy)
-	occ ~ categorical(maybe_one_off(occ, 0.3, positions(OccluderLength())))
-	x ~ categorical(truncated_discretized_gaussian(x + vx, 2.,
-			positions(SquareSideLength()))
-	)
-	y ~ categorical(truncated_discretized_gaussian(y + vy, 2.,
-		positions(SquareSideLength()))
-	)
-
-    vx ~ VStepDist(vx)
-    vy ~ VStepDist(vy)
-
-	return occ
-end
+using Gen
+using ProbEstimates
+include("model_hyperparameters.jl")
+include("modeling_utils.jl")
 
 ### Obs model ###
-## deterministic util functions
-@gen (static) function is_in_square(squarex, squarey, x, y)
-    x_in_range = squarex ≤ x ≤ squarex + SquareSideLength()
-    y_in_range = squarey ≤ y ≤ squarey + SquareSideLength()
-    return x_in_range && y_in_range
-end
-@gen (static) function pixel_expected_on(occ, sqx, sqy, x, y)
-    is_occluded = occ ≤ x ≤ OccluderLength()
-    in_sq ~ is_in_square(sqx, sqy, x, y)
-    return is_occluded || in_sq
-end
+# ╔═╡ d4c86af7-6292-4d34-b136-0e3e4e0660c2
+p_got_photon(occ, sqx, sqy, x, y) = (
+		is_occluded(occ, x, y) || is_in_square(sqx, sqy, x, y)
+	) ? 1 - p_flip() : p_flip()
 
-@gen (static) function render_pixel(occ, sqx, sqy, x, y)
-    expect_pixel_on ~ pixel_expected_on(occ, sqx, sqy, x, y)
-    got_photon ~ bernoulli(expect_pixel_on ? 0.9 : 0.1)
+bern_probs(p) = [p, 1-p]
+@gen (static) function render_pixel(a1, a2)
+    (occ, sqx, sqy) = a1; (x, y) = a2
+    got_photon ~ BoolCat(
+        bern_probs(p_got_photon(occ, sqx, sqy, x, y))
+    )
     return got_photon
 end
 
-@gen (static) function observation(occ, x, y, vx, vy)
-    # TODO: Figure out whether each pixel is in the given range
-    # _before_ calling `fill` to reduce the number of edges
-    img ~ Map(Map(render_pixel))(
-        fill(fill(occ, ImageSideLength()), ImageSideLength()),
-        fill(fill(x, ImageSideLength()), ImageSideLength()),
-        fill(fill(y, ImageSideLength()), ImageSideLength()),
-        fill(1:ImageSideLength(), ImageSideLength()),
-        [[pixx for _=1:ImageSideLength()] for pixx=1:ImageSideLength()]
+@gen (static) function obs_model(occ, x, y, vx, vy)
+    arg1, arg2 = Map2Dargs(
+        fill((occ, x, y), (ImageSideLength(), ImageSideLength())),
+        [(x, y) for x=1:ImageSideLength(), y=1:ImageSideLength()]
     )
-
-    return img
+    img_inner ~ Map2D(render_pixel)(arg1, arg2)
+    return img_inner
 end
 
-@gen (static) function obs_1d(occ, x)
-    pixline ~ Map(render_pixel)(
-        fill(occ, ImageSideLength()),
-        fill(x, ImageSideLength()),
-        fill(1, ImageSideLength()),
-        1:ImageSideLength(),
-        fill(1, ImageSideLength())
-    )
-
-    return pixline
+### initial & step model ###
+### initial & step model ###
+@gen (static) function init_latent_model()
+	occₜ ~ Cat(uniform(positions(OccluderLength())))
+	xₜ ~ Cat(uniform(positions(SquareSideLength())))
+	yₜ ~ Cat(uniform(positions(SquareSideLength())))
+	vxₜ ~ VelCat(uniform(Vels()))
+	vyₜ ~ VelCat(uniform(Vels()))
+	return (occₜ, xₜ, yₜ, vxₜ, vyₜ)
 end
-
-println("Model file loaded.")
+@gen (static) function step_latent_model(occₜ₋₁, xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁)
+	occₜ ~ Cat(maybe_one_off(occₜ₋₁, 0.3, positions(OccluderLength())))
+	xₜ ~ Cat(truncated_discretized_gaussian(xₜ₋₁ + vxₜ₋₁, 2.,
+			positions(SquareSideLength()))
+	)
+	yₜ ~ Cat(truncated_discretized_gaussian(yₜ₋₁ + vyₜ₋₁, 2.,
+		positions(SquareSideLength()))
+	)
+	vxₜ ~ VelCat(maybe_one_off(vxₜ₋₁, 0.4, Vels()))
+	vyₜ ~ VelCat(maybe_one_off(vyₜ₋₁, 0.4, Vels()))
+	return (occₜ, xₜ, yₜ, vxₜ, vyₜ)
+end

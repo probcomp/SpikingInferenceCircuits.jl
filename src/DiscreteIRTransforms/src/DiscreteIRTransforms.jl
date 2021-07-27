@@ -33,6 +33,12 @@ assmt_to_probs(::UniformDiscrete) = ((min, max),) -> [1/(1 + max - min) for _=mi
 
 get_domain(c::LabeledCPT, _) = EnumeratedDomain([c.output_values[i] for i=1:length(c.output_values)])
 
+# whether a node should be compiled to a primitive distribution (ie. a CPT/LCPT)
+# or should remain.  by default, only distributions become CPTs, but this can be overwritten
+# for particular generative functions
+compile_to_primitive(::Gen.Distribution) = true
+compile_to_primitive(::Gen.GenerativeFunction) = false
+
 ### main functions ###
 
 include("domains.jl")
@@ -44,6 +50,8 @@ export EnumeratedDomain, ProductDomain
 # - is_cpts
 # - get_ret_domain
 # - with_constant_inputs_at_indices
+# - truncate
+# TODO: refactor by implementing a more generic `map` function
 
 # Implementations for static GFs & IRs:
 include("is_cpts.jl")
@@ -60,5 +68,10 @@ apply_tracetype(kernels) = Union{(Gen.get_trace_type(k) for k in kernels)...}
 include("combinators/switch.jl")
 include("combinators/map.jl")
 include("combinators/apply.jl")
+
+include("replace_return_node.jl")
+include("add_activator_input.jl")
+
+include("truncate.jl")
 
 end # module

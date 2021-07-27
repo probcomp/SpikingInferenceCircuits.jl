@@ -23,7 +23,6 @@ function PulseNonnegativeRealMultiplier(
     leafvals = leaf_values(inputs)
     denominators = map(leafvals) do v; v.count_val.denominator; end |> Tuple
     ti = TIConstructor(length(leafvals))
-    println("ti: $ti")
     return PulseNonnegativeRealMultiplier(
         MultiplierConstructor(denominators, out_count_denominator),
         inputs,

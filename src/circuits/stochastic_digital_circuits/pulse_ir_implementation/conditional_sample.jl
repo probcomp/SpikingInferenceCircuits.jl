@@ -22,11 +22,11 @@ end
 ConcretePulseConditionalSample(
     P::Matrix{Float64},
     K::Int,
-    ss_params::Tuple{Int, Function},
-    mux_on_params::Tuple{Int, Real, Int},
-    wta_off_params::Tuple{Int, Real, Int},
-    ti_params::Tuple{Int, Real, Int},
-    off_params::Tuple{Int, Real, Int},
+    ss_params::Tuple{Real, Function},
+    mux_on_params::Tuple{Real, Real, Int},
+    wta_off_params::Tuple{Real, Real, Int},
+    ti_params::Tuple{Real, Real, Int},
+    off_params::Tuple{Real, Real, Int},
     time_to_first_sample::Real,
     intersample_hold::Real
 ) = SDCs.PulseConditionalSample(
@@ -57,27 +57,34 @@ ConcretePulseConditionalSample(cs::ConditionalSample, args...) =
 PoissonPulseConditionalSample(
     concrete_pcs::PulseConditionalSample,
     ss_off_rate::Real,
-    mux_on_R::Real, wta_off_R::Real,
-    ti_R::Real, off_R::Real
+    mux_off_on_rates::Tuple{<:Real, <:Real},
+    wta_off_on_rates::Tuple{<:Real, <:Real},
+    ti_off_on_rates::Tuple{<:Real, <:Real},
+    off_off_on_rates::Tuple{<:Real, <:Real}
 ) = SDCs.PulseConditionalSample(
         PulseIR.PoissonStreamSamples(concrete_pcs.streamsamples, ss_off_rate),
-        PulseIR.PoissonAsyncOnGate(concrete_pcs.mux_on_gate, mux_on_R),
-        PulseIR.PoissonOffGate(concrete_pcs.wta_offgate, wta_off_R),
-        PulseIR.PoissonThresholdedIndicator(concrete_pcs.ti, ti_R),
-        PulseIR.PoissonOffGate(concrete_pcs.offgate, off_R),
+        PulseIR.PoissonAsyncOnGate(concrete_pcs.mux_on_gate, mux_off_on_rates...),
+        PulseIR.PoissonOffGate(concrete_pcs.wta_offgate, wta_off_on_rates...),
+        PulseIR.PoissonThresholdedIndicator(concrete_pcs.ti, ti_off_on_rates...),
+        PulseIR.PoissonOffGate(concrete_pcs.offgate, off_off_on_rates...),
         concrete_pcs.time_to_first_sample,
         concrete_pcs.intersample_hold
     )
 
-# Constructor to set all `R` values to be the same, except for the TI's,
-# which will be larger to ensure the gate is turned off before
+# Constructor to set all logic gate on/of rates to be the same,
+# except for the TI's, which will have a larger onrate
+#  to ensure the gate is turned off before
 # the spike which turned it off can pass.
 PoissonPulseConditionalSample(
     concrete_pcs::PulseConditionalSample,
     off_rate::Real,
-    non_ti_R::Real
+    (gate_offrate, nonti_onrate)::Tuple{<:Real, <:Real}
 ) = PoissonPulseConditionalSample(
-        concrete_pcs, off_rate, non_ti_R, non_ti_R, non_ti_R + 10, non_ti_R
+        concrete_pcs, off_rate,
+        (gate_offrate, nonti_onrate),
+        (gate_offrate, nonti_onrate),
+        (gate_offrate, nonti_onrate * 100),
+        (gate_offrate, nonti_onrate)
     )
 
 PoissonPulseConditionalSample(concrete_pcs_args::Tuple, args...) =

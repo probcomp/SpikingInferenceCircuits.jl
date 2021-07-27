@@ -9,7 +9,7 @@
 struct PoissonTimer <: GenericComponent
     ΔT::Float64 # amount of time to time in expectation
     n_spikes::Int # more spikes → more precise estimate of `ΔT` is timed
-    ti_params::Tuple{Float64, Float64, Float64}
+    ti_params::Tuple{Float64, Float64, Float64, Float64}
     offrate::Float64 # higher → more likely to fail!
     memory::Float64
 end

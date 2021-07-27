@@ -10,6 +10,7 @@ include("model_hyperparams.jl")
 latent_domains() = (Xs(), Ys(), Zs(), Rs(), Vels(), θs(), ϕs())
 obs_domains() = (θs(), ϕs())
 
+
 # automatically compute some things:
 latent_obs_domains() = (latent_domains()..., obs_domains()...)
 NLATENTS() = length(latent_domains())
@@ -27,6 +28,24 @@ NPARTICLES() = 2
 # don't change this:
 RUNTIME() = INTER_OBS_INTERVAL() * (NSTEPS() - 0.1)
 
+
+function extract_angle_indices(gt_tr)
+    gt_obs_choices = get_choices(gt_tr)
+    θ1 = findfirst(gt_obs_choices[:init => :obs => :obs_θ => :val], θs())
+    ϕ1 = findfirst(gt_obs_choices[:init => :obs => :obs_ϕ => :val], ϕs())
+    obs_list = [(θ1, ϕ1)]                   
+    for step in 1:NSTEPS()
+        obs_θ = findfirst(gt_obs_choices[:steps => step => :obs => :obs_θ => :val], θs())
+        obs_ϕ = findfirst(gt_obs_choices[:steps => step => :obs => :obs_ϕ => :val], ϕs())
+        push!(obs_list, (obs_θ, obs_ϕ))
+    end
+    return obs_list
+end
+
+
+
+
+                       
 ### Log failure probability bound:
 failure_prob_bound = bound_on_overall_failure_prob(NSTEPS(), NVARS(), NPARTICLES())
 println("Hyperparameters set so the probability the circuit fails due to an issue we check for is less than $failure_prob_bound.")
@@ -34,19 +53,21 @@ println("Hyperparameters set so the probability the circuit fails due to an issu
 # Construct an SMC circuit, by telling each model the domains of the input variables
 smc = SMC(
     # TODO: CHANGEME: put in real model names
-    GenFnWithInputDomains(initial_latent_model, ()),
-    GenFnWithInputDomains(step_latent_model, latent_domains()),
+    GenFnWithInputDomains(initial_model, ()),
+    GenFnWithInputDomains(step_model, latent_domains()),
     GenFnWithInputDomains(obs_model, latent_domains()),
     GenFnWithInputDomains(initial_proposal, obs_domains()),
     GenFnWithInputDomains(step_proposal, latent_obs_domains()),
 
     # TODO: CHANGEME: replace with your latent and obs names
     # Order in which to feed in variables to proposal
-    [:xₜ, :vxₜ, :yₜ, :vyₜ], # order in which to feed latent variables into the step proposal
-    [:obsx, :obsy],       # order in which to feed observations into the proposals
+    [:vxₜ, :vyₜ, :vzₜ, :xₜ, :yₜ, :zₜ, :rₜ, :exact_ϕ, :exact_θ, :obs_θ, :obs_ϕ],
+    # order in which to feed latent variables into the step proposal
+    [:θₜ, :ϕₜ],       # order in which to feed observations into the proposals
     
     # Order in which to recur variables:
-    [:xₜ, :vxₜ, :yₜ, :vyₜ], # order in which to feed latent variables back into the step model for the next timestep
+    [:vxₜ, :vyₜ, :vzₜ, :xₜ, :yₜ, :zₜ, :rₜ, :exact_ϕ, :exact_θ]
+    # order in which to feed latent variables back into the step model for the next timestep
     
     NPARTICLES();
     
@@ -64,7 +85,7 @@ println("Circuit fully implemented using Poisson Process neurons.")
 
 ### Now the circuit is implemented, and we are going to run a simulation.
 
-includet("../utils/simulation_utils.jl")
+include("../utils/simulation_utils.jl")
 
 # `inputs` will be a vector specifying where to send inputs into the SNN at what time
 inputs = get_smc_circuit_inputs(
@@ -85,12 +106,12 @@ inputs = get_smc_circuit_inputs(
                # If an observed value comes from a domain other than {1, ..., N},
                # the observations must be fed in as the indexed version (ie. for the first value of the domain, feed in "1";
                # for the second value, "2", and so on). TODO: support giving observations in their true domains.
-        (obsx = x, obsy = y)
-        for (x, y) in [
-            (2, 8), (3, 7), (4, 5), (4, 4),
-            (6, 4), (6, 3), (7, 2), (8, 1),
-            (8, 1), (6, 1), (8, 1), (8, 2)
-        ]
+        (obs_θ = θ, obs_ϕ = θ)
+               for (θ, ϕ) in extract_angle_indices(tr)
+
+
+
+
     ]
 )
 println("Constructed input spike sequence.")
@@ -103,5 +124,5 @@ events = simulate_and_get_events(impl, RUNTIME(), inputs; dir=@__DIR__) # This w
 println("Simulation completed!")
 
 # get the inferred latent states from the simulation
-includet("../utils/spiketrain_utils.jl")
+include("../utils/spiketrain_utils.jl")
 inferred_states = get_smc_states(events, NPARTICLES(), NLATENTS() #= num latent vars in model =#)

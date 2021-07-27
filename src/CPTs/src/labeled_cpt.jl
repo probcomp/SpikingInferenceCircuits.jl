@@ -53,7 +53,9 @@ function LabeledCPT{Ret}(
     assmts = Iterators.product(parent_domains...)
 
     probs = [assmt_to_probs(assmt) for assmt in assmts]
-    @assert all(Distributions.isprobvec(v) for v in probs) "Not all probvecs are actually probvecs!"
+    for (assmt, v) in zip(assmts, probs)
+        @assert Distributions.isprobvec(v) "Not all probvecs are actually probvecs! : $v for assmt $assmt"
+    end
 
     return LabeledCPT(
         CPT(probs),

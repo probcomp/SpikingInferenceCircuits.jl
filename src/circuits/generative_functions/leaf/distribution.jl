@@ -16,7 +16,10 @@ output_domain(d::DistributionGenFn) = FiniteDomain(ncategories(d.cpt))
 has_traceable_value(d::DistributionGenFn) = true
 traceable_value(d::DistributionGenFn) = to_value(output_domain(d))
 operation(d::DistributionGenFn{Generate}) = Generate(d.is_observed ? AllSelection() : EmptySelection())
-score_value(::DistributionGenFn) = SingleNonnegativeReal()
+score_value(::Distribution) = SingleNonnegativeReal()
+score_value(d::DistributionGenFn{Generate}) = # TODO: better handle non-assess Generate
+    operation(d) == Assess() ? ProbEstimate() : SingleNonnegativeReal()
+score_value(::DistributionGenFn{Propose}) = ReciprocalProbEstimate()
 
 function Circuits.implement(d::DistributionGenFn, t::Target)
     println("Implementing a distribution...")

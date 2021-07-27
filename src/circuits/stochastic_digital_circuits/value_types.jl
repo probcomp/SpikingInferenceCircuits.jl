@@ -24,6 +24,11 @@ A nonnegative real transmitted as a single value (ie. not via sub-values which s
 struct SingleNonnegativeReal <: GenericValue end
 Circuits.abstract(::SingleNonnegativeReal) = NonnegativeReal()
 
+struct ProbEstimate <: GenericValue end
+struct ReciprocalProbEstimate <: GenericValue end
+struct ProductEstimate <: GenericValue end
+Circuits.abstract(::Union{ProbEstimate, ReciprocalProbEstimate, ProductEstimate}) = SingleNonnegativeReal()
+
 """
 A NonnegativeReal transmitted by sending `length(factors)`
 separate NonnegativeReal values, which should be multiplied together

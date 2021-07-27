@@ -32,7 +32,7 @@ import AbstractPlotting as AP
 # compile the 3D model to the neural net. 
 
 
-include("../../src/ProbEstimates/ProbEstimates.jl")
+include("../../src/ProbEstimates/src/ProbEstimates.jl")
 ProbEstimates.use_perfect_weights!()
 using .ProbEstimates: Cat, LCat
 

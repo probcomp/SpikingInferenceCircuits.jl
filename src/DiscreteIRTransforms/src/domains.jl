@@ -3,6 +3,11 @@ abstract type Domain end
 """Domain represented as a list of possible values."""
 struct EnumeratedDomain{V} <: Domain
     vals::V
+    function EnumeratedDomain{V}(vals) where {V}
+        @assert !isempty(vals)
+        return new{V}(vals)
+    end
+    EnumeratedDomain(vals::V) where {V} = EnumeratedDomain{V}(vals)
 end
 vals(d::EnumeratedDomain) = d.vals
 

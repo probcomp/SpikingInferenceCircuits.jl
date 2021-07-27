@@ -22,6 +22,8 @@ function gen_fn_circuit(ir::Gen.StaticIR, arg_domains::NamedTuple, op::Op) where
     )
 end
 gen_fn_circuit(ir::Gen.StaticIR, arg_domains::Tuple, op::GenFnOp) =
+    gen_fn_circuit(ir, collect(arg_domains), op)
+gen_fn_circuit(ir::Gen.StaticIR, arg_domains::Vector, op::GenFnOp) = 
     gen_fn_circuit(ir, (;(node.name => dom for (node, dom) in zip(ir.arg_nodes, arg_domains))...), op)
 
 function handle_node!(nodes, node::Gen.ArgumentNode, domains, _, arg_domains, ::Op) where {Op <: GenFnOp}
@@ -55,4 +57,4 @@ gen_fn_circuit(jn::Gen.JuliaNode, ads, op) = gen_fn_circuit(jn.fn, ads, op)
 
 # `gen_fn_circuit` for user-facing types
 gen_fn_circuit(g::Gen.StaticIRGenerativeFunction, arg_domains, op) =
-    gen_fn_circuit(Gen.get_ir(typeof(g)), arg_domains, op)
+    gen_fn_circuit(DiscreteIRTransforms.get_ir(g), arg_domains, op)

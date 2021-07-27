@@ -1,8 +1,8 @@
 struct PoissonSync <: ConcretePulseIRPrimitive
     cluster_sizes::Vector{Int}
-    gate_params::NTuple{2, Float64} # (M, R)
-    ti_params::NTuple{2, Float64} # (max_delay, R)
-    timer_params::Tuple{Float64, Int, NTuple{3, Float64}, Float64, Float64}
+    gate_params::NTuple{3, Float64} # (M, offrate, onrate)
+    ti_params::NTuple{3, Float64} # (max_delay, offrate, onrate)
+    timer_params::Tuple{Float64, Int, NTuple{4, Float64}, Float64, Float64}
     # PoissonTimer_params= (ΔT_PoissonTimer, n_spikes, PoissonTimer_ti_params, offrate, memory)
 end
 Circuits.abstract(s::PoissonSync) = Sync(s.cluster_sizes)
@@ -18,7 +18,7 @@ Circuits.implement(s::PoissonSync, ::Spiking) = CompositeComponent(
             cluster(s, i) for i=1:length(s.cluster_sizes)
         ),
         ti = PoissonThresholdedIndicator(
-            length(s.cluster_sizes), Inf, s.ti_params[1], length(s.cluster_sizes), s.ti_params[2]
+            length(s.cluster_sizes), Inf, s.ti_params[1], length(s.cluster_sizes), s.ti_params[2:end]...
         ),
         timer = PoissonTimer(s.timer_params...),
     ),
@@ -60,7 +60,7 @@ Upon receiving a `:reset` spike, resets so it can be used again.
 """
 struct PoissonSyncCluster <: GenericComponent
     nlines::Int
-    gate_params::Tuple{Float64, Float64, Float64}
+    gate_params::Tuple{Float64, Float64, Float64, Float64}
 end
 Circuits.target(::PoissonSyncCluster) = Spiking()
 Circuits.inputs(c::PoissonSyncCluster) = NamedValues(
@@ -118,7 +118,8 @@ struct PoissonOnOffGate <: GenericComponent
     starts_on::Bool
     ΔT::Float64
     M::Float64
-    R::Float64
+    offrate::Float64
+    onrate::Float64
 end
 PoissonOnOffGate(s::Symbol, params...) = PoissonOnOffGate(
     s == :on ? true : (s == :off ? false : error("unrecognized start state (should be :on or :off)")),
@@ -128,19 +129,20 @@ Circuits.inputs(::PoissonOnOffGate) = NamedValues(:in => SpikeWire(), :on => Spi
 Circuits.outputs(::PoissonOnOffGate) = NamedValues(:out => SpikeWire())
 Circuits.implement(g::PoissonOnOffGate, ::Spiking) = 
     CompositeComponent(
-        inputs(g), outputs(g),
-        (
+        inputs(g), outputs(g), (
             neuron=PoissonNeuron([
-                x -> x,
-                x -> -x,
-                let M = g.M; x -> M*x; end,
-                let M = g.M; x -> -M*x; end
-            ], g.ΔT,
-            let R = g.R, M = g.M, starts_on = g.starts_on
-                u -> exp(R * (u - 1/2 - (starts_on ? 0. : M)))
-            end,
-        ),),
-        (
+                    x -> x,
+                    x -> -x,
+                    let M = g.M; x -> M*x; end,
+                    let M = g.M; x -> -M*x; end
+                ], g.ΔT,
+                truncated_linear(
+                    g.offrate, g.onrate,
+                    g.starts_on ? 0 : g.M,
+                    g.starts_on ? 1 : g.M + 1
+                )
+            ),
+        ), (
             Input(:in) => CompIn(:neuron, 1),
             CompOut(:neuron, :out) => CompIn(:neuron, 2),
             Input(:on) => CompIn(:neuron, 3),
