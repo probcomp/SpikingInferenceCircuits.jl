@@ -40,8 +40,10 @@ MULT_MAX_INPUT_MEMORY() = ΔT_THETA()
 # TODO: understand how the timer & mult n spikes, rate, denominator, etc., relate to assembly size
 TIMER_N_SPIKES() = 30
 
-SYNC_ΔT_TIMER() = ΔT()/4; NSPIKES_SYNC_TIMER() = TIMER_N_SPIKES()
-SYNC_TIMER_MEMORY() = 3 * SYNC_ΔT_TIMER()
+SYNC_ΔT_TIMER() = ΔT()/4
+SYNC_OUTRATE() = 4 * GATE_ONRATE()
+NSPIKES_SYNC_TIMER() = TIMER_N_SPIKES()
+SYNC_TIMER_MEMORY() = 2 * SYNC_ΔT_TIMER()
 
 ΔT_GATES() = ΔT_THETA()
 
@@ -54,14 +56,17 @@ P_FAILURE_MULT_INTO_THETA() = 5e-5
 SYNC_FORGET_FAIL_PROB() = 5e-5
 P_SAMPLE_WTA_TOO_SLOW() = 5e-5
 P_THETA_WTA_TOO_SLOW() = 5e-5
+P_SYNC_DOESNT_OUTPUT_INTIME() = 5e-8
 
 prob_get_est_of_0(n_vars) = 1 - (1 - (1 - MinProb())^PEstDenom())^n_vars
+# TODO: distinguish between vars and latent vars
 bound_on_overall_failure_prob_due_to_mistake(n_steps, n_vars, n_particles) = 1 - (
     ( # prob failure
         (
             ((1 - SCORE_FAIL_PROB()) * (1 - SAMPLE_FAIL_PROB()) * (1 - P_SAMPLE_WTA_TOO_SLOW()))^n_vars # prob failure due to sampling/scoring
         * (1 - MULT_FAIL_PROB()) * (1 - P_FAILURE_MULT_INTO_THETA())                             # prob we have a failure on the multiplier or theta
         * (1 - P_THETA_WTA_TOO_SLOW())
+        * (1 - P_SYNC_DOESNT_OUTPUT_INTIME())    # prob sync doesn't output one of the spikes before it resets
         )^n_particles                     
         * (1 - SYNC_FORGET_FAIL_PROB())                                                          # prob failure in sync
     )^n_steps
@@ -117,5 +122,12 @@ function run_hyperparameter_checks()
 
     # Time to sample & score + multiply values < memory of Theta and Muxes in resample unit
     @assert max(ΔT(), ΔT_SAMPLE()) + MULT_OUT_TIME_BOUND() < min(ΔT_THETA(), ΔT_GATES())
+
+    # Sync outputs spikes before it is reset
+    @assert cdf(Poisson(SYNC_OUTRATE() * SYNC_ΔT_TIMER()), 0) < P_SYNC_DOESNT_OUTPUT_INTIME()
+    
+    # make sure we have reset the SYNC by the time we start resampling!
+    # TODO: a better probabilistic check which doesn't assume the timing is just the expected time
+    @assert SYNC_ΔT_TIMER() < ExpectedLatency() + MULT_EXPECTED_OUT_TIME()
 end
 run_hyperparameter_checks()

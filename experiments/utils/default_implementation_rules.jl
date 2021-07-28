@@ -58,7 +58,7 @@ to_spiking_real(v::SDCs.NonnegativeReal) = to_spiking_real(implement(v, Spiking(
 Circuits.implement(s::PulseIR.Sync, ::Spiking) =
     PulseIR.PoissonSync(
         s.cluster_sizes,
-        (M(), GATE_RATES()...),
+        (M(), GATE_OFFRATE(), SYNC_OUTRATE()),
         (1, GATE_RATES()...), # 1 = max_delay
         (SYNC_ΔT_TIMER(), NSPIKES_SYNC_TIMER(),  # ΔT_timer, N_spikes_timer
             (1, M(), GATE_RATES()...), 0., # timer TI params (maxdelay M gaterates...) | offrate
