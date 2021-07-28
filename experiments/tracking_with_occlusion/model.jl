@@ -18,7 +18,7 @@ include("modeling_utils.jl")
 # 	return square_colored
 # end
 
-# bern_probs(p) = [p, 1-p]
+bern_probs(p) = [p, 1-p]
 # @gen (static) function render_pixel(occ, sqx, sqy, x, y)
 # 	square_colored ~ is_colored(occ, sqx, sqy, x, y)
 #     got_photon ~ BoolCat(
@@ -40,19 +40,19 @@ include("modeling_utils.jl")
 # end
 
 @gen (static) function is_in_square(squarex, squarey, x, y)
-    x_in_range = squarex ≤ x ≤ squarex + SquareSideLength()
-    y_in_range = squarey ≤ y ≤ squarey + SquareSideLength()
+    x_in_range = squarex ≤ x ≤ squarex + SquareSideLength() - 1
+    y_in_range = squarey ≤ y ≤ squarey + SquareSideLength() - 1
     return x_in_range && y_in_range
 end
 @gen (static) function pixel_expected_on(occ, sqx, sqy, x, y)
-    is_occluded = occ ≤ x ≤ OccluderLength()
+    is_occluded = occ ≤ x ≤ occ + OccluderLength() - 1
     in_sq ~ is_in_square(sqx, sqy, x, y)
     return is_occluded || in_sq
 end
 
 @gen (static) function render_pixel(occ, sqx, sqy, x, y)
     expect_pixel_on ~ pixel_expected_on(occ, sqx, sqy, x, y)
-    got_photon ~ bernoulli(expect_pixel_on ? 1 - p_flip() : p_flip())
+    got_photon ~ BoolCat(bern_probs(expect_pixel_on ? 1 - p_flip() : p_flip()))
     return got_photon
 end
 

@@ -5,7 +5,7 @@ BoolCat = LCat([true, false])
 
 # positions(width) = positions the leftmost x position of an object with
 # the given `width` could be placed in
-positions(width) = 1:(ImageSideLength() - width)
+positions(width) = 1:(ImageSideLength() - width + 1)
 
 uniform(vals) = ones(length(vals))/length(vals)
 	
@@ -33,11 +33,11 @@ function normalize(vec)
     return vec/sum(vec)
 end
 
-# is_occluded(occ, x) = occ ≤ x ≤ occ + OccluderLength()
-# is_in_square(squarex, squarey, x, y) = (
-#     squarex ≤ x ≤ squarex + SquareSideLength() &&
-#     squarey ≤ y ≤ squarey + SquareSideLength()
-# )
+_is_occluded(occ, x) = occ ≤ x ≤ occ + OccluderLength() - 1
+_is_in_square(squarex, squarey, x, y) = (
+    squarex ≤ x ≤ squarex + SquareSideLength() - 1 &&
+    squarey ≤ y ≤ squarey + SquareSideLength() - 1
+)
 
 Map2D(gf) = Map(Map(gf))
 Map2Dargs(args...) = collect(

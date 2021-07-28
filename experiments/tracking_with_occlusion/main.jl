@@ -12,24 +12,24 @@ step_prop = @compile_step_proposal(_step_proposal, 5, 1)
 
 @load_generated_functions()
 
-tr, _ = generate(model, (10,), choicemap(
-	(:init => :latents => :xₜ => :val, 1),
-	(:init => :latents => :vxₜ => :val, 2)
-));
+# tr, _ = generate(model, (10,), choicemap(
+# 	(:init => :latents => :xₜ => :val, 1),
+# 	(:init => :latents => :vxₜ => :val, 2)
+# ));
 
-obs_choicemap_to_matrix(ch) =
-	[
-		ch[:img_inner => x => y => :got_photon => :val]
-		for x=1:ImageSideLength(), y=1:ImageSideLength()
-	]
+# obs_choicemap_to_matrix(ch) =
+# 	[
+# 		ch[:img_inner => x => y => :got_photon => :val]
+# 		for x=1:ImageSideLength(), y=1:ImageSideLength()
+# 	]
 
-unweighted_trs, _ = dynamic_model_smc(
-    model, get_dynamic_model_obs(tr),
-    cm -> (obs_choicemap_to_matrix(cm),),
-    init_prob, step_prop, 10
-);
+# unweighted_trs, _ = dynamic_model_smc(
+#     model, get_dynamic_model_obs(tr),
+#     cm -> (obs_choicemap_to_matrix(cm),),
+#     init_prob, step_prop, 10
+# );
 
-(fig, t) = draw_gt_and_particles(tr, unweighted_trs); fig
+# (fig, t) = draw_gt_and_particles(tr, unweighted_trs); fig
 
 # TODO: enumerate.  Performance will probably be an issue.
 # Maybe using Marco's factor-graph library could help...but getting it set up
