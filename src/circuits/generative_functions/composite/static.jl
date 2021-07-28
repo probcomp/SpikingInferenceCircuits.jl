@@ -53,7 +53,12 @@ parent_domains(parent_names, domains) = Tuple(domains[name] for name in parent_n
 gen_fn_circuit(gn::Gen.GenerativeFunctionCallNode, ads, op) =
     gen_fn_circuit(gn.generative_function, ads, op)
 gen_fn_circuit(rcn::Gen.RandomChoiceNode, ads, op) = gen_fn_circuit(rcn.dist, ads, op)
-gen_fn_circuit(jn::Gen.JuliaNode, ads, op) = gen_fn_circuit(jn.fn, ads, op)
+gen_fn_circuit(jn::Gen.JuliaNode, ads, op) =
+    try
+        gen_fn_circuit(jn.fn, ads, op)
+    catch e
+        @error "Error while implementing $(jn.name)" exception=(e, catch_backtrace())
+    end
 
 # `gen_fn_circuit` for user-facing types
 gen_fn_circuit(g::Gen.StaticIRGenerativeFunction, arg_domains, op) =

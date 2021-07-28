@@ -33,11 +33,11 @@ function normalize(vec)
     return vec/sum(vec)
 end
 
-is_occluded(occ, x, y) = occ ≤ x ≤ occ + OccluderLength()
-is_in_square(squarex, squarey, x, y) = (
-    squarex ≤ x ≤ squarex + SquareSideLength() &&
-    squarey ≤ y ≤ squarey + SquareSideLength()
-)
+# is_occluded(occ, x) = occ ≤ x ≤ occ + OccluderLength()
+# is_in_square(squarex, squarey, x, y) = (
+#     squarex ≤ x ≤ squarex + SquareSideLength() &&
+#     squarey ≤ y ≤ squarey + SquareSideLength()
+# )
 
 Map2D(gf) = Map(Map(gf))
 Map2Dargs(args...) = collect(
