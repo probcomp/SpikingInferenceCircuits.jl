@@ -128,4 +128,4 @@ inferred_states = get_smc_states(events, NEURAL_NPARTICLES(), NLATENTS() #= num 
 # domains = SIC.DiscreteIRTransforms.get_domains(
 #     SIC.DiscreteIRTransforms.get_ir(SIC.DiscreteIRTransforms.replace_return_node(step_model)).nodes, latent_domains())
 
-maybe_one_off(round_to_pt1(nm.asin(6 / 5)), .4, ϕs()))
+

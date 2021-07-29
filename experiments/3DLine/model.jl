@@ -158,11 +158,11 @@ end
 
 
 @gen (static) function step_proposal(vxₜ₋₁, vyₜ₋₁, vzₜ₋₁, xₜ₋₁, yₜ₋₁, zₜ₋₁,
-                                     rₜ₋₁, exact_ϕ, exact_θ, θₜ, ϕₜ) # θ and ϕ are noisy
+                                     rₜ₋₁, exact_ϕ, exact_θ, obs_θ, obs_ϕ) # θ and ϕ are noisy
     # instead of sampling (x, y, h) then computing r (as we do in the model)
     # in the proposal we sample (r, x, y) and then compute h
-    exact_θ = { :exact_θ } ~ LCat(θs())(maybe_one_off(θₜ, 0.2, θs()))
-    exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(maybe_one_off(ϕₜ, 0.2, ϕs()))
+    exact_θ = { :exact_θ } ~ LCat(θs())(maybe_one_off(obs_θ, 0.2, θs()))
+    exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(maybe_one_off(obs_ϕ, 0.2, ϕs()))
 
     r_max = max_distance_inside_grid(exact_ϕ, exact_θ)
     r_probvec = normalize(
@@ -187,13 +187,13 @@ end
     vzₜ = { :vzₜ } ~ LCat(Vels())(onehot(vz_prop, Vels()))
 end
 
-@gen (static) function initial_proposal(θₜ, ϕₜ)
-    exact_θ = { :exact_θ } ~ LCat(θs())(maybe_one_off(θₜ, 0.2, θs()))
-    exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(maybe_one_off(ϕₜ, 0.2, ϕs()))
+@gen (static) function initial_proposal(obs_θ, obs_ϕ)
+    exact_θ = { :exact_θ } ~ LCat(θs())(maybe_one_off(obs_θ, 0.2, θs()))
+    exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(maybe_one_off(obs_ϕ, 0.2, ϕs()))
     # r_max on the first draw is guaranteed to not leave the cube
     r_max = max_distance_inside_grid(exact_ϕ, exact_θ)
     l = length(Rs())
-    r_probvec = normalize(vcat(ones(Int64(r_max)), zeros(Int64(l-r_max))))
+ #   r_probvec = normalize(vcat(ones(Int64(r_max)), zeros(Int64(l-r_max))))
 #    rₜ = { :rₜ } ~ LCat(Rs())(r_probvec)
     rₜ = { :rₜ } ~ LCat(Rs())(maybe_one_or_two_off(round(norm_3d(X_init, Y_init, Z_init)),
                                                     .6, Rs()))
@@ -236,7 +236,7 @@ function limit_delta_pos(p_prop, p_prev)
 end
 
     
-function animate_azalt_movement(tr_list)
+function animate_azalt_movement(tr_list, anim_now)
     azalt_matrices = zeros(NSTEPS+1, length(θs()), length(ϕs()))
     obs_matrices = zeros(NSTEPS+1, length(θs()), length(ϕs()))
     gt_obs_choices = get_choices(tr_list[1])
@@ -262,24 +262,28 @@ function animate_azalt_movement(tr_list)
                            findfirst(map(x -> x == obs_ϕ, ϕs()))] += 1
         end
     end
+
+    
     fig = Figure(resolution=(2000,1000))
     obs_ax = fig[1,1] = Axis(fig)
     azalt_ax = fig[1,2] = Axis(fig)
     time = Node(1)
     hm_exact(t) = azalt_matrices[t, :, :]
     hm_obs(t) = obs_matrices[t, :, :]
-    heatmap!(obs_ax, θs(), ϕs(), lift(t -> hm_obs(t), time))
-    heatmap!(azalt_ax, θs(), ϕs(), lift(t -> hm_exact(t), time))
+    heatmap!(obs_ax, θs(), ϕs(), lift(t -> hm_obs(t), time), colormap=:grays)
+    heatmap!(azalt_ax, θs(), ϕs(), lift(t -> hm_exact(t), time), colormap=:grays)
     azalt_ax.aspect = DataAspect()
     obs_ax.aspect = DataAspect()
     obs_ax.xlabel = azalt_ax.xlabel = "Azimuth"
     obs_ax.ylabel = azalt_ax.ylabel = "Altitude"
-    display(fig)
-    for i in 1:NSTEPS
-        time[] = i
-        sleep(.2)
+    if anim_now
+        display(fig)
+        for i in 1:NSTEPS
+            time[] = i
+            sleep(.2)
+        end
     end
-    return azalt_matrices
+    return obs_matrices, azalt_matrices
 end
 
 
@@ -352,13 +356,19 @@ function render_pf_results(uw_traces, gt_trace, n_steps)
     msize = 7000
     c2 = colorant"rgba(255, 0, 255, .25)"
     c1 = colorant"rgba(0, 255, 255, .25)"
+    gray_w_alpha = colorant"rgba(60, 60, 60, .2)"
     cmap = range(c1, stop=c2, length=10)
-    fig = Figure(resolution=(res, res), figure_padding=0)
+    fig = Figure(resolution=(2*res, 2*res), figure_padding=50)
     lim = (Xs()[1], Xs()[end], Ys()[1], Ys()[end], Zs()[1], Zs()[end])
     # note perspectiveness variable is 0.0 for orthographic, 1.0 for perspective, .5 for intermediate
-    anim_axis = Axis3(fig[1,1], 
-                              viewmode=:fit, aspect=(1,1,1), perspectiveness=0.0, protrusions=0, limits=lim,
-                      elevation = 1.2*pi, azimuth= .7*pi)
+    gt_preyloc_axis = Axis3(fig[2,1], 
+                            viewmode=:fit, aspect=(1,1,1), perspectiveness=0.0, protrusions=0, limits=lim,
+                            elevation = 1.2*pi, azimuth= .7*pi)
+    particle_anim_axis = Axis3(fig[2,2], 
+                               viewmode=:fit, aspect=(1,1,1), perspectiveness=0.0, protrusions=0, limits=lim,
+                               elevation = 1.2*pi, azimuth= .7*pi)
+    azalt_axis = fig[1, 1:2] = Axis(fig)
+    observation_matrices, azalt_particle_matrices = animate_azalt_movement(uw_traces[end], false)
     # scatter takes a list of tuples. want a list of lists of tuples as an f(t) and lift a node to that.
     time_node = Node(1)
     gt_coords = []
@@ -394,9 +404,20 @@ function render_pf_results(uw_traces, gt_trace, n_steps)
     fp(t) = convert(Vector{Point3f0}, particle_coords[t])
     fs(t) = convert(Vector{Float64}, map(f -> isfinite(f) ? .1*log(f) : 0, (-1*score_colors[t])))
     f_gt(t) = convert(Vector{Point3f0}, gt_coords[t])
-    scatter!(anim_axis, lift(t -> fp(t), time_node), color=lift(t -> fs(t), time_node), colormap=cmap, markersize=msize, alpha=.5)
-#    scatter!(anim_axis, lift(t -> fp(t), time_node), color=rand(10), markersize=msize, colormap=:thermal)
-    scatter!(anim_axis, lift(t -> f_gt(t), time_node), color=:red, markersize=msize, marker='o')
+#    scatter!(anim_axis, lift(t -> fp(t), time_node), color=lift(t -> fs(t), time_node), colormap=:grays, markersize=msize, alpha=.5)
+    scatter!(particle_anim_axis, lift(t -> fp(t), time_node), color=gray_w_alpha, markersize=msize, alpha=.5)
+    scatter!(gt_preyloc_axis, lift(t -> f_gt(t), time_node), color=:red, markersize=msize) #, marker='o')
+    hm_obs(t) = observation_matrices[t, :, :]
+    hm_exact(t) = azalt_particle_matrices[t, :, :]
+    heatmap!(azalt_axis, θs(), ϕs(), lift(t -> hm_obs(t), time_node), colormap=:grayC)
+    heatmap!(azalt_axis, θs(), ϕs(), lift(t -> hm_exact(t), time_node), colormap=:grayC)
+    azalt_axis.aspect = DataAspect()
+    azalt_axis.xlabel = "Azimuth"
+    azalt_axis.ylabel = "Altitude"
+    azalt_axis.title = "2D Observations"
+    gt_preyloc_axis.title = "Groundtruth 3D Position"
+    particle_anim_axis.title = "Inferred 3D Position"
+#    azalt_axis.padding = (20, 20, 20, 20)
 #    translate_camera(anim_axis)
     display(fig)
     for i in 1:n_steps

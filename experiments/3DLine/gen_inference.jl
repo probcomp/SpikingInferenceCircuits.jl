@@ -3,6 +3,8 @@ include("../../src/DynamicModels/DynamicModels.jl")
 using .DynamicModels: @DynamicModel, @compile_initial_proposal, @compile_step_proposal, get_dynamic_model_obs, dynamic_model_smc
 
 include("model.jl")
+#ProbEstimates.use_perfect_weights!()
+ProbEstimates.use_noisy_weights!()
 
 model = @DynamicModel(initial_model, step_model, obs_model, 9)
 step_proposal_compiled = @compile_step_proposal(step_proposal, 9, 2)
@@ -10,7 +12,7 @@ initial_proposal_compiled = @compile_initial_proposal(initial_proposal, 2)
 @load_generated_functions()
 
 NSTEPS = 9
-NPARTICLES = 200
+NPARTICLES = 40
 
 #tr = simulate(model, (NSTEPS,))
 
