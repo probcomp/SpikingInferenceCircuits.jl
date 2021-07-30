@@ -1,9 +1,9 @@
-ImageSideLength() = 20
-OccluderLength() = 5
-SquareSideLength() = 3
-Vels() = -2:2
+ImageSideLength() = 3
+OccluderLength() = 2
+SquareSideLength() = 1
+Vels() = -1:1
 MinProb() = ProbEstimates.MinProb()
-p_flip() = 0.1
+p_flip() = 0.
 
 Positions() = 1:ImageSideLength()
 SqPos()     = 1:(ImageSideLength() - SquareSideLength())

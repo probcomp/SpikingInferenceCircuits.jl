@@ -211,7 +211,12 @@ input_domains(::ImplementableGenFn) = error("Not implemented.")
 
 A GenFnCircuit for the given generative function with associated metadata (including input domain labels).
 """
-gen_fn_circuit(gf::ImplementableGenFn, op::GenFnOp) = gen_fn_circuit(icpts(gf), input_domains(gf), op)
+gen_fn_circuit(gf::ImplementableGenFn, op::GenFnOp) = 
+    gen_fn_circuit(
+        gf |> icpts |> DiscreteIRTransforms.inline_constant_nodes,
+        input_domains(gf),
+        op
+    )
 
 """
     GenFnWithInputDomains(gen_fn::GenerativeFunction, input_domains::Vector{DiscreteIRTransforms.Domain})
@@ -235,7 +240,7 @@ GenFnWithInputDomains(gen_fn::GenerativeFunction, input_domains) =
     )
 
 icpts(gf::GenFnWithInputDomains) = to_indexed_cpts(gf.gen_fn, gf.input_domains)[1]
-input_domains(gf::GenFnWithInputDomains) = [FiniteDomain((length ∘ DiscreteIRTransforms.vals)(x)) for x in gf.input_domains]
+input_domains(gf::GenFnWithInputDomains) = [to_gf_indexed_domain(dom) for dom in gf.input_domains]
 
 replace_return_node(gf::GenFnWithInputDomains) =
     GenFnWithInputDomains(DiscreteIRTransforms.replace_return_node(gf.gen_fn), gf.input_domains)
@@ -257,7 +262,7 @@ add_activator_input(gf::GenFnWithInputDomains, activator_input_name) =
 icpts(gf::WithActivatorInput) = DiscreteIRTransforms.add_activator_input(icpts(gf.gf), gf.activator_input_name)
 input_domains(gf::WithActivatorInput) = [
     FiniteDomain(1), # activator input
-    (FiniteDomain((length ∘ DiscreteIRTransforms.vals)(x)) for x in gf.gf.input_domains)...
+    [to_gf_indexed_domain(dom) for dom in gf.gf.input_domains]...
 ]
 
 replace_return_node(gf::WithActivatorInput) = WithActivatorInput(replace_return_node(gf.gf), gf.activator_input_name)

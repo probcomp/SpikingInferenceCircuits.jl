@@ -63,3 +63,12 @@ end
 
 to_value(f::FiniteDomain) = FiniteDomainValue(f.n)
 to_value(p::IndexedProductDomain) = CompositeValue(Tuple(to_value(v) for v in p.subdomains))
+
+"""
+Convert a DiscreteIRTransforms domain into a SpikingInferenceCircuit.Domain for Gen Fn compilation.
+This will convert labeled domains to indexed domains.
+"""
+to_gf_indexed_domain(dom::DiscreteIRTransforms.EnumeratedDomain) =
+    FiniteDomain((length ∘ DiscreteIRTransforms.vals)(dom))
+to_gf_indexed_domain(dom::DiscreteIRTransforms.ProductDomain) =
+    IndexedProductDomain(map(to_gf_indexed_domain, dom.sub_domains))

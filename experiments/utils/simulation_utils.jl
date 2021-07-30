@@ -68,17 +68,28 @@ end
 
 # latents and observations should be indexed (not labeled)
 # TODO: support labels
+get_smc_circuit_inputs(
+    time_to_simulate_for, interval_between_observations,
+    # vector of named tuples giving value for each observation address at each timestep
+    observations::Vector{<:NamedTuple}
+) = get_smc_circuit_inputs(
+    time_to_simulate_for, interval_between_observations,
+    [[key => val for (key, val) in nt] for nt in observations]
+)
 function get_smc_circuit_inputs(
     time_to_simulate_for,
     interval_between_observations,
-    observations
+    # vector of vectors [obs0, obs1, ...] where obsT is obs at time t
+    # each inner obsT vector should be a list of all the circuit input addresses
+    # to trigger to convey the observation at time T
+    observations::Vector{<:Vector{<:Pair}}
 )
     first_obs, remaining_obs = Iterators.peel(observations)
     inputs = Tuple{Float64, Tuple}[
         (
             0.,
             (
-                (:obs => key => val for (key, val) in pairs(first_obs))...,
+                (:obs => obs_in_addr for obs_in_addr in first_obs)...,
                 :is_initial_obs
             )
         )
@@ -88,7 +99,7 @@ function get_smc_circuit_inputs(
         t += interval_between_observations
         obs, remaining_obs = Iterators.peel(remaining_obs)
         push!(inputs, 
-            (t, ((:obs => key => val for (key, val) in pairs(obs))...,))
+            (t, ((:obs => obs_in_addr for obs_in_addr in obs)...,))
         )
     end
     return inputs

@@ -100,6 +100,43 @@ multiplier_circuits(p) =
                 )),
             )
 
+"""
+An address in the trace to be fed into a proposal / recurred into a model as an argument,
+along with a map saying how the sub-addresses of this address should be changed to sub-addresses
+of the input value to the model.
+
+E.g. in a trace with a 2D map leading to a sample from a `get_photon` address,
+which we want to input into a simple `x => y` input value, we might use:
+```julia
+SIC.WithExtensionMap(
+    :img_inner,
+    trace_addr -> begin
+        # trace addr will be
+        # x => y => :got_photon
+        (x, (y, rest)) = trace_addr
+        @assert rest == :got_photon
+        x => y # input to proposal using `x => y` [strip the `:got_photon`]
+    end
+```
+
+Currently this is only implemented for obs values (ie. a `WithExtensionMap` can be
+provided as an element of `obs_addr_order` in constructing an ISParticle [or SMC].)
+We could add support for this in `latent_addr_order` too if needed, though ultimately
+a better solution is https://github.com/probcomp/SpikingInferenceCircuits.jl/issues/23.
+"""
+struct WithExtensionMap
+    addr
+    map
+end
+edge_maybe_with_extension_map(fromval, from, to, addr::Union{<:Integer, Symbol}) =
+    ( Circuits.append_to_valname(from, addr) => Circuits.append_to_valname(to, addr) , )
+edge_maybe_with_extension_map(fromval, from, to, wem::WithExtensionMap) =
+    (
+        Circuits.append_to_valname(from, wem.addr => extension) =>
+            Circuits.append_to_valname(to, wem.addr => wem.map(extension))
+        for extension in keys_deep(fromval[wem.addr])
+    )
+
 Circuits.implement(p::ISParticle, t::Target) =
     CompositeComponent(
         inputs(p),
@@ -118,10 +155,10 @@ Circuits.implement(p::ISParticle, t::Target) =
                 for addr in keys(inputs(p.assess_latents)[:inputs])
                     if addr in keys(inputs(p.propose)[:inputs])
             )...,
-            ( # Input obs -> propose args
-                Input(:obs => addr) => CompIn(:propose, :inputs => addr)
+            Iterators.flatten( # Input obs -> propose args
+                edge_maybe_with_extension_map(inputs(p)[:obs], Input(:obs), CompIn(:propose, :inputs), addr)
                 for addr in p.obs_addr_order
-            )...,
+            )..., # x => y => :got_photon         x => y
             Input(:args) => CompIn(:assess_latents, :inputs),
             CompOut(:propose, :trace) => CompIn(:assess_latents, :obs),
             ( # sampled latent values -> assess obs args
@@ -135,6 +172,7 @@ Circuits.implement(p::ISParticle, t::Target) =
             CompOut(:propose, :trace) => Output(:trace)
         ), p
     )
+
 score_out_edges(d) =
     if d.multiply_scores
         (
