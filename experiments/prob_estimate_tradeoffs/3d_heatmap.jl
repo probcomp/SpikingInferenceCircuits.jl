@@ -1,3 +1,8 @@
+#=
+This is the code used to produce the 3D heatmap in the NeurIPS draft, which compared
+expected latency to assembly size to the standard deviation of a probability estimate.
+=#
+
 using GLMakie
 
 TR() = 1:100
