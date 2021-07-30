@@ -57,45 +57,45 @@ end
 # Right now, all the plots take `k` as fixed, and vary `p` on the x axis
 
 """Compare simple Monte Carlo analytic variance expression to empirical value"""
-function show_direct_works(ax)
+function show_direct_works(f, ax)
     direct = lines!(ax, ps, [direct_fractional_variance(p, k) for p in ps])
     lines!(ax, ps, [analytic_direct_fracvar(p, k) for p in ps])
 end
 """Compare decomposed representation analytic variance expression to empirical value"""
-function show_prod_works(ax)
+function show_prod_works(f, ax)
     prod = lines!(ax, ps, [product_fractional_variance(sqrt(p), k/2) for p in ps])
     lines!(ax, ps, [analytic_prod_fracvar(sqrt(p), k/2) for p in ps])
 end
 
 """Compare 2 estimation schemes using empirical estimates"""
-function show_comparison_empirical(ax)
+function show_comparison_empirical(f, ax)
     direct = lines!(ax, ps, [direct_fractional_variance(p, k) for p in ps])
     prod = lines!(ax, ps, [product_fractional_variance(sqrt(p), k/2) for p in ps])
-    Legend(f[1, 2], [direct, prod], ["direct", "prod"])
+    Legend(f[1, 2], [direct, prod], ["Simple Monte Carlo", "With Auxiliary Variable"])
 end
 """Compare 2 estimation schemes using analytic expressions"""
-function show_comparison_analytic(ax)
+function show_comparison_analytic(f, ax)
     direct = lines!(ax, ps, log.([analytic_direct_fracvar(p, k) for p in ps]))
     prod = lines!(ax, ps, log.([analytic_prod_fracvar(sqrt(p), k/2) for p in ps]))
-    Legend(f[1, 2], [direct, prod], ["direct", "prod"])
+    Legend(f[1, 2], [direct, prod], ["Simple Monte Carlo", "With Auxiliary Variable"])
 end
 
 """Make a plot using the given `plttr` function"""
 function mkplt(plttr)
     f = Figure()
-    ax = Axis(f[1, 1], xlabel="p", ylabel="log fractional variance")
-    plttr(ax)
+    ax = Axis(f[1, 1], xlabel="p", ylabel="log fractional variance", title="Log Fractional Variance of probability estimate, for k = $(Int(k))")
+    plttr(f, ax)
     f
 end
 
 # Code is set up so `k` is fixed to this global value:
 latency = 5 # ms
 frequency = 0.2 # spikes per ms
-neuron_budget = 20
+neuron_budget = 100
 k = latency * neuron_budget * frequency
 
 # Globally set `p` range to plot:
-ps = 0.0001:0.0001:0.1
+ps = 0.0001:0.0001:0.15
 
 # [TODO: make `k`, `p` function arguments rather than globals]
 
