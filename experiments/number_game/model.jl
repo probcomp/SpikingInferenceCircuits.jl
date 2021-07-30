@@ -107,7 +107,7 @@ end
     return (tree,)
 end
 @gen (static) function obs_model(tree)
-    number = {:trace} ~ sample_number_direct(tree)
+    number ~ sample_number_direct(tree)
     return (number,)
 end
 
