@@ -8,3 +8,5 @@ experiments/saves/**/*
 experiments/**/saves/**/*
 experiments/figure_saves/**/*
 *.mp4
+saves/**/*
+snn_runs/**/*
