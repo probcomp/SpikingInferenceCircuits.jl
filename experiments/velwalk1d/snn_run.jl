@@ -10,8 +10,8 @@ includet("inference.jl")
 
 latent_domains()     = (xₜ=Positions(), vₜ=Vels())
 obs_domains()         = (obs=Positions(),)
-latent_obs_domains() = (latent_domains()..., obs_domains()...)
 
+latent_obs_domains() = (latent_domains()..., obs_domains()...)
 NLATENTS() = length(latent_domains())
 NOBS()     = length(obs_domains())
 NVARS()    = NLATENTS() + NOBS()
