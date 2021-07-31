@@ -32,7 +32,6 @@ function resimulate_branch(tr, subbranch_addr, max_depth_remaining)
     
     # for now, using MH.  TODO: particle Gibbs
     tr, acc = mh(tr, resample_tree_branch, (subbranch_addr, max_depth_remaining))
-    println(acc)
     return tr
 end
 function resimulate_branch_cycle(tr)

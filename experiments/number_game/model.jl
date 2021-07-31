@@ -9,7 +9,7 @@ isprime(x) = !any(divides(x, divisor) for divisor=2:10) # works for x ≤ 100
 @gen function sample_tree(maxdepth)
     terminal ~ sample_terminal()
     if maxdepth > 1
-        is_terminal ~ Bernoulli(bern_probs(0.5))
+        is_terminal ~ Bernoulli(bern_probs(1/4))
         nt ~ sample_nt(maxdepth)
         return is_terminal ? terminal : nt
     else
