@@ -1,5 +1,5 @@
 using Gen, ProbEstimates, DynamicModels
-ProbEstimates.use_perfect_weights!() # initially we will test this in vanilla Gen
+ProbEstimates.use_perfect_weights!()
 include("model.jl")
 include("inference.jl")
 includet("visualize.jl")
@@ -22,7 +22,8 @@ tr, weight = generate(model, (length(nums) - 1,), choicemap(
 ))
 
 nparticles=130
-resimulate_branch_cycle_ntimes(n) = n == 1 ? resimulate_branch_cycle : tr -> resimulate_branch_cycle_ntimes(n - 1)(resimulate_branch_cycle(tr))
+n_pgibbs_particles=2
+resimulate_branch_cycle_ntimes(n) = n == 1 ? resimulate_branch_cycle : tr -> resimulate_branch_cycle_ntimes(n - 1)(resimulate_branch_cycle(tr, n_pgibbs_particles))
 (unweighted_trs, weighted_trs) = dynamic_model_smc(model,
     get_dynamic_model_obs(tr),
     cm -> (cm[:number => :number => :val],),
@@ -30,5 +31,6 @@ resimulate_branch_cycle_ntimes(n) = n == 1 ? resimulate_branch_cycle : tr -> res
     rejuvenate=resimulate_branch_cycle_ntimes(1)
 );
 end_weighted_traces = [(tr, exp(wt)) for (tr, wt) in last(weighted_trs)]
+println("Inference completed.")
 
-f = visualize_weighted_traces(end_weighted_traces; title="$nparticles particles.  Maxdepth = $(MAXDEPTH()). Late sequence.")
+f = visualize_weighted_traces(end_weighted_traces; title="$nparticles particles. $n_pgibbs_particles PGibbs particles. Maxdepth = $(MAXDEPTH()). Late sequence.")

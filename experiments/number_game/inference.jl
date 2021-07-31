@@ -1,8 +1,11 @@
 # for now, from prior
-@gen (static) function initial_proposal(obs)
+@gen (static) function _initial_proposal(obs)
     tree ~ sample_tree(MAXDEPTH())
 end
-@gen (static) function step_proposal(tree, obs) end
+@gen (static) function _step_proposal(tree, obs) end
+
+initial_proposal = @compile_initial_proposal(_initial_proposal, 1)
+step_proposal = @compile_step_proposal(_step_proposal, 1, 1)
 
 ### Rejuvenation moves ###
 nest_at(prefix, suffix) = prefix => suffix
@@ -26,17 +29,15 @@ subbranch_addr_maxdepth_pairs() = [
     end
 end
 
-function resimulate_branch(tr, subbranch_addr, max_depth_remaining)
-    # proposed_choices, propweight, proposed_tree = propose(resample_tree_subbranch, (tr, subbranch_addr))
-    # updated_tr, updateweight, _, _ = update(tr, proposed_choices)
-    
-    # for now, using MH.  TODO: particle Gibbs
-    tr, acc = mh(tr, resample_tree_branch, (subbranch_addr, max_depth_remaining))
-    return tr
-end
-function resimulate_branch_cycle(tr)
+choices_for_branch(tr, addr) = get_selected(get_choices(tr), select(nest_at(:init => :latents => :tree, addr)))
+resimulate_branch(tr, subbranch_addr, max_depth_remaining, n_pgibbs_particles=2) =
+    single_step_particle_gibbs(tr,
+        resample_tree_branch, (subbranch_addr, max_depth_remaining), n_pgibbs_particles,
+        (_, tr, subbranch_addr) -> choices_for_branch(tr, subbranch_addr)
+    )
+function resimulate_branch_cycle(tr, n_pgibbs_particles=2)
     for (subbranch_addr, max_depth_remaining) in subbranch_addr_maxdepth_pairs()
-        tr = resimulate_branch(tr, subbranch_addr, max_depth_remaining)
+        tr = resimulate_branch(tr, subbranch_addr, max_depth_remaining, n_pgibbs_particles)
     end
     return tr
 end

@@ -3,7 +3,8 @@ bern_probs(p) = [p, 1 - p]
 normalize(pvec) = pvec / sum(pvec)
 
 divides(x, divisor) = x % divisor == 0
-isprime(x) = !any(divides(x, divisor) for divisor=2:10) # works for x ≤ 100
+const primes_before_10 = (2, 3, 5, 7)
+isprime(x) = x in primes_before_10 || !any(divides(x, p) for p in primes_before_10) # works for any x ≤ 100
 
 ### Latent tree sampling model ###
 @gen function sample_tree(maxdepth)
@@ -23,7 +24,7 @@ end
     return (:nonterminal, typ, left, right)
 end
 @gen (static) function sample_terminal()
-    typ ~ LCat([:prime, :multiple_of, :interval])([1/3, 1/3, 1/3])
+    typ ~ LCat([:prime, :multiple_of, :interval])([1/6, 1/2, 1/3])
     n1 ~ Cat(n1_pvec(typ))
     n2 ~ Cat(n2_pvec(typ, n1))
     return (:terminal, typ, n1, n2)
@@ -34,17 +35,18 @@ n1_pvec(typ) =
         [1/100 for _=1:100]
     elseif typ == :multiple_of
         # only have multiples of small numbers
-        [i ≤ 10 ? 1/10 : 0. for i=1:100]
+        [2 ≤ i ≤ 10 ? 1/9 : 0. for i=1:100]
     elseif typ == :interval
         [i ≤ 90 ? 1/90 : 0. for i=1:100]
     end
+max_interval_size() = 35
 n2_pvec(typ, n1) =
     if typ == :prime || typ == :multiple_of
         # in either case, n2 is irrelevant
         [1/100 for _=1:100]
     elseif typ == :interval
         # sample n2 from among those numbers greater than n1
-        normalize([i > n1 ? 1. : 0. for i=1:100])
+        normalize([n1 < i ≤ n1 + max_interval_size() ? 1. : 0. for i=1:100])
     end
 
 ### Obs model ###
@@ -52,8 +54,12 @@ n2_pvec(typ, n1) =
 # Sample number uniformly from the set
 @gen function sample_number_direct(tree)
     set_membership = [is_in_set(tree, x) for x=1:100]
-    unnormalized_probs = map(in_set -> in_set ? 1. : 0.00001, set_membership)
-    number ~ Cat(normalize(unnormalized_probs))
+    unnormalized_probs = map(in_set -> in_set ? 1. : 0., set_membership)
+
+    up2 = [unnormalized_probs..., (sum(unnormalized_probs) == 0. ? 1. : 0.)]
+    number ~ Cat(normalize(up2))
+
+    # number ~ Cat(normalize(unnormalized_probs))
     return number
 end
 function is_in_set(tree, x)
