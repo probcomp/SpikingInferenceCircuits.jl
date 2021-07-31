@@ -6,7 +6,9 @@ end
 Gen.get_args(tr::CatTrace) = (tr.probs,)
 Gen.get_retval(tr::CatTrace) = idx_to_label(tr.gf, tr.idx)
 Gen.get_choices(tr::CatTrace) = StaticChoiceMap((val=get_retval(tr),), (;))
-Gen.get_score(tr::CatTrace) = -log(recip_prob_estimate(tr))
+function Gen.get_score(tr::CatTrace)
+    -log(recip_prob_estimate(tr))
+end
 Gen.get_gen_fn(tr::CatTrace) = tr.gf
 
 # Not totally sure this is right--

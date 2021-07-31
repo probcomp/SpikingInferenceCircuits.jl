@@ -41,4 +41,7 @@ include("compilation_compatibility.jl")
 
 include("to_single_line.jl")
 
+# overwrite methods in DynamicModels so that inference uses the noise model
+include("dynamic_models_overwrites.jl")
+
 end # module

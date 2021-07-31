@@ -47,6 +47,7 @@ recip_prob_estimate(p) =
 
 fwd_pe(p) = rand(Binomial(K_fwd(), p))/K_fwd()
 function recip_pe(p)
+    println("in recip PE")
     if p < 0.000001
         Inf
     else
