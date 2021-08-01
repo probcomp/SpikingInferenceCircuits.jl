@@ -5,7 +5,7 @@ ScoreAssemblySize()  = 100
 MaxNeuronRate()      = 0.2 # KHz
 MinProb()            = 0.1
 
-INTER_OBS_INTERVAL() = 200. # ms
+INTER_OBS_INTERVAL() = 300. # ms
 
 SAMPLE_ONRATE() = SampleAssemblySize() * MaxNeuronRate()
 SCORE_ONRATE()  = ScoreAssemblySize()  * MaxNeuronRate()
@@ -15,7 +15,7 @@ PEstDenom() = ExpectedLatency() * SCORE_ONRATE() |> Int
 RecipPEstDenom() = ExpectedLatency() *  SAMPLE_ONRATE() * MinProb() |> Int
 MultOutDenom() = 200 # count denominator for the output of a multiplier
 
-ΔT() = 24 # ms  -- memory time for scoring unit (also used by many other units)
+ΔT() = 40 # ms  -- memory time for scoring unit (also used by many other units)
 
 MinProb() = 0.1
 ΔT_SAMPLE() = ΔT() * 2

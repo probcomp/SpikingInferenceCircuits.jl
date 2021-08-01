@@ -23,7 +23,8 @@ ann_step_proposal = @compile_step_proposal(_ann_step_proposal, 2, 1)
 output_maxrate() = 50. # KHz - rate of output from the ANN [e.g. from 100 neuron assemblies with each neuron at 500Hz]
 Circuits.implement(a::ANNCPTSample, ::Spiking) =
     ANNDistributions.ConcreteANNCPTSample(
-        a; neuron_memory=ΔT()/2, network_memory_per_layer=ΔT(),
+        a; neuron_memory=ΔT()/(length(a.layers) * 2), # make sure that it finishes before ΔT runs out!
+        network_memory_per_layer=2 * ΔT()/length(a.layers),
         timer_params=(
             NSPIKES_SYNC_TIMER(),  # N_spikes_timer
             (1, M(), GATE_RATES()...), 0. # timer TI params (maxdelay M gaterates...) | offrate
