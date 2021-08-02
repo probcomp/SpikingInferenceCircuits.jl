@@ -1,6 +1,15 @@
 using GLMakie
 using Colors
 
+to_color(::Empty) = colorant"white"
+to_color(::Object) = colorant"gold"
+to_color(::Occluder) = colorant"indianred"
+
+to_idx(::Empty) = 1
+to_idx(::Object) = 2
+to_idx(::Occluder) = 3
+to_color(i::Int) = to_color(PixelColors()[i])
+
 ### Drawing utils ###
 
 function hollow_rect!(ax, pts; color)
@@ -19,35 +28,32 @@ end
 
 ### Trace data utils ###
 
-to_matrix(vec_of_vecs) = [
-	vec_of_vecs[x][y]
-		for x=1:length(vec_of_vecs),
-			y=1:length(vec_of_vecs[1])	
-]
+to_color_matrix(vec_of_vecs_of_pixel_color) = [
+	to_idx(vec_of_vecs_of_pixel_color[x][y])
+		for x=1:length(vec_of_vecs_of_pixel_color),
+			y=1:length(vec_of_vecs_of_pixel_color[1])	
+] |> transpose
 
 observed_imgs(tr) = [
-    tr[:init => :obs],
+    tr[:init => :obs][1],
     (
-        tr[:steps => t => :obs]
+        tr[:steps => t => :obs][1]
         for t=1:(get_args(tr)[1])
     )...
 ]
 
 ### Figure making / trace drawing ###
 
-sq_left(tr, t)  = latents_choicemap(tr, t)[:xₜ => :val]
-sq_bot(tr, t)   = latents_choicemap(tr, t)[:yₜ => :val]
-sq_top(tr, t)   = sq_bot(tr, t)  + SquareSideLength()
+sq_left(tr, t)  = latents_choicemap(tr, t)[:xₜ => :val] - 0.5
+sq_bot(tr, t)   = latents_choicemap(tr, t)[:yₜ => :val] - 0.5
+sq_top(tr, t)   = sq_bot(tr, t)  + SquareSideLength() 
 sq_right(tr, t) = sq_left(tr, t) + SquareSideLength()
-occ_left(tr, t)     = latents_choicemap(tr, t)[:occₜ => :val]
-occ_right(tr, t)    = occ_left(tr, t) + OccluderLength()
+occ_left(tr, t)     = latents_choicemap(tr, t)[:occₜ => :val] - 0.4
+occ_right(tr, t)    = occ_left(tr, t) + OccluderLength() - 0.2
 
 function draw_obs!(ax, t, tr)
     obs = observed_imgs(tr)
-    heatmap!(ax,
-        @lift(to_matrix(obs[$t + 1])),
-        colormap=cgrad([:white, :gold])
-    )
+    heatmap!(ax, @lift(to_color_matrix(obs[$t + 1])), colormap=map(to_color, PixelColors()))
 end
 function draw_gt_sq!(ax, t, tr)
     hollow_rect!(
@@ -59,7 +65,7 @@ end
 function draw_gt_occ!(ax, t, tr)
     hollow_rect!(
         ax,
-        lift(t -> (occ_left(tr, t), 1, occ_right(tr, t), ImageSideLength()), t),
+        lift(t -> (occ_left(tr, t), 0.6, occ_right(tr, t), ImageSideLength() + 0.4), t),
         color=colorant"seagreen"
     )
 end
@@ -90,6 +96,7 @@ function draw_particle_occ_gt!(ax, t, tr)
     )
 end
 function draw_particles_gt!(drawfn, ax, t, trs_indexed_by_time)
+    isempty(trs_indexed_by_time) && return;
     for i=1:length(trs_indexed_by_time[1])
         drawfn(ax, t, @lift(trs_indexed_by_time[$t + 1][i]))
     end
@@ -105,6 +112,7 @@ function draw_gt_and_particles(tr, particles)
     gt = draw_gt_sq!(ax2d, t, tr)
     draw_gt_occ!(ax2d, t, tr)
     inf = draw_particles_gt!(draw_particle_sq_gt!, ax2d, t, particles)
+    xlims!(ax2d, (0.5, last(Positions()) + 0.5))
 
     l1[2, 1] = ax1d = Axis(fig[2, 1], aspect=DataAspect(), title="Inferred occluder position")
     hideydecorations!(ax1d)

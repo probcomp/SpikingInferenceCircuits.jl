@@ -9,10 +9,11 @@ positions(width) = 1:(ImageSideLength() - width + 1)
 
 uniform(vals) = ones(length(vals))/length(vals)
 	
-onehot(x, dom) =
+onehot(x::Real, dom) =
     x < first(dom) ? onehot(first(dom), dom) :
     x > last(dom)  ? onehot(last(dom), dom)  :
                  [i == x ? 1. : 0. for i in dom]
+onehot(x, dom) = [i == x ? 1. : 0. for i in dom]
 # prob vector to sample a value in `dom` which is 1 off
 # from `idx` with probability `prob`, and `idx` otherwise
 maybe_one_off(idx, prob, dom) =

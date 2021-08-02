@@ -1,8 +1,8 @@
 using DynamicModels
-include("model.jl")
-include("groundtruth_rendering.jl")
-include("proposal.jl")
-include("visualize.jl")
+includet("model.jl")
+includet("groundtruth_rendering.jl")
+includet("proposal.jl")
+includet("visualize.jl")
 
 ProbEstimates.use_perfect_weights!()
 
@@ -12,10 +12,10 @@ step_prop = @compile_step_proposal(_step_proposal, 5, 1)
 
 @load_generated_functions()
 
-# tr, _ = generate(model, (10,), choicemap(
-# 	(:init => :latents => :xₜ => :val, 1),
-# 	(:init => :latents => :vxₜ => :val, 2)
-# ));
+tr, _ = generate(model, (10,), choicemap(
+	(:init => :latents => :xₜ => :val, 1),
+	(:init => :latents => :vxₜ => :val, 2)
+));
 
 # obs_choicemap_to_matrix(ch) =
 # 	[
@@ -29,7 +29,7 @@ step_prop = @compile_step_proposal(_step_proposal, 5, 1)
 #     init_prob, step_prop, 10
 # );
 
-# (fig, t) = draw_gt_and_particles(tr, unweighted_trs); fig
+(fig, t) = draw_gt_and_particles(tr, []); fig
 
 # TODO: enumerate.  Performance will probably be an issue.
 # Maybe using Marco's factor-graph library could help...but getting it set up
