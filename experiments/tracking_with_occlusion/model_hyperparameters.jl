@@ -3,7 +3,7 @@ OccluderLength() = 3
 SquareSideLength() = 1
 Vels() = -2:2
 MinProb() = ProbEstimates.MinProb()
-p_flip() = 0.1
+p_flip() = 0.0
 
 OccOneOffProb() = 0.3
 VelOneOffProb() = 0.2
