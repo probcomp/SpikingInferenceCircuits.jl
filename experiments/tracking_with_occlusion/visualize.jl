@@ -44,10 +44,10 @@ observed_imgs(tr) = [
 
 ### Figure making / trace drawing ###
 
-sq_left(tr, t)  = latents_choicemap(tr, t)[:xₜ => :val] - 0.5
-sq_bot(tr, t)   = latents_choicemap(tr, t)[:yₜ => :val] - 0.5
-sq_top(tr, t)   = sq_bot(tr, t)  + SquareSideLength() 
-sq_right(tr, t) = sq_left(tr, t) + SquareSideLength()
+sq_left(tr, t)  = latents_choicemap(tr, t)[:xₜ => :val] - 0.4
+sq_bot(tr, t)   = latents_choicemap(tr, t)[:yₜ => :val] - 0.4
+sq_top(tr, t)   = sq_bot(tr, t)  + SquareSideLength() - 0.2
+sq_right(tr, t) = sq_left(tr, t) + SquareSideLength() - 0.2
 occ_left(tr, t)     = latents_choicemap(tr, t)[:occₜ => :val] - 0.4
 occ_right(tr, t)    = occ_left(tr, t) + OccluderLength() - 0.2
 
@@ -81,37 +81,37 @@ function draw_tr(tr)
 end
 
 ### Inference drawing ###
-function draw_particle_sq_gt!(ax, t, tr) # tr = observable giving trace at time $t
+function draw_particle_sq_gt!(ax, t, tr, num_particles) # tr = observable giving trace at time $t
     poly!(
         ax,
-        @lift(Rect(sq_left($tr, $t), sq_bot($tr, $t), SquareSideLength(), SquareSideLength())),
-        color=RGBA(0, 0, 0, 0.2)
+        @lift(Rect(sq_left($tr, $t), sq_bot($tr, $t), SquareSideLength() - 0.2, SquareSideLength() - 0.2)),
+        color=RGBA(0, 0, 0, min(1., 2.0/num_particles))
     )
 end
-function draw_particle_occ_gt!(ax, t, tr)
+function draw_particle_occ_gt!(ax, t, tr, num_particles)
     poly!(
         ax,
-        @lift(Rect(occ_left($tr, $t), 1, OccluderLength(), 1)),
-        color=RGBA(0, 0, 0, 0.2)
+        @lift(Rect(occ_left($tr, $t), 1, OccluderLength() - 0.2, 1)),
+        color=RGBA(0, 0, 0, min(0.95, 2.0/num_particles))
     )
 end
 function draw_particles_gt!(drawfn, ax, t, trs_indexed_by_time)
     isempty(trs_indexed_by_time) && return;
     for i=1:length(trs_indexed_by_time[1])
-        drawfn(ax, t, @lift(trs_indexed_by_time[$t + 1][i]))
+        drawfn(ax, t, @lift(trs_indexed_by_time[$t + 1][i]), length(trs_indexed_by_time[1]))
     end
 end
 
-function draw_gt_and_particles(tr, particles)
+function draw_gt_and_particles(tr, particles, inference_method_str)
     fig = Figure(resolution=(800, 1000))
     l1 = GridLayout()
     fig[1:2, 1] = l1
     l1[1, 1] = ax2d = Axis(fig[1, 1], aspect=DataAspect(), title="2D world")
     t = Observable(0)
     obs = draw_obs!(ax2d, t, tr)
+    inf = draw_particles_gt!(draw_particle_sq_gt!, ax2d, t, particles)
     gt = draw_gt_sq!(ax2d, t, tr)
     draw_gt_occ!(ax2d, t, tr)
-    inf = draw_particles_gt!(draw_particle_sq_gt!, ax2d, t, particles)
     xlims!(ax2d, (0.5, last(Positions()) + 0.5))
 
     l1[2, 1] = ax1d = Axis(fig[2, 1], aspect=DataAspect(), title="Inferred occluder position")
@@ -119,19 +119,30 @@ function draw_gt_and_particles(tr, particles)
     draw_particles_gt!(draw_particle_occ_gt!, ax1d, t, particles)
     linkxaxes!(ax2d, ax1d)
 
-    rowsize!(l1, 1, Relative(19/20))
-    rowsize!(l1, 2, Relative(1/20))
+    rowsize!(l1, 1, Relative(  (last(Positions()) - 1) / last(Positions())     ))
+    rowsize!(l1, 2, Relative(1/last(Positions())))
     # ax2d.height = Relative(20/21)
     # ax1d.height = Relative(1/21)
     # ax2d.tellheight = true
     # ax1d.tellheight = true
     # trim!(fig.layout)
 
-    leg = Legend(fig[3, 1],
+    hyperparam_label = Label(fig, "p_pixel_flip = $(p_flip()). OccOneOffProb = $(OccOneOffProb()).  VelOneOffProb = $(VelOneOffProb()).")
+    inference_label = Label(fig, inference_method_str)
+    hyperparam_label.tellwidth = false; inference_label.tellwidth = false
+    fig[3, :] = hyperparam_label; fig[4, :] = inference_label;
+
+    leg = Legend(fig[5, :],
         [
-            PolyElement(color=:gold),
+            [
+                PolyElement(color=:indianred),
+                PolyElement(color=:gold, points = Point2f0[(0.2, 0.2), (0.8, 0.2), (0.8, 0.8), (0.2, 0.8)])
+            ],
             LineElement(color=:seagreen),
-            PolyElement(color=:black)
+            [
+                PolyElement(color=:gray),
+                PolyElement(color=:black, points = Point2f0[(0.2, 0.2), (0.8, 0.2), (0.8, 0.8), (0.2, 0.8)])
+            ]
         ],
         ["Observed image", "Ground-Truth Positions", "Inferred Positions"]
     )
