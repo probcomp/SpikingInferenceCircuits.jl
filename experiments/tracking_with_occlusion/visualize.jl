@@ -22,7 +22,7 @@ function hollow_rect!(ax, pts; color)
             (x2, y2), (x2, y1),
             (x2, y1), (x1, y1)
         ], pts);
-        color
+        color, linewidth=3
     )
 end
 
@@ -102,19 +102,46 @@ function draw_particles_gt!(drawfn, ax, t, trs_indexed_by_time)
     end
 end
 
+function draw_vel!(ax, t, tr, num_particles)
+    vx(tr, t) = time_to_vel(tr)(t)[1]
+    vy(tr, t) = time_to_vel(tr)(t)[2]
+    poly!(
+        ax,
+        @lift(Rect(vx($tr, $t) - 0.4, vy($tr, $t) - 0.4, 0.8, 0.8)),
+        color=RGBA(0, 0, 0, min(0.95, 2.0/num_particles))
+    )
+end
+plot_point!(ax, t, time_to_pt, domain;
+    n_backtrack=0, color, markersize=30, marker=:circle
+) = scatter!(ax,
+        @lift([time_to_pt($t)[1]]),
+        @lift([time_to_pt($t)[2]]);
+        color, markersize, marker
+    )
+time_to_vel(tr) = t -> (latents_choicemap(tr, t)[:vxₜ => :val], latents_choicemap(tr, t)[:vyₜ => :val])
+
 function draw_gt_and_particles(tr, particles, inference_method_str)
-    fig = Figure(resolution=(800, 1000))
-    l1 = GridLayout()
-    fig[1:2, 1] = l1
-    l1[1, 1] = ax2d = Axis(fig[1, 1], aspect=DataAspect(), title="2D world")
+    fig = Figure(resolution=(800, 1500))
     t = Observable(0)
+
+    vel_ax = Axis(fig[1, 1], aspect=DataAspect(), title="Velocity")
+    draw_particles_gt!(draw_vel!, vel_ax, t, particles)
+    pts = plot_point!(vel_ax, t, time_to_vel(tr), Vels(); n_backtrack=2, color=colorant"seagreen")
+    xlims!(vel_ax, (first(Vels()) - 0.5, last(Vels()) + 0.5))
+    ylims!(vel_ax, (first(Vels()) - 0.5, last(Vels()) + 0.5))
+    vel_ax.xticks=Vels()
+    vel_ax.yticks=Vels()
+
+    l1 = GridLayout()
+    fig[2:3, 1] = l1
+    l1[1, 1] = ax2d = Axis(fig[2, 1], aspect=DataAspect(), title="2D world")
     obs = draw_obs!(ax2d, t, tr)
     inf = draw_particles_gt!(draw_particle_sq_gt!, ax2d, t, particles)
     gt = draw_gt_sq!(ax2d, t, tr)
     draw_gt_occ!(ax2d, t, tr)
     xlims!(ax2d, (0.5, last(Positions()) + 0.5))
 
-    l1[2, 1] = ax1d = Axis(fig[2, 1], aspect=DataAspect(), title="Inferred occluder position")
+    l1[2, 1] = ax1d = Axis(fig[3, 1], aspect=DataAspect(), title="Inferred occluder position")
     hideydecorations!(ax1d)
     draw_particles_gt!(draw_particle_occ_gt!, ax1d, t, particles)
     linkxaxes!(ax2d, ax1d)
@@ -130,21 +157,21 @@ function draw_gt_and_particles(tr, particles, inference_method_str)
     hyperparam_label = Label(fig, "p_pixel_flip = $(p_flip()). OccOneOffProb = $(OccOneOffProb()).  VelOneOffProb = $(VelOneOffProb()).")
     inference_label = Label(fig, inference_method_str)
     hyperparam_label.tellwidth = false; inference_label.tellwidth = false
-    fig[3, :] = hyperparam_label; fig[4, :] = inference_label;
+    fig[4, :] = hyperparam_label; fig[5, :] = inference_label;
 
-    leg = Legend(fig[5, :],
+    leg = Legend(fig[6, :],
         [
             [
                 PolyElement(color=:indianred),
                 PolyElement(color=:gold, points = Point2f0[(0.2, 0.2), (0.8, 0.2), (0.8, 0.8), (0.2, 0.8)])
             ],
-            LineElement(color=:seagreen),
+            [LineElement(color=:seagreen), MarkerElement(marker=:circle, color=:seagreen, markersize=10)],
             [
                 PolyElement(color=:gray),
                 PolyElement(color=:black, points = Point2f0[(0.2, 0.2), (0.8, 0.2), (0.8, 0.8), (0.2, 0.8)])
             ]
         ],
-        ["Observed image", "Ground-Truth Positions", "Inferred Positions"]
+        ["Observed image", "Ground-Truth", "Inferred Positions"]
     )
     leg.orientation = :horizontal
 
