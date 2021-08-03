@@ -37,7 +37,7 @@ n1_pvec(typ) =
         # only have multiples of small numbers
         [2 ≤ i ≤ 10 ? 1/9 : 0. for i=1:100]
     elseif typ == :interval
-        [i ≤ 90 ? 1/90 : 0. for i=1:100]
+        [i ≤ 90 && i % 5 == 0 ? 5/90 : 0. for i=1:100]
     end
 max_interval_size() = 35
 n2_pvec(typ, n1) =
@@ -46,15 +46,16 @@ n2_pvec(typ, n1) =
         [1/100 for _=1:100]
     elseif typ == :interval
         # sample n2 from among those numbers greater than n1
-        normalize([n1 < i ≤ n1 + max_interval_size() ? 1. : 0. for i=1:100])
+        normalize([n1 < i ≤ n1 + max_interval_size() && (i - n1) % 4 == 0 ? 1. : 0. for i=1:100])
     end
 
 ### Obs model ###
 
 # Sample number uniformly from the set
+membership_bool_vec(tree) = [is_in_set(tree, x) for x=1:100]
+membership_float_vec(tree) = map(in_set -> in_set ? 1. : 0., membership_bool_vec(tree))
 @gen function sample_number_direct(tree)
-    set_membership = [is_in_set(tree, x) for x=1:100]
-    unnormalized_probs = map(in_set -> in_set ? 1. : 0., set_membership)
+    unnormalized_probs = membership_float_vec(tree)
 
     up2 = [unnormalized_probs..., (sum(unnormalized_probs) == 0. ? 1. : 0.)]
     number ~ Cat(normalize(up2))
