@@ -5,14 +5,34 @@ MaxRate() = 0.2 # KHz
 DefaultAssemblySize() = 10 # neurons
 MinProb() = 0.1
 
-# Hyperparameters for multiplication to a single line:
+# Do we use ``single-line compression'' multiplication, which results in low precision?
+# If not, we use ``neural-floating-point''-style multiplication.
+UseLowPrecisionMultiply() = true
 
+# assembly sizes used for multiplication in either auto-normalized or low-precision multiply implementation
+MultAssemblySize() = AssemblySize()
+
+# Hyperparameters for multiplication to a single line during single-line compression:
 TimerExpectedT() = 50 # ms
 TimerAssemblySize() = 10
-MultAssemblySize() = 20
+
+# The scale of the importance weights being multiplied, which controls (in part)
+# how many total spikes we will get.  Change this to tune this.
+MultOutScale() = 1.
 
 TimerNSpikes() = TimerExpectedT() * TimerAssemblySize() * MaxRate() |> Int
-MultOutDenominator() = TimerExpectedT() * MultAssemblySize() * MaxRate()
+MaxMultRate() = MultAssemblySize() * MaxRate()
+MultOutDenominator() = TimerExpectedT() * MultAssemblySize() * MaxRate() / min(10 * MultOutScale(), 1.)
+
+# Hyperparameters for Neural-Floating-Point style multiplication
+AutonormalizeCountThreshold() = 2
+AutonormalizeSpeedupFactor() = 2
+AutonormalizeRepeaterRate() = 5 * MaxRate()
+WeightAutonormalizationParams() = (AutonormalizeCountThreshold(), AutonormalizeSpeedupFactor(), AutonormalizeRepeaterRate())
+
+# Error check hyperparams:
+AutonormalizationLatency() = Latency()
+AutonormalizationMinResultingRate() = 1/Latency()
 
 # Should we check that the probability ranges make it possible to actually compile
 # the model, and that the probabilities are actually greater than the MinProb value
