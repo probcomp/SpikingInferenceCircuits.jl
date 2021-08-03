@@ -367,7 +367,7 @@ function render_pf_results(uw_traces, gt_trace, n_steps)
     particle_anim_axis = Axis3(fig[2,2], 
                                viewmode=:fit, aspect=(1,1,1), perspectiveness=0.0, protrusions=0, limits=lim,
                                elevation = 1.2*pi, azimuth= .7*pi)
-    azalt_axis = fig[1, 1:2] = Axis(fig)
+    azalt_axis = fig[1, 1:2] = Axis(outer_padding= 400, fig)
     observation_matrices, azalt_particle_matrices = animate_azalt_movement(uw_traces[end], false)
     # scatter takes a list of tuples. want a list of lists of tuples as an f(t) and lift a node to that.
     time_node = Node(1)
