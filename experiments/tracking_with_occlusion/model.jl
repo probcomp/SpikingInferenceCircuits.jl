@@ -3,57 +3,26 @@ using ProbEstimates
 include("model_hyperparameters.jl")
 include("modeling_utils.jl")
 
-### Obs model ###
-# ╔═╡ d4c86af7-6292-4d34-b136-0e3e4e0660c2
-# p_got_photon(occ, sqx, sqy, x, y) = (
-# 		is_occluded(occ, x, y) || is_in_square(sqx, sqy, x, y)
-# 	) ? 1 - p_flip() : p_flip()
-
-# @gen (static) function is_colored(occ, sqx, sqy, x, y)
-# 	isocc = is_occluded(occ, x)
-# 	x_in_sq = sqx ≤ x ≤ sqx + SquareSideLength()
-# 	y_in_sq = sqy ≤ y ≤ sqy + SquareSideLength()
-# 	in_sq = x_in_sq && y_in_sq
-# 	square_colored = isocc || in_sq
-# 	return square_colored
-# end
+abstract type PixelColor end
+struct Empty <: PixelColor; end
+struct Object <: PixelColor; end
+struct Occluder <: PixelColor; end
+PixelColors() = [Empty(), Object(), Occluder()]
 
 bern_probs(p) = [p, 1-p]
-# @gen (static) function render_pixel(occ, sqx, sqy, x, y)
-# 	square_colored ~ is_colored(occ, sqx, sqy, x, y)
-#     got_photon ~ BoolCat(
-#         bern_probs(square_colored ? 1 - p_flip() : p_flip())
-#     )
-#     return got_photon
-# end
-
-# fill_2dmap(v) = Map2Dargs(fill(v, (ImageSideLength(), ImageSideLength())))
-# @gen (static) function obs_model(occ, x, y, vx, vy)
-# 	occgrid = fill_2dmap(occ)
-# 	sqxgrid = fill_2dmap(x)
-# 	sqygrid = fill_2dmap(y)
-# 	xgrid   = Map2Dargs([x for x=1:ImageSideLength(), y=1:ImageSideLength()])
-# 	ygrid   = Map2Dargs([y for x=1:ImageSideLength(), y=1:ImageSideLength()])
-
-#     img_inner ~ Map2D(render_pixel)(occgrid, sqxgrid, sqygrid, xgrid, ygrid)
-#     return img_inner
-# end
 
 @gen (static) function is_in_square(squarex, squarey, x, y)
     x_in_range = squarex ≤ x ≤ squarex + SquareSideLength() - 1
     y_in_range = squarey ≤ y ≤ squarey + SquareSideLength() - 1
     return x_in_range && y_in_range
 end
-@gen (static) function pixel_expected_on(occ, sqx, sqy, x, y)
-    is_occluded = occ ≤ x ≤ occ + OccluderLength() - 1
-    in_sq ~ is_in_square(sqx, sqy, x, y)
-    return is_occluded || in_sq
-end
 
 @gen (static) function render_pixel(occ, sqx, sqy, x, y)
-    expect_pixel_on ~ pixel_expected_on(occ, sqx, sqy, x, y)
-    got_photon ~ BoolCat(bern_probs(expect_pixel_on ? 1 - p_flip() : p_flip()))
-    return got_photon
+    is_occluded = occ ≤ x ≤ occ + OccluderLength() - 1
+    in_sq ~ is_in_square(sqx, sqy, x, y)
+    color = is_occluded ? Occluder() : in_sq ? Object() : Empty()
+    pixel_color ~ LCat(PixelColors())(onehot(color, PixelColors()))
+    return pixel_color
 end
 
 xs() = [[pixx for _=1:ImageSideLength()] for pixx=1:ImageSideLength()]
@@ -81,15 +50,20 @@ end
 	vyₜ ~ VelCat(uniform(Vels()))
 	return (occₜ, xₜ, yₜ, vxₜ, vyₜ)
 end
+
+vel_change_probs(vxₜ₋₁, xₜ₋₁) =
+    if (xₜ₋₁ ≤ first(SqPos()) && vxₜ₋₁ < 0) || (xₜ₋₁ ≥ last(SqPos()) && vxₜ₋₁ > 0)
+        maybe_one_off(-vxₜ₋₁, VelOneOffProb(), Vels())
+    else
+        maybe_one_off(vxₜ₋₁, VelOneOffProb(), Vels())
+    end
 @gen (static) function step_latent_model(occₜ₋₁, xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁)
-	occₜ ~ Cat(maybe_one_off(occₜ₋₁, 0.3, positions(OccluderLength())))
-	xₜ ~ Cat(truncated_discretized_gaussian(xₜ₋₁ + vxₜ₋₁, 2.,
-			positions(SquareSideLength()))
-	)
-	yₜ ~ Cat(truncated_discretized_gaussian(yₜ₋₁ + vyₜ₋₁, 2.,
-		positions(SquareSideLength()))
-	)
-	vxₜ ~ VelCat(maybe_one_off(vxₜ₋₁, 0.4, Vels()))
-	vyₜ ~ VelCat(maybe_one_off(vyₜ₋₁, 0.4, Vels()))
+    vxₜ ~ VelCat(vel_change_probs(vxₜ₋₁, xₜ₋₁))
+    vyₜ ~ VelCat(vel_change_probs(vyₜ₋₁, yₜ₋₁))
+	occₜ ~ Cat(maybe_one_off(occₜ₋₁, OccOneOffProb(), positions(OccluderLength())))
+    xₜ ~ Cat(onehot(xₜ₋₁ + vxₜ, positions(SquareSideLength())))
+    yₜ ~ Cat(onehot(yₜ₋₁ + vyₜ, positions(SquareSideLength())))
+	# xₜ ~ Cat(truncated_discretized_gaussian(xₜ₋₁ + vxₜ, 2., positions(SquareSideLength())))
+	# yₜ ~ Cat(truncated_discretized_gaussian(yₜ₋₁ + vyₜ, 2., positions(SquareSideLength())))
 	return (occₜ, xₜ, yₜ, vxₜ, vyₜ)
 end
