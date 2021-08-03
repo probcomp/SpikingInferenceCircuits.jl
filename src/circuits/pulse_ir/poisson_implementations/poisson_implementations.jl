@@ -17,3 +17,5 @@ include("timer.jl") # Util
 
 include("multiplier.jl")
 include("sync.jl")
+
+include("auto_normalized_multiply.jl")
