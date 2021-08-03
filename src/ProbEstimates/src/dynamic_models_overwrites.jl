@@ -4,7 +4,14 @@ import DynamicModels
 function DynamicModels.resample(traces, logweights, n_samples)
     (log_total_weight, log_normalized_weights) = normalize_weights(logweights)
     weights = exp.(log_normalized_weights)
-    return [traces[categorical(normalize(weights))] for _=1:n_samples]
+
+    if exp(log_total_weight) == 0. # randomly resample; all weights were 0
+        @warn "Resampling at random since normalized weights were all NaN (meaning all weights were 0)."
+        return [traces[uniform_discrete(1, length(traces))] for _=1:n_samples]
+    else
+        @assert isapprox(sum(weights), 1.)
+        return [traces[categorical(weights)] for _=1:n_samples]
+    end
 end
 
 function DynamicModels.maybe_resample!(
@@ -46,3 +53,8 @@ function DynamicModels.use_propose_weights!()
     end
 end
 DynamicModels.done_using_propose_weights!(weight_type) = set_weighttype_to!(weight_type)
+
+DynamicModels.check_weights_equal_if_perfect_weights(w1, w2) =
+    if weight_type() == :perfect
+        @assert isapprox(w1, w2, atol=1e-6) "$w1 | $w2"
+    end

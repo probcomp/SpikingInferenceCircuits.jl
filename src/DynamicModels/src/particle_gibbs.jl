@@ -1,6 +1,7 @@
 # ProbEstimates can overwrite these if needed to enable the noise model
 current_weighttype = use_propose_weights!() = nothing
 done_using_propose_weights!(prev_weighttype) = nothing
+check_weights_equal_if_perfect_weights(w1, w2) = @assert isapprox(w1, w2, atol=1e-6) "$w1 | $w2"
 
 # TODO: pass through to make sure we handle noise correctly
 function single_step_particle_gibbs(
@@ -31,9 +32,8 @@ function single_step_particle_gibbs(
         assess_weight, _ = assess(get_gen_fn(new_tr), get_args(new_tr), get_choices(new_tr))
        
         if i > 1
-            @assert isapprox(update_weight, assess_weight - get_score(tr), atol=1e-5) "$update_weight | $(assess_weight - get_score(tr))"
+            check_weights_equal_if_perfect_weights(update_weight, assess_weight - get_score(tr))
         end
-
 
         push!(trs, new_tr)
         push!(logweights, assess_weight - propose_weight)
