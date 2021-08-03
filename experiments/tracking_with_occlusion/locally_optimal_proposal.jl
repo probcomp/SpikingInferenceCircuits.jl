@@ -54,6 +54,16 @@ function step_x_dist(occₜ, vxₜ₋₁, xₜ₋₁) # TODO: there's a bug!!
     end
 end
 step_y_dist(vyₜ₋₁, yₜ₋₁) = vel_change_probs(vyₜ₋₁, yₜ₋₁) |> vp -> vel_probs_to_x_probs(vp, yₜ₋₁) |> normalize
+function vel_step_dist(xₜ, xₜ₋₁, vxₜ₋₁)
+    v_probs = vel_change_probs(vxₜ₋₁, xₜ₋₁)
+    x_likelihoods = [onehot(xₜ₋₁ + v, Positions())[xₜ] for v in Vels()]
+    unnormalized_probs = v_probs .* x_likelihoods
+    if sum(unnormalized_probs) > 0
+        return normalize(unnormalized_probs)
+    else # trace will have 0 probability; can return any pvec
+        return onehot(last(Vels()), Vels())
+    end
+end
 @gen (static) function _step_proposal(occₜ₋₁, xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, img)
     occluder_pos = get_occluder_pos(img)
     occₜ ~ Cat(onehot(occluder_pos, OccPos()))
@@ -67,6 +77,6 @@ step_y_dist(vyₜ₋₁, yₜ₋₁) = vel_change_probs(vyₜ₋₁, yₜ₋₁)
         isnothing(y_pos) ? step_y_dist(vyₜ₋₁, yₜ₋₁) : onehot(y_pos, SqPos())
     )
 
-    vxₜ ~ VelCat(onehot(xₜ - xₜ₋₁, Vels()))
-    vyₜ ~ VelCat(onehot(yₜ - yₜ₋₁, Vels()))
+    vxₜ ~ VelCat(vel_step_dist(xₜ, xₜ₋₁, vxₜ₋₁))
+    vyₜ ~ VelCat(vel_step_dist(yₜ, yₜ₋₁, vyₜ₋₁))
 end

@@ -1,13 +1,19 @@
 using DynamicModels
-# includet("model.jl")
-# includet("groundtruth_rendering.jl")
-# includet("prior_proposal.jl")
-# includet("visualize.jl")
+includet("model.jl")
+includet("groundtruth_rendering.jl")
+includet("prior_proposal.jl")
+includet("visualize.jl")
 includet("locally_optimal_proposal.jl")
 
-ProbEstimates.use_perfect_weights!()
+use_ngf() = true
 
-# model = @DynamicModel(init_latent_model, step_latent_model, obs_model, 5)
+if use_ngf()
+    ProbEstimates.use_noisy_weights!()
+else
+    ProbEstimates.use_perfect_weights!()
+end
+
+model = @DynamicModel(init_latent_model, step_latent_model, obs_model, 5)
 init_prop = @compile_initial_proposal(_init_proposal, 1)
 step_prop = @compile_step_proposal(_step_proposal, 5, 1)
 
@@ -20,28 +26,28 @@ tr, _ = generate(model, (15,), choicemap(
     (:steps => 5 => :latents => :occₜ => :val, 8)
 ));
 
-obs_choicemap_to_matrix(ch) =
-	[
-		ch[:img_inner => x => y => :pixel_color => :val]
-		for x=1:ImageSideLength(), y=1:ImageSideLength()
-	]
-obs_choicemap_to_vec_of_vec(ch) = [
-    [
-        ch[:img_inner => x => y => :pixel_color => :val]
-        for x=1:ImageSideLength()
-    ]
-    for y=1:ImageSideLength()
-]
+# obs_choicemap_to_matrix(ch) =
+# 	[
+# 		ch[:img_inner => x => y => :pixel_color => :val]
+# 		for x=1:ImageSideLength(), y=1:ImageSideLength()
+# 	]
+# obs_choicemap_to_vec_of_vec(ch) = [
+#     [
+#         ch[:img_inner => x => y => :pixel_color => :val]
+#         for x=1:ImageSideLength()
+#     ]
+#     for y=1:ImageSideLength()
+# ]
 
 NParticles = 10
-unweighted_trs, _ = dynamic_model_smc(
+unweighted_trs, weighted_trs = dynamic_model_smc(
     model, get_dynamic_model_obs(tr),
     cm -> (obs_choicemap_to_vec_of_vec(cm),),
     init_prop, step_prop, NParticles
 );
 
 (fig, t) = draw_gt_and_particles(tr, unweighted_trs,
-"$(length(first(unweighted_trs)))-particle SMC w/ locally-optimal proposal."
+"$(length(first(unweighted_trs)))-particle SMC w/ locally-optimal proposal. Run in $(use_ngf() ? "NeuralGen-Fast." : "Vanilla Gen.")"
 ); fig
 
 # TODO: enumerate.  Performance will probably be an issue.
