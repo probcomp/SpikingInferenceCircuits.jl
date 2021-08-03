@@ -1,6 +1,6 @@
+include("../utils/modeling_utils.jl")
 const Bernoulli = LCat([true, false])
 bern_probs(p) = [p, 1 - p]
-normalize(pvec) = pvec / sum(pvec)
 
 divides(x, divisor) = x % divisor == 0
 const primes_before_10 = (2, 3, 5, 7)
@@ -32,7 +32,8 @@ end
 
 n1_pvec(typ) =
     if typ == :prime
-        [1/100 for _=1:100]
+        # doesn't matter in this case, so have deterministic value to decrease weight estimate variance
+        onehot(1, 1:100)
     elseif typ == :multiple_of
         # only have multiples of small numbers
         [2 ≤ i ≤ 10 ? 1/9 : 0. for i=1:100]
@@ -43,7 +44,7 @@ max_interval_size() = 35
 n2_pvec(typ, n1) =
     if typ == :prime || typ == :multiple_of
         # in either case, n2 is irrelevant
-        [1/100 for _=1:100]
+        onehot(1, 1:100)
     elseif typ == :interval
         # sample n2 from among those numbers greater than n1
         normalize([n1 < i ≤ n1 + max_interval_size() && (i - n1) % 4 == 0 ? 1. : 0. for i=1:100])
