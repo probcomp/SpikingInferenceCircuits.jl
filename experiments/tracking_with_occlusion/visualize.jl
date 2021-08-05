@@ -80,6 +80,14 @@ function draw_tr(tr)
     return (fig, t)
 end
 
+function draw_obs(tr)
+    fig = Figure()
+    ax = Axis(fig[1, 1], aspect=DataAspect(), title="Observed Image")
+    t = Observable(0)
+    draw_obs!(ax, t, tr)
+    return (fig, t)
+end
+
 ### Inference drawing ###
 function draw_particle_sq_gt!(ax, t, tr, num_particles) # tr = observable giving trace at time $t
     poly!(

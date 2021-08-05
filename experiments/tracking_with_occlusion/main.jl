@@ -31,13 +31,13 @@ tr, _ = generate(model, (15,), choicemap(
 # 		ch[:img_inner => x => y => :pixel_color => :val]
 # 		for x=1:ImageSideLength(), y=1:ImageSideLength()
 # 	]
-# obs_choicemap_to_vec_of_vec(ch) = [
-#     [
-#         ch[:img_inner => x => y => :pixel_color => :val]
-#         for x=1:ImageSideLength()
-#     ]
-#     for y=1:ImageSideLength()
-# ]
+obs_choicemap_to_vec_of_vec(ch) = [
+    [
+        ch[:img_inner => x => y => :pixel_color => :val]
+        for x=1:ImageSideLength()
+    ]
+    for y=1:ImageSideLength()
+]
 
 NParticles = 10
 unweighted_trs, weighted_trs = dynamic_model_smc(
@@ -49,6 +49,8 @@ unweighted_trs, weighted_trs = dynamic_model_smc(
 (fig, t) = draw_gt_and_particles(tr, unweighted_trs,
 "$(length(first(unweighted_trs)))-particle SMC w/ locally-optimal proposal. Run in $(use_ngf() ? "NeuralGen-Fast." : "Vanilla Gen.")"
 ); fig
+
+# (fig, t) = draw_obs(tr); fig
 
 # TODO: enumerate.  Performance will probably be an issue.
 # Maybe using Marco's factor-graph library could help...but getting it set up
