@@ -8,11 +8,13 @@ ProbEstimates.use_noisy_weights!()
 
 model = @DynamicModel(initial_model, step_model, obs_model, 9)
 step_proposal_compiled = @compile_step_proposal(step_proposal, 9, 2)
+#step_proposal_compiled = @compile_step_proposal(step_model, 9, 2)
+#initial_proposal_compiled = @compile_initial_proposal(initial_model, 2)
 initial_proposal_compiled = @compile_initial_proposal(initial_proposal, 2)
 @load_generated_functions()
 
 NSTEPS = 9
-NPARTICLES = 40
+NPARTICLES = 30
 
 #tr = simulate(model, (NSTEPS,))
 

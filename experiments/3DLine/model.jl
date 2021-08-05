@@ -14,12 +14,6 @@ import NaNMath as nm
 # stick w coordinate observation
 
 
-
-# Next steps: make sure that every proposal is consistent under the model.
-# if its not, figure out a way around it. go step by step, starting with the
-# initial proposal. 
-
-
 # "exact" is another word for "true"
 
 # i think the bug here is that the model accounts for all distances, while
@@ -32,9 +26,22 @@ import NaNMath as nm
 # visualizations on the 3D model
 # compile the 3D model to the neural net. 
 
+# NOTES 8/3/2021
+# Changes for compiling included
+# the nanmath and the isfinite calls in onehot, maybe_one_off. After running again, all scores are NaN. 
+# Usually on a 20 particle run get mostly non-nan scores. May be worth debugging a bit with George.
+# Re-added nanmath and its fine. It's the isfinite calls in the distributions. 
+# like the drawings from Xuan's paper.
+
+# pseudo-marginal tumbling state (draw uniform, draw from previous).
+# 1D trajectories in paramecia.
+
+# given that a, b, c exists in a zebrafish brain, why is our paper better suited for addressing these quesitons. population code might be OK. site Lilach.
+# hippocampal replay concrete stuff.
+
+# 1D switch model for para data. 
 
 include("../../src/ProbEstimates/src/ProbEstimates.jl")
-ProbEstimates.use_perfect_weights!()
 using .ProbEstimates: Cat, LCat
 
 include("model_utils.jl")
@@ -64,9 +71,15 @@ round_to_pt1(x) = round(x, digits=1)
     # exact_θ = { :exact_θ } ~ LCat(θs())(
     #     onehot(round_to_pt1(atan(yₜ / xₜ)), θs()))
     exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(
-         maybe_one_off(round_to_pt1(nm.asin(zₜ / exact_r)), .4, ϕs()))
-    exact_θ = { :exact_θ } ~ LCat(θs())(
-         maybe_one_off(round_to_pt1(nm.atan(yₜ / xₜ)), .4, θs()))
+        maybe_one_off(round_to_pt1(nm.asin(zₜ / exact_r)), .4, ϕs()))
+   exact_θ = { :exact_θ } ~ LCat(θs())(
+       maybe_one_off(round_to_pt1(nm.atan(yₜ / xₜ)), .4, θs()))
+
+   # exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(
+   #      maybe_one_off(round_to_pt1(asin(zₜ / exact_r)), .4, ϕs()))
+   # exact_θ = { :exact_θ } ~ LCat(θs())(
+   #      maybe_one_off(round_to_pt1(atan(yₜ / xₜ)), .4, θs()))
+    
     r_max = max_distance_inside_grid(exact_ϕ, exact_θ)
     r_probvec = normalize(
         vcat(maybe_one_or_two_off(
@@ -91,8 +104,11 @@ end
     exact_r = round(norm_3d(xₜ, yₜ, zₜ))
     # exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(onehot(round_to_pt1(asin(zₜ / exact_r)), ϕs()))
     # exact_θ = { :exact_θ } ~ LCat(θs())(onehot(round_to_pt1(atan(yₜ / xₜ)), θs()))
+   # exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(maybe_one_off(round_to_pt1(asin(zₜ / exact_r)), .2, ϕs()))
+   # exact_θ = { :exact_θ } ~ LCat(θs())(maybe_one_off(round_to_pt1(atan(yₜ / xₜ)), .2, θs()))
     exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(maybe_one_off(round_to_pt1(nm.asin(zₜ / exact_r)), .2, ϕs()))
     exact_θ = { :exact_θ } ~ LCat(θs())(maybe_one_off(round_to_pt1(nm.atan(yₜ / xₜ)), .2, θs()))
+
     r_max = max_distance_inside_grid(exact_ϕ, exact_θ)
     r_probvec = normalize(
         vcat(maybe_one_or_two_off(
@@ -155,6 +171,13 @@ end
  #   vxₜ = { :vxₜ } ~ LCat(Vels())(maybe_one_off(round_to_pt1(xₜ - xₜ₋₁), .4, Vels()))
     #   vzₜ = { :vzₜ } ~ LCat(Vels())(maybe_one_off(round_to_pt1(zₜ - zₜ₋₁), .4, Vels()))
 
+
+
+# difference between the prior and the proposal is that step_model steps forward by generating a similar velocity, then
+# calculating the xyz coord, and calculating a distance (i.e. there is no role for distance perception, and no knowledge of the previous distance).
+# the step_proposal observes an az and alt, then says "the distance is probabably similar"; using the sampled distance, you
+# sample an x, y, and z and a velocity centered on the difference between the last and previous XYZ states. this way the model
+# favors explanations with similar velocities but the proposal on similar distances. proposal will ultimately let you propose bio-realistic distance metrics. 
 
 
 @gen (static) function step_proposal(vxₜ₋₁, vyₜ₋₁, vzₜ₋₁, xₜ₋₁, yₜ₋₁, zₜ₋₁,
