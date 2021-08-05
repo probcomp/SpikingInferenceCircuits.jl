@@ -16,8 +16,8 @@ smcaddr(t) = t == 0 ? :initial_step : (:subsequent_steps => :smcstep)
 
 sample_wta_addr(particle, var, t)   = Circuits.nest(smcaddr(t), :particles => particle => :propose        => :sub_gen_fns => var => :component => :sample => :wta)
 recip_score_addr(particle, var, t)  = Circuits.nest(smcaddr(t), :particles => particle => :propose        => :sub_gen_fns => var => :component => :sample => :counter)
-score_latent_addr(particle, var, t) = Circuits.nest(smcaddr(t), :particles => particle => :assess_latents => :sub_gen_fns => var => :component => :score)
-score_obs_addr(particle, var, t)    = Circuits.nest(smcaddr(t), :particles => particle => :assess_obs     => :sub_gen_fns => var => :component => :score)
+score_latent_addr(particle, var, t) = Circuits.nest(smcaddr(t), :particles => particle => :assess_latents => :sub_gen_fns => var => :component => :score => :counter)
+score_obs_addr(particle, var, t)    = Circuits.nest(smcaddr(t), :particles => particle => :assess_obs     => :sub_gen_fns => var => :component => :score => :counter)
 
 function find_varname_for_addr(events, addr, t, in_proposal)
     h = hierarchy_lookup(get_name_hierarchy(events), smcaddr(t))
@@ -85,6 +85,8 @@ function get_trains_for_step(
     println("Events filtered.")
     
     circuit_addr_dict = spiketrain_dict(relevant_evts)
+
+    # return (varaddr_fn_to_circuit_addrs, circuit_addr_dict)
 
     return Dict(
         (key, spike) => get_whichever_key_exists(circuit_addr_dict, (addr, spike) for addr in circuit_addrs)
