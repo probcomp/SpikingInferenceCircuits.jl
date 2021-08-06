@@ -66,7 +66,7 @@ end
 NPARTICLES() = 2
 # save_file() = "snn_runs/better_organized/velwalk1d/2timesteps2000interval/2021-07-19__18-23"
 # save_file() = "snn_runs/better_organized/velwalk1d/10timesteps2000interval/2021-07-20__02-42"
-# save_file() = "snn_runs/better_organized/velwalk1d/10timesteps200interval/2021-07-26__02-02"
+save_file() = "snn_runs/better_organized/velwalk1d/10timesteps200interval/2021-07-26__02-02"
 # save_file() = "snn_runs/better_organized/velwalk1d_pm/2timesteps2000interval/2021-07-20__18-46"
 # save_file() = "snn_runs/better_organized/velwalk1d_pm/10timesteps2000interval--failed/2021-07-21__01-30"
 # save_file() = "snn_runs/better_organized/velwalk1d_mh/2timesteps2000interval/2021-07-20__18-58"
@@ -74,7 +74,7 @@ NPARTICLES() = 2
 # save_file() = "snn_runs/better_organized/velwalk1d/slow_gates/2021-07-26__19-58"
 # save_file() = "snn_runs/better_organized/velwalk1d_pm/10timesteps2000interval/2021-07-26__02-08"
 # save_file() = "snn_runs/better_organized/velwalk1d/slow_gates/10step/2021-07-27__18-43"
-save_file() = "snn_runs/better_organized/velwalk1d_ann/2021-07-27__18-23"
+# save_file() = "snn_runs/better_organized/velwalk1d_ann/2021-07-27__18-23"
 
 obs           = [16, 15, 11, 10, 8, 14, 11, 17, 18, 18, 18]
 groundtruth_x = [16, 14, 12, 10, 8, 10, 12, 14, 16, 19, 20]
