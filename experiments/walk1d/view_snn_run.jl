@@ -61,7 +61,7 @@ end
 ### Script to create the figure for a particular run: ###
 NPARTICLES() = 2
 
-save_file() = "snn_runs/better_organized/walk1d/1khz_gates/2021-07-28__01-01"
+save_file() = "snn_runs/better_organized/walk1d/fastgates/2021-07-28__22-05"
 
 obs = [5, 8, 10, 17, 17, 15, 11, 13, 10, 10, 12]
 groundtruth_x = [5, 8, 12, 12, 14, 13, 11, 13, 10, 9, 12]
