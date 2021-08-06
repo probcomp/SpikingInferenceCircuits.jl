@@ -10,17 +10,17 @@ function smc(tr, n_particles, initprop, stepprop)
 end
 
 @gen (static) function _prior_init_proposal(obs)
-xₜ ~ Cat(unif(Positions()))
-vₜ ~ LCat(Vels())(unif(Vels()))
-return (xₜ, vₜ)
+    xₜ ~ Cat(unif(Positions()))
+    vₜ ~ LCat(Vels())(unif(Vels()))
+    return (xₜ, vₜ)
 end
 @gen (static) function _prior_step_proposal(xₜ₋₁, vₜ₋₁, obs)
-vₜ ~ LCat(Vels())(
-(1 - SwitchProb()) * discretized_gaussian(vₜ₋₁, VelStepStd(), Vels()) +
-SwitchProb()  * unif(Vels())
-)
-xₜ ~ Cat(onehot(xₜ₋₁ + vₜ, Positions()))
-return (xₜ, vₜ)
+    vₜ ~ LCat(Vels())(
+        (1 - SwitchProb()) * discretized_gaussian(vₜ₋₁, VelStepStd(), Vels()) +
+        SwitchProb()  * unif(Vels())
+    )
+    xₜ ~ Cat(onehot(xₜ₋₁ + vₜ, Positions()))
+    return (xₜ, vₜ)
 end
 
 prior_init_proposal = @compile_initial_proposal(_prior_init_proposal, 1)
