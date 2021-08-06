@@ -19,7 +19,7 @@ PulseTheta(
 )
 
 n_possibilities(θ::PulseTheta) = length(outputs(θ.θ))
-Circuits.abstract(θ::PulseTheta) = Theta(n_possibilities(θ.θ))
+Circuits.abstract(θ::PulseTheta) = Theta(n_possibilities(θ))
 Circuits.target(::PulseTheta) = Spiking()
 Circuits.inputs(θ::PulseTheta) =
     IndexedValues(
