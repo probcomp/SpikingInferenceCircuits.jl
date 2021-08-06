@@ -70,15 +70,15 @@ round_to_pt1(x) = round(x, digits=1)
     #     onehot(round_to_pt1(asin(zₜ / exact_r)), ϕs()))
     # exact_θ = { :exact_θ } ~ LCat(θs())(
     #     onehot(round_to_pt1(atan(yₜ / xₜ)), θs()))
-    exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(
-        maybe_one_off(round_to_pt1(nm.asin(zₜ / exact_r)), .4, ϕs()))
-   exact_θ = { :exact_θ } ~ LCat(θs())(
-       maybe_one_off(round_to_pt1(nm.atan(yₜ / xₜ)), .4, θs()))
+    # exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(
+    #     maybe_one_off(round_to_pt1(nm.asin(zₜ / exact_r)), .4, ϕs()))
+    # exact_θ = { :exact_θ } ~ LCat(θs())(
+    #    maybe_one_off(round_to_pt1(nm.atan(yₜ / xₜ)), .4, θs()))
 
-   # exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(
-   #      maybe_one_off(round_to_pt1(asin(zₜ / exact_r)), .4, ϕs()))
-   # exact_θ = { :exact_θ } ~ LCat(θs())(
-   #      maybe_one_off(round_to_pt1(atan(yₜ / xₜ)), .4, θs()))
+    exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(
+         maybe_one_off(round_to_pt1(asin(zₜ / exact_r)), .4, ϕs()))
+    exact_θ = { :exact_θ } ~ LCat(θs())(
+         maybe_one_off(round_to_pt1(atan(yₜ / xₜ)), .4, θs()))
     
     r_max = max_distance_inside_grid(exact_ϕ, exact_θ)
     r_probvec = normalize(
@@ -104,10 +104,10 @@ end
     exact_r = round(norm_3d(xₜ, yₜ, zₜ))
     # exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(onehot(round_to_pt1(asin(zₜ / exact_r)), ϕs()))
     # exact_θ = { :exact_θ } ~ LCat(θs())(onehot(round_to_pt1(atan(yₜ / xₜ)), θs()))
-   # exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(maybe_one_off(round_to_pt1(asin(zₜ / exact_r)), .2, ϕs()))
-   # exact_θ = { :exact_θ } ~ LCat(θs())(maybe_one_off(round_to_pt1(atan(yₜ / xₜ)), .2, θs()))
-    exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(maybe_one_off(round_to_pt1(nm.asin(zₜ / exact_r)), .2, ϕs()))
-    exact_θ = { :exact_θ } ~ LCat(θs())(maybe_one_off(round_to_pt1(nm.atan(yₜ / xₜ)), .2, θs()))
+    exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(maybe_one_off(round_to_pt1(asin(zₜ / exact_r)), .2, ϕs()))
+    exact_θ = { :exact_θ } ~ LCat(θs())(maybe_one_off(round_to_pt1(atan(yₜ / xₜ)), .2, θs()))
+    # exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(maybe_one_off(round_to_pt1(nm.asin(zₜ / exact_r)), .2, ϕs()))
+    # exact_θ = { :exact_θ } ~ LCat(θs())(maybe_one_off(round_to_pt1(nm.atan(yₜ / xₜ)), .2, θs()))
 
     r_max = max_distance_inside_grid(exact_ϕ, exact_θ)
     r_probvec = normalize(
@@ -258,8 +258,22 @@ function limit_delta_pos(p_prop, p_prev)
     end
 end
 
+
+function animate_azalt_trajectory(tr)
+    gt_obs_choices = get_choices(tr)
+    obs_θ = [gt_obs_choices[:steps => step => :obs => :obs_θ => :val] for step in 1:NSTEPS]
+    obs_ϕ = [gt_obs_choices[:steps => step => :obs => :obs_ϕ => :val] for step in 1:NSTEPS]
+    fig = Figure(resolution=(1000, 1000))
+    ax = Axis(fig[1,1])
+    hidedecorations!(ax)
+    lines!(ax, obs_θ, obs_ϕ, linestyle=:dash, linewidth=4, color=to_colormap(:thermal, length(obs_θ)))
+    scatter!(ax, obs_θ, obs_ϕ, markersize=25, color=to_colormap(:thermal, length(obs_θ)), marker=:rect)
+    display(fig)
+end
+
+
     
-function animate_azalt_movement(tr_list, anim_now)
+function animate_azalt_heatmap(tr_list, anim_now)
     azalt_matrices = zeros(NSTEPS+1, length(θs()), length(ϕs()))
     obs_matrices = zeros(NSTEPS+1, length(θs()), length(ϕs()))
     gt_obs_choices = get_choices(tr_list[1])
@@ -391,7 +405,7 @@ function render_pf_results(uw_traces, gt_trace, n_steps)
                                viewmode=:fit, aspect=(1,1,1), perspectiveness=0.0, protrusions=0, limits=lim,
                                elevation = 1.2*pi, azimuth= .7*pi)
     azalt_axis = fig[1, 1:2] = Axis(outer_padding= 400, fig)
-    observation_matrices, azalt_particle_matrices = animate_azalt_movement(uw_traces[end], false)
+    observation_matrices, azalt_particle_matrices = animate_azalt_heatmap(uw_traces[end], false)
     # scatter takes a list of tuples. want a list of lists of tuples as an f(t) and lift a node to that.
     time_node = Node(1)
     gt_coords = []
@@ -429,6 +443,8 @@ function render_pf_results(uw_traces, gt_trace, n_steps)
     f_gt(t) = convert(Vector{Point3f0}, gt_coords[t])
 #    scatter!(anim_axis, lift(t -> fp(t), time_node), color=lift(t -> fs(t), time_node), colormap=:grays, markersize=msize, alpha=.5)
     scatter!(particle_anim_axis, lift(t -> fp(t), time_node), color=gray_w_alpha, markersize=msize, alpha=.5)
+    scatter!(particle_anim_axis, lift(t -> f_gt(t), time_node), color=:red, markersize=msize)
+
     scatter!(gt_preyloc_axis, lift(t -> f_gt(t), time_node), color=:red, markersize=msize) #, marker='o')
     hm_obs(t) = observation_matrices[t, :, :]
     hm_exact(t) = azalt_particle_matrices[t, :, :]

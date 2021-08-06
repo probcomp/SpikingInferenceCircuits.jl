@@ -72,24 +72,31 @@ function para_3Dtrajectory_in_modelspace(p_id, n_steps)
 end
 
 
-function plot_horizontal_trajectory(p_id, n_steps)
+function plot_horizontal_trajectory(p_id, start_ind=0, end_ind=1)
     p_df = get_para(p_id)
+    if end_ind == 1
+        end_ind = length(p_df.x)
+    end
     tanksize = 1888
+    decimate_by = 5
     xgrid = Xs()
-    p_xcoords = [(x, 0, 0) for x in p_df.x][cutoff:end-cutoff]
+    p_xcoords = p_df.x[cutoff+start_ind:decimate_by:end_ind-cutoff]
+    p_zcoords = p_df.z[cutoff+start_ind:decimate_by:end_ind-cutoff]
+    p_xz = collect(zip(p_xcoords, p_zcoords))
     fig = Figure(resolution=(1000, 1000))
     time_node = Node(1)
     ax_anim = Axis(fig[1,1], title="Paramecium Trajectory")
     ax_hist = Axis(fig[2, 1], title="Delta X Distribution")
     ylims!(ax_anim, (-.1, .1))
     xlims!(ax_anim, (0, 1888))
-    f_pcoord(t) = p_xcoords[t]
-    scatter!(ax_anim, lift(x -> f_pcoord(x), time_node), color=:darkgreen, markersize=20)
-    hist!(ax_hist, diff(p_df.x[cutoff:end-cutoff])) 
+    f_pcoord(t, coords) = (coords[t], 0, 0)
+    scatter!(ax_anim, lift(x -> f_pcoord(x, p_zcoords), time_node), color=:darkgreen, markersize=20)
+    xlims!(ax_anim, (minimum(p_xcoords)-50, maximum(p_xcoords)+50))
+    hist!(ax_hist, diff(p_xcoords))
     display(fig)
     for i in 1:length(p_xcoords)
         time_node[] = i
-        sleep(.016)
+        sleep(.016*decimate_by*5)
     end
     return p_df.x[cutoff:end-cutoff]
 end
