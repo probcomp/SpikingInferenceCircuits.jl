@@ -80,6 +80,7 @@ using Gen
 nest(a, b) = a => b
 nest(a::Pair, b) = a.first => nest(a.second, b)
 
+### Line Specs ###
 abstract type LineSpec end
 function get_lines(specs, tr, spiketrain_data_args)
     spiketrain_data =
@@ -100,16 +101,34 @@ struct SampledValue <: Text; addr; end
 struct FwdScoreText <: Text; addr; end
 struct RecipScoreText <: Text; addr; end
 
-get_line(spec::SampledValue, tr, _) = "$(tr[spec.addr])" #"$(spec.addr)=$(tr[spec.addr])"
-get_line(spec::FwdScoreText, tr, _) = "$(get_fwd_score(tr, spec.addr))" # "P[$(spec.addr) ; Pa($(spec.addr))] ≈ $(get_fwd_score(tr, spec.addr))"
-get_line(spec::RecipScoreText, tr, _) = "$(get_recip_score(tr, spec.addr))" #"Q[$(spec.addr) ; Pa($(spec.addr))] ≈ $(get_recip_score(tr, spec.addr))"
+get_line(spec::SampledValue, tr, _) = "$(spec.addr)=$(tr[spec.addr])"
+get_line(spec::FwdScoreText, tr, _) = "P[$(spec.addr) ; Pa($(spec.addr))] ≈ $(get_fwd_score(tr, spec.addr))"
+get_line(spec::RecipScoreText, tr, _) = "1/Q[$(spec.addr) ; Pa($(spec.addr))] ≈ $(get_recip_score(tr, spec.addr))"
 
-get_label(spec::SampledValue) = "$(spec.addr) = "
-get_label(spec::FwdScoreText) = "P[$(spec.addr) ; Pa($(spec.addr))] ≈"
-get_label(spec::RecipScoreText) = "1/Q[$(spec.addr) ; Pa($(spec.addr))] ≈"
+# get_label(spec::SampledValue) = "$(spec.addr) = "
+# get_label(spec::FwdScoreText) = "P[$(spec.addr) ; Pa($(spec.addr))] ≈"
+# get_label(spec::RecipScoreText) = "1/Q[$(spec.addr) ; Pa($(spec.addr))] ≈"
+get_label(::Text) = ""
 
 get_fwd_score(tr, addr) = tr[nest(addr, :fwd_score)]
 get_recip_score(tr, addr) = tr[nest(addr, :recip_score)]
+
+### Grouped Line Specs ###
+struct LabeledLineGroup
+    label_spec::Text
+    line_specs::Vector{LineSpec}
+end
+get_lines(groups::Vector{LabeledLineGroup}, tr, args) =
+    get_lines(reduce(vcat, g.line_specs for g in groups), tr, args)
+get_labels(groups::Vector{LabeledLineGroup}) = get_labels(reduce(vcat, g.line_specs for g in groups))
+
+get_group_labels(groups::Vector{LabeledLineGroup}, tr) =
+    [ # list of (label, num lines in group) tuples for each group
+        (get_line(g.label_spec, tr), length(g.line_specs))
+        for g in groups
+    ]
+
+get_group_label(group::LabeledLineGroup, tr) = get_line(group.label_spec, tr)
 
 ### Spikes ###
 struct DenseValueSpiketrain
@@ -270,6 +289,7 @@ export LineSpec, get_line, get_lines, get_label, get_labels
 export SampledValue, FwdScoreText, RecipScoreText
 export VarValLine, ScoreLine, RecipScoreLine, FwdScoreLine
 export CountAssembly, NeuronInCountAssembly, IndLine
+export LabeledLineGroup, get_group_labels
 
 include("spiketrain_visualization.jl")
 export SpiketrainViz
