@@ -57,7 +57,7 @@ trace from that metadata, the LCat stores the count in the trace.
 Time estimates:
 - [x] [40 mins] Tracking sampled probability estimates in NG-F traces.
 - [x] [40 mins] Interface to produce some non-rendered output with strings, based on inference run.
-- [1.5 hr]    Interface + first pass of math to produce non-rendered spiketrains.
+- [x] [1.5 hr]    Interface + first pass of math to produce non-rendered spiketrains.
 - [1 hr]    Above --> Visualizations
 =#
 
@@ -90,6 +90,8 @@ function get_lines(specs, tr, spiketrain_data_args)
         end
     return [get_line(spec, tr, spiketrain_data) for spec in specs]
 end
+get_labels(lines) = map(get_label, lines)
+
 get_line(spec::LineSpec, tr) = get_line(spec, tr, nothing)
 
 ### Text ###
@@ -98,9 +100,13 @@ struct SampledValue <: Text; addr; end
 struct FwdScoreText <: Text; addr; end
 struct RecipScoreText <: Text; addr; end
 
-get_line(spec::SampledValue, tr, _) = "$(spec.addr)=$(tr[spec.addr])"
-get_line(spec::FwdScoreText, tr, _) = "P[$(spec.addr) ; Pa($(spec.addr))] ≈ $(get_fwd_score(tr, spec.addr))"
-get_line(spec::RecipScoreText, tr, _) = "Q[$(spec.addr) ; Pa($(spec.addr))] ≈ $(get_recip_score(tr, spec.addr))"
+get_line(spec::SampledValue, tr, _) = "$(tr[spec.addr])" #"$(spec.addr)=$(tr[spec.addr])"
+get_line(spec::FwdScoreText, tr, _) = "$(get_fwd_score(tr, spec.addr))" # "P[$(spec.addr) ; Pa($(spec.addr))] ≈ $(get_fwd_score(tr, spec.addr))"
+get_line(spec::RecipScoreText, tr, _) = "$(get_recip_score(tr, spec.addr))" #"Q[$(spec.addr) ; Pa($(spec.addr))] ≈ $(get_recip_score(tr, spec.addr))"
+
+get_label(spec::SampledValue) = "$(spec.addr) = "
+get_label(spec::FwdScoreText) = "P[$(spec.addr) ; Pa($(spec.addr))] ≈"
+get_label(spec::RecipScoreText) = "1/Q[$(spec.addr) ; Pa($(spec.addr))] ≈"
 
 get_fwd_score(tr, addr) = tr[nest(addr, :fwd_score)]
 get_recip_score(tr, addr) = tr[nest(addr, :recip_score)]
@@ -129,12 +135,26 @@ struct ScoreLine <: SpiketrainSpec
     addr
     line_to_show::SpikelineInScore
 end
+RecipScoreLine(addr, line_to_show) = ScoreLine(true, addr, line_to_show)
+FwdScoreLine(addr, line_to_show) = ScoreLine(false, addr, line_to_show)
 
 get_line(spec::VarValLine, tr, trains) = tr[spec.addr] == spec.value ? [trains.valtimes[spec.addr]] : []
 get_line(spec::ScoreLine, tr, trains) = get_score_line(spec.line_to_show, (spec.do_recip_score ? trains.recip_trains : trains.fwd_trains)[spec.addr])
-get_score_line(::IndLine, trains::DenseValueSpiketrain) = trains.ready_time
+get_score_line(::IndLine, trains::DenseValueSpiketrain) = [trains.ready_time]
 get_score_line(::CountAssembly, trains::DenseValueSpiketrain) = sort(reduce(vcat, trains.neuron_times))
 get_score_line(n::NeuronInCountAssembly, trains::DenseValueSpiketrain) = trains.neuron_times[n.idx]
+
+get_label(spec::VarValLine) = "$(spec.addr)=$(spec.value)"
+function get_label(spec::ScoreLine)
+    val_label = spec.do_recip_score ? "1/Q[$(spec.addr) ; Pa($(spec.addr))]" : "P[$(spec.addr) ; Pa($(spec.addr))]"
+    if spec.line_to_show isa IndLine
+        return "$val_label ready"
+    elseif spec.line_to_show isa CountAssembly
+        return "$val_label count"
+    elseif spec.line_to_show isa NeuronInCountAssembly
+        return "$val_label count - neuron $(spec.line_to_show.idx)"
+    end
+end
 
 function sample_spiketimes_for_trace(
     tr,
@@ -246,9 +266,12 @@ end
 DefaultInterSampleTimeDist() = Exponential(1 / MaxRate())
 DefaultToReadySpikeDist() = Exponential(1 / MaxRate())
 
-export LineSpec, get_line, get_lines
+export LineSpec, get_line, get_lines, get_label, get_labels
 export SampledValue, FwdScoreText, RecipScoreText
-export VarValLine, ScoreLine
+export VarValLine, ScoreLine, RecipScoreLine, FwdScoreLine
 export CountAssembly, NeuronInCountAssembly, IndLine
+
+include("spiketrain_visualization.jl")
+export SpiketrainViz
 
 end # module
