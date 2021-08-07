@@ -8,6 +8,9 @@ include("prior_proposal.jl")
 include("groundtruth_rendering.jl")
 @load_generated_functions()
 
+ImageSideLength() = 3
+OccluderLength() = 2
+
 latent_domains()     = (
     occₜ = positions(OccluderLength()),
     xₜ   = positions(SquareSideLength()),
@@ -18,7 +21,7 @@ latent_domains()     = (
 obs_domains() = (
     img_inner = SIC.DiscreteIRTransforms.ProductDomain([
         SIC.DiscreteIRTransforms.ProductDomain([
-            SIC.DiscreteIRTransforms.EnumeratedDomain([true, false])
+            SIC.DiscreteIRTransforms.EnumeratedDomain(PixelColors())
             for _=1:ImageSideLength()   
         ])
         for _=1:ImageSideLength()   
@@ -57,9 +60,9 @@ smccircuit = SMC(
             :img_inner,
             trace_addr -> begin
                 # trace addr will be
-                # x => y => :got_photon
+                # x => y => :pixel_color
                 (x, (y, rest)) = trace_addr
-                @assert rest == :got_photon
+                @assert rest == :pixel_color
                 x => y # input to proposal using `x => y` [strip the `:got_photon`]
             end
         )
@@ -71,30 +74,30 @@ smccircuit = SMC(
 println("SMC Circuit Constructed.")
 
 impl = Circuits.memoized_implement_deep(smccircuit, Spiking());
-println("Circuit fully implemented using Poisson Process neurons.")
+# println("Circuit fully implemented using Poisson Process neurons.")
 
-includet("../utils/simulation_utils.jl")
+# includet("../utils/simulation_utils.jl")
 
-matrix_to_vec_of_vecs(matrix) = [reshape(matrix[:, x], (:,)) for x=1:size(matrix)[2]] # matrix is indexed [y, x]
-occ = [2, 2, 2]; x = [1, 1, 1]; y = [3, 2, 1]; vx = [0, 0, 0]; vy = [-1, -1, -1]
-imgs = [matrix_to_vec_of_vecs(image_determ(args...)) for args in zip(occ, x, y)]
+# matrix_to_vec_of_vecs(matrix) = [reshape(matrix[:, x], (:,)) for x=1:size(matrix)[2]] # matrix is indexed [y, x]
+# occ = [2, 2, 2]; x = [1, 1, 1]; y = [3, 2, 1]; vx = [0, 0, 0]; vy = [-1, -1, -1]
+# imgs = [matrix_to_vec_of_vecs(image_determ(args...)) for args in zip(occ, x, y)]
 
-inputs = get_smc_circuit_inputs(
-    RUNTIME(), # number of ms to simulate for
-    INTER_OBS_INTERVAL(),      # send in a new observation every 1000 ms
-    [
-        [
-            :img_inner => x => y => :got_photon => (img[x][y] == 0 ? 2 : 1)
-            for x=1:length(img)
-                for y=1:length(img[x])
-        ]
-        for img in imgs
-    ]
-)
-println("Constructed input spike sequence.")
+# inputs = get_smc_circuit_inputs(
+#     RUNTIME(), # number of ms to simulate for
+#     INTER_OBS_INTERVAL(),      # send in a new observation every 1000 ms
+#     [
+#         [
+#             :img_inner => x => y => :got_photon => (img[x][y] == 0 ? 2 : 1)
+#             for x=1:length(img)
+#                 for y=1:length(img[x])
+#         ]
+#         for img in imgs
+#     ]
+# )
+# println("Constructed input spike sequence.")
 
-events = simulate_and_get_events(impl, RUNTIME(), inputs; dir=@__DIR__);
-println("Simulation completed!")
+# events = simulate_and_get_events(impl, RUNTIME(), inputs; dir=@__DIR__);
+# println("Simulation completed!")
 
-includet("../utils/spiketrain_utils.jl")
-inferred_states = get_smc_states(events, NPARTICLES())
+# includet("../utils/spiketrain_utils.jl")
+# inferred_states = get_smc_states(events, NPARTICLES())
