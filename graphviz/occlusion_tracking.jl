@@ -1,11 +1,12 @@
+using Revise
 using SpikingInferenceCircuits
 const SIC = SpikingInferenceCircuits
 using Circuits, SpikingCircuits
 using DynamicModels
 
-include("model.jl")
-include("prior_proposal.jl")
-include("groundtruth_rendering.jl")
+include("../experiments/tracking_with_occlusion/model.jl")
+include("../experiments/tracking_with_occlusion/prior_proposal.jl")
+include("../experiments/tracking_with_occlusion/groundtruth_rendering.jl")
 @load_generated_functions()
 
 ImageSideLength() = 3
@@ -33,7 +34,7 @@ NLATENTS() = length(latent_domains())
 NOBS()     = length(obs_domains()) # TODO: this is wrong
 NVARS()    = NLATENTS() + NOBS()
 
-includet("../utils/default_implementation_rules.jl")
+includet("../experiments/utils/default_implementation_rules.jl")
 println("Implementation rules loaded.")
 
 ### Run-specific hyperparams:
@@ -74,30 +75,3 @@ smccircuit = SMC(
 println("SMC Circuit Constructed.")
 
 impl = Circuits.memoized_implement_deep(smccircuit, Spiking());
-# println("Circuit fully implemented using Poisson Process neurons.")
-
-# includet("../utils/simulation_utils.jl")
-
-# matrix_to_vec_of_vecs(matrix) = [reshape(matrix[:, x], (:,)) for x=1:size(matrix)[2]] # matrix is indexed [y, x]
-# occ = [2, 2, 2]; x = [1, 1, 1]; y = [3, 2, 1]; vx = [0, 0, 0]; vy = [-1, -1, -1]
-# imgs = [matrix_to_vec_of_vecs(image_determ(args...)) for args in zip(occ, x, y)]
-
-# inputs = get_smc_circuit_inputs(
-#     RUNTIME(), # number of ms to simulate for
-#     INTER_OBS_INTERVAL(),      # send in a new observation every 1000 ms
-#     [
-#         [
-#             :img_inner => x => y => :got_photon => (img[x][y] == 0 ? 2 : 1)
-#             for x=1:length(img)
-#                 for y=1:length(img[x])
-#         ]
-#         for img in imgs
-#     ]
-# )
-# println("Constructed input spike sequence.")
-
-# events = simulate_and_get_events(impl, RUNTIME(), inputs; dir=@__DIR__);
-# println("Simulation completed!")
-
-# includet("../utils/spiketrain_utils.jl")
-# inferred_states = get_smc_states(events, NPARTICLES())

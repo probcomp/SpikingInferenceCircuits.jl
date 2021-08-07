@@ -1,5 +1,4 @@
 using Gen
-using ProbEstimates
 include("model_hyperparameters.jl")
 include("modeling_utils.jl")
 
