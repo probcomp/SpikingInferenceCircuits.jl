@@ -81,4 +81,12 @@ function weight_type()
     return weighttype
 end
 
+function with_weight_type(typ, f)
+    current_type = weight_type()
+    set_weighttype_to!(typ)
+    v = f()
+    set_weighttype_to!(current_type)
+    return v
+end
+
 use_noisy_weights!()
