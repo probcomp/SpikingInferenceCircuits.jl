@@ -82,6 +82,75 @@ function do_smc_inference_on_nums_and_save_fig(nums, n_particles, n_pgibbs_parti
     save(filename_for_smc_run(nums, n_particles, n_pgibbs_particles, n_rejuv_sweeps), f)
 end
 
+### Spiketrain figures:
+
+function get_num_possibilities(pvec, n)
+    possibilities = findall([i for (i, p) in enumerate(pvec) if p > 0])
+    if n == first(possibilities)
+        return possibilities[1:3]
+    elseif n == possibilities[end]
+        return possibilities[end-2:end]
+    else
+        idx = findfirst([i == n for i in possibilities])
+        return possibilities[(idx-1):(idx+1)]
+    end
+end
+function n1s(tr)
+    ch = get_submap(get_choices(tr), :init => :latents => :tree => :teminal)
+    n1 = ch[:n1 => :val]
+    n1vec = n1_pvec(ch[:typ => :val])
+    return get_num_possibilities(n1vec, n1)
+end
+function n2s(tr)
+    ch = get_submap(get_choices(tr), :init => :latents => :tree => :teminal)
+    n1 = ch[:n1 => :val]
+    n2 = ch[:n2 => :val]
+    n2vec = n2_pvec(ch[:typ => :val], n1)
+    return get_num_possibilities(n2vec, n2)
+end
+
+function make_spiketrain_fig(tr, neurons_to_show_indices=1:3; kwargs...)
+    nest_all_at = :init => :latents => :tree
+
+    ProbEstimates.Spiketrains.SpiketrainViz.CairoMakie.activate!()
+    assess_sampling_tree = Dict(
+        :is_terminal => [],
+        (:terminal => :typ) => [],
+        (:terminal => :n1) => [(:terminal => :typ)],
+        (:terminal => :n2) => [(:terminal => :typ), (:terminal => :n2)]
+    )
+    propose_sampling_tree = assess_sampling_tree
+    propose_addr_topological_order = [:is_terminal, :terminal => :typ, :terminal => :n1, :terminal => :n2]
+    
+    doms = [
+        [true, false],
+        [:prime, :multiple_of, :interval],
+        n1s(tr), n2s(tr)
+    ]
+    return ProbEstimates.Spiketrains.draw_spiketrain_group_fig(
+        ProbEstimates.Spiketrains.value_neuron_scores_groups(keys(doms), values(doms), neurons_to_show_indices), 
+        tr, (propose_sampling_tree, assess_sampling_tree, propose_addr_topological_order);
+        nest_all_at, kwargs...
+    )
+end
+
+### Code to do a bunch of runs:
+# specs = list of `(nums, n_particles, n_pgibbs_particles, n_rejuvenation_sweeps_per_timestep)`
+function do_smc_runs(specs)
+    for (i, spec) in enumerate(specs)
+    @info "On spec $i / $(length(specs))."
+    try_run() = try
+        do_inference_on_nums_and_save_fig(spec...)
+        true
+    catch e
+        @error "$e"
+        false
+    end
+    while !try_run();
+        println("attempting again...")
+    end
+end
+
 ### Script to actually do a particular run:
 
 early_nums = [30, 31, 33, 24, 21, 36, 39]
@@ -94,9 +163,6 @@ numss = [
     [21, 36, 31, 39, 30, 33, 21],
     [36, 31, 39, 30, 33, 21, 21]
 ]
-# for nums in numss
-#     do_inference_on_nums_and_save_fig(nums)
-# end
 
 # specs = Iterators.flatten(
 #     (
@@ -106,21 +172,9 @@ numss = [
 #     )
 #     for n_pg in (2, 10, 100)
 # ) |> collect
+# do_smc_runs(specs)
+# do_enumeration_save_fig(late_nums)
 
-# for (i, spec) in enumerate(specs)
-#     @info "On spec $i / $(length(specs))."
-#     try_run() = try
-#         do_inference_on_nums_and_save_fig(spec...)
-#         true
-#     catch e
-#         @error "$e"
-#         false
-#     end
-#     while !try_run();
-#         println("attempting again...")
-#     end;
-# end
-do_enumeration_save_fig(late_nums)
-
-# f = visualize_weighted_traces(end_weighted_traces; title=get_title())
-
+### Spiketrain Figure:
+(_, weighted_trs) = do_smc_inference(trace_with_nums(nums), n_particles, n_pgibbs_particles, n_rejuv_sweeps)
+f = make_spiketrain_fig(last(unweighted_trs)[1]; resolution=(600, 450), title="Dynamically Weighted Spike Code from Inference")
