@@ -124,13 +124,23 @@ function make_spiketrain_fig(tr, neurons_to_show_indices=1:3; kwargs...)
     propose_sampling_tree = assess_sampling_tree
     propose_addr_topological_order = [:is_terminal, :terminal => :typ, :terminal => :n1, :terminal => :n2]
     
+    addr_to_name = Dict(
+        :is_terminal => :is_term,
+        (:terminal => :typ) => :typ,
+        (:terminal => :n1) => :param1,
+        (:terminal => :n2) => :param2,
+    )
+
     doms = [
         [true, false],
         [:prime, :multiple_of, :interval],
         n1s(tr), n2s(tr)
     ]
     return ProbEstimates.Spiketrains.draw_spiketrain_group_fig(
-        ProbEstimates.Spiketrains.value_neuron_scores_groups(propose_addr_topological_order, doms, neurons_to_show_indices), 
+        ProbEstimates.Spiketrains.value_neuron_scores_groups(
+            propose_addr_topological_order, doms, neurons_to_show_indices,
+            addr_to_name=(a -> addr_to_name[a])
+        ), 
         tr, (propose_sampling_tree, assess_sampling_tree, propose_addr_topological_order);
         nest_all_at, kwargs...
     )
@@ -180,5 +190,13 @@ numss = [
 
 ### Spiketrain Figure:
 (unweighted_trs, weighted_trs) = do_smc_inference(trace_with_nums(late_nums), 50, 2, 1)
-get_f(i) = make_spiketrain_fig(first(unweighted_trs)[i]; resolution=(600, 450), figure_title="Dynamically Weighted Spike Code from Inference")
-get_f(1)
+get_f(i) = make_spiketrain_fig(first(unweighted_trs)[i]; resolution=(600, 600 * 3/4), figure_title="Dynamically Weighted Spike Code from Inference")
+function get_fig()
+    for i=1:100
+        try
+            return get_f(i)
+        catch e
+        end
+    end
+end
+ProbEstimates.Spiketrains.SpiketrainViz.save("concept_learning.pdf", get_fig())
