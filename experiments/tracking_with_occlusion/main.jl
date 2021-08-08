@@ -19,18 +19,6 @@ step_prop = @compile_step_proposal(_step_proposal, 5, 1)
 
 @load_generated_functions()
 
-tr, _ = generate(model, (15,), choicemap(
-	(:init => :latents => :xₜ => :val, 1),
-	(:init => :latents => :vxₜ => :val, 2),
-    (:init => :latents => :occₜ => :val, 8),
-    (:steps => 5 => :latents => :occₜ => :val, 8)
-));
-
-# obs_choicemap_to_matrix(ch) =
-# 	[
-# 		ch[:img_inner => x => y => :pixel_color => :val]
-# 		for x=1:ImageSideLength(), y=1:ImageSideLength()
-# 	]
 obs_choicemap_to_vec_of_vec(ch) = [
     [
         ch[:img_inner => x => y => :pixel_color => :val]
@@ -39,27 +27,20 @@ obs_choicemap_to_vec_of_vec(ch) = [
     for y=1:ImageSideLength()
 ]
 
-NParticles = 10
-unweighted_trs, weighted_trs = dynamic_model_smc(
-    model, get_dynamic_model_obs(tr),
+### Run inference:
+do_inference(gt_tr; n_particles=10) = dynamic_model_smc(
+    model, get_dynamic_model_obs(gt_tr),
     cm -> (obs_choicemap_to_vec_of_vec(cm),),
-    init_prop, step_prop, NParticles
+    init_prop, step_prop, n_particles
 );
 
-# (fig, t) = draw_gt_and_particles(tr, unweighted_trs,
-# "$(length(first(unweighted_trs)))-particle SMC w/ locally-optimal proposal. Run in $(use_ngf() ? "NeuralGen-Fast." : "Vanilla Gen.")"
-# ); fig
-
-# (fig, t) = draw_obs(tr); fig
-
-# TODO: enumerate.  Performance will probably be an issue.
-# Maybe using Marco's factor-graph library could help...but getting it set up
-# will take a decent amount of work.
-# domains() = (xₜ=SqPos(), yₜ=SqPos(), vxₜ=Vels(), vyₜ=Vels(), occ=OccPos())
-# probs = enumeration_bayes_filter_from_groundtruth(
-#     tr, init_latent_model, init_step_model, obs_model,
-#     domains()
-# ) |> DynamicModels.nest_all_addrs_at_val |> collect
+function make_gt_particle_viz(gt_tr, unweighted_inferred_trs)
+    GLMakie.activate!()
+    nparticles = length(first(unweighted_trs))
+    draw_gt_and_particles(tr, unweighted_trs,
+    "$nparticles-particle SMC w/ locally-optimal proposal. Run in $(use_ngf() ? "NeuralGen-Fast." : "Vanilla Gen.")"
+    );
+end
 
 function surround3(ch, a, dom)
     v = ch[a => :val]
@@ -71,15 +52,16 @@ function surround3(ch, a, dom)
         return v:(v+2)
     end
 end
-latent_domains(ch)     = (
-    occₜ = surround3(ch, :occₜ, positions(OccluderLength())), #positions(OccluderLength()),
-    xₜ   = surround3(ch, :xₜ, positions(SquareSideLength())), #positions(SquareSideLength()),
-    yₜ   = surround3(ch, :yₜ, positions(SquareSideLength())), #positions(SquareSideLength()),
+latent_domains_for_viz(ch)     = (
+    occₜ = surround3(ch, :occₜ, positions(OccluderLength())),
+    xₜ   = surround3(ch, :xₜ, positions(SquareSideLength())),
+    yₜ   = surround3(ch, :yₜ, positions(SquareSideLength())),
     vxₜ  = surround3(ch, :vxₜ, Vels()),
     vyₜ  = surround3(ch, :vyₜ, Vels())
 )
 
 function make_spiketrain_fig(tr, neurons_to_show_indices=1:3; nest_all_at, kwargs...)
+    ProbEstimates.Spiketrains.SpiketrainViz.CairoMakie.activate!()
     propose_sampling_tree = Dict(
         :occₜ => [], :xₜ => [:occₜ], :yₜ => [],
         :vxₜ => [:xₜ], :vyₜ => [:yₜ]
@@ -99,4 +81,29 @@ function make_spiketrain_fig(tr, neurons_to_show_indices=1:3; nest_all_at, kwarg
     )
 end
 
-f = make_spiketrain_fig(last(unweighted_trs)[1], 1:3; nest_all_at=(:steps => 2 => :latents))
+
+### Generate a particular trace:
+occluded_bounce_constraints() = choicemap(
+	(:init => :latents => :xₜ => :val, 1),
+	(:init => :latents => :vxₜ => :val, 2),
+    (:init => :latents => :occₜ => :val, 8),
+    (:steps => 5 => :latents => :occₜ => :val, 8)
+)
+
+generate_occluded_bounce_tr() = generate(model, (15,), occluded_bounce_constraints())
+
+### Script to run inference + make visualizations
+gt_tr = generate_occluded_bounce_tr()
+(unweighed_trs, _) = do_inference(gt_tr)
+
+# Inference results animation:
+(fig, t) = make_gt_particle_viz(gt_tr, unweighed_trs); fig
+
+# Spiketrain figure:
+f = make_spiketrain_fig(
+    last(unweighted_trs)[1], 1:3; nest_all_at=(:steps => 2 => :latents),
+    resolution=(600, 450), figure_title="Dynamically Weighted Spike Code from Inference"
+)
+
+# Draw observations:
+# (fig, t) = draw_obs(tr); fig
