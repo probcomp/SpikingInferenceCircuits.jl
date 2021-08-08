@@ -65,53 +65,8 @@ xvaltime = only(vcat(xv1, xv2)); yvaltime = only(vcat(yv1, yv2)); zvaltime = onl
 @test first(zfwd) > max(xvaltime, yvaltime, zvaltime)
 
 
-### Test visualization ###
-# lines_for_addr(a) = [
-#     VarValLine(a, 1), VarValLine(a, 2), SampledValue(a),    
-    
-#     # RecipScoreLine(a, CountAssembly()),
-#     [RecipScoreLine(a, NeuronInCountAssembly(i)) for i=1:5]...,
-#     RecipScoreLine(a, IndLine()),
-#     RecipScoreText(a),
-
-#     [FwdScoreLine(a, NeuronInCountAssembly(i)) for i=1:5]...,
-#     FwdScoreLine(a, IndLine()),
-#     FwdScoreText(a),
-# ]
-# linespecs = [
-#    lines_for_addr(:x)...,
-#    lines_for_addr(:y)...,
-#    lines_for_addr(:z)...
-# ]
-# lines = get_lines(linespecs, tr,
-#     (propose_sampling_tree, assess_sampling_tree, propose_addr_topological_order)
-# )
-# labels = get_labels(linespecs)
-# SpiketrainViz.draw_spiketrain_figure(lines; labels, xmin=0, resolution=(1280, 1000))
-
-
-groups_for_addr(a) = [
-    LabeledLineGroup(SampledValue(a), [VarValLine(a, 1), VarValLine(a, 2)]),
-    LabeledLineGroup(RecipScoreText(a), [
-        [RecipScoreLine(a, NeuronInCountAssembly(i)) for i=1:5]...,
-        RecipScoreLine(a, IndLine())
-    ]),
-    LabeledLineGroup(FwdScoreText(a), [
-        [FwdScoreLine(a, NeuronInCountAssembly(i)) for i=1:5]...,
-        FwdScoreLine(a, IndLine())
-    ]),
-]
-
-linegroups = [
-    groups_for_addr(:x)...,
-    groups_for_addr(:y)...,
-    groups_for_addr(:z)...
-]
-
-lines = get_lines(linegroups, tr,
+### Test visualization:
+f = draw_spiketrain_group_fig(
+    value_neuron_scores_groups([:x, :y, :z], [1:2 for _=1:3]), tr,
     (propose_sampling_tree, assess_sampling_tree, propose_addr_topological_order)
 )
-labels = get_labels(linegroups)
-grouplabels = get_group_labels(linegroups, tr)
-
-f = SpiketrainViz.draw_spiketrain_figure(lines; labels, grouplabels, xmin=0, resolution=(1280, 1000));

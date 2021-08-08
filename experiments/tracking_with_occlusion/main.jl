@@ -60,3 +60,37 @@ unweighted_trs, weighted_trs = dynamic_model_smc(
 #     tr, init_latent_model, init_step_model, obs_model,
 #     domains()
 # ) |> DynamicModels.nest_all_addrs_at_val |> collect
+
+
+latent_domains()     = (
+    occₜ = positions(OccluderLength()),
+    xₜ   = positions(SquareSideLength()),
+    yₜ   = positions(SquareSideLength()),
+    vxₜ  = Vels(),
+    vyₜ  = Vels()
+)
+
+function make_spiketrain_fig(inferred_ch)
+    propose_sampling_tree = Dict(
+        :occₜ => [], :xₜ => [:occₜ], :yₜ => [],
+        :vxₜ => [:xₜ], :vyₜ => [:yₜ]
+    )
+    assess_sampling_tree = Dict(
+        :occₜ => [], :vxₜ => [], :vyₜ => [],
+        :xₜ => [:occₜ, :vxₜ],
+        :yₜ => [:vyₜ]
+    )
+    propose_addr_topological_order = [:occₜ, :xₜ, :yₜ, :vxₜ, :vyₜ]
+    
+    return ProbEstimates.Spiketrains.draw_spiketrain_group_fig(
+        ProbEstimates.Spiketrains.value_neuron_scores_groups(keys(latent_domains()), values(latent_domains())), inferred_ch,
+        (propose_sampling_tree, assess_sampling_tree, propose_addr_topological_order)
+    )
+end
+
+f = make_spiketrain_fig(
+    get_submap(
+        last(unweighted_trs)[1] |> get_choices,
+        :steps => 2 => :latents
+    )
+)

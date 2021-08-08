@@ -89,7 +89,7 @@ end
 ### For instance when we use `assess` to calculate the reciprocal weight during PG
 function fwd_prob_estimate(tr::CatTrace)
     est = fwd_prob_estimate(fwd_truncate(tr.probs)[tr.idx])
-    @assert isnothing(tr.fwd_score)
+    # @assert isnothing(tr.fwd_score)
     tr.fwd_score = est
     return est
 end

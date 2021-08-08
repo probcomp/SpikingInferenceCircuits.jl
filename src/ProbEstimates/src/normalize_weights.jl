@@ -43,6 +43,11 @@ end
 
 function autonormalize_weights(log_weights, k, speedup_factor, repeater_rate)
     rates = exp.(log_weights)
+
+    if sum(rates) == 0.
+        return (-Inf, [-Inf for _ in log_weights])
+    end
+
     num_accumulated = 0
     num_speedups = 0
     total_time_passed = 0

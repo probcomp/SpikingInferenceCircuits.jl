@@ -12,7 +12,7 @@ export draw_spiketrain_figure, get_spiketrain_figure
         resolution=(1280, 720),
         figure_title="Spiketrain",
         time=0.,
-        xmin=nothing, xmax=nothing, # min and max displayed x value
+        xmin=0., xmax=nothing, # min and max displayed x value
         xlabel="Time (ms)"
     )
 """
@@ -31,7 +31,7 @@ function get_spiketrain_figure(
     resolution=(1280, 720),
     figure_title="Spiketrain",
     time=0.,
-    xmin=nothing, xmax=nothing, # min and max displayed x value
+    xmin=0., xmax=nothing, # min and max displayed x value
     xlabel="Time (ms)"
 )
     f = Figure(;resolution)

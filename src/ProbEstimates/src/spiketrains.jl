@@ -82,10 +82,10 @@ nest(a::Pair, b) = a.first => nest(a.second, b)
 
 ### Line Specs ###
 abstract type LineSpec end
-function get_lines(specs, tr, spiketrain_data_args)
+function get_lines(specs, tr, spiketrain_data_args; nest_all_at=nothing)
     spiketrain_data =
         if any(spec isa SpiketrainSpec for spec in specs)
-            sample_spiketimes_for_trace(tr, spiketrain_data_args...)
+            sample_spiketimes_for_trace(tr, spiketrain_data_args...; nest_all_at)
         else
             nothing
         end
@@ -181,21 +181,23 @@ function sample_spiketimes_for_trace(
     propose_sampling_tree, # as Dict(addr -> [list of parent addrs])
     assess_sampling_tree,
     propose_addr_topological_order,
-    to_ready_spike_dist
+    to_ready_spike_dist;
+    nest_all_at=nothing
 )
     valtimes = sampled_value_times(inter_sample_time_dist, propose_sampling_tree, propose_addr_topological_order)
-    recip_times = recip_spiketimes(valtimes, propose_addr_topological_order, tr, AssemblySize(), MaxRate(), K_recip(), to_ready_spike_dist)
+    recip_times = recip_spiketimes(valtimes, propose_addr_topological_order, tr, AssemblySize(), MaxRate(), K_recip(), to_ready_spike_dist; nest_all_at)
     fwd_times   = fwd_spiketimes(
         fwd_score_ready_times(valtimes, assess_sampling_tree),
-        keys(assess_sampling_tree), tr, AssemblySize(), MaxRate(), K_fwd(), to_ready_spike_dist
+        keys(assess_sampling_tree), tr, AssemblySize(), MaxRate(), K_fwd(), to_ready_spike_dist; nest_all_at
     )
 
     return ISSpiketrains(valtimes, recip_times, fwd_times)
 end
-sample_spiketimes_for_trace(tr, propose_sampling_tree, assess_sampling_tree, propose_addr_topological_order) =
+sample_spiketimes_for_trace(tr, propose_sampling_tree, assess_sampling_tree, propose_addr_topological_order; nest_all_at=nothing) =
     sample_spiketimes_for_trace(
         tr, DefaultInterSampleTimeDist(), propose_sampling_tree,
-        assess_sampling_tree, propose_addr_topological_order, DefaultToReadySpikeDist()
+        assess_sampling_tree, propose_addr_topological_order, DefaultToReadySpikeDist();
+        nest_all_at
     )
 
 fwd_score_ready_times(propose_ready_times, assess_sampling_tree) = Dict(
@@ -225,8 +227,10 @@ function recip_spiketimes(
     assembly_size,
     neuron_rate,
     count_threshold,
-    dist_to_ready_spike
+    dist_to_ready_spike;
+    nest_all_at
 )
+    ch = isnothing()
     times = Dict{Any, DenseValueSpiketrain}() # addr => [ [ times at which this neuron spikes ] for i=1:assembly_size ]
     for addr in addrs
         num_spikes = get_recip_score(tr, addr) * count_threshold |> to_int
@@ -285,13 +289,48 @@ end
 DefaultInterSampleTimeDist() = Exponential(1 / MaxRate())
 DefaultToReadySpikeDist() = Exponential(1 / MaxRate())
 
+### Specs for some standard visualization types
+value_neuron_scores_group(a, var_domain, neurons_to_show_indices=1:5) = [
+    LabeledLineGroup(SampledValue(a), [VarValLine(a, v) for v in var_domain]),
+    LabeledLineGroup(RecipScoreText(a), [
+        [RecipScoreLine(a, NeuronInCountAssembly(i)) for i in neurons_to_show_indices]...,
+        RecipScoreLine(a, IndLine())
+    ]),
+    LabeledLineGroup(FwdScoreText(a), [
+        [FwdScoreLine(a, NeuronInCountAssembly(i)) for i in neurons_to_show_indices]...,
+        FwdScoreLine(a, IndLine())
+    ]),
+]
+value_neuron_scores_groups(addrs, var_domains, neurons_to_show_indices=1:5) =
+    Iterators.flatten(
+        value_neuron_scores_group(a, d, neurons_to_show_indices)
+        for (a, d) in zip(addrs, var_domains)
+    ) |> collect
+
+### SpiketrainViz
+include("spiketrain_visualization.jl")
+
+function draw_spiketrain_group_fig(groupspecs, tr,
+    (prop_sample_tree, assess_sample_tree, prop_addr_top_order);
+    resolution=(1280, 720)
+)
+    lines = get_lines(groupspecs, tr,
+        (prop_sample_tree, assess_sample_tree, prop_addr_top_order)
+    )
+    labels = get_labels(groupspecs)
+    group_labels = get_group_labels(groupspecs, tr)
+    return SpiketrainViz.draw_spiketrain_figure(lines; labels, group_labels, xmin=0, resolution)
+end
+
+### Exports
 export LineSpec, get_line, get_lines, get_label, get_labels
 export SampledValue, FwdScoreText, RecipScoreText
 export VarValLine, ScoreLine, RecipScoreLine, FwdScoreLine
 export CountAssembly, NeuronInCountAssembly, IndLine
 export LabeledLineGroup, get_group_labels
+export value_neuron_scores_groups, value_neuron_scores_group
 
-include("spiketrain_visualization.jl")
 export SpiketrainViz
+export draw_spiketrain_group_fig
 
 end # module

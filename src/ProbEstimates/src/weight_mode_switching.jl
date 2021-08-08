@@ -49,12 +49,18 @@ fwd_pe(p) = rand(Binomial(K_fwd(), p))/K_fwd()
 function recip_pe(p)
     if p < 0.000001
         Inf
+    elseif p == 1.
+        1.
     else
         if DoRecipPECheck()
             @assert p ≥ MinProb() * (1 - 1e-6)
             @assert K_recip() > zero(K_recip())
         end
-        rand(NegativeBinomial(K_recip(), p))/K_recip() + 1
+        try
+            rand(NegativeBinomial(K_recip(), p))/K_recip() + 1
+        catch e
+            @error "$(K_recip()), $p" exception=(e, catch_backtrace())
+        end
     end
 end
 
