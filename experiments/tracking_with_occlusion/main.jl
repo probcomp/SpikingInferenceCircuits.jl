@@ -2,7 +2,7 @@ using DynamicModels
 includet("model.jl")
 includet("groundtruth_rendering.jl")
 includet("prior_proposal.jl")
-includet("visualize.jl")
+# includet("visualize.jl")
 includet("locally_optimal_proposal.jl")
 
 use_ngf() = true
@@ -46,9 +46,9 @@ unweighted_trs, weighted_trs = dynamic_model_smc(
     init_prop, step_prop, NParticles
 );
 
-(fig, t) = draw_gt_and_particles(tr, unweighted_trs,
-"$(length(first(unweighted_trs)))-particle SMC w/ locally-optimal proposal. Run in $(use_ngf() ? "NeuralGen-Fast." : "Vanilla Gen.")"
-); fig
+# (fig, t) = draw_gt_and_particles(tr, unweighted_trs,
+# "$(length(first(unweighted_trs)))-particle SMC w/ locally-optimal proposal. Run in $(use_ngf() ? "NeuralGen-Fast." : "Vanilla Gen.")"
+# ); fig
 
 # (fig, t) = draw_obs(tr); fig
 
@@ -70,7 +70,7 @@ latent_domains()     = (
     vyₜ  = Vels()
 )
 
-function make_spiketrain_fig(inferred_ch; nest_all_at)
+function make_spiketrain_fig(inferred_ch, neurons_to_show_indices=1:3; kwargs...)
     propose_sampling_tree = Dict(
         :occₜ => [], :xₜ => [:occₜ], :yₜ => [],
         :vxₜ => [:xₜ], :vyₜ => [:yₜ]
@@ -83,10 +83,10 @@ function make_spiketrain_fig(inferred_ch; nest_all_at)
     propose_addr_topological_order = [:occₜ, :xₜ, :yₜ, :vxₜ, :vyₜ]
     
     return ProbEstimates.Spiketrains.draw_spiketrain_group_fig(
-        ProbEstimates.Spiketrains.value_neuron_scores_groups(keys(latent_domains()), values(latent_domains())), inferred_ch,
+        ProbEstimates.Spiketrains.value_neuron_scores_groups(keys(latent_domains()), values(latent_domains()), neurons_to_show_indices), inferred_ch,
         (propose_sampling_tree, assess_sampling_tree, propose_addr_topological_order);
-        nest_all_at
+        kwargs...
     )
 end
 
-f = make_spiketrain_fig(last(unweighted_trs)[1]; nest_all_at=(:steps => 2 => :latents))
+f = make_spiketrain_fig(last(unweighted_trs)[1], 1:3; nest_all_at=(:steps => 2 => :latents))
