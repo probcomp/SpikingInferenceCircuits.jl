@@ -85,8 +85,10 @@ end
 ### Spiketrain figures:
 
 function get_num_possibilities(pvec, n)
-    possibilities = findall([i for (i, p) in enumerate(pvec) if p > 0])
-    if n == first(possibilities)
+    possibilities = [i for (i, p) in enumerate(pvec) if p > 0]
+    if length(possibilities) < 3
+        return possibilities
+    elseif n == first(possibilities)
         return possibilities[1:3]
     elseif n == possibilities[end]
         return possibilities[end-2:end]
@@ -96,13 +98,13 @@ function get_num_possibilities(pvec, n)
     end
 end
 function n1s(tr)
-    ch = get_submap(get_choices(tr), :init => :latents => :tree => :teminal)
+    ch = get_submap(get_choices(tr), :init => :latents => :tree => :terminal)
     n1 = ch[:n1 => :val]
     n1vec = n1_pvec(ch[:typ => :val])
     return get_num_possibilities(n1vec, n1)
 end
 function n2s(tr)
-    ch = get_submap(get_choices(tr), :init => :latents => :tree => :teminal)
+    ch = get_submap(get_choices(tr), :init => :latents => :tree => :terminal)
     n1 = ch[:n1 => :val]
     n2 = ch[:n2 => :val]
     n2vec = n2_pvec(ch[:typ => :val], n1)
@@ -117,7 +119,7 @@ function make_spiketrain_fig(tr, neurons_to_show_indices=1:3; kwargs...)
         :is_terminal => [],
         (:terminal => :typ) => [],
         (:terminal => :n1) => [(:terminal => :typ)],
-        (:terminal => :n2) => [(:terminal => :typ), (:terminal => :n2)]
+        (:terminal => :n2) => [(:terminal => :typ), (:terminal => :n1)]
     )
     propose_sampling_tree = assess_sampling_tree
     propose_addr_topological_order = [:is_terminal, :terminal => :typ, :terminal => :n1, :terminal => :n2]
@@ -128,7 +130,7 @@ function make_spiketrain_fig(tr, neurons_to_show_indices=1:3; kwargs...)
         n1s(tr), n2s(tr)
     ]
     return ProbEstimates.Spiketrains.draw_spiketrain_group_fig(
-        ProbEstimates.Spiketrains.value_neuron_scores_groups(keys(doms), values(doms), neurons_to_show_indices), 
+        ProbEstimates.Spiketrains.value_neuron_scores_groups(propose_addr_topological_order, doms, neurons_to_show_indices), 
         tr, (propose_sampling_tree, assess_sampling_tree, propose_addr_topological_order);
         nest_all_at, kwargs...
     )
@@ -138,16 +140,17 @@ end
 # specs = list of `(nums, n_particles, n_pgibbs_particles, n_rejuvenation_sweeps_per_timestep)`
 function do_smc_runs(specs)
     for (i, spec) in enumerate(specs)
-    @info "On spec $i / $(length(specs))."
-    try_run() = try
-        do_inference_on_nums_and_save_fig(spec...)
-        true
-    catch e
-        @error "$e"
-        false
-    end
-    while !try_run();
-        println("attempting again...")
+        @info "On spec $i / $(length(specs))."
+        try_run() = try
+            do_inference_on_nums_and_save_fig(spec...)
+            true
+        catch e
+            @error "$e"
+            false
+        end
+        while !try_run();
+            println("attempting again...")
+        end
     end
 end
 
@@ -176,5 +179,6 @@ numss = [
 # do_enumeration_save_fig(late_nums)
 
 ### Spiketrain Figure:
-(_, weighted_trs) = do_smc_inference(trace_with_nums(nums), n_particles, n_pgibbs_particles, n_rejuv_sweeps)
-f = make_spiketrain_fig(last(unweighted_trs)[1]; resolution=(600, 450), title="Dynamically Weighted Spike Code from Inference")
+(unweighted_trs, weighted_trs) = do_smc_inference(trace_with_nums(late_nums), 50, 2, 1)
+get_f(i) = make_spiketrain_fig(first(unweighted_trs)[i]; resolution=(600, 450), figure_title="Dynamically Weighted Spike Code from Inference")
+get_f(1)
