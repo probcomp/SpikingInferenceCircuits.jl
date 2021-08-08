@@ -103,8 +103,8 @@ struct FwdScoreText <: Text; addr; end
 struct RecipScoreText <: Text; addr; end
 
 get_line(spec::SampledValue, tr, a; nest_all_at) = "$(spec.addr)=$(tr[nest(nest_all_at, spec.addr)])"
-get_line(spec::FwdScoreText, tr, a; nest_all_at) = "P[$(spec.addr) ; Pa($(spec.addr))] ≈ $(get_fwd_score(get_ch(tr, nest_all_at), spec.addr))"
-get_line(spec::RecipScoreText, tr, a; nest_all_at) = "1/Q[$(spec.addr) ; Pa($(spec.addr))] ≈ $(get_recip_score(get_ch(tr, nest_all_at), spec.addr))"
+get_line(spec::FwdScoreText, tr, a; nest_all_at) = "P[$(spec.addr)] ≈ $(get_fwd_score(get_ch(tr, nest_all_at), spec.addr))"
+get_line(spec::RecipScoreText, tr, a; nest_all_at) = "1/Q[$(spec.addr)] ≈ $(get_recip_score(get_ch(tr, nest_all_at), spec.addr))"
 
 get_ch(tr, nest_at) = isnothing(nest_at) ? get_choices(tr) : get_submap(get_choices(tr), nest_at)
 # get_label(spec::SampledValue) = "$(spec.addr) = "
@@ -316,14 +316,15 @@ include("spiketrain_visualization.jl")
 
 function draw_spiketrain_group_fig(groupspecs, tr,
     (prop_sample_tree, assess_sample_tree, prop_addr_top_order);
-    resolution=(1280, 720), nest_all_at=nothing
+    resolution=(1280, 720), nest_all_at=nothing, show_lhs_labels=false,
+    kwargs...
 )
     lines = get_lines(groupspecs, tr,
         (prop_sample_tree, assess_sample_tree, prop_addr_top_order); nest_all_at
     )
-    labels = get_labels(groupspecs)
+    labels = show_lhs_labels ? get_labels(groupspecs) : ["" for _ in lines]
     group_labels = get_group_labels(groupspecs, tr; nest_all_at)
-    return SpiketrainViz.draw_spiketrain_figure(lines; labels, group_labels, xmin=0, resolution)
+    return SpiketrainViz.draw_spiketrain_figure(lines; labels, group_labels, xmin=0, resolution, kwargs...)
 end
 
 ### Exports

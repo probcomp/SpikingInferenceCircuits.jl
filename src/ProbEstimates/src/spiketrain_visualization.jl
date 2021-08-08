@@ -44,7 +44,7 @@ function get_spiketrain_figure(
 end
 
 function draw_group_labels!(f, ax, group_labels, colors)
-    colsize!(f.layout, 1, Relative(0.8))
+    colsize!(f.layout, 1, Relative(0.75))
     endpoint_indices = get_group_endpoint_indices(group_labels)
 
     rhs(pos, px_area) = Point2f0((px_area.origin + px_area.widths)[1], pos[2])
@@ -53,9 +53,9 @@ function draw_group_labels!(f, ax, group_labels, colors)
             ydiff = pos[2][2] - pos[1][2]
             y_increase = (ydiff / 2) * 0.8
             [
-                rhs(pos[st], p) + Point2f0(0, y_increase), rhs(pos[st], p) + Point2f0(15, y_increase),
-                rhs(pos[st], p) + Point2f0(15, y_increase), rhs(pos[nd], p) + Point2f0(15, -y_increase),
-                rhs(pos[nd], p) + Point2f0(15, -y_increase), rhs(pos[nd], p) + Point2f0(0, -y_increase)
+                rhs(pos[st], p) + Point2f0(0, y_increase), rhs(pos[st], p) + Point2f0(5, y_increase),
+                rhs(pos[st], p) + Point2f0(5, y_increase), rhs(pos[nd], p) + Point2f0(5, -y_increase),
+                rhs(pos[nd], p) + Point2f0(5, -y_increase), rhs(pos[nd], p) + Point2f0(0, -y_increase)
             ]
         end
         for (st, nd) in endpoint_indices

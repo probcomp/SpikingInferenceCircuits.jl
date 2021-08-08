@@ -61,16 +61,25 @@ unweighted_trs, weighted_trs = dynamic_model_smc(
 #     domains()
 # ) |> DynamicModels.nest_all_addrs_at_val |> collect
 
-
-latent_domains()     = (
-    occₜ = positions(OccluderLength()),
-    xₜ   = positions(SquareSideLength()),
-    yₜ   = positions(SquareSideLength()),
-    vxₜ  = Vels(),
-    vyₜ  = Vels()
+function surround3(ch, a, dom)
+    v = ch[a => :val]
+    if v-1 in dom && v+1 in dom
+        return (v-1):v+1
+    elseif v-1 in dom && v-2 in dom
+        return (v-2):v
+    else
+        return v:(v+2)
+    end
+end
+latent_domains(ch)     = (
+    occₜ = surround3(ch, :occₜ, positions(OccluderLength())), #positions(OccluderLength()),
+    xₜ   = surround3(ch, :xₜ, positions(SquareSideLength())), #positions(SquareSideLength()),
+    yₜ   = surround3(ch, :yₜ, positions(SquareSideLength())), #positions(SquareSideLength()),
+    vxₜ  = surround3(ch, :vxₜ, Vels()),
+    vyₜ  = surround3(ch, :vyₜ, Vels())
 )
 
-function make_spiketrain_fig(inferred_ch, neurons_to_show_indices=1:3; kwargs...)
+function make_spiketrain_fig(tr, neurons_to_show_indices=1:3; nest_all_at, kwargs...)
     propose_sampling_tree = Dict(
         :occₜ => [], :xₜ => [:occₜ], :yₜ => [],
         :vxₜ => [:xₜ], :vyₜ => [:yₜ]
@@ -82,10 +91,11 @@ function make_spiketrain_fig(inferred_ch, neurons_to_show_indices=1:3; kwargs...
     )
     propose_addr_topological_order = [:occₜ, :xₜ, :yₜ, :vxₜ, :vyₜ]
     
+    doms = latent_domains(get_submap(get_choices(tr), nest_all_at))
     return ProbEstimates.Spiketrains.draw_spiketrain_group_fig(
-        ProbEstimates.Spiketrains.value_neuron_scores_groups(keys(latent_domains()), values(latent_domains()), neurons_to_show_indices), inferred_ch,
+        ProbEstimates.Spiketrains.value_neuron_scores_groups(keys(doms), values(doms), neurons_to_show_indices), tr,
         (propose_sampling_tree, assess_sampling_tree, propose_addr_topological_order);
-        kwargs...
+        nest_all_at, kwargs...
     )
 end
 
