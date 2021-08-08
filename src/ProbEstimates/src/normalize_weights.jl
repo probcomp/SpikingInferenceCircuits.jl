@@ -76,8 +76,8 @@ function autonormalize_weights(log_weights, k, speedup_factor, repeater_rate)
 
     # this should actually not skew the distribution at all -- double check this
     perfect_result = Gen.normalize_weights(convert(Vector{Float64}, log_weights))
-    @assert isapprox(result[1], perfect_result[1]) "auto-normalize: $(result[1]) | Gen: $(perfect_result[1])"
-    @assert isapprox(result[2], perfect_result[2]) "auto-normalize: $(result[2]) | Gen: $(perfect_result[2])"
+    @assert isapprox(result[1], perfect_result[1], atol=1e-3) "auto-normalize: $(result[1]) | Gen: $(perfect_result[1])"
+    @assert isapprox(result[2], perfect_result[2], atol=1e-3) "auto-normalize: $(result[2]) | Gen: $(perfect_result[2])"
 
     return result
 end

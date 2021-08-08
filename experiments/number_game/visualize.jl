@@ -1,4 +1,4 @@
-using GLMakie
+using CairoMakie
 
 """
 - probvec = 100-long vector, giving, for each number, the inferred probability that the number is in the set

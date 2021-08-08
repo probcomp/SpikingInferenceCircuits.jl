@@ -21,90 +21,106 @@ includet("visualize.jl")
 tree(tr) = tr[:init => :latents][1]
 vals(tr) = [tr[:init => :obs][1], (tr[:steps => t => :obs][1] for t=1:get_args(tr)[1])...]
 
-# early_nums = [30, 31, 33, 24, 21, 36, 39]
-# late_nums = [30, 33, 24, 21, 36, 31, 39]
+### Inference util functions: ###
 
-# mode = :Early
-# # nums = mode == :Late ? late_nums : early_nums
-# nums = [33, 24, 21, 36, 31, 39, 30]
+function resimulate_branch_cycle_ntimes(n_pgibbs_particles::Integer, n_cycles::Integer)
+    if n_cycles == 0
+        tr -> tr
+    elseif n_cycles == 1
+        return tr -> resimulate_branch_cycle(tr, n_pgibbs_particles)
+    else
+        return tr -> resimulate_branch_cycle_ntimes(n_pgibbs_particles, n_cycles - 1)(resimulate_branch_cycle(tr, n_pgibbs_particles))
+    end
+end
 
-# obs_choicemap = choicemap(
-#     (:init => :obs => :number => :number => :val, nums[1]),
-#     (
-#         (:steps => t => :obs => :number => :number => :val, num)
-#         for (t, num) in enumerate(nums[2:end])
-#     )...
-# )
+do_smc_inference(groundtruth_tr::Gen.Trace, nparticles, n_pgibbs_particles, ncycles_per_step) =
+    dynamic_model_smc(model,
+        get_dynamic_model_obs(groundtruth_tr),
+        cm -> (cm[:number => :number => :val],),
+        initial_proposal, step_proposal, nparticles;
+        rejuvenate=resimulate_branch_cycle_ntimes(n_pgibbs_particles, ncycles_per_step)
+    );
 
-### Enumeration: ###
-# membership_probs = get_number_membership_probs(obs_choicemap, length(nums) - 1)
-# println("Inference via enumeration completed.")
-# f = visualize(nums, membership_probs; title="P[# in set | observed nums ($mode sequence)] | maxdepth=$(MAXDEPTH()) | Enumeration Results")
+### Labeling util functions: ###
 
-### Resample-Move w/ Particle Gibbs: ###
-# tr, weight = generate(model, (length(nums) - 1,), obs_choicemap)
-# nparticles=100
-# n_pgibbs_particles=2
-# ncycles_per_step = 1
-# function resimulate_branch_cycle_ntimes(n)
-#     if n == 1
-#         return tr -> resimulate_branch_cycle(tr, n_pgibbs_particles)
-#     else
-#         return tr -> resimulate_branch_cycle_ntimes(n - 1)(resimulate_branch_cycle(tr, n_pgibbs_particles))
-#     end
-# end
-# (unweighted_trs, weighted_trs) = dynamic_model_smc(model,
-#     get_dynamic_model_obs(tr),
-#     cm -> (cm[:number => :number => :val],),
-#     initial_proposal, step_proposal, nparticles;
-#     rejuvenate=resimulate_branch_cycle_ntimes(ncycles_per_step)
-# );
-# end_weighted_traces = [(tr, exp(wt)) for (tr, wt) in last(weighted_trs)]
-# println("Inference completed.")
+get_title(nums, n_smc_particles, n_pg_particles, n_rejuv_sweeps_per_iter) = """
+P[# in set | $nums] | maxdepth=$(MAXDEPTH())
+Resample-Move w/ Branch Resimulation PGibbs Rejuvenation.
+$n_smc_particles SMC Particles. $n_pg_particles PG particles.  $n_rejuv_sweeps_per_iter rejuvenation sweeps per timestep.
+$(ngf_str())
+"""
 
 ngf_str() = use_ngf() ? """
 NeuralGen-Fast with MaxRate=$(ProbEstimates.MaxRate())Hz, As.Size=$(ProbEstimates.AssemblySize()), E[Latency]=$(ProbEstimates.Latency())ms.
 $(ProbEstimates.UseLowPrecisionMultiply() ? "Resampling via low-precision single-line-compression multiplication." : "Resampling via auto-normalized multiplication (\"neural floating point\").")
 """ : "Vanilla Gen."
 
-get_title() = "" #="""
-P[# in set | observed nums ($mode sequence)] | maxdepth=$(MAXDEPTH())
-Resample-Move w/ Branch Resimulation PGibbs Rejuvenation.
-$(ngf_str())
-$nparticles particles; $n_pgibbs_particles PGibbs particles; ncycles per step = $ncycles_per_step.
-"""=#
+### Run + make figures
+filename_for_smc_run(nums, n_particles, n_pgibbs_particles, n_rejuv_sweeps) = reduce(*, ["$(n)_" for n in nums]) * "__$(n_particles)smc_$(n_pgibbs_particles)pg_$(n_rejuv_sweeps)rejuv" * ".png"
+filename_for_enumeration_run(nums) = reduce(*, ["$(n)_" for n in nums]) * "__enumeration" * ".png"
+obs_choicemap(nums) = choicemap(
+    (:init => :obs => :number => :number => :val, nums[1]),
+    (
+        (:steps => t => :obs => :number => :number => :val, num)
+        for (t, num) in enumerate(nums[2:end])
+    )...
+)
+trace_with_nums(nums) = generate(model, (length(nums) - 1,), obs_choicemap(nums))[1]
 
-nums_to_filename(nums) = reduce(*, ["$(n)_" for n in nums]) * ".png"
+function do_enumeration_save_fig(nums)
+    membership_probs = get_number_membership_probs(obs_choicemap(nums), length(nums) - 1)
+    f = visualize(nums, membership_probs; title="P[# in set | $nums] | maxdepth=$(MAXDEPTH()) | Enumeration Results\n.\n.\n.\n.")
+    save(filename_for_enumeration_run(nums), f)
+end
 
+function do_smc_inference_on_nums_and_save_fig(nums, n_particles, n_pgibbs_particles, n_rejuv_sweeps=1)
+    (_, weighted_trs) = do_smc_inference(trace_with_nums(nums), n_particles, n_pgibbs_particles, n_rejuv_sweeps)
+    end_weighted_traces = [(tr, exp(wt)) for (tr, wt) in last(weighted_trs)]
+
+    f = visualize_weighted_traces(end_weighted_traces; title=get_title(nums, n_particles, n_pgibbs_particles, n_rejuv_sweeps))
+    
+    save(filename_for_smc_run(nums, n_particles, n_pgibbs_particles, n_rejuv_sweeps), f)
+end
+
+### Script to actually do a particular run:
+
+early_nums = [30, 31, 33, 24, 21, 36, 39]
+late_nums = [30, 33, 24, 21, 36, 31, 39]
 numss = [
+    early_nums,
+    late_nums,
     [33, 24, 21, 36, 31, 39, 30],
     [24, 21, 36, 31, 39, 30, 33],
     [21, 36, 31, 39, 30, 33, 21],
     [36, 31, 39, 30, 33, 21, 21]
 ]
+# for nums in numss
+#     do_inference_on_nums_and_save_fig(nums)
+# end
 
-function do_inference_on_nums_and_save_fig(nums)
-    obs_choicemap = choicemap(
-        (:init => :obs => :number => :number => :val, nums[1]),
-        (
-            (:steps => t => :obs => :number => :number => :val, num)
-            for (t, num) in enumerate(nums[2:end])
-        )...
-    )
-    tr, weight = generate(model, (length(nums) - 1,), obs_choicemap)
-    (unweighted_trs, weighted_trs) = dynamic_model_smc(model,
-        get_dynamic_model_obs(tr),
-        cm -> (cm[:number => :number => :val],),
-        initial_proposal, step_proposal, nparticles;
-        rejuvenate=resimulate_branch_cycle_ntimes(ncycles_per_step)
-    );
-    end_weighted_traces = [(tr, exp(wt)) for (tr, wt) in last(weighted_trs)]
+# specs = Iterators.flatten(
+#     (
+#         (late_nums, 100, n_pg, 0),
+#         (late_nums, 100, n_pg, 2),
+#         (late_nums, 1,   n_pg, 10)
+#     )
+#     for n_pg in (2, 10, 100)
+# ) |> collect
 
-    f = visualize_weighted_traces(end_weighted_traces; title=get_title())
-    save(nums_to_filename(nums), f)
-end
-for nums in numss
-    do_inference_on_nums_and_save_fig(nums)
-end
+# for (i, spec) in enumerate(specs)
+#     @info "On spec $i / $(length(specs))."
+#     try_run() = try
+#         do_inference_on_nums_and_save_fig(spec...)
+#         true
+#     catch e
+#         @error "$e"
+#         false
+#     end
+#     while !try_run();
+#         println("attempting again...")
+#     end;
+# end
+do_enumeration_save_fig(late_nums)
 
 # f = visualize_weighted_traces(end_weighted_traces; title=get_title())
+
