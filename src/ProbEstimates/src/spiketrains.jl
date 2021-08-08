@@ -98,13 +98,16 @@ get_line(spec::LineSpec, tr; nest_all_at=nothing) = get_line(spec, tr, nothing; 
 
 ### Text ###
 abstract type Text <: LineSpec; end
-struct SampledValue <: Text; addr; end
-struct FwdScoreText <: Text; addr; end
-struct RecipScoreText <: Text; addr; end
+struct SampledValue <: Text; addr; name; end
+struct FwdScoreText <: Text; addr; name; end
+struct RecipScoreText <: Text; addr; name; end
+SampledValue(a) = SampledValue(a, a)
+FwdScoreText(a) = FwdScoreText(a, a)
+RecipScoreText(a) = RecipScoreText(a, a)
 
-get_line(spec::SampledValue, tr, a; nest_all_at) = "$(spec.addr)=$(tr[nest(nest_all_at, spec.addr)])"
-get_line(spec::FwdScoreText, tr, a; nest_all_at) = "P[$(spec.addr)] ≈ $(get_fwd_score(get_ch(tr, nest_all_at), spec.addr))"
-get_line(spec::RecipScoreText, tr, a; nest_all_at) = "1/Q[$(spec.addr)] ≈ $(get_recip_score(get_ch(tr, nest_all_at), spec.addr))"
+get_line(spec::SampledValue, tr, a; nest_all_at) = "$(spec.name)=$(tr[nest(nest_all_at, spec.addr)])"
+get_line(spec::FwdScoreText, tr, a; nest_all_at) = "P[$(spec.name)] ≈ $(round(get_fwd_score(get_ch(tr, nest_all_at), spec.addr); digits=2))"
+get_line(spec::RecipScoreText, tr, a; nest_all_at) = "1/Q[$(spec.name)] ≈ $(round(get_recip_score(get_ch(tr, nest_all_at), spec.addr), digits=2))"
 
 get_ch(tr, nest_at) = isnothing(nest_at) ? get_choices(tr) : get_submap(get_choices(tr), nest_at)
 # get_label(spec::SampledValue) = "$(spec.addr) = "
@@ -159,7 +162,12 @@ end
 RecipScoreLine(addr, line_to_show) = ScoreLine(true, addr, line_to_show)
 FwdScoreLine(addr, line_to_show) = ScoreLine(false, addr, line_to_show)
 
-get_line(spec::VarValLine, tr, trains; nest_all_at) = tr[nest(nest_all_at, spec.addr)] == spec.value ? [trains.valtimes[spec.addr]] : []
+get_line(spec::VarValLine, tr, trains; nest_all_at) = 
+    try
+        tr[nest(nest_all_at, spec.addr)] == spec.value ? [trains.valtimes[spec.addr]] : []
+    catch e
+        @error "Error looking up $(nest(nest_all_at, spec.addr)) in trace." exception=(e, catch_backtrace())
+    end
 get_line(spec::ScoreLine, tr, trains; nest_all_at) = get_score_line(spec.line_to_show, (spec.do_recip_score ? trains.recip_trains : trains.fwd_trains)[spec.addr])
 get_score_line(::IndLine, trains::DenseValueSpiketrain) = [trains.ready_time]
 get_score_line(::CountAssembly, trains::DenseValueSpiketrain) = sort(reduce(vcat, trains.neuron_times))
@@ -299,20 +307,20 @@ DefaultInterSampleTimeDist() = Exponential(1 / MaxRate())
 DefaultToReadySpikeDist() = Exponential(1 / MaxRate())
 
 ### Specs for some standard visualization types
-value_neuron_scores_group(a, var_domain, neurons_to_show_indices=1:5) = [
-    LabeledLineGroup(SampledValue(a), [VarValLine(a, v) for v in var_domain]),
-    LabeledLineGroup(RecipScoreText(a), [
+value_neuron_scores_group(a, var_domain, neurons_to_show_indices=1:5; name=a) = [
+    LabeledLineGroup(SampledValue(a, name), [VarValLine(a, v) for v in var_domain]),
+    LabeledLineGroup(RecipScoreText(a, name), [
         [RecipScoreLine(a, NeuronInCountAssembly(i)) for i in neurons_to_show_indices]...,
         RecipScoreLine(a, IndLine())
     ]),
-    LabeledLineGroup(FwdScoreText(a), [
+    LabeledLineGroup(FwdScoreText(a, name), [
         [FwdScoreLine(a, NeuronInCountAssembly(i)) for i in neurons_to_show_indices]...,
         FwdScoreLine(a, IndLine())
     ]),
 ]
-value_neuron_scores_groups(addrs, var_domains, neurons_to_show_indices=1:5) =
+value_neuron_scores_groups(addrs, var_domains, neurons_to_show_indices=1:5; addr_to_name=identity) =
     (Iterators.flatten(
-        value_neuron_scores_group(a, d, neurons_to_show_indices)
+        value_neuron_scores_group(a, d, neurons_to_show_indices; name=addr_to_name(a))
         for (a, d) in zip(addrs, var_domains)
     ) |> collect) :: Vector{LabeledLineGroup}
 

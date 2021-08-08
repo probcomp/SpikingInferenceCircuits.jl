@@ -73,7 +73,7 @@ function make_spiketrain_fig(tr, neurons_to_show_indices=1:3; nest_all_at, kwarg
     )
     propose_addr_topological_order = [:occₜ, :xₜ, :yₜ, :vxₜ, :vyₜ]
     
-    doms = latent_domains(get_submap(get_choices(tr), nest_all_at))
+    doms = latent_domains_for_viz(get_submap(get_choices(tr), nest_all_at))
     return ProbEstimates.Spiketrains.draw_spiketrain_group_fig(
         ProbEstimates.Spiketrains.value_neuron_scores_groups(keys(doms), values(doms), neurons_to_show_indices), tr,
         (propose_sampling_tree, assess_sampling_tree, propose_addr_topological_order);
