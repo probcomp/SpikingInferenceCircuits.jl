@@ -70,7 +70,7 @@ latent_domains()     = (
     vyₜ  = Vels()
 )
 
-function make_spiketrain_fig(inferred_ch)
+function make_spiketrain_fig(inferred_ch; nest_all_at)
     propose_sampling_tree = Dict(
         :occₜ => [], :xₜ => [:occₜ], :yₜ => [],
         :vxₜ => [:xₜ], :vyₜ => [:yₜ]
@@ -84,13 +84,9 @@ function make_spiketrain_fig(inferred_ch)
     
     return ProbEstimates.Spiketrains.draw_spiketrain_group_fig(
         ProbEstimates.Spiketrains.value_neuron_scores_groups(keys(latent_domains()), values(latent_domains())), inferred_ch,
-        (propose_sampling_tree, assess_sampling_tree, propose_addr_topological_order)
+        (propose_sampling_tree, assess_sampling_tree, propose_addr_topological_order);
+        nest_all_at
     )
 end
 
-f = make_spiketrain_fig(
-    get_submap(
-        last(unweighted_trs)[1] |> get_choices,
-        :steps => 2 => :latents
-    )
-)
+f = make_spiketrain_fig(last(unweighted_trs)[1]; nest_all_at=(:steps => 2 => :latents))

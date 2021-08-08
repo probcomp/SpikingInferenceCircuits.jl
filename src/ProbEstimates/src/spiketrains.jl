@@ -77,6 +77,7 @@ using Distributions: Exponential, DiscreteUniform
 using ProbEstimates: MaxRate, AssemblySize, K_fwd, K_recip, with_weight_type
 using Gen
 
+nest(::Nothing, b) = b
 nest(a, b) = a => b
 nest(a::Pair, b) = a.first => nest(a.second, b)
 
@@ -89,11 +90,11 @@ function get_lines(specs, tr, spiketrain_data_args; nest_all_at=nothing)
         else
             nothing
         end
-    return [get_line(spec, tr, spiketrain_data) for spec in specs]
+    return [get_line(spec, tr, spiketrain_data; nest_all_at) for spec in specs]
 end
 get_labels(lines) = map(get_label, lines)
 
-get_line(spec::LineSpec, tr) = get_line(spec, tr, nothing)
+get_line(spec::LineSpec, tr; nest_all_at=nothing) = get_line(spec, tr, nothing; nest_all_at)
 
 ### Text ###
 abstract type Text <: LineSpec; end
@@ -101,30 +102,31 @@ struct SampledValue <: Text; addr; end
 struct FwdScoreText <: Text; addr; end
 struct RecipScoreText <: Text; addr; end
 
-get_line(spec::SampledValue, tr, _) = "$(spec.addr)=$(tr[spec.addr])"
-get_line(spec::FwdScoreText, tr, _) = "P[$(spec.addr) ; Pa($(spec.addr))] ≈ $(get_fwd_score(tr, spec.addr))"
-get_line(spec::RecipScoreText, tr, _) = "1/Q[$(spec.addr) ; Pa($(spec.addr))] ≈ $(get_recip_score(tr, spec.addr))"
+get_line(spec::SampledValue, tr, a; nest_all_at) = "$(spec.addr)=$(tr[nest(nest_all_at, spec.addr)])"
+get_line(spec::FwdScoreText, tr, a; nest_all_at) = "P[$(spec.addr) ; Pa($(spec.addr))] ≈ $(get_fwd_score(get_ch(tr, nest_all_at), spec.addr))"
+get_line(spec::RecipScoreText, tr, a; nest_all_at) = "1/Q[$(spec.addr) ; Pa($(spec.addr))] ≈ $(get_recip_score(get_ch(tr, nest_all_at), spec.addr))"
 
+get_ch(tr, nest_at) = isnothing(nest_at) ? get_choices(tr) : get_submap(get_choices(tr), nest_at)
 # get_label(spec::SampledValue) = "$(spec.addr) = "
 # get_label(spec::FwdScoreText) = "P[$(spec.addr) ; Pa($(spec.addr))] ≈"
 # get_label(spec::RecipScoreText) = "1/Q[$(spec.addr) ; Pa($(spec.addr))] ≈"
 get_label(::Text) = ""
 
-get_fwd_score(tr, addr) = tr[nest(addr, :fwd_score)]
-get_recip_score(tr, addr) = tr[nest(addr, :recip_score)]
+get_fwd_score(ch, addr) = ch[nest(addr, :fwd_score)]
+get_recip_score(ch, addr) = ch[nest(addr, :recip_score)]
 
 ### Grouped Line Specs ###
 struct LabeledLineGroup
     label_spec::Text
     line_specs::Vector{LineSpec}
 end
-get_lines(groups::Vector{LabeledLineGroup}, tr, args) =
-    get_lines(reduce(vcat, g.line_specs for g in groups), tr, args)
+get_lines(groups::Vector{LabeledLineGroup}, tr, args; nest_all_at=nothing) =
+    get_lines(reduce(vcat, g.line_specs for g in groups), tr, args; nest_all_at)
 get_labels(groups::Vector{LabeledLineGroup}) = get_labels(reduce(vcat, g.line_specs for g in groups))
 
-get_group_labels(groups::Vector{LabeledLineGroup}, tr) =
+get_group_labels(groups::Vector{LabeledLineGroup}, tr; nest_all_at) =
     [ # list of (label, num lines in group) tuples for each group
-        (get_line(g.label_spec, tr), length(g.line_specs))
+        (get_line(g.label_spec, tr, nothing; nest_all_at), length(g.line_specs))
         for g in groups
     ]
 
@@ -157,8 +159,8 @@ end
 RecipScoreLine(addr, line_to_show) = ScoreLine(true, addr, line_to_show)
 FwdScoreLine(addr, line_to_show) = ScoreLine(false, addr, line_to_show)
 
-get_line(spec::VarValLine, tr, trains) = tr[spec.addr] == spec.value ? [trains.valtimes[spec.addr]] : []
-get_line(spec::ScoreLine, tr, trains) = get_score_line(spec.line_to_show, (spec.do_recip_score ? trains.recip_trains : trains.fwd_trains)[spec.addr])
+get_line(spec::VarValLine, tr, trains; nest_all_at) = tr[nest(nest_all_at, spec.addr)] == spec.value ? [trains.valtimes[spec.addr]] : []
+get_line(spec::ScoreLine, tr, trains; nest_all_at) = get_score_line(spec.line_to_show, (spec.do_recip_score ? trains.recip_trains : trains.fwd_trains)[spec.addr])
 get_score_line(::IndLine, trains::DenseValueSpiketrain) = [trains.ready_time]
 get_score_line(::CountAssembly, trains::DenseValueSpiketrain) = sort(reduce(vcat, trains.neuron_times))
 get_score_line(n::NeuronInCountAssembly, trains::DenseValueSpiketrain) = trains.neuron_times[n.idx]
@@ -230,10 +232,10 @@ function recip_spiketimes(
     dist_to_ready_spike;
     nest_all_at
 )
-    ch = isnothing()
+    ch = get_ch(tr, nest_all_at)
     times = Dict{Any, DenseValueSpiketrain}() # addr => [ [ times at which this neuron spikes ] for i=1:assembly_size ]
     for addr in addrs
-        num_spikes = get_recip_score(tr, addr) * count_threshold |> to_int
+        num_spikes = get_recip_score(ch, addr) * count_threshold |> to_int
         
         neuron_times = spiketrains_for_n_spikes(
             num_spikes, assembly_size, neuron_rate, ready_times[addr]
@@ -251,13 +253,15 @@ function fwd_spiketimes(
     assembly_size,
     neuron_rate,
     count_threshold,
-    dist_to_ready_spike
+    dist_to_ready_spike;
+    nest_all_at
 )
+    ch = get_ch(tr, nest_all_at)
     # get_score = do_recip_score ? get_recip_score : get_fwd_score
     times = Dict{Any, DenseValueSpiketrain}() # addr => [ [ times at which this neuron spikes ] for i=1:assembly_size ]
     for addr in addrs
-        num_spikes = get_fwd_score(tr, addr) * count_threshold |> to_int
-        p = with_weight_type(:perfect, () -> exp(Gen.project(tr, Gen.select(addr))))
+        num_spikes = get_fwd_score(ch, addr) * count_threshold |> to_int
+        p = with_weight_type(:perfect, () -> exp(Gen.project(tr, Gen.select(nest(nest_all_at, addr)))))
         
         neuron_times = spiketrains_for_n_spikes(
             num_spikes, assembly_size, neuron_rate * p, ready_times[addr]
@@ -302,23 +306,23 @@ value_neuron_scores_group(a, var_domain, neurons_to_show_indices=1:5) = [
     ]),
 ]
 value_neuron_scores_groups(addrs, var_domains, neurons_to_show_indices=1:5) =
-    Iterators.flatten(
+    (Iterators.flatten(
         value_neuron_scores_group(a, d, neurons_to_show_indices)
         for (a, d) in zip(addrs, var_domains)
-    ) |> collect
+    ) |> collect) :: Vector{LabeledLineGroup}
 
 ### SpiketrainViz
 include("spiketrain_visualization.jl")
 
 function draw_spiketrain_group_fig(groupspecs, tr,
     (prop_sample_tree, assess_sample_tree, prop_addr_top_order);
-    resolution=(1280, 720)
+    resolution=(1280, 720), nest_all_at=nothing
 )
     lines = get_lines(groupspecs, tr,
-        (prop_sample_tree, assess_sample_tree, prop_addr_top_order)
+        (prop_sample_tree, assess_sample_tree, prop_addr_top_order); nest_all_at
     )
     labels = get_labels(groupspecs)
-    group_labels = get_group_labels(groupspecs, tr)
+    group_labels = get_group_labels(groupspecs, tr; nest_all_at)
     return SpiketrainViz.draw_spiketrain_figure(lines; labels, group_labels, xmin=0, resolution)
 end
 
