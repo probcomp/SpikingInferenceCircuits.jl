@@ -4,6 +4,7 @@ using Colors
 using GLMakie
 using StatsBase
 using GeometryBasics
+using FileIO
 import AbstractPlotting as AP
 import NaNMath as nm
 # try only a few particles, scoring and resampling useful story.
@@ -70,15 +71,15 @@ round_to_pt1(x) = round(x, digits=1)
     #     onehot(round_to_pt1(asin(zₜ / exact_r)), ϕs()))
     # exact_θ = { :exact_θ } ~ LCat(θs())(
     #     onehot(round_to_pt1(atan(yₜ / xₜ)), θs()))
-    # exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(
-    #     maybe_one_off(round_to_pt1(nm.asin(zₜ / exact_r)), .4, ϕs()))
-    # exact_θ = { :exact_θ } ~ LCat(θs())(
-    #    maybe_one_off(round_to_pt1(nm.atan(yₜ / xₜ)), .4, θs()))
-
-    exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(
-         maybe_one_off(round_to_pt1(asin(zₜ / exact_r)), .4, ϕs()))
+     exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(
+         maybe_one_off(round_to_pt1(nm.asin(zₜ / exact_r)), .4, ϕs()))
     exact_θ = { :exact_θ } ~ LCat(θs())(
-         maybe_one_off(round_to_pt1(atan(yₜ / xₜ)), .4, θs()))
+       maybe_one_off(round_to_pt1(nm.atan(yₜ / xₜ)), .4, θs()))
+
+    # exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(
+    #      maybe_one_off(round_to_pt1(asin(zₜ / exact_r)), .4, ϕs()))
+    # exact_θ = { :exact_θ } ~ LCat(θs())(
+    #      maybe_one_off(round_to_pt1(atan(yₜ / xₜ)), .4, θs()))
     
     r_max = max_distance_inside_grid(exact_ϕ, exact_θ)
     r_probvec = normalize(
@@ -104,10 +105,10 @@ end
     exact_r = round(norm_3d(xₜ, yₜ, zₜ))
     # exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(onehot(round_to_pt1(asin(zₜ / exact_r)), ϕs()))
     # exact_θ = { :exact_θ } ~ LCat(θs())(onehot(round_to_pt1(atan(yₜ / xₜ)), θs()))
-    exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(maybe_one_off(round_to_pt1(asin(zₜ / exact_r)), .2, ϕs()))
-    exact_θ = { :exact_θ } ~ LCat(θs())(maybe_one_off(round_to_pt1(atan(yₜ / xₜ)), .2, θs()))
-    # exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(maybe_one_off(round_to_pt1(nm.asin(zₜ / exact_r)), .2, ϕs()))
-    # exact_θ = { :exact_θ } ~ LCat(θs())(maybe_one_off(round_to_pt1(nm.atan(yₜ / xₜ)), .2, θs()))
+#    exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(maybe_one_off(round_to_pt1(asin(zₜ / exact_r)), .2, ϕs()))
+#    exact_θ = { :exact_θ } ~ LCat(θs())(maybe_one_off(round_to_pt1(atan(yₜ / xₜ)), .2, θs()))
+    exact_ϕ = { :exact_ϕ } ~ LCat(ϕs())(maybe_one_off(round_to_pt1(nm.asin(zₜ / exact_r)), .2, ϕs()))
+    exact_θ = { :exact_θ } ~ LCat(θs())(maybe_one_off(round_to_pt1(nm.atan(yₜ / xₜ)), .2, θs()))
 
     r_max = max_distance_inside_grid(exact_ϕ, exact_θ)
     r_probvec = normalize(
@@ -395,6 +396,7 @@ function render_pf_results(uw_traces, gt_trace, n_steps)
     c1 = colorant"rgba(0, 255, 255, .25)"
     gray_w_alpha = colorant"rgba(60, 60, 60, .2)"
     cmap = range(c1, stop=c2, length=10)
+#    fish_mesh = FileIO.load("zebrafish.obj")
     fig = Figure(resolution=(2*res, 2*res), figure_padding=50)
     lim = (Xs()[1], Xs()[end], Ys()[1], Ys()[end], Zs()[1], Zs()[end])
     # note perspectiveness variable is 0.0 for orthographic, 1.0 for perspective, .5 for intermediate
@@ -446,6 +448,8 @@ function render_pf_results(uw_traces, gt_trace, n_steps)
     scatter!(particle_anim_axis, lift(t -> f_gt(t), time_node), color=:red, markersize=msize)
 
     scatter!(gt_preyloc_axis, lift(t -> f_gt(t), time_node), color=:red, markersize=msize) #, marker='o')
+    # meshscatter!(particle_anim_axis, [(1, 0, 2)],
+    #              marker=fish_mesh, color=:gray, rotations=Vec3f0(1, 0, 0), markersize=.75)
     hm_obs(t) = observation_matrices[t, :, :]
     hm_exact(t) = azalt_particle_matrices[t, :, :]
     heatmap!(azalt_axis, θs(), ϕs(), lift(t -> hm_obs(t), time_node), colormap=:grayC)
@@ -463,7 +467,7 @@ function render_pf_results(uw_traces, gt_trace, n_steps)
         sleep(.5)
         time_node[] = i
     end
-    return particle_coords, score_colors, [fs(i) for (i, b) in enumerate(score_colors)]
+    return particle_coords, gt_coords
 end
 
 
