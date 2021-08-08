@@ -1,6 +1,5 @@
 using Base: Int64
-include("../../src/DynamicModels/DynamicModels.jl")
-using .DynamicModels: @DynamicModel, @compile_initial_proposal, @compile_step_proposal, get_dynamic_model_obs, dynamic_model_smc
+using DynamicModels: @DynamicModel, @compile_initial_proposal, @compile_step_proposal, get_dynamic_model_obs, dynamic_model_smc
 
 include("model.jl")
 ProbEstimates.use_perfect_weights!()

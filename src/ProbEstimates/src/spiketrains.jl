@@ -235,12 +235,17 @@ function recip_spiketimes(
     ch = get_ch(tr, nest_all_at)
     times = Dict{Any, DenseValueSpiketrain}() # addr => [ [ times at which this neuron spikes ] for i=1:assembly_size ]
     for addr in addrs
-        num_spikes = get_recip_score(ch, addr) * count_threshold |> to_int
+        num_spikes = try
+            get_recip_score(ch, addr) * count_threshold |> to_int
+        catch e
+            @error "count threshold = $count_threshold; addr = $addr; get_recip_score(ch, addr) = $(get_recip_score(ch, addr))" exception=(e, catch_backtrace())
+            error()
+        end
         
         neuron_times = spiketrains_for_n_spikes(
             num_spikes, assembly_size, neuron_rate, ready_times[addr]
         )
-        ready_time = last(sort(reduce(vcat, neuron_times))) + rand(dist_to_ready_spike)
+        ready_time = last(sort(reduce(vcat, neuron_times; init=Float64[]))) + rand(dist_to_ready_spike)
         times[addr] = DenseValueSpiketrain(ready_time, neuron_times)
     end
 
@@ -266,7 +271,7 @@ function fwd_spiketimes(
         neuron_times = spiketrains_for_n_spikes(
             num_spikes, assembly_size, neuron_rate * p, ready_times[addr]
         )
-        ready_time = last(sort(reduce(vcat, neuron_times))) + rand(dist_to_ready_spike)
+        ready_time = last(sort(reduce(vcat, neuron_times; init=Float64[]))) + rand(dist_to_ready_spike)
         times[addr] = DenseValueSpiketrain(ready_time, neuron_times)
     end
 
@@ -285,7 +290,7 @@ function spiketrains_for_n_spikes(num_spikes, num_neurons, neuron_rate, starttim
 end
 
 function to_int(v)
-    @assert isapprox(v, floor(v))
+    @assert isapprox(v, floor(v)) "v = $v"
     return Int(floor(v))
 end
 
