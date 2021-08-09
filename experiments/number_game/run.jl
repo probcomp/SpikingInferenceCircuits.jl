@@ -67,22 +67,25 @@ obs_choicemap(nums) = choicemap(
 )
 trace_with_nums(nums) = generate(model, (length(nums) - 1,), obs_choicemap(nums))[1]
 
-function do_enumeration_save_fig(nums)
+function do_enumeration_save_fig(nums;
+    title="P[number in set | maxdepth=$(MAXDEPTH())] : Enumeration Results\n.\n.\n.\n.",
+    fontsize
+)
     membership_probs = get_number_membership_probs(obs_choicemap(nums), length(nums) - 1)
-    f = visualize(nums, membership_probs; title="P[# in set | $nums] | maxdepth=$(MAXDEPTH()) | Enumeration Results\n.\n.\n.\n.")
+    f = visualize(nums, membership_probs; title, fontsize)
     save(filename_for_enumeration_run(nums), f)
 end
 
 function do_smc_inference_on_nums_and_save_fig(
     nums, n_particles, n_pgibbs_particles, n_rejuv_sweeps=1;
     title=get_title(nums, n_particles, n_pgibbs_particles, n_rejuv_sweeps),
-    resolution=(400, 200)
+    resolution=(400, 200), fontsize=20
 )
     (_, weighted_trs) = do_smc_inference(trace_with_nums(nums), n_particles, n_pgibbs_particles, n_rejuv_sweeps)
     end_weighted_traces = [(tr, exp(wt)) for (tr, wt) in last(weighted_trs)]
 
     f = visualize_weighted_traces(
-        end_weighted_traces; title, resolution
+        end_weighted_traces; title, resolution, fontsize
     )
     
     save(filename_for_smc_run(nums, n_particles, n_pgibbs_particles, n_rejuv_sweeps), f)
@@ -142,14 +145,14 @@ end
 
 ### Code to do a bunch of runs:
 # specs = list of `(nums, n_particles, n_pgibbs_particles, n_rejuvenation_sweeps_per_timestep)`
-function do_smc_runs(specs; override_title_to=nothing)
-    for (i, spec) in enumerate(specs)
+function do_smc_runs(specs; titles=[nothing for spec in specs], resolution=(200, 400), fontsize=20)
+    for (i, (spec, title)) in enumerate(zip(specs, titles))
         @info "On spec $i / $(length(specs))."
         try_run() = try
-            if isnothing(override_title_to)
-                do_smc_inference_on_nums_and_save_fig(spec...)
+            if isnothing(title)
+                do_smc_inference_on_nums_and_save_fig(spec...; resolution, fontsize)
             else
-                do_smc_inference_on_nums_and_save_fig(spec...; title=override_title_to)
+                do_smc_inference_on_nums_and_save_fig(spec...; title, resolution, fontsize)
             end
             true
         catch e
@@ -175,15 +178,24 @@ late_nums = [30, 33, 24, 21, 36, 31, 39]
 #     [36, 31, 39, 30, 33, 21, 21]
 # ]
 
-numss = [
-    late_nums[1:2],
-    late_nums[1:4],
-    late_nums[1:6]
-]
+# numss = [
+#     late_nums[1:2],
+#     late_nums[1:4],
+#     late_nums[1:6]
+# ]
+# specs = [
+#     (nums, 100, 2, 2) for nums in numss
+# ]
+# do_smc_runs(specs; override_title_to="")
+
 specs = [
-    (nums, 100, 2, 2) for nums in numss
+    (late_nums, 100, 100, 2),
+    (late_nums, 100, 2, 0)
 ]
-do_smc_runs(specs; override_title_to="")
+titles = ["Inferred P[number in set ; observed numbers]", "Inferred P[number in set ; observed numbers]"]
+do_smc_runs(specs; titles)
+
+# do_enumeration_save_fig(late_nums; title="Exact P[number in set ; observed numbers]", fontsize=20)
 
 # specs = Iterators.flatten(
 #     (

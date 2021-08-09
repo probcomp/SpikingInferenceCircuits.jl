@@ -8,8 +8,8 @@ make_hist!(ax, probs) = barplot!(
     color=:black, width=step(1:length(probs))
 )
 add_dots!(ax, pts) = scatter!(ax, pts, [0.02 for _ in pts]; color=:red, markersize=12)
-function visualize(pts, probs; title="", resolution=(800, 400))
-    f = Figure(;resolution)
+function visualize(pts, probs; title="", resolution=(800, 400), fontsize=20)
+    f = Figure(;resolution, fontsize)
     ax = Axis(f[1, 1], xlabel="Number", ylabel="Probability", title=title)
     make_hist!(ax, probs)
     add_dots!(ax, pts)
@@ -27,12 +27,12 @@ weighted_traces_to_probs(weighted_trs) =
     )/sum(weight for (trace, weight) in weighted_trs)
 set_membership_vec(tree) = [is_in_set(tree, x) ? 1. : 0. for x=1:100]
 
-visualize_unweighted_traces(unweighted_traces; title="", resolution=(800, 400)) =
+visualize_unweighted_traces(unweighted_traces; title="", resolution=(800, 400), fontsize=20) =
     visualize(
         vals(first(unweighted_traces)),
         unweighted_traces_to_probs(unweighted_traces)
     )
-visualize_weighted_traces(weighted_traces; title="", resolution=(800, 400)) =
+visualize_weighted_traces(weighted_traces; title="", resolution=(800, 400), fontsize=20) =
     visualize(
         vals(first(weighted_traces)[1]),
         weighted_traces_to_probs(weighted_traces); title
