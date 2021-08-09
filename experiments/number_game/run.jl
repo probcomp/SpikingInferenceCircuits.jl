@@ -221,7 +221,6 @@ do_smc_runs(specs; titles)
 # do_enumeration_save_fig(late_nums)
 
 ### Spiketrain Figure:
-<<<<<<< HEAD
 (unweighted_trs, weighted_trs) = do_smc_inference(trace_with_nums(late_nums), 50, 2, 1)
 get_f(i) = make_spiketrain_fig(first(unweighted_trs)[i]; resolution=(600, 600 * 3/4), figure_title="Dynamically Weighted Spike Code from Inference")
 function get_fig()
@@ -233,7 +232,3 @@ function get_fig()
     end
 end
 ProbEstimates.Spiketrains.SpiketrainViz.save("concept_learning.pdf", get_fig())
-=======
-# (_, weighted_trs) = do_smc_inference(trace_with_nums(nums), n_particles, n_pgibbs_particles, n_rejuv_sweeps)
-# f = make_spiketrain_fig(last(unweighted_trs)[1]; resolution=(600, 450), title="Dynamically Weighted Spike Code from Inference")
->>>>>>> pre_3dline_merge
