@@ -46,4 +46,20 @@ include("dynamic_models_overwrites.jl")
 
 include("spiketrains.jl")
 
+# Check if 2 submaps are equal, ignoring `:recip_score` and `:fwd_score` values
+function choicemaps_have_equal_values(cm1, cm2)
+    for (k, v1) in get_values_shallow(cm1)
+        if !has_value(cm2, k)
+            return false
+        end
+        if !(k in (:recip_score, :fwd_score)) && v1 != cm2[k]
+            return false
+        end
+    end
+    return all(
+        choicemaps_have_equal_values(sm1, get_submap(cm2, k))
+        for (k, sm1) in get_submaps_shallow(cm1)
+    )
+end
+
 end # module
