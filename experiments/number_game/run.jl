@@ -94,8 +94,10 @@ end
 ### Spiketrain figures:
 
 function get_num_possibilities(pvec, n)
-    possibilities = findall([i for (i, p) in enumerate(pvec) if p > 0])
-    if n == first(possibilities)
+    possibilities = [i for (i, p) in enumerate(pvec) if p > 0]
+    if length(possibilities) < 3
+        return possibilities
+    elseif n == first(possibilities)
         return possibilities[1:3]
     elseif n == possibilities[end]
         return possibilities[end-2:end]
@@ -105,13 +107,13 @@ function get_num_possibilities(pvec, n)
     end
 end
 function n1s(tr)
-    ch = get_submap(get_choices(tr), :init => :latents => :tree => :teminal)
+    ch = get_submap(get_choices(tr), :init => :latents => :tree => :terminal)
     n1 = ch[:n1 => :val]
     n1vec = n1_pvec(ch[:typ => :val])
     return get_num_possibilities(n1vec, n1)
 end
 function n2s(tr)
-    ch = get_submap(get_choices(tr), :init => :latents => :tree => :teminal)
+    ch = get_submap(get_choices(tr), :init => :latents => :tree => :terminal)
     n1 = ch[:n1 => :val]
     n2 = ch[:n2 => :val]
     n2vec = n2_pvec(ch[:typ => :val], n1)
@@ -126,7 +128,7 @@ function make_spiketrain_fig(tr, neurons_to_show_indices=1:3; kwargs...)
         :is_terminal => [],
         (:terminal => :typ) => [],
         (:terminal => :n1) => [(:terminal => :typ)],
-        (:terminal => :n2) => [(:terminal => :typ), (:terminal => :n2)]
+        (:terminal => :n2) => [(:terminal => :typ), (:terminal => :n1)]
     )
     propose_sampling_tree = assess_sampling_tree
     propose_addr_topological_order = [:is_terminal, :terminal => :typ, :terminal => :n1, :terminal => :n2]
@@ -137,7 +139,7 @@ function make_spiketrain_fig(tr, neurons_to_show_indices=1:3; kwargs...)
         n1s(tr), n2s(tr)
     ]
     return ProbEstimates.Spiketrains.draw_spiketrain_group_fig(
-        ProbEstimates.Spiketrains.value_neuron_scores_groups(keys(doms), values(doms), neurons_to_show_indices), 
+        ProbEstimates.Spiketrains.value_neuron_scores_groups(propose_addr_topological_order, doms, neurons_to_show_indices), 
         tr, (propose_sampling_tree, assess_sampling_tree, propose_addr_topological_order);
         nest_all_at, kwargs...
     )
