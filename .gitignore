@@ -10,3 +10,4 @@ experiments/figure_saves/**/*
 *.mp4
 saves/**/*
 snn_runs/**/*
+*.png
