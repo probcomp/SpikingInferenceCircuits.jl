@@ -10,8 +10,8 @@ includet("inference.jl")
 
 latent_domains()     = (xₜ=Positions(), vₜ=Vels())
 obs_domains()         = (obs=Positions(),)
-latent_obs_domains() = (latent_domains()..., obs_domains()...)
 
+latent_obs_domains() = (latent_domains()..., obs_domains()...)
 NLATENTS() = length(latent_domains())
 NOBS()     = length(obs_domains())
 NVARS()    = NLATENTS() + NOBS()
@@ -29,7 +29,7 @@ println("Hyperparameters set so the probability the circuit fails due to an issu
 
 smccircuit = SMC(
     GenFnWithInputDomains(initial_latent_model, ()),
-    GenFnWithInputDomains(latent_step_model, latent_domains()),
+    GenFnWithInputDomains(step_latent_model, latent_domains()),
     GenFnWithInputDomains(obs_model, latent_domains()),
     GenFnWithInputDomains(_exact_init_proposal, obs_domains()),
     GenFnWithInputDomains(_approx_step_proposal, latent_obs_domains()),

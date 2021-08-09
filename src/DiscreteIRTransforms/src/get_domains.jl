@@ -35,11 +35,24 @@ end
 # handle_node!(::ArgumentNode, _, _) = nothing
 function handle_node!(node::JuliaNode, name_to_domain, domain_type_constraint)
     input_domains = (name_to_domain[parent.name] for parent in node.inputs)
-    assmts = Iterators.product(input_domains...)
-    possible_domains = EnumeratedDomain(collect(unique(node.fn(assmt...) for assmt in assmts)))
-    name_to_domain[node.name] = possible_outcomes_to_domain(
-        possible_domains, domain_type_constraint
-    )
+    try
+        assmts = Iterators.product(input_domains...)
+        possible_domains = EnumeratedDomain(collect(unique(node.fn(assmt...) for assmt in assmts)))
+        name_to_domain[node.name] = possible_outcomes_to_domain(
+            possible_domains, domain_type_constraint
+        )
+    catch e
+        @error "error for node $(node.name)" exception=(e, catch_backtrace())
+    end
+    #     @error "Error occurred while finding domains for JuliaNode!"
+    #     println("Input domains:")
+    #     display(input_domains |> collect)
+    #     println("Input domain values:")
+    #     display(
+    #         [collect(vals(dom)) for dom in input_domains]
+    #     )
+    #     error(e)
+    # end
 end
 
 function possible_outcomes_to_domain(possible_outcomes::EnumeratedDomain, domain_type_constraint=Domain)

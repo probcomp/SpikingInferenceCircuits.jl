@@ -5,7 +5,6 @@ using GLMakie
 using StatsBase
 using GeometryBasics
 using FileIO
-import AbstractPlotting as AP
 import NaNMath as nm
 # try only a few particles, scoring and resampling useful story.
 # more complex renderer -- extend to the general case but dont expand the scope.
@@ -42,8 +41,7 @@ import NaNMath as nm
 
 # 1D switch model for para data. 
 
-include("../../src/ProbEstimates/src/ProbEstimates.jl")
-using .ProbEstimates: Cat, LCat
+using ProbEstimates: Cat, LCat
 
 include("model_utils.jl")
 include("model_hyperparams.jl")

@@ -114,5 +114,5 @@ gen_fn_circuit(f::Function, arg_domains::Tuple{Vararg{FiniteDomain}}, ::Op) wher
         f
     )
 
-gen_fn_circuit(::Function, ::Tuple{Vararg{<:Domain}}, ::Op) where {Op <: GenFnOp} =
-    error("Currently, the circuit compiler supports deterministic functions where each input is from a FiniteDomain.")
+gen_fn_circuit(::Function, arg_domains::Tuple{Vararg{<:Domain}}, ::Op) where {Op <: GenFnOp} =
+    error("Currently, the circuit compiler only supports deterministic functions where each input is from a FiniteDomain, which is not satisfied by domains $arg_domains.")

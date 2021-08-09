@@ -152,8 +152,7 @@ function dynamic_model_smc(
     function resample_rejuvenate_and_track_traces!(state)
         push!(weighted_traces, collect(zip(state.traces, state.log_weights)))
 
-        # always resample
-        Gen.maybe_resample!(state, ess_threshold=ess_threshold)
+        maybe_resample!(state, ess_threshold=ess_threshold)
 
         for i=1:n_particles
             state.traces[i] = rejuvenate(state.traces[i])
@@ -189,6 +188,9 @@ function nest_at(addr, submap::Gen.ChoiceMap)
     return c
 end
 
+maybe_resample!(state; ess_threshold) = Gen.maybe_resample!(state; ess_threshold)
+resample(traces, logweights, n_samples) = [traces[categorical(normalize(exp.(logweights)))] for _=1:n_samples]
+
 export @DynamicModel, @compile_step_proposal, @compile_initial_proposal
 export dynamic_model_smc, get_dynamic_model_obs
 export obs_choicemap, latents_choicemap
@@ -197,5 +199,8 @@ include("enumeration_bayes_filter.jl")
 
 export EnumerationBayesFilter, enumeration_bayes_filter_from_groundtruth
 export enumeration_filter_init, enumeration_filter_step
+
+include("particle_gibbs.jl")
+export single_step_particle_gibbs_rejuv_kernel, single_step_particle_gibbs
 
 end

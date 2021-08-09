@@ -70,14 +70,15 @@ function figure_for_smc_snn_run(
 end
 
 ### Visualize a particular run: ###
-save_file() = "snn_runs/better_organized/velwalk2d/2step/2021-07-24__15-52" # TODO
+# save_file() = "snn_runs/better_organized/velwalk2d/2step/2021-07-24__15-52"
+save_file() = "snn_runs/better_organized/velwalk2d/10step/2021-07-25__22-00"
 NPARTICLES() = 2
 
 obs = [(2, 1), (3, 3), (4, 6), (5, 7), (5, 10), (7, 10), (5, 8), (3, 6), (1, 3), (2, 3), (1, 2)]
 groundtruth_pos = [(2, 1), (3, 3), (4, 5), (5, 7), (6, 9), (7, 10), (5, 8), (3, 6), (1, 4), (1, 3), (1, 2)]
 groundtruth_vel = [(1, 2), (1, 2), (1, 2), (1, 2), (1, 2), (1, 2), (-2, -2), (-2, -2), (-2, -2), (-1, -1), (-1, -1)]
 
-# events = deserialize(save_file())
+events = deserialize(save_file())
 (fig, t) = figure_for_smc_snn_run(
     events, NPARTICLES(), obs, groundtruth_pos, groundtruth_vel
 ); fig

@@ -3,6 +3,9 @@ struct PoissonOffGate <: ConcretePulseIRPrimitive
     offrate::Float64
     onrate::Float64
 end
+PoissonOffGate(ΔT::Real, max_delay::Real, M::Real, offrate::Real, onrate::Real) =
+    PoissonOffGate(ConcreteOffGate(ΔT, max_delay, M), offrate, onrate)
+
 Circuits.abstract(g::PoissonOffGate) = g.gate
 for s in (:target, :inputs, :outputs)
     @eval (Circuits.$s(g::PoissonOffGate) = Circuits.$s(Circuits.abstract(g)))

@@ -39,6 +39,11 @@ export LCat, Cat, PseudoMarginalizedDist
 
 include("compilation_compatibility.jl")
 
-include("to_single_line.jl")
+include("normalize_weights.jl")
+
+# overwrite methods in DynamicModels so that inference uses the noise model
+include("dynamic_models_overwrites.jl")
+
+include("spiketrains.jl")
 
 end # module
