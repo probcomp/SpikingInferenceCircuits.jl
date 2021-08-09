@@ -48,6 +48,9 @@ function inline_node_check(component)
 end
 
 inlined, names, state = Circuits.inline(impl)
+ks_vel = keys(state.internals)
+
+# Full.
 Circuits.viz!(inlined; 
               base_path = "graphviz/velwalk1d")
 inlined, names, state = Circuits.inline(impl;
@@ -55,23 +58,24 @@ inlined, names, state = Circuits.inline(impl;
 Circuits.viz!(state; 
               base_path = "graphviz/sdc_velwalk1d")
 
-#X_init = 3
-#Y_init = 0
-#Z_init = 5
-#includet("3dline.jl")
-#inlined, names, state = Circuits.inline(impl)
-#Circuits.viz!(inlined; 
-#              base_path = "graphviz/3dline")
-#inlined, names, state = Circuits.inline(impl;
-#                    treat_as_primitive = inline_node_check)
-#Circuits.viz!(state; 
-#              base_path = "graphviz/sdc_3dline")
-
-includet("occlusion_tracking.jl")
-inlined, names, state = Circuits.inline(impl)
-Circuits.viz!(inlined; 
-              base_path = "graphviz/occlusion")
-inlined, names, state = Circuits.inline(impl;
-                                        treat_as_primitive = inline_node_check)
+# Sub-circuits.
+_, _, state = Circuits.inline(impl[:subsequent_steps => :smcstep => :particles => 1 => :propose])
 Circuits.viz!(state; 
-              base_path = "graphviz/sdc_occlusion")
+              base_path = "graphviz/velwalk1d_propose")
+_, _, state = Circuits.inline(impl[:subsequent_steps => :smcstep => :particles => 1 => :propose]; treat_as_primitive = inline_node_check)
+Circuits.viz!(state; 
+              base_path = "graphviz/sdc_velwalk1d_propose")
+
+_, _, state = Circuits.inline(impl[:subsequent_steps => :smcstep => :particles => 1 => :assess_latents])
+Circuits.viz!(state; 
+              base_path = "graphviz/velwalk1d_assess_latents")
+_, _, state = Circuits.inline(impl[:subsequent_steps => :smcstep => :particles => 1 => :assess_latents]; treat_as_primitive = inline_node_check)
+Circuits.viz!(state; 
+              base_path = "graphviz/sdc_velwalk1d_assess_latents")
+
+_, _, state = Circuits.inline(impl[:subsequent_steps => :smcstep => :particles => 1 => :assess_obs])
+Circuits.viz!(state; 
+              base_path = "graphviz/velwalk1d_assess_obs")
+_, _, state = Circuits.inline(impl[:subsequent_steps => :smcstep => :particles => 1 => :assess_obs]; treat_as_primitive = inline_node_check)
+Circuits.viz!(state; 
+              base_path = "graphviz/sdc_velwalk1d_assess_obs")

@@ -10,3 +10,6 @@ experiments/figure_saves/**/*
 *.mp4
 saves/**/*
 snn_runs/**/*
+.DS_Store
+*.png
+*.dot
