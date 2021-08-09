@@ -96,10 +96,10 @@ generate_occluded_bounce_tr() = generate(model, (15,), occluded_bounce_constrain
 gt_tr = generate_occluded_bounce_tr()
 (unweighed_trs, _) = do_inference(gt_tr)
 
-Inference results animation:
+# Inference results animation:
 (fig, t) = make_gt_particle_viz(gt_tr, unweighed_trs); fig
 
-Spiketrain figure:
+# Spiketrain figure:
 f = make_spiketrain_fig(
     last(unweighted_trs)[1], 1:3; nest_all_at=(:steps => 2 => :latents),
     resolution=(600, 450), figure_title="Dynamically Weighted Spike Code from Inference"
