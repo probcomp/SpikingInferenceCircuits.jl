@@ -46,17 +46,6 @@ function true_log_stepweights_to_noisy(weighted_trs, proposal)
     return true_logweight_to_logweight
 end
 
-# function true_log_stepweights_to_noisy(unweighted_trs, weighted_trs, proposal)
-#     true_logweight_to_logweight = Dict{Float64, Float64}()
-#     for (pre_step_tr, (weighted_new_tr, weight)) in zip(
-#         unweighted_trs, Iterators.drop(weighted_trs, 1)
-#     )
-#         true_weight = true_step_importance_weight(pre_step_tr, weighted_new_tr, proposal)
-#         push!(get!(true_logweight_to_logweight, true_weight, []), weight)
-#     end
-#     return true_logweight_to_logweight
-# end
-
 logavg(vec) = logsumexp(vec) - log(length(vec))
 function min_max_fraction(v, frac)
     srt = sort(v)
@@ -68,47 +57,45 @@ function min_max_fraction(v, frac)
     [srt[i] for i in idxs]
 end
 
-function weight_comparison_figure(logweight_to_noisy_logweights, additional_str="")
+function weight_comparison_figure(logweight_to_noisy_logweights, additional_str="", legend_pos=:rb)
 	log_true_weights = collect(keys(logweight_to_noisy_logweights))
 	log_avg_weights = [logavg(logweight_to_noisy_logweights[w]) for w in log_true_weights]
-	upper_errors = [
-		min_max_fraction(logweight_to_noisy_logweights[log_true], 0.95)[2] - log_true
-        for log_true in log_true_weights
-	]
-    lower_errors = [
-		log_true - min_max_fraction(logweight_to_noisy_logweights[log_true], 0.05)[1]
-        for log_true in log_true_weights
-	]
+	# upper_errors = [
+	# 	min_max_fraction(logweight_to_noisy_logweights[log_true], 0.95)[2] - log_true
+    #     for log_true in log_true_weights
+	# ]
+    # lower_errors = [
+	# 	log_true - min_max_fraction(logweight_to_noisy_logweights[log_true], 0.05)[1]
+    #     for log_true in log_true_weights
+	# ]
     
-	fig = Figure()
+	fig = Figure(resolution=(800, 450))
 	ax = fig[1,1] = Axis(fig,
-		title="Mean, 5th & 95th percentile SNN weight $additional_str",
-			xlabel="True log importance weight",
-			ylabel="Log of mean SNN importance weight"
+		title="Accuracy of Approximate Importance Weights from Dynamically Weighted Spike Code",
+			xlabel="Log importance weight for SMC transition",
+			ylabel="Sampled DWSC importance weights for transition"
 	)
 	
-	scat = scatter!(
-		log_true_weights, log_avg_weights, color=:black
-	)
-	errbars = errorbars!(
-		log_true_weights,
-		log_avg_weights,
-		lower_errors,
-		upper_errors,
-		color=:red
-	)
+	# scat = scatter!(
+	# 	log_true_weights, log_avg_weights, color=:black
+	# )
+    xs = reduce(vcat, [k for _ in v] for (k, v) in logweight_to_noisy_logweights)
+    ys = reduce(vcat, v for (_, v) in logweight_to_noisy_logweights)
+    scat = scatter!(
+        ax, xs, ys, color=:black
+    )
+	# errbars = errorbars!(
+	# 	log_true_weights,
+	# 	log_avg_weights,
+	# 	lower_errors,
+	# 	upper_errors,
+	# 	color=:red
+	# )
 	
 	minval = minimum(log_true_weights)
 	maxval = maximum(log_true_weights)
 	
 	line = lines!([minval, maxval], [minval, maxval])
-
-	axislegend(ax, [scat, errbars, line], [
-			"Log Mean\n Weight",
-			"5th & 95th\nPercentile\nLog Weight",
-			"y=x"
-			], position=:rb
-			)
 	
 	fig
 end
@@ -122,4 +109,4 @@ n_particles() = 10
 
 dict = true_log_stepweights_to_noisy(weighted_trs, approx_step_proposal)
 
-f = weight_comparison_figure(dict, "NG-F")
+f = weight_comparison_figure(dict, "", :tr)
