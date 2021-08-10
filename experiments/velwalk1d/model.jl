@@ -5,8 +5,8 @@ ProbEstimates.use_perfect_weights!()
 
 # Include some utilities for defining discrete probability distributions
 include("../utils/modeling_utils.jl")
-Positions() = 1:20
-Vels() = -3:3
+Positions() = 1:3
+Vels() = -1:1
 Bools() = [true, false]
 VelStepStd() = 1.0
 ObsStd() = 2.0

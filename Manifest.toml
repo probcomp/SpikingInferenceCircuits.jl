@@ -121,13 +121,13 @@ version = "1.0.1"
 
 [[CircuitViz]]
 deps = ["Catlab", "JSON", "LightGraphs"]
-path = "/Users/mccoybecker/.julia/dev/CircuitViz"
+path = "../CircuitViz.jl"
 uuid = "e42f04d7-ca66-4ed3-963b-f5c19d0970ef"
 version = "0.1.0"
 
 [[Circuits]]
 deps = ["CircuitViz", "Distributions", "LightGraphs", "Memoization"]
-path = "/Users/mccoybecker/.julia/dev/Circuits"
+path = "../Circuits.jl"
 uuid = "f5b243b3-c95b-4650-9ac7-659d8f0b0982"
 version = "0.1.0"
 
