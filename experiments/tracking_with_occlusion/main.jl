@@ -1,11 +1,11 @@
 using DynamicModels
-includet("model.jl")
-includet("groundtruth_rendering.jl")
-includet("prior_proposal.jl")
-includet("visualize.jl")
-includet("locally_optimal_proposal.jl")
+include("model.jl")
+include("groundtruth_rendering.jl")
+include("prior_proposal.jl")
+include("visualize.jl")
+include("locally_optimal_proposal.jl")
 
-use_ngf() = true
+use_ngf() = false
 
 if use_ngf()
     ProbEstimates.use_noisy_weights!()
@@ -28,19 +28,32 @@ obs_choicemap_to_vec_of_vec(ch) = [
 ]
 
 ### Run inference:
+
+# note that the number of steps comes out of get_dynamic_model_obs(gt_tr)[2] length. 
+
 do_inference(gt_tr; n_particles=10) = dynamic_model_smc(
     model, get_dynamic_model_obs(gt_tr),
     cm -> (obs_choicemap_to_vec_of_vec(cm),),
     init_prop, step_prop, n_particles
 );
 
+# function make_gt_particle_viz(gt_tr, unweighted_inferred_trs)
+#     GLMakie.activate!()
+#     nparticles = length(first(unweighted_trs))
+#     draw_gt_and_particles(tr, unweighted_trs,
+#     "$nparticles-particle SMC w/ locally-optimal proposal. Run in $(use_ngf() ? "NeuralGen-Fast." : "Vanilla Gen.")"
+#     );
+# end
+
 function make_gt_particle_viz(gt_tr, unweighted_inferred_trs)
     GLMakie.activate!()
-    nparticles = length(first(unweighted_trs))
-    draw_gt_and_particles(tr, unweighted_trs,
+    nparticles = length(first(unweighted_inferred_trs))
+    draw_gt_and_particles(gt_tr, unweighted_inferred_trs,
     "$nparticles-particle SMC w/ locally-optimal proposal. Run in $(use_ngf() ? "NeuralGen-Fast." : "Vanilla Gen.")"
     );
 end
+
+
 
 function surround3(ch, a, dom)
     v = ch[a => :val]
@@ -52,6 +65,7 @@ function surround3(ch, a, dom)
         return v:(v+2)
     end
 end
+
 latent_domains_for_viz(ch)     = (
     occₜ = surround3(ch, :occₜ, positions(OccluderLength())),
     xₜ   = surround3(ch, :xₜ, positions(SquareSideLength())),
@@ -61,7 +75,7 @@ latent_domains_for_viz(ch)     = (
 )
 
 function make_spiketrain_fig(tr, neurons_to_show_indices=1:3; nest_all_at, kwargs...)
-    ProbEstimates.Spiketrains.SpiketrainViz.CairoMakie.activate!()
+#    ProbEstimates.Spiketrains.SpiketrainViz.CairoMakie.activate!()
     propose_sampling_tree = Dict(
         :occₜ => [], :xₜ => [:occₜ], :yₜ => [],
         :vxₜ => [:xₜ], :vyₜ => [:yₜ]
@@ -101,9 +115,12 @@ gt_tr = generate_occluded_bounce_tr()
 
 # Spiketrain figure:
 f = make_spiketrain_fig(
-    last(unweighted_trs)[1], 1:3; nest_all_at=(:steps => 2 => :latents),
+    last(unweighed_trs)[1], 1:3; nest_all_at=(:steps => 2 => :latents),
     resolution=(600, 450), figure_title="Dynamically Weighted Spike Code from Inference"
 )
+
+
+
 
 # Draw observations:
 tr, _= generate(model, (2,), choicemap(
@@ -111,7 +128,12 @@ tr, _= generate(model, (2,), choicemap(
     (:init => :latents => :yₜ => :val, 6),
     (:init => :latents => :occₜ => :val, 7)
 ))
-using CairoMakie
-CairoMakie.activate!()
+
+#using CairoMakie
+#CairoMakie.activate!()
+GLMakie.activate!()
 (fig, t) = draw_obs(tr); fig
+
+# yeah this is right -- for the bottom two there are only 2 steps
+
 

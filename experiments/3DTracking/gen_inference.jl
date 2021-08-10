@@ -1,5 +1,6 @@
 using Base: Int64
 using DynamicModels: @DynamicModel, @compile_initial_proposal, @compile_step_proposal, get_dynamic_model_obs, dynamic_model_smc
+using ProbEstimates
 
 include("model.jl")
 ProbEstimates.use_perfect_weights!()

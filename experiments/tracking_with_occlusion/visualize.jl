@@ -103,6 +103,7 @@ function draw_particle_occ_gt!(ax, t, tr, num_particles)
         color=RGBA(0, 0, 0, min(0.95, 2.0/num_particles))
     )
 end
+
 function draw_particles_gt!(drawfn, ax, t, trs_indexed_by_time)
     isempty(trs_indexed_by_time) && return;
     for i=1:length(trs_indexed_by_time[1])
@@ -128,6 +129,8 @@ plot_point!(ax, t, time_to_pt, domain;
     )
 time_to_vel(tr) = t -> (latents_choicemap(tr, t)[:vxₜ => :val], latents_choicemap(tr, t)[:vyₜ => :val])
 
+
+# particles here is unweighted_trs
 function draw_gt_and_particles(tr, particles, inference_method_str)
     fig = Figure(resolution=(800, 1500))
     t = Observable(0)
@@ -194,7 +197,7 @@ function animate(t, T)
     for _t = 0:T
         t[] = _t
         sleep(1/FRAMERATE())
-    end
+    end-=wol
 end
 
 make_video(fig, t, T, filename) =

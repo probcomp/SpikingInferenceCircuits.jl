@@ -26,6 +26,7 @@ end
 end
 
 xs() = [[pixx for _=1:ImageSideLength()] for pixx=1:ImageSideLength()]
+
 @gen function obs_model(occ, x, y, vx, vy)
     # TODO: Figure out whether each pixel is in the given range
     # _before_ calling `fill` to reduce the number of edges
@@ -57,10 +58,13 @@ vel_change_probs(vxₜ₋₁, xₜ₋₁) =
     else
         maybe_one_off(vxₜ₋₁, VelOneOffProb(), Vels())
     end
+
 @gen function step_latent_model(occₜ₋₁, xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁)
+    # here these guarantee a bounce of its hitting a wall, otherwise
+    # maybe_one_off prev vel. occluder can also move. 
     vxₜ ~ VelCat(vel_change_probs(vxₜ₋₁, xₜ₋₁))
     vyₜ ~ VelCat(vel_change_probs(vyₜ₋₁, yₜ₋₁))
-	occₜ ~ Cat(maybe_one_off(occₜ₋₁, OccOneOffProb(), positions(OccluderLength())))
+    occₜ ~ Cat(maybe_one_off(occₜ₋₁, OccOneOffProb(), positions(OccluderLength())))
     xₜ ~ Cat(onehot(xₜ₋₁ + vxₜ, positions(SquareSideLength())))
     yₜ ~ Cat(onehot(yₜ₋₁ + vyₜ, positions(SquareSideLength())))
 	# xₜ ~ Cat(truncated_discretized_gaussian(xₜ₋₁ + vxₜ, 2., positions(SquareSideLength())))

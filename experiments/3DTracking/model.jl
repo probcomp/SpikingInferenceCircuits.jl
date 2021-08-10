@@ -20,8 +20,6 @@ import NaNMath as nm
 # the proposal is bound by the grid. what can happen is that at the edges, the
 # model will assign probabilities to impossible distances. also make the model bound by the grid whenplacre
 # choosing distances!
-
-
 # biorealistic 15 min writeup
 # visualizations on the 3D model
 # compile the 3D model to the neural net. 
