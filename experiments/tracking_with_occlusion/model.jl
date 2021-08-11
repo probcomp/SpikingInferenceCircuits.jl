@@ -37,7 +37,6 @@ xs() = [[pixx for _=1:ImageSideLength()] for pixx=1:ImageSideLength()]
         fill(1:ImageSideLength(), ImageSideLength()),
         xs()
     )
-
     return (img_inner,)
 end
 
@@ -69,5 +68,5 @@ vel_change_probs(vxₜ₋₁, xₜ₋₁) =
     yₜ ~ Cat(onehot(yₜ₋₁ + vyₜ, positions(SquareSideLength())))
 	# xₜ ~ Cat(truncated_discretized_gaussian(xₜ₋₁ + vxₜ, 2., positions(SquareSideLength())))
 	# yₜ ~ Cat(truncated_discretized_gaussian(yₜ₋₁ + vyₜ, 2., positions(SquareSideLength())))
-	return (occₜ, xₜ, yₜ, vxₜ, vyₜ)
+    return (occₜ, xₜ, yₜ, vxₜ, vyₜ)
 end

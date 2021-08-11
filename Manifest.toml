@@ -1130,7 +1130,7 @@ uuid = "549ce59a-75fd-4aaf-b0ba-30f73ee3de21"
 version = "0.1.0"
 
 [[SpikingInferenceCircuits]]
-deps = ["BSON", "Bijections", "CPTs", "CairoMakie", "Circuits", "Colors", "DiscreteIRTransforms", "Distributions", "DrWatson", "DynamicModels", "FileIO", "Flux", "GLMakie", "Gen", "GeometryBasics", "InteractiveUtils", "NaNMath", "Parameters", "ProbEstimates", "ProgressMeter", "Revise", "Setfield", "SpikingCircuits", "StatsBase", "TensorBoardLogger"]
+deps = ["BSON", "Bijections", "CPTs", "CUDA", "CairoMakie", "Circuits", "Colors", "DiscreteIRTransforms", "Distributions", "DrWatson", "DynamicModels", "FileIO", "Flux", "GLMakie", "Gen", "GeometryBasics", "InteractiveUtils", "NaNMath", "Parameters", "ProbEstimates", "ProgressMeter", "Revise", "Setfield", "SpikingCircuits", "StatsBase", "TensorBoardLogger"]
 path = "/Users/nightcrawler2/SpikingInferenceCircuits.jl"
 uuid = "ef694985-0566-4478-a48d-fa3dba6654f1"
 version = "0.1.0"

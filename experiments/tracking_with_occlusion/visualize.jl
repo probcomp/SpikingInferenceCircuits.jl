@@ -197,7 +197,7 @@ function animate(t, T)
     for _t = 0:T
         t[] = _t
         sleep(1/FRAMERATE())
-    end-=wol
+    end
 end
 
 make_video(fig, t, T, filename) =
