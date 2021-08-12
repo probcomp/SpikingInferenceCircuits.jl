@@ -12,13 +12,17 @@ import DrWatson: savename, struct2dict
 import ProgressMeter
 
 # TODO
-# make plots a heatmap instead of a scatter
+
+# write the digitize obs function according to vikash's answer about the
+# structure of the training
+
+
+
 
 # plot the distribution of xt when we see it and when we dont.
 # condition on the fact that we don't see the ball and then hist x given occluder pos.
 
 # xt vs obs given visible
-
 
 # xt vs occluder_pos given dot invisible
 # be flexible to x OR y. 
@@ -32,8 +36,6 @@ import ProgressMeter
 # this is also a heatmap. 
 # ALSO DO Y for every x plot you do
 # do this all on the training data. 
-
-
 
 include("model.jl")
 include("groundtruth_rendering.jl")
@@ -49,6 +51,7 @@ lvs = [:xₜ, :yₜ, :vxₜ, :vyₜ, :occₜ]
 lv_hps = [positions(SquareSideLength()), positions(SquareSideLength()),
           Vels(), Vels(), positions(OccluderLength())]
 digitize(f) = f == Occluder() ? [0, 0, 1] : f == Empty() ? [0, 1, 0] : [1, 0, 0]
+#digitize_obs(f) = 
 get_state_values(cmap) = [cmap[lv => :val] for lv in lvs]
 lv_to_onehot_array(data_array) = vcat([onehot(d, hp) for (d, hp) in zip(data_array, lv_hps)]...)
 
@@ -68,24 +71,34 @@ function extract_image_array(cmap)
 end
 
 
-function generate_samples(num_trajectories::Int64, num_steps::Int64)
+function generate_training_data(num_trajectories::Int64, num_steps::Int64)
     training_data_raw = []
     training_images = []
+    ballpos_and_vel_from_image = []
     for traj in 1:num_trajectories
         tr = simulate(model, (num_steps,))
         for step in 1:num_steps
             prevstate = get_state_values(latents_choicemap(tr, step-1))
-            obs_image = extract_image_array(obs_choicemap(tr, step))
+            prev_image = extract_image_array(obs_choicemap(tr, step-1))
+            curr_image = extract_image_array(obs_choicemap(tr, step))
+            prev_ballpos = find_ball_location(prev_image)
+            curr_ballpos = find_ball_location(curr_image)
+            curr_velocity = curr_ballpos - prev_ballpos
+            
             (image, ) = tr[DynamicModels.obs_addr(step)]
             currstate = get_state_values(latents_choicemap(tr, step))
-            push!(training_data_raw, (prevstate, obs_image, currstate))
+            push!(training_data_raw, (prevstate, curr_image, currstate))
             push!(training_images, image)
+            push!(ballpos_and_vel_from_image, 
         end
     end
     training_data_digitized = [[vcat(lv_to_onehot_array(d[1]), d[2]),
                                 lv_to_onehot_array(d[3])] for d in training_data_raw]
     return training_data_raw, training_data_digitized, training_images
 end
+
+
+
 
 
 function scatter_state_vs_prevstate(tdr)
@@ -131,6 +144,35 @@ function heatmap_state_vs_prevstate(tdr, lv)
 end
 
 
+function heatmap_lvs_in_current_state(tdr, lv1, lv2)
+    fig = Figure(resolution=(1000,1000))
+    axes = Axis(fig[1,1]) 
+    data_ind_1 = findfirst(f -> f == lv1, lvs)
+    data_ind_2 = findfirst(f -> f == lv2, lvs)
+    lv_hyp_array_1 = lv_hps[data_ind_1]
+    lv_hyp_array_2 = lv_hps[data_ind_2]
+    hm_array = zeros(length(lv_hyp_array_1), length(lv_hyp_array_2))
+    plot_data = [(d[3][data_ind_1], d[3][data_ind_2]) for d in tdr]
+    for pd in plot_data
+        state_v1 = findfirst(f -> f == pd[1], lv_hyp_array_1)
+        state_v2 = findfirst(f -> f == pd[2], lv_hyp_array_2)
+        hm_array[state_v1, state_v2] += 1
+    end
+    hm = heatmap!(axes, hm_array, colormap=:thermal)
+    axes.xlabel = string(lv1)
+    axes.xlabelsize = 30
+    axes.xticks = lv_hyp_array_1    
+    axes.ylabel = string(lv2)
+    axes.ylabelsize = 30
+    axes.yticks = lv_hyp_array_2
+    cbar = Colorbar(fig[1,2], hm)
+    display(fig)
+end
+
+
+
+
+
 # conditioner is going to be a mappable function over the
 # zipped raw training data and training images
 # f -> 
@@ -143,16 +185,25 @@ function plot_conditioned_lv(tdr, training_images, conditioner)
     # start by zipping
     training_data_and_images = collect(zip(tdr, training_images))
     tdr_filtered_by_conditioner = [t[1] for t in filter(conditioner, training_data_and_images)]
- end   
+end   
 
+
+function make_lv_histogram(tdr, lv, state_or_prevstate)
+    data_ind = findfirst(f -> f == lv, lvs)
+    plot_data = [d[state_or_prevstate][data_ind] for d in tdr]
+    fig = Figure()
+    ax = Axis(fig[1,1])
+    hist!(ax, plot_data, bins=length(lv_hps[data_ind]))
+    display(fig)
+end
 
 function find_ball_location(image)
     ball_x = get_x_pos(image)
-    ball_y = isnothing(ball_x) ? :Nothing : get_y_pos(image, ball_x)
-    return ball_x, ball_y
+    ball_y = isnothing(ball_x) ? nothing : get_y_pos(image, ball_x)
+    return [ball_x, ball_y]
 end
 
-    
+
 
 """ FLUX ANN TRAINING AND TESTING """ 
 
@@ -257,9 +308,9 @@ end
     
 
 function flux_wrapper(nn_args::Args)
-    tdr, td = generate_samples(nn_args.training_samples, nn_args.num_smc_steps)
+    tdr, td = generate_training_data(nn_args.training_samples, nn_args.num_smc_steps)
     println("Generated Training Data")
-    vdr, vd = generate_samples(nn_args.validation_samples, nn_args.num_smc_steps)
+    vdr, vd = generate_training_data(nn_args.validation_samples, nn_args.num_smc_steps)
     println("Generated Validation Set")
     nn_model = nn_cand1(td[1][1])
     train_nn_on_dataset(nn_model,
