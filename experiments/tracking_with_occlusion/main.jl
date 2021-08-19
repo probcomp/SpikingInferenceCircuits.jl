@@ -1,9 +1,9 @@
 using DynamicModels
-includet("model.jl")
-includet("groundtruth_rendering.jl")
-includet("prior_proposal.jl")
-includet("visualize.jl")
-includet("locally_optimal_proposal.jl")
+include("model.jl")
+include("groundtruth_rendering.jl")
+include("prior_proposal.jl")
+include("visualize.jl")
+include("locally_optimal_proposal.jl")
 
 use_ngf() = true
 
@@ -112,11 +112,11 @@ generate_occluded_bounce_tr() = generate(model, (15,), occluded_bounce_constrain
 VelOneOffProb() = 0.1
 gt_tr = generate_occluded_bounce_tr();
 VelOneOffProb() = 0.2
-(unweighted_trs, _) = do_inference(gt_tr);
+(unweighted_trs, _) = do_inference(gt_tr; n_particles=30);
 
 # # Inference results animation:
 
-(fig, t) = make_gt_particle_viz_img_only(gt_tr, unweighted_trs); fig
+(fig, t) = make_gt_particle_viz_img_only(gt_tr, unweighted_trs); t[] = 4; fig
 t[] = 2
 save("inferenceframe1.png", fig)
 t[] = 4

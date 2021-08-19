@@ -198,14 +198,15 @@ late_nums = [30, 33, 24, 21, 36, 31, 39]
 # specs = [
 #     (nums, 100, 2, 2) for nums in numss
 # ]
-# do_smc_runs(specs; override_title_to="")
+specs = [(late_nums, 10, 2, 2)]
+do_smc_runs(specs)
 
-specs = [
-    (late_nums, 100, 100, 2),
-    (late_nums, 100, 2, 0)
-]
-titles = ["Inferred P[number in set ; observed numbers]", "Inferred P[number in set ; observed numbers]"]
-do_smc_runs(specs; titles)
+# specs = [
+#     (late_nums, 100, 100, 2),
+#     (late_nums, 100, 2, 0)
+# ]
+# titles = ["Inferred P[number in set ; observed numbers]", "Inferred P[number in set ; observed numbers]"]
+# do_smc_runs(specs; titles)
 
 # do_enumeration_save_fig(late_nums; title="Exact P[number in set ; observed numbers]", fontsize=20)
 
@@ -221,14 +222,14 @@ do_smc_runs(specs; titles)
 # do_enumeration_save_fig(late_nums)
 
 ### Spiketrain Figure:
-(unweighted_trs, weighted_trs) = do_smc_inference(trace_with_nums(late_nums), 50, 2, 1)
-get_f(i) = make_spiketrain_fig(first(unweighted_trs)[i]; resolution=(600, 600 * 3/4), figure_title="Dynamically Weighted Spike Code from Inference")
-function get_fig()
-    for i=1:100
-        try
-            return get_f(i)
-        catch e
-        end
-    end
-end
-ProbEstimates.Spiketrains.SpiketrainViz.save("concept_learning.pdf", get_fig())
+# (unweighted_trs, weighted_trs) = do_smc_inference(trace_with_nums(late_nums), 50, 2, 1);
+# get_f(i) = make_spiketrain_fig(first(unweighted_trs)[i]; resolution=(600, 600 * 3/4), figure_title="Dynamically Weighted Spike Code from Inference")
+# function get_fig()
+#     for i=1:100
+#         try
+#             return get_f(i)
+#         catch e
+#         end
+#     end
+# end
+# ProbEstimates.Spiketrains.SpiketrainViz.save("concept_learning.png", get_fig())

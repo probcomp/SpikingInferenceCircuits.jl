@@ -11,10 +11,16 @@ add_dots!(ax, pts) = scatter!(ax, pts, [0.02 for _ in pts]; color=:red, markersi
 function visualize(pts, probs; title="", resolution=(800, 400), fontsize=20)
     f = Figure(;resolution, fontsize)
     ax = Axis(f[1, 1], xlabel="Number", ylabel="Probability", title=title)
-    make_hist!(ax, probs)
-    add_dots!(ax, pts)
+    hist = make_hist!(ax, probs)
+    dots = add_dots!(ax, pts)
     xlims!(ax, (1, length(probs)))
     ylims!(ax, (0, 1))
+
+    Legend(f[2, 1],
+        [dots, hist],
+        ["Observed data", "Probability of number being in set"]
+    )
+
     return f
 end
 

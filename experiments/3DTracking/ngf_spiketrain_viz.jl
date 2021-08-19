@@ -40,7 +40,7 @@ function surround3(ch, a, dom)
     end
 end
 
-latent_domains() = (vxₜ=Vels(), vyₜ=Vels(), vzₜ=Vels(), xₜ=Xs(), yₜ=Ys(), zₜ=Zs(), rₜ=Rs(), exact_ϕ=ϕs(), exact_θ=θs())
+latent_domains() = (#=vxₜ=Vels(), vyₜ=Vels(), vzₜ=Vels(), =# xₜ=Xs(), yₜ=Ys(), zₜ=Zs(), rₜ=Rs(), exact_ϕ=ϕs(), exact_θ=θs())
 latent_domains_for_viz(ch) = Dict(
         name => surround3(ch, name, dom) for (name, dom) in pairs(latent_domains())
     )
@@ -48,8 +48,9 @@ latent_domains_for_viz(ch) = Dict(
 function make_spiketrain_fig(tr, neurons_to_show_indices=1:3; nest_all_at, kwargs...)
     ProbEstimates.Spiketrains.SpiketrainViz.CairoMakie.activate!()
     assess_sampling_tree = Dict(
-        :vxₜ => [], :vyₜ => [], :vzₜ => [],
-        :xₜ => [:vxₜ], :yₜ => [:vyₜ], :zₜ => [:vzₜ],
+        # :vxₜ => [], :vyₜ => [], :vzₜ => [],
+        # :xₜ => [:vxₜ], :yₜ => [:vyₜ], :zₜ => [:vzₜ],
+        :xₜ => [], :yₜ => [], :zₜ => [],
         :exact_ϕ => [:xₜ, :yₜ, :zₜ],
         :exact_θ => [:xₜ, :yₜ, :zₜ],
         :rₜ => [:xₜ, :yₜ, :zₜ, :exact_θ, :exact_ϕ]
@@ -61,9 +62,9 @@ function make_spiketrain_fig(tr, neurons_to_show_indices=1:3; nest_all_at, kwarg
         :xₜ => [:exact_θ, :exact_ϕ, :rₜ],
         :yₜ => [:exact_θ, :exact_ϕ, :rₜ],
         :zₜ => [:exact_θ, :exact_ϕ, :rₜ],
-        :vxₜ => [:exact_θ, :exact_ϕ, :rₜ],
-        :vyₜ => [:exact_θ, :exact_ϕ, :rₜ],
-        :vzₜ => [:exact_θ, :exact_ϕ, :rₜ],
+        # :vxₜ => [:exact_θ, :exact_ϕ, :rₜ],
+        # :vyₜ => [:exact_θ, :exact_ϕ, :rₜ],
+        # :vzₜ => [:exact_θ, :exact_ϕ, :rₜ],
     ]
 
     propose_addr_topological_order = [p.first for p in _propose_sampling_tree]
