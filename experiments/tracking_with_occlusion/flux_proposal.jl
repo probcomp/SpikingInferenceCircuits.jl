@@ -53,9 +53,10 @@ lvs = [:xₜ, :yₜ, :vxₜ, :vyₜ, :occₜ]
 lv_hps = [positions(SquareSideLength()), positions(SquareSideLength()),
           Vels(), Vels(), positions(OccluderLength())]
 digitize(f) = f == Occluder() ? [0, 0, 1] : f == Empty() ? [0, 1, 0] : [1, 0, 0]
-#digitize_obs(f) = 
+invert_digitized_obs(f) = f == [0, 0, 1] ? Occluder() : f == [0, 1, 0] ? Empty() : Object()
 get_state_values(cmap) = [cmap[lv => :val] for lv in lvs]
 lv_to_onehot_array(data_array) = vcat([onehot(d, hp) for (d, hp) in zip(data_array, lv_hps)]...)
+probs_to_lv(arr, lv_h) = lv_h[findmax(arr)[2]]
 
 
 
@@ -321,7 +322,16 @@ function flux_wrapper(nn_args::Args)
 end
 
     
-                   
+function extract_latents_from_nn(digitized_array)
+    latents = []
+    counter = 1
+    for lvh in lv_hps
+        digitized_lv = digitized_array[counter:counter+length(lvh)-1]
+        push!(latents, probs_to_lv(digitized_lv, lvh))
+        counter += length(lvh)
+    end
+    observable = 
+        
                    
     
     
