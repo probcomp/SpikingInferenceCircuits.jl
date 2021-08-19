@@ -16,6 +16,8 @@ import ProgressMeter
 # write the digitize obs function according to vikash's answer about the
 # structure of the training
 
+fig = Figure()
+
 
 
 
