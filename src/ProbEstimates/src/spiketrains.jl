@@ -74,7 +74,7 @@ into the trace's recip column, regardless of the weight mode).
 =#
 module Spiketrains
 using Distributions: Exponential, DiscreteUniform
-using ProbEstimates: MaxRate, AssemblySize, K_fwd, K_recip, with_weight_type
+using ProbEstimates: MaxRate, AssemblySize, Latency, K_fwd, K_recip, with_weight_type
 using Gen
 
 nest(::Nothing, b) = b
@@ -143,6 +143,7 @@ struct DenseValueSpiketrain
 end
 struct ISSpiketrains
     valtimes::Dict{<:Any, Float64}
+    val_trains::Dict{<:Any, Vector{Float64}}
     recip_trains::Dict{<:Any, DenseValueSpiketrain}
     fwd_trains::Dict{<:Any, DenseValueSpiketrain}
 end
@@ -164,7 +165,7 @@ FwdScoreLine(addr, line_to_show) = ScoreLine(false, addr, line_to_show)
 
 get_line(spec::VarValLine, tr, trains; nest_all_at) = 
     try
-        tr[nest(nest_all_at, spec.addr)] == spec.value ? [trains.valtimes[spec.addr]] : []
+        tr[nest(nest_all_at, spec.addr)] == spec.value ? trains.val_trains[spec.addr] : []
     catch e
         @error "Error looking up $(nest(nest_all_at, spec.addr)) in trace." exception=(e, catch_backtrace())
     end
@@ -192,16 +193,17 @@ function sample_spiketimes_for_trace(
     assess_sampling_tree,
     propose_addr_topological_order,
     to_ready_spike_dist;
-    nest_all_at=nothing
+    nest_all_at=nothing, wta_memory=Latency()
 )
     valtimes = sampled_value_times(inter_sample_time_dist, propose_sampling_tree, propose_addr_topological_order)
+    val_trains = value_trains(valtimes, tr, MaxRate(), K_recip(), wta_memory; nest_all_at)
     recip_times = recip_spiketimes(valtimes, propose_addr_topological_order, tr, AssemblySize(), MaxRate(), K_recip(), to_ready_spike_dist; nest_all_at)
     fwd_times   = fwd_spiketimes(
         fwd_score_ready_times(valtimes, assess_sampling_tree),
         keys(assess_sampling_tree), tr, AssemblySize(), MaxRate(), K_fwd(), to_ready_spike_dist; nest_all_at
     )
-
-    return ISSpiketrains(valtimes, recip_times, fwd_times)
+    
+    return ISSpiketrains(valtimes, val_trains, recip_times, fwd_times)
 end
 sample_spiketimes_for_trace(tr, propose_sampling_tree, assess_sampling_tree, propose_addr_topological_order; nest_all_at=nothing) =
     sample_spiketimes_for_trace(
@@ -228,6 +230,39 @@ function sampled_value_times(
         value_times[addr] = reduce(max, parent_times; init=0.) + rand(inter_sample_time_dist)
     end
     return value_times
+end
+
+function value_trains(
+    valtimes, # addr -> spike which samples the outcome
+    tr, neuron_rate,
+    count_threshold, memory;
+    nest_all_at
+)
+    d = Dict{Any, Vector{Float64}}()
+    ch = get_ch(tr, nest_all_at)
+    for (addr, first_spike_time) in valtimes
+        num_spikes = try
+            get_recip_score(ch, addr) * count_threshold |> to_int
+        catch e
+            @error "count threshold = $count_threshold; addr = $addr; get_recip_score(ch, addr) = $(get_recip_score(ch, addr))" exception=(e, catch_backtrace())
+            error()
+        end
+        p = with_weight_type(:perfect, () -> exp(Gen.project(tr, Gen.select(nest(nest_all_at, addr)))))
+        rate = neuron_rate * p
+        d[addr] = poisson_process_train_with_rate(first_spike_time, rate, memory)
+    end
+    return d
+end
+
+function poisson_process_train_with_rate(starttime, rate, memory)
+    times = [starttime]
+    while last(times) - starttime < memory
+        push!(times, rand(last(times) + Exponential(1/rate)))
+    end
+    if last(times) - starttime > memory
+        pop!(times)
+    end
+    return times
 end
 
 ### TODO: refactor code to reduce repeat between `recip_spiketimes` and `fwd_spiketimes`
@@ -279,6 +314,9 @@ function fwd_spiketimes(
         neuron_times = spiketrains_for_n_spikes(
             num_spikes, assembly_size, neuron_rate * p, ready_times[addr]
         )
+
+        # TODO: handle the case where we get 0 spikes
+
         ready_time = last(sort(reduce(vcat, neuron_times; init=Float64[]))) + rand(dist_to_ready_spike)
         times[addr] = DenseValueSpiketrain(ready_time, neuron_times)
     end
