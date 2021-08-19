@@ -2,7 +2,7 @@ using GLMakie
 using Colors
 
 to_color(::Empty) = colorant"white"
-to_color(::Object) = colorant"gold"
+to_color(::Object) = colorant"royalblue3"
 to_color(::Occluder) = colorant"indianred"
 
 to_idx(::Empty) = 1
@@ -22,7 +22,7 @@ function hollow_rect!(ax, pts; color)
             (x2, y2), (x2, y1),
             (x2, y1), (x1, y1)
         ], pts);
-        color, linewidth=3
+        color, linewidth=5
     )
 end
 
@@ -51,16 +51,21 @@ sq_right(tr, t) = sq_left(tr, t) + SquareSideLength() - 0.2
 occ_left(tr, t)     = latents_choicemap(tr, t)[:occₜ => :val] - 0.4
 occ_right(tr, t)    = occ_left(tr, t) + OccluderLength() - 0.2
 
+sq_x_center(tr, t) = latents_choicemap(tr, t)[:xₜ => :val]
+sq_y_center(tr, t) = latents_choicemap(tr, t)[:yₜ => :val]
+sq_center(tr, t) = Point2f0(sq_x_center(tr, t), sq_y_center(tr, t))
+
 function draw_obs!(ax, t, tr)
     obs = observed_imgs(tr)
     heatmap!(ax, @lift(to_color_matrix(obs[$t + 1])), colormap=map(to_color, PixelColors()))
 end
 function draw_gt_sq!(ax, t, tr)
-    hollow_rect!(
-        ax,
-        lift(t -> (sq_left(tr, t), sq_bot(tr, t), sq_right(tr, t), sq_top(tr, t)), t),
-        color=colorant"seagreen"
-    )
+    # hollow_rect!(
+    #     ax,
+    #     lift(t -> (sq_left(tr, t), sq_bot(tr, t), sq_right(tr, t), sq_top(tr, t)), t),
+    #     color=colorant"seagreen"
+    # )
+    scatter!(ax, lift(t -> [sq_center(tr, t)], t), color=colorant"seagreen", markersize=30)
 end
 function draw_gt_occ!(ax, t, tr)
     hollow_rect!(
@@ -92,7 +97,7 @@ end
 function draw_particle_sq_gt!(ax, t, tr, num_particles) # tr = observable giving trace at time $t
     poly!(
         ax,
-        @lift(Rect(sq_left($tr, $t), sq_bot($tr, $t), SquareSideLength() - 0.2, SquareSideLength() - 0.2)),
+        @lift(Rect(sq_left($tr, $t) + 0.1, sq_bot($tr, $t) + 0.1, SquareSideLength() - 0.4, SquareSideLength() - 0.4)),
         color=RGBA(0, 0, 0, min(1., 2.0/num_particles))
     )
 end
@@ -169,20 +174,54 @@ function draw_gt_and_particles(tr, particles, inference_method_str)
 
     leg = Legend(fig[6, :],
         [
-            [
-                PolyElement(color=:indianred),
-                PolyElement(color=:gold, points = Point2f0[(0.2, 0.2), (0.8, 0.2), (0.8, 0.8), (0.2, 0.8)])
-            ],
+            PolyElement(color=:indianred),
+            PolyElement(color=:royalblue3, points = Point2f0[(0.2, 0.2), (0.8, 0.2), (0.8, 0.8), (0.2, 0.8)]),
             [LineElement(color=:seagreen), MarkerElement(marker=:circle, color=:seagreen, markersize=10)],
             [
                 PolyElement(color=:gray),
                 PolyElement(color=:black, points = Point2f0[(0.2, 0.2), (0.8, 0.2), (0.8, 0.8), (0.2, 0.8)])
             ]
         ],
-        ["Observed image", "Ground-Truth", "Inferred Positions"]
+        ["Observed image: occluder", "Observed image: ball", "Ground-Truth", "Inferred Positions"]
     )
-    leg.orientation = :horizontal
+    leg.orientation = :vertical
 
+
+    return (fig, t)
+end
+function draw_gt_particles_img_only(tr, particles, inference_method_str)
+    fig = Figure(resolution=(1000, 1000))
+    t = Observable(0)
+    ax2d = Axis(fig[1, 1], aspect=DataAspect(), title="2D world")
+    obs = draw_obs!(ax2d, t, tr)
+    inf = draw_particles_gt!(draw_particle_sq_gt!, ax2d, t, particles)
+    gt = draw_gt_sq!(ax2d, t, tr)
+    draw_gt_occ!(ax2d, t, tr)
+    xlims!(ax2d, (0.5, last(Positions()) + 0.5))
+    colsize!(fig.layout, 1, Relative(1))
+
+    hyperparam_label = Label(fig, "p_pixel_flip = $(p_flip()). OccOneOffProb = $(OccOneOffProb()).  VelOneOffProb = $(VelOneOffProb()).")
+    inference_label = Label(fig, inference_method_str)
+    hyperparam_label.tellwidth = false; inference_label.tellwidth = false
+    hyperparam_label.tellheight = true; inference_label.tellheight = true
+    fig[2, 1] = hyperparam_label; fig[3, 1] = inference_label;
+
+    leg = Legend(fig[4, 1],
+        [
+            PolyElement(color=:indianred),
+            PolyElement(color=:royalblue3, points = Point2f0[(0.2, 0.2), (0.8, 0.2), (0.8, 0.8), (0.2, 0.8)]),
+            [LineElement(color=:seagreen), MarkerElement(marker=:circle, color=:seagreen, markersize=10)],
+            [
+                PolyElement(color=:gray),
+                PolyElement(color=:black, points = Point2f0[(0.2, 0.2), (0.8, 0.2), (0.8, 0.8), (0.2, 0.8)])
+            ]
+        ],
+        ["Observed image: occluder", "Observed image: ball", "Ground-Truth", "Inferred Positions"]
+    )
+    leg.orientation = :vertical
+    leg.tellheight = true
+
+    trim!(fig.layout)
 
     return (fig, t)
 end

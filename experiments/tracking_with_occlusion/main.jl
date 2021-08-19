@@ -36,8 +36,15 @@ do_inference(gt_tr; n_particles=10) = dynamic_model_smc(
 
 function make_gt_particle_viz(gt_tr, unweighted_inferred_trs)
     GLMakie.activate!()
-    nparticles = length(first(unweighted_trs))
-    draw_gt_and_particles(tr, unweighted_trs,
+    nparticles = length(first(unweighted_inferred_trs))
+    draw_gt_and_particles(gt_tr, unweighted_inferred_trs,
+    "$nparticles-particle SMC w/ locally-optimal proposal. Run in $(use_ngf() ? "NeuralGen-Fast." : "Vanilla Gen.")"
+    );
+end
+function make_gt_particle_viz_img_only(gt_tr, unweighted_inferred_trs)
+    GLMakie.activate!()
+    nparticles = length(first(unweighted_inferred_trs))
+    draw_gt_particles_img_only(gt_tr, unweighted_inferred_trs,
     "$nparticles-particle SMC w/ locally-optimal proposal. Run in $(use_ngf() ? "NeuralGen-Fast." : "Vanilla Gen.")"
     );
 end
@@ -84,34 +91,56 @@ end
 
 ### Generate a particular trace:
 occluded_bounce_constraints() = choicemap(
-	(:init => :latents => :xₜ => :val, 1),
+	(:init => :latents => :xₜ => :val, 3),
+    (:init => :latents => :yₜ => :val, 9),
 	(:init => :latents => :vxₜ => :val, 2),
+    (:init => :latents => :vyₜ => :val, -1),
     (:init => :latents => :occₜ => :val, 8),
-    (:steps => 5 => :latents => :occₜ => :val, 8)
+    (:steps => 1 => :latents => :xₜ => :val, 5),
+    (:steps => 1 => :latents => :yₜ => :val, 8),
+    (:steps => 1 => :latents => :occₜ => :val, 8),
+    (:steps => 2 => :latents => :xₜ => :val, 7),
+    (:steps => 2 => :latents => :yₜ => :val, 7),
+    (:steps => 2 => :latents => :occₜ => :val, 8),
+    (:steps => 3 => :latents => :occₜ => :val, 8),
+    (:steps => 4 => :latents => :occₜ => :val, 8)
 )
 
 generate_occluded_bounce_tr() = generate(model, (15,), occluded_bounce_constraints())[1]
 
 ## Script to run inference + make visualizations
-gt_tr = generate_occluded_bounce_tr()
-(unweighed_trs, _) = do_inference(gt_tr)
+VelOneOffProb() = 0.1
+gt_tr = generate_occluded_bounce_tr();
+VelOneOffProb() = 0.2
+(unweighted_trs, _) = do_inference(gt_tr);
 
-# Inference results animation:
-(fig, t) = make_gt_particle_viz(gt_tr, unweighed_trs); fig
+# # Inference results animation:
 
-# Spiketrain figure:
-f = make_spiketrain_fig(
-    last(unweighted_trs)[1], 1:3; nest_all_at=(:steps => 2 => :latents),
-    resolution=(600, 450), figure_title="Dynamically Weighted Spike Code from Inference"
-)
+(fig, t) = make_gt_particle_viz_img_only(gt_tr, unweighted_trs); fig
+t[] = 2
+save("inferenceframe1.png", fig)
+t[] = 4
+save("inferenceframe2.png", fig)
+t[] = 6
+save("inferenceframe3.png", fig)
+
+(obsfig, tobs) = draw_obs(gt_tr)
+tobs[] = 6
+save("obs.png", obsfig)
+
+# # Spiketrain figure:
+# f = make_spiketrain_fig(
+#     last(unweighted_trs)[1], 1:3; nest_all_at=(:steps => 1 => :latents),
+#     resolution=(600, 450), figure_title="Dynamically Weighted Spike Code from Inference"
+# )
 
 # Draw observations:
-tr, _= generate(model, (2,), choicemap(
-    (:init => :latents => :xₜ => :val, 6),
-    (:init => :latents => :yₜ => :val, 6),
-    (:init => :latents => :occₜ => :val, 7)
-))
-using CairoMakie
-CairoMakie.activate!()
-(fig, t) = draw_obs(tr); fig
+# tr, _= generate(model, (2,), choicemap(
+#     (:init => :latents => :xₜ => :val, 6),
+#     (:init => :latents => :yₜ => :val, 6),
+#     (:init => :latents => :occₜ => :val, 7)
+# ))
+# using CairoMakie
+# CairoMakie.activate!()
+# (fig, t) = draw_obs(tr); fig
 
