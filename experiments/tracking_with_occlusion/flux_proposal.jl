@@ -81,15 +81,15 @@ function generate_training_data(num_trajectories::Int64, num_steps::Int64)
             prevstate = get_state_values(latents_choicemap(tr, step-1))
             prev_image = extract_image_array(obs_choicemap(tr, step-1))
             curr_image = extract_image_array(obs_choicemap(tr, step))
-            prev_ballpos = find_ball_location(prev_image)
-            curr_ballpos = find_ball_location(curr_image)
-            curr_velocity = curr_ballpos - prev_ballpos
+#            prev_ballpos = find_ball_location(prev_image)
+#            curr_ballpos = find_ball_location(curr_image)
+ #           curr_velocity = curr_ballpos - prev_ballpos
             
             (image, ) = tr[DynamicModels.obs_addr(step)]
             currstate = get_state_values(latents_choicemap(tr, step))
             push!(training_data_raw, (prevstate, curr_image, currstate))
             push!(training_images, image)
-            push!(ballpos_and_vel_from_image, 
+#            push!(ballpos_and_vel_from_image, 
         end
     end
     training_data_digitized = [[vcat(lv_to_onehot_array(d[1]), d[2]),
