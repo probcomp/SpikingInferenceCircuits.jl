@@ -12,5 +12,5 @@ end
 
 include("spiketrain_utils/get_name_hierarchy.jl")
 
-# include("spiketrain_utils/smc_results.jl")
+include("spiketrain_utils/smc_results.jl")
 include("spiketrain_utils/internal_spiketrains.jl")
