@@ -55,6 +55,18 @@ function draw_obs!(ax, t, tr)
     obs = observed_imgs(tr)
     heatmap!(ax, @lift(to_color_matrix(obs[$t + 1])), colormap=map(to_color, PixelColors()))
 end
+
+function draw_obs!(ax, t, tr)
+    obs = observed_imgs(tr)
+    heatmap!(ax, @lift(to_color_matrix(obs[$t + 1])), colormap=map(to_color, PixelColors()))
+end
+
+function draw_obs!(ax, t, obs::TYPEOFIMAGELIST)
+    heatmap!(ax, @lift(to_color_matrix(obs[$t + 1])), colormap=map(to_color, PixelColors()))
+end
+
+
+
 function draw_gt_sq!(ax, t, tr)
     hollow_rect!(
         ax,
@@ -87,6 +99,17 @@ function draw_obs(tr)
     draw_obs!(ax, t, tr)
     return (fig, t)
 end
+
+function draw_obs(::typeofimglist)
+    fig = Figure()
+    ax = Axis(fig[1, 1], aspect=DataAspect(), title="Observed Image")
+    t = Observable(0)
+    draw_obs!(ax, t, TYPEOFIMGLIST)
+    return (fig, t)
+end
+
+
+
 
 ### Inference drawing ###
 function draw_particle_sq_gt!(ax, t, tr, num_particles) # tr = observable giving trace at time $t

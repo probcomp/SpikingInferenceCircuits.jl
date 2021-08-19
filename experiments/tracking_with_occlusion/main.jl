@@ -5,6 +5,8 @@ include("prior_proposal.jl")
 include("visualize.jl")
 include("locally_optimal_proposal.jl")
 
+
+
 use_ngf() = false
 
 if use_ngf()
