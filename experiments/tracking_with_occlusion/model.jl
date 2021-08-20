@@ -11,13 +11,13 @@ PixelColors() = [Empty(), Object(), Occluder()]
 
 bern_probs(p) = [p, 1-p]
 
-@gen function is_in_square(squarex, squarey, x, y)
+@gen (static) function is_in_square(squarex, squarey, x, y)
     x_in_range = squarex ≤ x ≤ squarex + SquareSideLength() - 1
     y_in_range = squarey ≤ y ≤ squarey + SquareSideLength() - 1
     return x_in_range && y_in_range
 end
 
-@gen function render_pixel(occ, sqx, sqy, x, y)
+@gen (static) function render_pixel(occ, sqx, sqy, x, y)
     is_occluded = occ ≤ x ≤ occ + OccluderLength() - 1
     in_sq ~ is_in_square(sqx, sqy, x, y)
     color = is_occluded ? Occluder() : in_sq ? Object() : Empty()
@@ -26,7 +26,7 @@ end
 end
 
 xs() = [[pixx for _=1:ImageSideLength()] for pixx=1:ImageSideLength()]
-@gen function obs_model(occ, x, y, vx, vy)
+@gen (static) function obs_model(occ, x, y, vx, vy)
     # TODO: Figure out whether each pixel is in the given range
     # _before_ calling `fill` to reduce the number of edges
     img_inner ~ Map(Map(render_pixel))(
@@ -36,13 +36,12 @@ xs() = [[pixx for _=1:ImageSideLength()] for pixx=1:ImageSideLength()]
         fill(1:ImageSideLength(), ImageSideLength()),
         xs()
     )
-
     return (img_inner,)
 end
 
 ### initial & step model ###
 ### initial & step model ###
-@gen function init_latent_model()
+@gen (static) function init_latent_model()
 	occₜ ~ Cat(uniform(positions(OccluderLength())))
 	xₜ ~ Cat(uniform(positions(SquareSideLength())))
 	yₜ ~ Cat(uniform(positions(SquareSideLength())))
@@ -57,7 +56,7 @@ vel_change_probs(vxₜ₋₁, xₜ₋₁) =
     else
         maybe_one_off(vxₜ₋₁, VelOneOffProb(), Vels())
     end
-@gen function step_latent_model(occₜ₋₁, xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁)
+@gen (static) function step_latent_model(occₜ₋₁, xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁)
     vxₜ ~ VelCat(vel_change_probs(vxₜ₋₁, xₜ₋₁))
     vyₜ ~ VelCat(vel_change_probs(vyₜ₋₁, yₜ₋₁))
 	occₜ ~ Cat(maybe_one_off(occₜ₋₁, OccOneOffProb(), positions(OccluderLength())))

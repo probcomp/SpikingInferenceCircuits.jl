@@ -8,7 +8,7 @@ includet("../utils/default_implementation_rules.jl")
 println("Implementation rules loaded.")
 
 num_neurons(::PrimitiveComponent) = 1
-num_neurons(c::CompositeComponent) = sum(map(num_neurons, c.subcomponents))
+num_neurons(c::CompositeComponent) = reduce(+, map(num_neurons, c.subcomponents); init=0.)
 
 latent_domains()     = (
     occₜ = positions(OccluderLength()),
@@ -27,7 +27,6 @@ img_pvec(x, y, occ) = onehot(img_to_idx(img_of_color_indices(x, y, occ)), ImgVec
     img ~ Cat(img_pvec(x, y, occ))
     return img
 end
-@load_generated_functions()
 
 function compile_cpt()
     circuit = gen_fn_circuit(
@@ -39,11 +38,15 @@ end
 
 function compile_assess()
     circuit = gen_fn_circuit(
-        GenFnWithInputDomains(obs_model, latent_domains()), Assess()
+        SIC.replace_return_node(
+            GenFnWithInputDomains(obs_model, latent_domains())
+        ),
+        Assess()
     )
     impl = implement_deep(circuit, Spiking())
     return impl
 end
+@load_generated_functions()
 
 cpt_sizes = []
 assess_sizes = []
