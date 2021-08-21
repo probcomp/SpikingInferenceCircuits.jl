@@ -75,7 +75,7 @@ end
 # make_latency_p_plot(latency_for_direct_fracvar, 1., "direct probability estimate")
 # make_latency_p_plot(latency_for_recip_fracvar, 1., "reciprocal probability estimate", xlabel="Q")
 # make_latency_p_plot((p, F, a) -> latency_for_isweight_fracvar(p, 0.1, F, a), 1, "IS weight w/ Q=0.1")
-# let Q = 0.1; make_latency_p_plot((p, F, a) -> latency_for_isweight_fracvar(p, Q, F, a), 0.1, "IS weight w/ Q=$Q"); end;
+let Q = 0.1; make_latency_p_plot((p, F, a) -> latency_for_isweight_fracvar(p, Q, F, a), 0.1, "IS weight w/ Q=$Q"); end;
 # make_latency_p_plot((p, F, a) -> latency_for_isweight_fracvar(p, 0.1, F, a), 10., "IS weight w/ Q=0.1")
 # make_latency_p_plot((p, F, a) -> latency_for_isweight_fracvar(p, 0.1, F, a), 0.01, "IS weight w/ Q=0.1")
 #=

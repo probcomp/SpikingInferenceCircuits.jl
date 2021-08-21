@@ -1,10 +1,10 @@
 using CairoMakie
 # set_theme!(palette = (color = :seaborn_muted))
 function make_plt(cpt_sizes, our_sizes)
-    f = Figure()
+    f = Figure(resolution=(500,500))
     ax = Axis(
         f[1, 1];
-        title="Neural Circuit Scaling in Model Size",
+        # title="Neural Circuit Scaling in Model Size",
         xlabel="Number of variables (V)",
         ylabel="Number of neurons in ProbEstimate Circuit"
     )
@@ -15,7 +15,7 @@ function make_plt(cpt_sizes, our_sizes)
     ours_analytic = lines!(ax, 1:36, x -> lin_factor*x, color=:blue)
     cpt_analytic = lines!(ax, 1:10, x -> 3^x, color=:red)
 
-    Legend(f[1, 2],
+    Legend(f[2, 1],
         [cpt_empirical, ours_empirical, cpt_analytic, ours_analytic],
         [
             "Probabilistic Population Coding",
@@ -24,6 +24,7 @@ function make_plt(cpt_sizes, our_sizes)
             "O(V)"
         ]
     )
+    rowsize!(f.layout, 1, Relative(0.8))
     
     return f
 end
