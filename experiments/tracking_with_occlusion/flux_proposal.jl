@@ -9,6 +9,9 @@ import CUDA
 import BSON
 import DrWatson: savename, struct2dict
 import ProgressMeter
+using GLMakie
+using Gen
+
 
 # TODO
 
@@ -28,8 +31,6 @@ import ProgressMeter
 # is occluded function is inside render_pixel
 
 
-
-
 # xt on y axis xt-1 on x axis, but condition on v = 2 AND when you dont see the ball.
 # flexible for velocity entry and flexible for whether you condition on ball being visible or not
 # this is also a heatmap. 
@@ -47,14 +48,17 @@ model = @DynamicModel(init_latent_model, step_latent_model, obs_model, 5)
 @load_generated_functions()
 
 lvs = [:xₜ, :yₜ, :vxₜ, :vyₜ, :occₜ]
-lv_hps = [positions(SquareSideLength()), positions(SquareSideLength()),
-          Vels(), Vels(), positions(OccluderLength())]
+lv_ranges = [SqPos(), SqPos(), Vels(), Vels(), OccPos()]
 digitize(f) = f == Occluder() ? [0, 0, 1] : f == Empty() ? [0, 1, 0] : [1, 0, 0]
 invert_digitized_obs(f) = f == [0, 0, 1] ? Occluder() : f == [0, 1, 0] ? Empty() : Object()
 get_state_values(cmap) = [cmap[lv => :val] for lv in lvs]
-lv_to_onehot_array(data_array) = vcat([onehot(d, hp) for (d, hp) in zip(data_array, lv_hps)]...)
-probs_to_lv(arr, lv_h) = lv_h[findmax(arr)[2]]
+lv_to_onehot_array(data_array) = vcat([onehot(d, hp) for (d, hp) in zip(data_array, lv_ranges)]...)
+probs_to_lv_MAP(arr, lv_h) = sum(arr) == 0 ? lv_h[uniform_discrete(1, length(arr))] : lv_h[findmax(arr)[2]]
+nn_probs_to_probs(arr) = sum(arr) == 0 ? normalize(ones(length(arr))) : normalize(arr)
 
+
+
+# function you want for probabilistic proposal
 
 
 """ DATA EXTRACTION FROM MENTAL PHYSICS TRACES """ 
@@ -113,9 +117,17 @@ function digitize_trace(tr)
     return td_for_trace, td_raw_for_trace, images
 end
 
-    
 
 
+# have to generate tdr looking data from the ANN. idea is to generate a trace, then digitize it.
+# put it through the net to get the answer and add that answer to the end of the list. do this a bunch of times
+
+function make_dataarrays_from_trained_nn(nn_model_name, num_samples, num_steps)
+    td_raw, td_dig, images, gt_traces = generate_training_data(num_steps, num_samples)
+    nn_model = load_ann(nn_model_name)
+    nn_lvs = [[tdr[1], tdr[2], extract_latents_from_nn(nn_model(td[1]))[1]] for (tdr, td) in zip(td_raw, td_dig)]
+    return nn_lvs
+end
 
 
 function scatter_state_vs_prevstate(tdr)
@@ -141,7 +153,7 @@ function heatmap_state_vs_prevstate(tdr, lv)
     fig = Figure(resolution=(1000,1000))
     axes = Axis(fig[1,1]) 
     data_ind = findfirst(f -> f == lv, lvs)
-    lv_hyp_array = lv_hps[data_ind]
+    lv_hyp_array = lv_ranges[data_ind]
     hm_array = zeros(length(lv_hyp_array), length(lv_hyp_array))
     plot_data = [(d[1][data_ind], d[3][data_ind]) for d in tdr]
     for pd in plot_data
@@ -166,8 +178,8 @@ function heatmap_lvs_in_current_state(tdr, lv1, lv2)
     axes = Axis(fig[1,1]) 
     data_ind_1 = findfirst(f -> f == lv1, lvs)
     data_ind_2 = findfirst(f -> f == lv2, lvs)
-    lv_hyp_array_1 = lv_hps[data_ind_1]
-    lv_hyp_array_2 = lv_hps[data_ind_2]
+    lv_hyp_array_1 = lv_ranges[data_ind_1]
+    lv_hyp_array_2 = lv_ranges[data_ind_2]
     hm_array = zeros(length(lv_hyp_array_1), length(lv_hyp_array_2))
     plot_data = [(d[3][data_ind_1], d[3][data_ind_2]) for d in tdr]
     for pd in plot_data
@@ -207,7 +219,7 @@ function make_lv_histogram(tdr, lv, state_or_prevstate)
     plot_data = [d[state_or_prevstate][data_ind] for d in tdr]
     fig = Figure()
     ax = Axis(fig[1,1])
-    hist!(ax, plot_data, bins=length(lv_hps[data_ind]))
+    hist!(ax, plot_data, bins=length(lv_ranges[data_ind]))
     display(fig)
 end
 
@@ -228,7 +240,7 @@ loss(y, ŷ) = Flux.mse(ŷ, y)
 
 
 nn_cand1(input_datapoint) = Flux.Chain(
-    Flux.Dense(length(input_datapoint), sum([length(l) for l in lv_hps]), Flux.relu))
+    Flux.Dense(length(input_datapoint), sum([length(l) for l in lv_ranges]), Flux.relu))
 
 @with_kw mutable struct Args
     η = 3e-4             # learning rate
@@ -325,20 +337,22 @@ function train_nn_on_model(nn_args::Args, nn_generator::Function)
     end
     return nn_model
 end    
-    
+
     
 function extract_latents_from_nn(digitized_array)
     latents = []
+    latent_categorical_probs = []
     counter = 1
     # have to rearrange the values in latents to coincide w args to observable (occ, x, y, vx, vy)
-    for lvh in lv_hps
+    for lvh in lv_ranges
         digitized_lv = digitized_array[counter:counter+length(lvh)-1]
-        extracted_value_for_lv = probs_to_lv(digitized_lv, lvh)
+        extracted_value_for_lv = probs_to_lv_MAP(digitized_lv, lvh)
         push!(latents, extracted_value_for_lv)
+        push!(latent_categorical_probs, nn_probs_to_probs(digitized_lv))
         counter += length(lvh)
     end
     (image, ) = obs_model(vcat(latents[end], latents[1:end-1])...)
-    return latents, image
+    return latents, image, latent_categorical_probs
 end
 
 
@@ -373,8 +387,34 @@ occluded_bounce_constraints() = choicemap(
 
 generate_occluded_bounce_tr() = generate(model, (15,), occluded_bounce_constraints())[1]
     
-        
 
 
+@gen (static) function flux_proposal(occₜ₋₁, xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, img)
+    latent_array = [xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, occₜ₋₁]
+    img_dig = extract_image_array(img)
+    prevstate_and_img_digitized = vcat(lv_to_onehot_array(latent_array), img_dig)
+    nextstate, img, nextstate_probs = extract_latents_from_nn(nn_mod(prevstate_and_img_digitized))
+    occₜ ~ Cat(nextstate_probs[end])
+    xₜ ~ Cat(nextstate_probs[1])
+    yₜ ~ Cat(nextstate_probs[2])
+    vxₜ ~ VelCat(nextstate_probs[3])
+    vyₜ ~ VelCat(nextstate_probs[4], .2, Vels())
+end
+
+@gen (static) function flux_proposal_MAP(occₜ₋₁, xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, img)
+    latent_array = [xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, occₜ₋₁]
+    img_dig = extract_image_array(img)
+    prevstate_and_img_digitized = vcat(lv_to_onehot_array(latent_array), img_dig)
+    nextstate, img, nextstate_probs = extract_latents_from_nn(nn_mod(prevstate_and_img_digitized))
+    occₜ ~ Cat(onehot(nextstate[end], OccPos()))
+    xₜ ~ Cat(onehot(nextstate[1], SqPos()))
+    yₜ ~ Cat(onehot(nextstate[2], SqPos()))
+    vxₜ ~ VelCat(onehot(nextstate[3], Vels()))
+    vyₜ ~ VelCat(onehot(nextstate[4], Vels()))
+end
 
 
+# TODO 8/24: test plotting functions. get ANN training onto GPU. test whether
+
+    # NN unrolling. where does this come in conceptually? idea will be to
+    # start with an initial state and an observation. can unroll the entire SMC from there with the NN recursively
