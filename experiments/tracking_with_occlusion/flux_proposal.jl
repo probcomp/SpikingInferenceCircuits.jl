@@ -5,7 +5,6 @@ import Flux
 using TensorBoardLogger: TBLogger, tb_overwrite, set_step!, set_step_increment!
 using Flux.Data: DataLoader
 using Flux.Optimise: Optimiser, WeightDecay, ADAM
-using DelimitedFiles
 import CUDA
 import BSON
 import DrWatson: savename, struct2dict
@@ -15,10 +14,6 @@ import ProgressMeter
 
 # write the digitize obs function according to vikash's answer about the
 # structure of the training
-
-fig = Figure()
-
-
 
 
 # plot the distribution of xt when we see it and when we dont.
@@ -31,6 +26,8 @@ fig = Figure()
 
 # occluder pos given occluder obs
 # is occluded function is inside render_pixel
+
+
 
 
 # xt on y axis xt-1 on x axis, but condition on v = 2 AND when you dont see the ball.
@@ -76,30 +73,47 @@ end
 
 function generate_training_data(num_trajectories::Int64, num_steps::Int64)
     training_data_raw = []
+    training_data_digitized = []
     training_images = []
-    ballpos_and_vel_from_image = []
+    gt_traces = []
     for traj in 1:num_trajectories
         tr = simulate(model, (num_steps,))
+        push!(gt_traces, tr)
         for step in 1:num_steps
-            prevstate = get_state_values(latents_choicemap(tr, step-1))
-            prev_image = extract_image_array(obs_choicemap(tr, step-1))
-            curr_image = extract_image_array(obs_choicemap(tr, step))
-#            prev_ballpos = find_ball_location(prev_image)
-#            curr_ballpos = find_ball_location(curr_image)
- #           curr_velocity = curr_ballpos - prev_ballpos
-            
-            (image, ) = tr[DynamicModels.obs_addr(step)]
-            currstate = get_state_values(latents_choicemap(tr, step))
-            push!(training_data_raw, (prevstate, curr_image, currstate))
+            td, tdr, image = digitize_trace(tr)
+            push!(training_data_raw, tdr...)
+            push!(training_data_digitized, td...)
             push!(training_images, image)
-#            push!(ballpos_and_vel_from_image, 
         end
     end
-    training_data_digitized = [[vcat(lv_to_onehot_array(d[1]), d[2]),
-                                lv_to_onehot_array(d[3])] for d in training_data_raw]
-    return training_data_raw, training_data_digitized, training_images
+    return training_data_raw, training_data_digitized, training_images, gt_traces
 end
 
+
+function digitize_trace(tr)
+    td_for_trace = []
+    td_raw_for_trace = []
+    images = []
+    for step in 1:get_args(tr)[1]
+        prevstate = get_state_values(latents_choicemap(tr, step-1))
+        curr_image = extract_image_array(obs_choicemap(tr, step))
+        # prev_image = extract_image_array(obs_choicemap(tr, step-1))
+        # prev_ballpos = find_ball_location(prev_image)
+        # curr_ballpos = find_ball_location(curr_image)
+        # curr_velocity = curr_ballpos - prev_ballpos
+        (image, ) = tr[DynamicModels.obs_addr(step)]
+        push!(images, image)
+        currstate = get_state_values(latents_choicemap(tr, step))
+        training_datapoint_raw = (prevstate, curr_image, currstate)
+        training_datapoint_digitized = [vcat(lv_to_onehot_array(training_datapoint_raw[1]), training_datapoint_raw[2]),
+                                        lv_to_onehot_array(training_datapoint_raw[3])]
+        push!(td_for_trace, training_datapoint_digitized)
+        push!(td_raw_for_trace, training_datapoint_raw)
+    end
+    return td_for_trace, td_raw_for_trace, images
+end
+
+    
 
 
 
@@ -173,9 +187,6 @@ function heatmap_lvs_in_current_state(tdr, lv1, lv2)
 end
 
 
-
-
-
 # conditioner is going to be a mappable function over the
 # zipped raw training data and training images
 # f -> 
@@ -223,16 +234,17 @@ nn_cand1(input_datapoint) = Flux.Chain(
     η = 3e-4             # learning rate
     λ = 0                # L2 regularizer param, implemented as weight decay
     batchsize = 5       # batch size
-    epochs = 10           # number of epochs
-    training_samples = 200
+    epochs = 2           # number of epochs
+    training_samples = 20
     validation_samples = 20
-    num_smc_steps = 20
+    num_smc_steps = 5
     seed = 0             # set seed > 0 for reproducibility
     cuda = true          # if true use cuda (if available)
     infotime = 1 	 # report every `infotime` epochs
     save_every_n_epochs = epochs / 2   # Save the model every x epochs.
     tblogger = true       # log training with tensorboard
-    savepath = "/Users/nightcrawler2/SpikingInferenceCircuits.jl/experiments/tracking_with_occlusion/ann_logging/"
+    savepath = "/Users/nightcrawler/SpikingInferenceCircuits.jl/experiments/tracking_with_occlusion/ann_logging/"
+    model_name = "single_layer"
 end            
                                         
 
@@ -249,8 +261,11 @@ function eval_validation_set(data, model, device)
 end
 
 
-function train_nn_on_dataset(nn_model::Flux.Chain, nn_args::Args,
-                             validation_data, training_data)
+function train_nn_on_model(nn_args::Args, nn_generator::Function)
+    #  validation_data, training_data)
+    vdr, validation_data = generate_training_data(nn_args.validation_samples, nn_args.num_smc_steps)
+    nn_model = nn_generator(validation_data[1][1])
+    println("Generated Validation Set")
     nn_args.seed > 0 && Random.seed!(nn_args.seed)
     use_cuda = nn_args.cuda && CUDA.has_cuda_gpu()
     if use_cuda
@@ -267,11 +282,13 @@ function train_nn_on_dataset(nn_model::Flux.Chain, nn_args::Args,
         tblogger = TBLogger(nn_args.savepath, tb_overwrite)
         set_step_increment!(tblogger, 0) # 0 auto increment since we manually set_step!
         @info "TensorBoard logging at \"$(nn_args.savepath)\""
+        run(`bash tensorboard --logdir /Users/nightcrawler/SpikingInferenceCircuits.jl/experiments/tracking_with_occlusion/ann_logging`, wait=false)
     end
-    
     @info "Start Training"
     for epoch in 0:nn_args.epochs
-        # probably shuffle the training data here. 
+        # probably shuffle the training data here.
+        tdr, training_data = generate_training_data(nn_args.training_samples, nn_args.num_smc_steps)
+        println("Generated New Training Data")
         p = ProgressMeter.Progress(length(training_data))
         if epoch % nn_args.infotime == 0
             test_model_performance = eval_validation_set(
@@ -284,7 +301,7 @@ function train_nn_on_dataset(nn_model::Flux.Chain, nn_args::Args,
                 with_logger(tblogger) do
                     @info "train" loss=test_model_performance.loss acc=test_model_performance.acc
             end
-            epoch == 0 && run(`tensorboard --logdir /Users/nightcrawler2/SpikingInferenceCircuits/experiments/tracking_with_occlusion/ann_logging`, wait=false)
+                #            epoch == 0 && run(`bash tensorboard --logdir /Users/nightcrawler/SpikingInferenceCircuits.jl/experiments/tracking_with_occlusion/ann_logging/`, wait=false)
         end
         for (sample, groundtruth) in training_data
             sample, groundtruth = sample |> device, groundtruth |> device
@@ -298,7 +315,7 @@ function train_nn_on_dataset(nn_model::Flux.Chain, nn_args::Args,
                 
         if epoch > 0 && epoch % nn_args.save_every_n_epochs == 0
             !ispath(nn_args.savepath) && mkpath(nn_args.savepath)
-            modelpath = joinpath(nn_args.savepath, "nn_model.bson") 
+            modelpath = joinpath(nn_args.savepath, string(nn_args.model_name, "nn_model.bson"))
             let model=Flux.cpu(nn_model), nn_args=struct2dict(nn_args)
                 BSON.@save modelpath nn_model epoch nn_args
             end
@@ -309,34 +326,55 @@ function train_nn_on_dataset(nn_model::Flux.Chain, nn_args::Args,
     return nn_model
 end    
     
-
-function flux_wrapper(nn_args::Args)
-    tdr, td = generate_training_data(nn_args.training_samples, nn_args.num_smc_steps)
-    println("Generated Training Data")
-    vdr, vd = generate_training_data(nn_args.validation_samples, nn_args.num_smc_steps)
-    println("Generated Validation Set")
-    nn_model = nn_cand1(td[1][1])
-    train_nn_on_dataset(nn_model,
-                        nn_args,
-                        vd, td)
-end
-
     
 function extract_latents_from_nn(digitized_array)
     latents = []
     counter = 1
+    # have to rearrange the values in latents to coincide w args to observable (occ, x, y, vx, vy)
     for lvh in lv_hps
         digitized_lv = digitized_array[counter:counter+length(lvh)-1]
-        push!(latents, probs_to_lv(digitized_lv, lvh))
+        extracted_value_for_lv = probs_to_lv(digitized_lv, lvh)
+        push!(latents, extracted_value_for_lv)
         counter += length(lvh)
     end
-    observable = 
+    (image, ) = obs_model(vcat(latents[end], latents[1:end-1])...)
+    return latents, image
+end
+
+
+function load_ann(model_name)
+    Core.eval(Main, :(import NNlib))
+    b = BSON.@load string("./ann_logging/", model_name, "nn_model.bson") nn_model epoch nn_args
+    return nn_model
+end
+
+
+function visualize_ann_answers(gt_trace, nn_type)
+    nn_mod = load_ann(nn_type)
+    length_smc = get_args(gt_trace)[1]
+    trace_data_digitized = digitize_trace(gt_trace)[1]
+    ann_answers = [extract_latents_from_nn(nn_mod(d[1])) for d in trace_data_digitized]
+    (fig, t) = draw_obs(map(b->b[2], ann_answers))
+    display(fig)
+    animate(t, length_smc-1)
+    make_video(fig, t, length_smc-1, "ann_obs.mp4")
+    (fig, t) = draw_obs(gt_trace)
+    make_video(fig, t, length_smc-1, "gt.mp4")
+    return map(b->b[1], ann_answers)
+end
+
+
+occluded_bounce_constraints() = choicemap(
+	(:init => :latents => :xₜ => :val, 1),
+	(:init => :latents => :vxₜ => :val, 2),
+    (:init => :latents => :occₜ => :val, 8),
+    (:steps => 5 => :latents => :occₜ => :val, 8)
+)
+
+generate_occluded_bounce_tr() = generate(model, (15,), occluded_bounce_constraints())[1]
+    
         
-                   
-    
-    
-    
-   
+
 
 
 

@@ -3,6 +3,7 @@ using ProbEstimates
 include("model_hyperparameters.jl")
 include("modeling_utils.jl")
 
+
 abstract type PixelColor end
 struct Empty <: PixelColor; end
 struct Object <: PixelColor; end
@@ -28,7 +29,7 @@ end
 xs() = [[pixx for _=1:ImageSideLength()] for pixx=1:ImageSideLength()]
 
 @gen function obs_model(occ, x, y, vx, vy)
-    # TODO: Figure out whether each pixel is in the given range
+    # TODO: Figure out whether each pixel is in the given rangexgg
     # _before_ calling `fill` to reduce the number of edges
     img_inner ~ Map(Map(render_pixel))(
         fill(fill(occ, ImageSideLength()), ImageSideLength()),

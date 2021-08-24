@@ -1,5 +1,6 @@
 using GLMakie
 using Colors
+using FunctionalCollections
 
 to_color(::Empty) = colorant"white"
 to_color(::Object) = colorant"gold"
@@ -56,16 +57,10 @@ function draw_obs!(ax, t, tr)
     heatmap!(ax, @lift(to_color_matrix(obs[$t + 1])), colormap=map(to_color, PixelColors()))
 end
 
-function draw_obs!(ax, t, tr)
-    obs = observed_imgs(tr)
+
+function draw_obs!(ax, t, obs::Vector{FunctionalCollections.PersistentVector{FunctionalCollections.PersistentVector{Any}}})
     heatmap!(ax, @lift(to_color_matrix(obs[$t + 1])), colormap=map(to_color, PixelColors()))
 end
-
-function draw_obs!(ax, t, obs::TYPEOFIMAGELIST)
-    heatmap!(ax, @lift(to_color_matrix(obs[$t + 1])), colormap=map(to_color, PixelColors()))
-end
-
-
 
 function draw_gt_sq!(ax, t, tr)
     hollow_rect!(
@@ -74,6 +69,7 @@ function draw_gt_sq!(ax, t, tr)
         color=colorant"seagreen"
     )
 end
+
 function draw_gt_occ!(ax, t, tr)
     hollow_rect!(
         ax,
@@ -100,11 +96,11 @@ function draw_obs(tr)
     return (fig, t)
 end
 
-function draw_obs(::typeofimglist)
+function draw_obs(obs::Vector{FunctionalCollections.PersistentVector{FunctionalCollections.PersistentVector{Any}}})
     fig = Figure()
-    ax = Axis(fig[1, 1], aspect=DataAspect(), title="Observed Image")
+    ax = Axis(fig[1, 1], aspect=DataAspect(), title="ANN Predicted Image")
     t = Observable(0)
-    draw_obs!(ax, t, TYPEOFIMGLIST)
+    draw_obs!(ax, t, obs)
     return (fig, t)
 end
 
