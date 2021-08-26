@@ -56,8 +56,6 @@ lv_to_onehot_array(data_array) = vcat([onehot(d, hp) for (d, hp) in zip(data_arr
 probs_to_lv_MAP(arr, lv_h) = sum(arr) == 0 ? lv_h[uniform_discrete(1, length(arr))] : lv_h[findmax(arr)[2]]
 nn_probs_to_probs(arr) = sum(arr) == 0 ? normalize(ones(length(arr))) : normalize(arr)
 
-
-
 # function you want for probabilistic proposal
 
 
@@ -258,7 +256,11 @@ nn_cand1(input_datapoint) = Flux.Chain(
     savepath = "/Users/nightcrawler/SpikingInferenceCircuits.jl/experiments/tracking_with_occlusion/ann_logging/"
     model_name = "single_layer"
 end            
-                                        
+
+
+# you can do KL as an accuracy function. idea is you can call
+# generate in the accuracy function based on the latents and obs. this should increase
+# as you go. 
 
 function eval_validation_set(data, model, device)
     total_loss = 0f0
