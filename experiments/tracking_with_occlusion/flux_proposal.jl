@@ -55,7 +55,9 @@ get_state_values(cmap) = [cmap[lv => :val] for lv in lvs]
 lv_to_onehot_array(data_array) = vcat([onehot(d, hp) for (d, hp) in zip(data_array, lv_ranges)]...)
 probs_to_lv_MAP(arr, lv_h) = sum(arr) == 0 ? lv_h[uniform_discrete(1, length(arr))] : lv_h[findmax(arr)[2]]
 nn_probs_to_probs(arr) = sum(arr) == 0 ? normalize(ones(length(arr))) : normalize(arr)
-sliding_window(arr) = zip(arr[1:end-1], arr[2:end])
+#sliding_window(arr) = zip(arr[1:end-1], arr[2:end])
+sliding_window(arr) = [[arr[i], arr[i+1]] for i in 1:length(arr)-1]
+my_cumsum(arr) = map(x-> sum(arr[1:x+1]), 0:length(arr)-1)
 # function you want for probabilistic proposal
 
 
@@ -239,29 +241,34 @@ end
 #loss(y, ŷ) = Flux.crossentropy(ŷ, y);
 #loss(y, ŷ) = Flux.logitcrossentropy(ŷ, y)
 
-#loss(y, ŷ) = Flux.kldivergence(y, ŷ)
+loss(y, ŷ) = Flux.kldivergence(y, ŷ, agg=sum)
 
 #loss(y, ŷ) = Flux.mse(ŷ, y)
 
 # REPRESENT EACH Y AS A MATRIX INSTEAD OF A VECTOR
 #loss(y, ŷ) = Flux.kldivergence(hcat(y...), hcat(ŷ...), agg=sum)
 
-loss(y, ŷ) = Flux.logitcrossentropy(hcat(y...), hcat(ŷ...), agg=sum)
+#loss(y, ŷ) = Flux.logitcrossentropy(hcat(y...), hcat(ŷ...), agg=sum)
 
 
 
 #parse_code_by_varb(y) = [Flux.softmax(convert(Vector{Float64}, y[i1+1:i2])) for (i1, i2) in sliding_window(vcat(0, cumsum(length(r) for r in lv_ranges)))]
 
 maxlen_lv_range = maximum(map(f-> length(f), lv_ranges))
-parse_code_by_varb(y) = [vcat(Flux.softmax(convert(Vector{Float64}, y[i1+1:i2])), zeros(maxlen_lv_range-(i2-i1))) for (i1, i2) in sliding_window(vcat(0, cumsum(length(r) for r in lv_ranges)))]
+
+
+parse_code_by_varb(y) = [vcat(Flux.softmax(convert(Vector{Float32}, y[i1+1:i2])), zeros(maxlen_lv_range-(i2-i1))) for (i1, i2) in sliding_window(vcat(0, my_cumsum([length(r) for r in lv_ranges])))]
+
+#parse_code_by_varb(y) = [vcat(Flux.softmax(convert(Vector{Float32}, y[i1+1:i2])), zeros(maxlen_lv_range-(i2-i1))) for (i1, i2) in sliding_window(vcat(0, 
+
 
 nn_single(input_datapoint) = Flux.Chain(
-    Flux.Dense(length(input_datapoint), sum([length(l) for l in lv_ranges]), Flux.relu), x-> parse_code_by_varb(x))
+    Flux.Dense(length(input_datapoint), sum([length(l) for l in lv_ranges]), Flux.relu)) #, x-> parse_code_by_varb(x))
 
 
 nn_one_hidden(input_datapoint) = Flux.Chain(
     Flux.Dense(length(input_datapoint), length(input_datapoint)),
-    Flux.Dense(length(input_datapoint), sum([length(l) for l in lv_ranges]), Flux.relu), x->parse_code_by_varb(x))
+    Flux.Dense(length(input_datapoint), sum([length(l) for l in lv_ranges]), Flux.relu)) #, x->parse_code_by_varb(x))
 
 nn_two_hidden(input_datapoint) = Flux.Chain(
     Flux.Dense(length(input_datapoint), length(input_datapoint)),
@@ -282,7 +289,7 @@ nn_two_hidden(input_datapoint) = Flux.Chain(
     save_every_n_epochs = epochs / 2   # Save the model every x epochs.
     tblogger = true       # log training with tensorboard
     savepath = "/Users/nightcrawler/SpikingInferenceCircuits.jl/experiments/tracking_with_occlusion/ann_logging/"
-    model_name = "single_layer"
+    model_name = "one_hidden_layer"
 end            
 
 
@@ -297,9 +304,11 @@ function eval_validation_set(data, model, device)
         gt_curr_lv = parse_code_by_varb(gtlv)
         prev_lv_and_img, gt_curr_lv = prev_lv_and_img |> device, gt_curr_lv |> device
         ŷ = model(prev_lv_and_img)
-        total_loss += loss(ŷ, gt_curr_lv)
+        loss_input = hcat(parse_code_by_varb(ŷ)...), hcat(gt_curr_lv...)
+        total_loss += loss(loss_input[1], loss_input[2])
         # this is coming out as 2500 when its max possible should be 760
-        accuracy += sum([sum(y-g) for (y, g) in zip(ŷ, gt_curr_lv)])
+        #        accuracy += sum([sum(y-g) for (y, g) in zip(ŷ, gt_curr_lv)])
+        accuracy += 0
     end
     return (loss = round(total_loss, digits=4), acc = round(accuracy, digits=4))
 end
@@ -353,7 +362,10 @@ function train_nn_on_model(nn_args::Args, nn_generator::Function)
             sample, groundtruth = sample |> device, groundtruth |> device
             grads = Flux.gradient(nn_params) do
                 ŷ = nn_model(sample)
-                loss(parse_code_by_varb(groundtruth), ŷ)
+                ŷ_tomod = convert(Matrix{Float32}, hcat(parse_code_by_varb(nn_model(sample))...))
+                gt = convert(Matrix{Float32}, hcat(parse_code_by_varb(groundtruth)...))
+                loss(ŷ_tomod, gt)
+#                loss(hcat(parse_code_by_varb(groundtruth)...), hcat(parse_code_by_varb(ŷ)...))
             end
             Flux.Optimise.update!(opt, nn_params, grads)
             ProgressMeter.next!(p)   # comment out for no progress bar
@@ -425,10 +437,6 @@ function unit_test_encodings(n_steps)
         # this will give you the image from the previous step, not the current step. 
         image_from_decoded_data = obs_model(vcat(latents_extracted_from_encoded[end], latents_extracted_from_encoded[1:end-1])...)
 #        return gt_image, image_from_decoded_data, gt_latents, latents_extracted_from_encoded
-
-# hm this is one off in the placement of the object in Y...the obs not from the previous stat...
-
-        
         push!(data_comparison, gt_latents == latents_extracted_from_encoded && [g for g in gt_image] == [f for f in image_from_decoded_data...]) # &&
     end
     return data_comparison
