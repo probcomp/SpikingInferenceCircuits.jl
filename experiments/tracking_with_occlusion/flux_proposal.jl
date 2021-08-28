@@ -49,17 +49,18 @@ model = @DynamicModel(init_latent_model, step_latent_model, obs_model, 5)
 
 lvs = [:xₜ, :yₜ, :vxₜ, :vyₜ, :occₜ]
 lv_ranges = [SqPos(), SqPos(), Vels(), Vels(), OccPos()]
-digitize(f) = f == Occluder() ? [0, 0, 1] : f == Empty() ? [0, 1, 0] : [1, 0, 0]
+digitize(f) = f == Occluder() ? [0, 0, 1] : f == Empty() ? [0, 1, 0] : f == Object() ? [1, 0, 0] : Nothing
 invert_digitized_obs(f) = f == [0, 0, 1] ? Occluder() : f == [0, 1, 0] ? Empty() : Object()
 get_state_values(cmap) = [cmap[lv => :val] for lv in lvs]
 lv_to_onehot_array(data_array) = vcat([onehot(d, hp) for (d, hp) in zip(data_array, lv_ranges)]...)
 probs_to_lv_MAP(arr, lv_h) = sum(arr) == 0 ? lv_h[uniform_discrete(1, length(arr))] : lv_h[findmax(arr)[2]]
 nn_probs_to_probs(arr) = sum(arr) == 0 ? normalize(ones(length(arr))) : normalize(arr)
-
+sliding_window(arr) = zip(arr[1:end-1], arr[2:end])
 # function you want for probabilistic proposal
 
 
-""" DATA EXTRACTION FROM MENTAL PHYSICS TRACES """ 
+""" DATA EXTRACTION FROM MENTAL PHYSICS TRACES """
+
 
 function extract_image_array(cmap)
     img_array = []
@@ -133,8 +134,8 @@ function scatter_state_vs_prevstate(tdr)
     axes = [Axis(fig[1,i]) for i in 1:length(lvs)]
     p_color = RGBAf0(0, 0, 0, float(20/length(tdr)))
     # index a color map here for different variables
-    for lv in lvs
-        data_ind = findfirst(f -> f == lv, lvs)
+    for (data_ind, lv) in enumerate(lvs)
+#        data_ind = findfirst(f -> f == lv, lvs)
         plot_data = [(d[1][data_ind], d[3][data_ind]) for d in tdr]
         scatter!(axes[data_ind], plot_data, color=p_color)
 #        heatmap!(axes[data_ind], plot_data)
@@ -228,26 +229,53 @@ function find_ball_location(image)
 end
 
 
+# vy has two datapoints in groundtruth!! and y
+
 
 """ FLUX ANN TRAINING AND TESTING """ 
 
 
-
+# I don't think these are appropriate loss functions b/c y is not a probability vector
 #loss(y, ŷ) = Flux.crossentropy(ŷ, y);
-loss(y, ŷ) = Flux.mse(ŷ, y)
+#loss(y, ŷ) = Flux.logitcrossentropy(ŷ, y)
+
+#loss(y, ŷ) = Flux.kldivergence(y, ŷ)
+
+#loss(y, ŷ) = Flux.mse(ŷ, y)
+
+# REPRESENT EACH Y AS A MATRIX INSTEAD OF A VECTOR
+#loss(y, ŷ) = Flux.kldivergence(hcat(y...), hcat(ŷ...), agg=sum)
+
+loss(y, ŷ) = Flux.logitcrossentropy(hcat(y...), hcat(ŷ...), agg=sum)
 
 
-nn_cand1(input_datapoint) = Flux.Chain(
+
+#parse_code_by_varb(y) = [Flux.softmax(convert(Vector{Float64}, y[i1+1:i2])) for (i1, i2) in sliding_window(vcat(0, cumsum(length(r) for r in lv_ranges)))]
+
+maxlen_lv_range = maximum(map(f-> length(f), lv_ranges))
+parse_code_by_varb(y) = [vcat(Flux.softmax(convert(Vector{Float64}, y[i1+1:i2])), zeros(maxlen_lv_range-(i2-i1))) for (i1, i2) in sliding_window(vcat(0, cumsum(length(r) for r in lv_ranges)))]
+
+nn_single(input_datapoint) = Flux.Chain(
+    Flux.Dense(length(input_datapoint), sum([length(l) for l in lv_ranges]), Flux.relu), x-> parse_code_by_varb(x))
+
+
+nn_one_hidden(input_datapoint) = Flux.Chain(
+    Flux.Dense(length(input_datapoint), length(input_datapoint)),
+    Flux.Dense(length(input_datapoint), sum([length(l) for l in lv_ranges]), Flux.relu), x->parse_code_by_varb(x))
+
+nn_two_hidden(input_datapoint) = Flux.Chain(
+    Flux.Dense(length(input_datapoint), length(input_datapoint)),
+    Flux.Dense(length(input_datapoint), length(input_datapoint)),
     Flux.Dense(length(input_datapoint), sum([length(l) for l in lv_ranges]), Flux.relu))
 
 @with_kw mutable struct Args
-    η = 3e-4             # learning rate
-    λ = 0                # L2 regularizer param, implemented as weight decay
+    η = 3e-4             # learning rate (orig 3e-4)
+    λ = 1e-4                # L2 regularizer param, implemented as weight decay
     batchsize = 5       # batch size
-    epochs = 2           # number of epochs
-    training_samples = 20
+    epochs = 40  # number of epochs
+    training_samples = 40
     validation_samples = 20
-    num_smc_steps = 5
+    num_smc_steps = 10
     seed = 0             # set seed > 0 for reproducibility
     cuda = true          # if true use cuda (if available)
     infotime = 1 	 # report every `infotime` epochs
@@ -265,11 +293,13 @@ end
 function eval_validation_set(data, model, device)
     total_loss = 0f0
     accuracy = 0
-    for (image, gt) in data
-        image, gt = image |> device, gt |> device
-        ŷ = model(image)
-        total_loss += loss(ŷ, gt) 
-        accuracy += sum([abs(diff) < .1 ? 1 : 0 for diff in ŷ-gt])
+    for (prev_lv_and_img, gtlv) in data
+        gt_curr_lv = parse_code_by_varb(gtlv)
+        prev_lv_and_img, gt_curr_lv = prev_lv_and_img |> device, gt_curr_lv |> device
+        ŷ = model(prev_lv_and_img)
+        total_loss += loss(ŷ, gt_curr_lv)
+        # this is coming out as 2500 when its max possible should be 760
+        accuracy += sum([sum(y-g) for (y, g) in zip(ŷ, gt_curr_lv)])
     end
     return (loss = round(total_loss, digits=4), acc = round(accuracy, digits=4))
 end
@@ -299,21 +329,23 @@ function train_nn_on_model(nn_args::Args, nn_generator::Function)
         run(`bash tensorboard --logdir /Users/nightcrawler/SpikingInferenceCircuits.jl/experiments/tracking_with_occlusion/ann_logging`, wait=false)
     end
     @info "Start Training"
+#    tdr, training_data = generate_training_data(nn_args.training_samples, nn_args.num_smc_steps)
     for epoch in 0:nn_args.epochs
-        # probably shuffle the training data here.
         tdr, training_data = generate_training_data(nn_args.training_samples, nn_args.num_smc_steps)
+        # probably shuffle the training data here.
         println("Generated New Training Data")
         p = ProgressMeter.Progress(length(training_data))
         if epoch % nn_args.infotime == 0
-            test_model_performance = eval_validation_set(
-                validation_data, 
-                nn_model,
-                device)
-            println("Epoch: $epoch Validation: $(test_model_performance)")            
+            test_model_performance_on_v = eval_validation_set(
+                validation_data, nn_model,device)
+            test_model_performance_on_t = eval_validation_set(
+                training_data, nn_model, device)
+            println("Epoch: $epoch Validation: $(test_model_performance_on_v)")
+            println("Epoch: $epoch Test: $(test_model_performance_on_t)")            
             if nn_args.tblogger
                 set_step!(tblogger, epoch)
                 with_logger(tblogger) do
-                    @info "train" loss=test_model_performance.loss acc=test_model_performance.acc
+                    @info "train" loss=test_model_performance_on_v.loss acc=test_model_performance_on_v.acc
             end
                 #            epoch == 0 && run(`bash tensorboard --logdir /Users/nightcrawler/SpikingInferenceCircuits.jl/experiments/tracking_with_occlusion/ann_logging/`, wait=false)
         end
@@ -321,7 +353,7 @@ function train_nn_on_model(nn_args::Args, nn_generator::Function)
             sample, groundtruth = sample |> device, groundtruth |> device
             grads = Flux.gradient(nn_params) do
                 ŷ = nn_model(sample)
-                loss(ŷ, groundtruth)
+                loss(parse_code_by_varb(groundtruth), ŷ)
             end
             Flux.Optimise.update!(opt, nn_params, grads)
             ProgressMeter.next!(p)   # comment out for no progress bar
@@ -378,6 +410,32 @@ function visualize_ann_answers(gt_trace, nn_type)
     make_video(fig, t, length_smc-1, "gt.mp4")
     return map(b->b[1], ann_answers)
 end
+
+
+function unit_test_encodings(n_steps)
+    training_data_raw, training_data_digitized, training_images, gt_traces = generate_training_data(1, n_steps)
+    # here want the training_data_raw inputs (grabbed from the choicemap) and the training_data_digitized inputs.
+    # extract_latents_from_nn should be applied to the digitized inputs. the image extracted from the obs_model should match
+    # the training_images index which is just the image extracted from the trace.
+    data_comparison = []
+    for i in 1:n_steps
+        gt_image = training_images[1][i]
+        gt_latents = training_data_raw[i][3]
+        latents_extracted_from_encoded, ims, lcprobs = extract_latents_from_nn(training_data_digitized[i][2])
+        # this will give you the image from the previous step, not the current step. 
+        image_from_decoded_data = obs_model(vcat(latents_extracted_from_encoded[end], latents_extracted_from_encoded[1:end-1])...)
+#        return gt_image, image_from_decoded_data, gt_latents, latents_extracted_from_encoded
+
+# hm this is one off in the placement of the object in Y...the obs not from the previous stat...
+
+        
+        push!(data_comparison, gt_latents == latents_extracted_from_encoded && [g for g in gt_image] == [f for f in image_from_decoded_data...]) # &&
+    end
+    return data_comparison
+end
+
+#    return gt_image, gt_latents, latents_extracted_from_encoded, image_from_decoded_data
+
 
 
 occluded_bounce_constraints() = choicemap(
