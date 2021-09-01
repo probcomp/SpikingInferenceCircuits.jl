@@ -15,10 +15,6 @@ using Gen
 
 # TODO
 
-# write the digitize obs function according to vikash's answer about the
-# structure of the training
-
-
 # plot the distribution of xt when we see it and when we dont.
 # condition on the fact that we don't see the ball and then hist x given occluder pos.
 
@@ -95,6 +91,7 @@ function generate_training_data(num_trajectories::Int64, num_steps::Int64)
 end
 
 
+
 function digitize_trace(tr)
     td_for_trace = []
     td_raw_for_trace = []
@@ -110,7 +107,8 @@ function digitize_trace(tr)
         push!(images, image)
         currstate = get_state_values(latents_choicemap(tr, step))
         training_datapoint_raw = (prevstate, curr_image, currstate)
-        training_datapoint_digitized = [vcat(lv_to_onehot_array(training_datapoint_raw[1]), training_datapoint_raw[2]),
+        training_datapoint_digitized = [vcat(lv_to_onehot_array(training_datapoint_raw[1]),
+                                             training_datapoint_raw[2]),
                                         lv_to_onehot_array(training_datapoint_raw[3])]
         push!(td_for_trace, training_datapoint_digitized)
         push!(td_raw_for_trace, training_datapoint_raw)
@@ -127,8 +125,18 @@ function make_dataarrays_from_trained_nn(nn_model_name, num_samples, num_steps)
     td_raw, td_dig, images, gt_traces = generate_training_data(num_steps, num_samples)
     nn_model = load_ann(nn_model_name)
     nn_lvs = [[tdr[1], tdr[2], extract_latents_from_nn(nn_model(td[1]))[1]] for (tdr, td) in zip(td_raw, td_dig)]
+    return [td_raw, td_dig], nn_lvs
+end
+
+function make_dataarrays_from_trained_nn(td, nn_model_name)
+    td_raw, td_dig = td
+    nn_model = load_ann(nn_model_name)
+    nn_lvs = [[tdr[1], tdr[2], extract_latents_from_nn(nn_model(td[1]))[1]] for (tdr, td) in zip(td_raw, td_dig)]
     return nn_lvs
 end
+
+    
+    
 
 
 function scatter_state_vs_prevstate(tdr)
@@ -277,9 +285,9 @@ nn_two_hidden(input_datapoint) = Flux.Chain(
 
 @with_kw mutable struct Args
     η = 3e-4             # learning rate (orig 3e-4)
-    λ = 1e-4                # L2 regularizer param, implemented as weight decay
-    batchsize = 5       # batch size
-    epochs = 40  # number of epochs
+    λ = 1e-4             # L2 regularizer param, implemented as weight decay
+    batchsize = 5        # batch size
+    epochs = 50  # number of epochs
     training_samples = 40
     validation_samples = 20
     num_smc_steps = 10
@@ -289,7 +297,7 @@ nn_two_hidden(input_datapoint) = Flux.Chain(
     save_every_n_epochs = epochs / 2   # Save the model every x epochs.
     tblogger = true       # log training with tensorboard
     savepath = "/Users/nightcrawler/SpikingInferenceCircuits.jl/experiments/tracking_with_occlusion/ann_logging/"
-    model_name = "one_hidden_layer"
+    model_name = "one_hidden_layer_no_training"
 end            
 
 
@@ -306,9 +314,9 @@ function eval_validation_set(data, model, device)
         ŷ = model(prev_lv_and_img)
         loss_input = hcat(parse_code_by_varb(ŷ)...), hcat(gt_curr_lv...)
         total_loss += loss(loss_input[1], loss_input[2])
-        # this is coming out as 2500 when its max possible should be 760
+        accuracy += sum(abs.(loss_input[2] - loss_input[1]))
         #        accuracy += sum([sum(y-g) for (y, g) in zip(ŷ, gt_curr_lv)])
-        accuracy += 0
+#        accuracy += 0
     end
     return (loss = round(total_loss, digits=4), acc = round(accuracy, digits=4))
 end
@@ -354,7 +362,7 @@ function train_nn_on_model(nn_args::Args, nn_generator::Function)
             if nn_args.tblogger
                 set_step!(tblogger, epoch)
                 with_logger(tblogger) do
-                    @info "train" loss=test_model_performance_on_v.loss acc=test_model_performance_on_v.acc
+                    @info "train" loss_validation=test_model_performance_on_v.loss acc_validation=test_model_performance_on_v.acc loss_test=test_model_performance_on_t.loss acc_test=test_model_performance_on_t.acc
             end
                 #            epoch == 0 && run(`bash tensorboard --logdir /Users/nightcrawler/SpikingInferenceCircuits.jl/experiments/tracking_with_occlusion/ann_logging/`, wait=false)
         end
@@ -414,13 +422,40 @@ function visualize_ann_answers(gt_trace, nn_type)
     length_smc = get_args(gt_trace)[1]
     trace_data_digitized = digitize_trace(gt_trace)[1]
     ann_answers = [extract_latents_from_nn(nn_mod(d[1])) for d in trace_data_digitized]
+    make_comparison_vids(ann_answers, gt_trace)
+    return map(b->b[1], ann_answers)
+end
+
+function make_comparison_vids(ann_answers, gt_trace)
+    length_smc = get_args(gt_trace)[1]
     (fig, t) = draw_obs(map(b->b[2], ann_answers))
     display(fig)
     animate(t, length_smc-1)
     make_video(fig, t, length_smc-1, "ann_obs.mp4")
     (fig, t) = draw_obs(gt_trace)
     make_video(fig, t, length_smc-1, "gt.mp4")
-    return map(b->b[1], ann_answers)
+end
+    
+function unroll_nn(trace_digitized, nn_mod, latents_state_t)
+    # takes the obs and the previous nn_answer.
+    if isempty(trace_digitized)
+       return latents_state_t
+    end
+    nn_input = vcat(latents_state_t[end],
+                    first(trace_digitized)[1][sum(map(x->length(x), lv_ranges))+1:end])
+    push!(latents_state_t, nn_mod(nn_input))
+    unroll_nn(trace_digitized[2:end], nn_mod, latents_state_t)
+end
+                            
+function visualize_unrolled_ann(gt_trace, nn_type)
+    nn_mod = load_ann(nn_type)
+    trace_data_digitized = digitize_trace(gt_trace)[1]
+    # this is the len(smc) training data digitized entries
+    unrolled_latent_calls_dig = unroll_nn(trace_data_digitized, nn_mod,
+                                          [nn_mod(trace_data_digitized[1][1])])
+    unrolled_latent_calls = [extract_latents_from_nn(nn_answer) for nn_answer in unrolled_latent_calls_dig]
+    make_comparison_vids(unrolled_latent_calls, gt_trace)
+    return unrolled_latent_calls
 end
 
 
@@ -482,7 +517,7 @@ end
 end
 
 
-# TODO 8/24: test plotting functions. get ANN training onto GPU. test whether
-
-    # NN unrolling. where does this come in conceptually? idea will be to
-    # start with an initial state and an observation. can unroll the entire SMC from there with the NN recursively
+# TODO 8/31: 
+# compile the SNN for the 3D model and ask how many neurons there are.
+# unrolled net will get the same obs but use its OWN latent calls from prevstates as the input
+# not the traces calls. 
