@@ -54,6 +54,7 @@ nn_probs_to_probs(arr) = sum(arr) == 0 ? normalize(ones(length(arr))) : normaliz
 #sliding_window(arr) = zip(arr[1:end-1], arr[2:end])
 sliding_window(arr) = [[arr[i], arr[i+1]] for i in 1:length(arr)-1]
 my_cumsum(arr) = map(x-> sum(arr[1:x+1]), 0:length(arr)-1)
+
 # function you want for probabilistic proposal
 
 
@@ -136,7 +137,18 @@ function make_dataarrays_from_trained_nn(td, nn_model_name)
 end
 
     
-    
+function create_random_encoding(num_steps, nn_model_name)
+    nn_model = load_ann(nn_model_name)
+    lv_encoding = [vcat([onehot(uniform_discrete(lvr[1], lvr[end]), lvr) for lvr in lv_ranges]...) for i in 1:num_steps]
+    image_encoding = [vcat([[[1, 0, 0], [0, 1, 0], [0, 0, 1]][uniform_discrete(1,3)]
+                            for j in 1:length(SqPos())^2]...) for i in 1:num_steps]
+    println(image_encoding)
+    training_data = [vcat(b...) for b in zip(lv_encoding, image_encoding)]
+    # extract to latents to get training_data_raw. then pass this to make_data_arrays w two args
+    return training_data
+end
+
+
 
 
 function scatter_state_vs_prevstate(tdr)
@@ -489,14 +501,14 @@ occluded_bounce_constraints() = choicemap(
 )
 
 generate_occluded_bounce_tr() = generate(model, (15,), occluded_bounce_constraints())[1]
-    
+nn_proposal = load_ann("one_hidden_layer")    
 
 
 @gen (static) function flux_proposal(occₜ₋₁, xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, img)
     latent_array = [xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, occₜ₋₁]
     img_dig = extract_image_array(img)
     prevstate_and_img_digitized = vcat(lv_to_onehot_array(latent_array), img_dig)
-    nextstate, img, nextstate_probs = extract_latents_from_nn(nn_mod(prevstate_and_img_digitized))
+    nextstate, img, nextstate_probs = extract_latents_from_nn(nn_proposal(prevstate_and_img_digitized))
     occₜ ~ Cat(nextstate_probs[end])
     xₜ ~ Cat(nextstate_probs[1])
     yₜ ~ Cat(nextstate_probs[2])
@@ -508,7 +520,7 @@ end
     latent_array = [xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, occₜ₋₁]
     img_dig = extract_image_array(img)
     prevstate_and_img_digitized = vcat(lv_to_onehot_array(latent_array), img_dig)
-    nextstate, img, nextstate_probs = extract_latents_from_nn(nn_mod(prevstate_and_img_digitized))
+    nextstate, img, nextstate_probs = extract_latents_from_nn(nn_proposal(prevstate_and_img_digitized))
     occₜ ~ Cat(onehot(nextstate[end], OccPos()))
     xₜ ~ Cat(onehot(nextstate[1], SqPos()))
     yₜ ~ Cat(onehot(nextstate[2], SqPos()))
