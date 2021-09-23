@@ -1,6 +1,7 @@
 using DynamicModels
 using Parameters: @with_kw
 using Logging
+using Statistics
 import Flux
 using TensorBoardLogger: TBLogger, tb_overwrite, set_step!, set_step_increment!
 using Flux.Data: DataLoader
@@ -31,7 +32,12 @@ using Gen
 # flexible for velocity entry and flexible for whether you condition on ball being visible or not
 # this is also a heatmap. 
 # ALSO DO Y for every x plot you do
-# do this all on the training data. 
+# do this all on the training data.
+
+
+# maybe the idea is you arent' actually outputting a probability vector with the NN. you're outputting
+# something that gets converted to one, but maybe in the proposal you should softmax the NN result. 
+
 
 include("model.jl")
 include("groundtruth_rendering.jl")
@@ -49,8 +55,8 @@ digitize(f) = f == Occluder() ? [0, 0, 1] : f == Empty() ? [0, 1, 0] : f == Obje
 invert_digitized_obs(f) = f == [0, 0, 1] ? Occluder() : f == [0, 1, 0] ? Empty() : Object()
 get_state_values(cmap) = [cmap[lv => :val] for lv in lvs]
 lv_to_onehot_array(data_array) = vcat([onehot(d, hp) for (d, hp) in zip(data_array, lv_ranges)]...)
-probs_to_lv_MAP(arr, lv_h) = sum(arr) == 0 ? lv_h[uniform_discrete(1, length(arr))] : lv_h[findmax(arr)[2]]
-nn_probs_to_probs(arr) = sum(arr) == 0 ? normalize(ones(length(arr))) : normalize(arr)
+probs_to_lv_MAP(arr, lv_h) = lv_h[findmax(arr)[2]]
+#nn_probs_to_probs(arr) = sum(arr) == 0 ? normalize(ones(length(arr))) : normalize(arr)
 #sliding_window(arr) = zip(arr[1:end-1], arr[2:end])
 sliding_window(arr) = [[arr[i], arr[i+1]] for i in 1:length(arr)-1]
 my_cumsum(arr) = map(x-> sum(arr[1:x+1]), 0:length(arr)-1)
@@ -59,6 +65,24 @@ my_cumsum(arr) = map(x-> sum(arr[1:x+1]), 0:length(arr)-1)
 
 
 """ DATA EXTRACTION FROM MENTAL PHYSICS TRACES """
+
+# there are two ways of getting an image. visualize_ann and visualize_unrolling
+# render an image from a latent variable set. i extract the image array from the
+# choicemap of the gt_trace and input it to the NN in these cases. the NN outputs a
+# latent variable. the image array goes row by row and extracts the values along the columns.
+# the image that comes into the proposal is opposite. it contains the information in each
+# column and you are digitizing that way. therefore the image is off.
+
+
+function image_digitize_by_row(img)
+    img_array = []
+    for row in 1:ImageSideLength()
+        pix = [digitize(p[row]) for p in img]
+        img_array = vcat(img_array, pix...)
+    end
+    return img_array
+end
+
 
 
 function extract_image_array(cmap)
@@ -253,53 +277,54 @@ end
 
 # vy has two datapoints in groundtruth!! and y
 
+# ANSWERS ARE GENERALY UNIFORM. 
+
 
 """ FLUX ANN TRAINING AND TESTING """ 
 
-
-# I don't think these are appropriate loss functions b/c y is not a probability vector
+# cross entropy didn't work at all. 
 #loss(y, ŷ) = Flux.crossentropy(ŷ, y);
-#loss(y, ŷ) = Flux.logitcrossentropy(ŷ, y)
 
 loss(y, ŷ) = Flux.kldivergence(y, ŷ, agg=sum)
 
 #loss(y, ŷ) = Flux.mse(ŷ, y)
 
 # REPRESENT EACH Y AS A MATRIX INSTEAD OF A VECTOR
-#loss(y, ŷ) = Flux.kldivergence(hcat(y...), hcat(ŷ...), agg=sum)
-
-#loss(y, ŷ) = Flux.logitcrossentropy(hcat(y...), hcat(ŷ...), agg=sum)
-
-
-
-#parse_code_by_varb(y) = [Flux.softmax(convert(Vector{Float64}, y[i1+1:i2])) for (i1, i2) in sliding_window(vcat(0, cumsum(length(r) for r in lv_ranges)))]
 
 maxlen_lv_range = maximum(map(f-> length(f), lv_ranges))
 
 
+
+# this makes a row for a matrix out of each variable and adds trailing zeros to ranges that are shorter than the max lv range. 
 parse_code_by_varb(y) = [vcat(Flux.softmax(convert(Vector{Float32}, y[i1+1:i2])), zeros(maxlen_lv_range-(i2-i1))) for (i1, i2) in sliding_window(vcat(0, my_cumsum([length(r) for r in lv_ranges])))]
 
-#parse_code_by_varb(y) = [vcat(Flux.softmax(convert(Vector{Float32}, y[i1+1:i2])), zeros(maxlen_lv_range-(i2-i1))) for (i1, i2) in sliding_window(vcat(0, 
+parse_code_by_varb_no_zeros(y) = [Flux.softmax(convert(Vector{Float64}, y[i1+1:i2])) for (i1, i2) in sliding_window(vcat(0, my_cumsum([length(r) for r in lv_ranges])))]
 
+
+#parse_code_by_varb(y) = [vcat(convert(Vector{Float32}, y[i1+1:i2]), zeros(maxlen_lv_range-(i2-i1))) for (i1, i2) in sliding_window(vcat(0, my_cumsum([length(r) for r in lv_ranges])))]
 
 nn_single(input_datapoint) = Flux.Chain(
     Flux.Dense(length(input_datapoint), sum([length(l) for l in lv_ranges]), Flux.relu)) #, x-> parse_code_by_varb(x))
 
-
 nn_one_hidden(input_datapoint) = Flux.Chain(
-    Flux.Dense(length(input_datapoint), length(input_datapoint)),
-    Flux.Dense(length(input_datapoint), sum([length(l) for l in lv_ranges]), Flux.relu)) #, x->parse_code_by_varb(x))
+    Flux.Dense(length(input_datapoint),
+               Int(round(mean([length(input_datapoint), sum([length(l) for l in lv_ranges])]))), Flux.tanh),
+    Flux.Dense(Int(round(mean([length(input_datapoint), sum([length(l) for l in lv_ranges])]))),
+               sum([length(l) for l in lv_ranges]), Flux.tanh))
+#    Flux.softmax) #, x->parse_code_by_varb(x))
+
+#nn_one_hidden(input_datapoint) = Flux.Chain(Flux.Dense(length(input_datapoint), length(input_datapoint), Flux.tanh), Flux.Dense(length(input_datapoint), sum([length(l) for l in lv_ranges]), Flux.tanh), Flux.softmax) #, x->parse_code_by_varb(x))
 
 nn_two_hidden(input_datapoint) = Flux.Chain(
     Flux.Dense(length(input_datapoint), length(input_datapoint)),
     Flux.Dense(length(input_datapoint), length(input_datapoint)),
-    Flux.Dense(length(input_datapoint), sum([length(l) for l in lv_ranges]), Flux.relu))
+    Flux.Dense(length(input_datapoint), sum([length(l) for l in lv_ranges]), Flux.sigmoid))
 
 @with_kw mutable struct Args
     η = 3e-4             # learning rate (orig 3e-4)
     λ = 1e-4             # L2 regularizer param, implemented as weight decay
     batchsize = 5        # batch size
-    epochs = 50  # number of epochs
+    epochs = 100  # number of epochs
     training_samples = 40
     validation_samples = 20
     num_smc_steps = 10
@@ -309,7 +334,7 @@ nn_two_hidden(input_datapoint) = Flux.Chain(
     save_every_n_epochs = epochs / 2   # Save the model every x epochs.
     tblogger = true       # log training with tensorboard
     savepath = "/Users/nightcrawler/SpikingInferenceCircuits.jl/experiments/tracking_with_occlusion/ann_logging/"
-    model_name = "one_hidden_layer_no_training"
+    model_name = "one_hidden_layer"
 end            
 
 
@@ -355,7 +380,7 @@ function train_nn_on_model(nn_args::Args, nn_generator::Function)
         tblogger = TBLogger(nn_args.savepath, tb_overwrite)
         set_step_increment!(tblogger, 0) # 0 auto increment since we manually set_step!
         @info "TensorBoard logging at \"$(nn_args.savepath)\""
-        run(`bash tensorboard --logdir /Users/nightcrawler/SpikingInferenceCircuits.jl/experiments/tracking_with_occlusion/ann_logging`, wait=false)
+#        run(`bash tensorboard --logdir /Users/nightcrawler/SpikingInferenceCircuits.jl/experiments/tracking_with_occlusion/ann_logging`, wait=false)
     end
     @info "Start Training"
 #    tdr, training_data = generate_training_data(nn_args.training_samples, nn_args.num_smc_steps)
@@ -376,7 +401,6 @@ function train_nn_on_model(nn_args::Args, nn_generator::Function)
                 with_logger(tblogger) do
                     @info "train" loss_validation=test_model_performance_on_v.loss acc_validation=test_model_performance_on_v.acc loss_test=test_model_performance_on_t.loss acc_test=test_model_performance_on_t.acc
             end
-                #            epoch == 0 && run(`bash tensorboard --logdir /Users/nightcrawler/SpikingInferenceCircuits.jl/experiments/tracking_with_occlusion/ann_logging/`, wait=false)
         end
         for (sample, groundtruth) in training_data
             sample, groundtruth = sample |> device, groundtruth |> device
@@ -385,7 +409,7 @@ function train_nn_on_model(nn_args::Args, nn_generator::Function)
                 ŷ_tomod = convert(Matrix{Float32}, hcat(parse_code_by_varb(nn_model(sample))...))
                 gt = convert(Matrix{Float32}, hcat(parse_code_by_varb(groundtruth)...))
                 loss(ŷ_tomod, gt)
-#                loss(hcat(parse_code_by_varb(groundtruth)...), hcat(parse_code_by_varb(ŷ)...))
+                #                loss(hcat(parse_code_by_varb(groundtruth)...), hcat(parse_code_by_varb(ŷ)...))
             end
             Flux.Optimise.update!(opt, nn_params, grads)
             ProgressMeter.next!(p)   # comment out for no progress bar
@@ -414,7 +438,7 @@ function extract_latents_from_nn(digitized_array)
         digitized_lv = digitized_array[counter:counter+length(lvh)-1]
         extracted_value_for_lv = probs_to_lv_MAP(digitized_lv, lvh)
         push!(latents, extracted_value_for_lv)
-        push!(latent_categorical_probs, nn_probs_to_probs(digitized_lv))
+        push!(latent_categorical_probs, digitized_lv)
         counter += length(lvh)
     end
     (image, ) = obs_model(vcat(latents[end], latents[1:end-1])...)
@@ -425,27 +449,36 @@ end
 function load_ann(model_name)
     Core.eval(Main, :(import NNlib))
     b = BSON.@load string("./ann_logging/", model_name, "nn_model.bson") nn_model epoch nn_args
-    return nn_model
+    nn_model_w_softmax(x) = vcat(parse_code_by_varb_no_zeros(nn_model(x))...)
+    return nn_model_w_softmax
 end
 
+
+# on each of step of this function, the latents and image from the
+# groundtruth trace are used. 
 
 function visualize_ann_answers(gt_trace, nn_type)
     nn_mod = load_ann(nn_type)
     length_smc = get_args(gt_trace)[1]
     trace_data_digitized = digitize_trace(gt_trace)[1]
     ann_answers = [extract_latents_from_nn(nn_mod(d[1])) for d in trace_data_digitized]
+    println(trace_data_digitized[1][1][39:end])
+    println(trace_data_digitized[end][1][39:end])
     make_comparison_vids(ann_answers, gt_trace)
     return map(b->b[1], ann_answers)
 end
 
 function make_comparison_vids(ann_answers, gt_trace)
     length_smc = get_args(gt_trace)[1]
+    (fig2, t2) = draw_obs(gt_trace)
+    display(fig2)
+    animate(t2, length_smc-1)
+    make_video(fig2, t2, length_smc-1, "gt.mp4")
+
     (fig, t) = draw_obs(map(b->b[2], ann_answers))
     display(fig)
     animate(t, length_smc-1)
     make_video(fig, t, length_smc-1, "ann_obs.mp4")
-    (fig, t) = draw_obs(gt_trace)
-    make_video(fig, t, length_smc-1, "gt.mp4")
 end
     
 function unroll_nn(trace_digitized, nn_mod, latents_state_t)
@@ -458,11 +491,14 @@ function unroll_nn(trace_digitized, nn_mod, latents_state_t)
     push!(latents_state_t, nn_mod(nn_input))
     unroll_nn(trace_digitized[2:end], nn_mod, latents_state_t)
 end
-                            
+
+
+# on each step of this function, only the previous NN answers for
+# latent variables and the current image are used. 
+
 function visualize_unrolled_ann(gt_trace, nn_type)
     nn_mod = load_ann(nn_type)
     trace_data_digitized = digitize_trace(gt_trace)[1]
-    # this is the len(smc) training data digitized entries
     unrolled_latent_calls_dig = unroll_nn(trace_data_digitized, nn_mod,
                                           [nn_mod(trace_data_digitized[1][1])])
     unrolled_latent_calls = [extract_latents_from_nn(nn_answer) for nn_answer in unrolled_latent_calls_dig]
@@ -504,21 +540,32 @@ generate_occluded_bounce_tr() = generate(model, (15,), occluded_bounce_constrain
 nn_proposal = load_ann("one_hidden_layer")    
 
 
+image_digitize(img) = vcat([digitize(impix) for impix in vcat(img...)]...)
+
+
+
+# these proposals assume that velocity can be learned but it cant. you only have the previous velocity
+# and the current image. there's no way to decode velocity from that, but it will be OK in the view of the model. 
+
 @gen (static) function flux_proposal(occₜ₋₁, xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, img)
     latent_array = [xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, occₜ₋₁]
-    img_dig = extract_image_array(img)
+    img_dig = image_digitize_by_row(img)
+    # this is incorrect -- extract_image_array expects a choicemap, but img is already vectorized.
     prevstate_and_img_digitized = vcat(lv_to_onehot_array(latent_array), img_dig)
     nextstate, img, nextstate_probs = extract_latents_from_nn(nn_proposal(prevstate_and_img_digitized))
     occₜ ~ Cat(nextstate_probs[end])
     xₜ ~ Cat(nextstate_probs[1])
     yₜ ~ Cat(nextstate_probs[2])
     vxₜ ~ VelCat(nextstate_probs[3])
-    vyₜ ~ VelCat(nextstate_probs[4], .2, Vels())
+    vyₜ ~ VelCat(nextstate_probs[4])
+#    vxₜ ~ VelCat(vel_step_dist(xₜ, xₜ₋₁, vxₜ₋₁))
+ #   vyₜ ~ VelCat(vel_step_dist(yₜ, yₜ₋₁, vyₜ₋₁))
 end
+
 
 @gen (static) function flux_proposal_MAP(occₜ₋₁, xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, img)
     latent_array = [xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, occₜ₋₁]
-    img_dig = extract_image_array(img)
+    img_dig = image_digitize_by_row(img)
     prevstate_and_img_digitized = vcat(lv_to_onehot_array(latent_array), img_dig)
     nextstate, img, nextstate_probs = extract_latents_from_nn(nn_proposal(prevstate_and_img_digitized))
     occₜ ~ Cat(onehot(nextstate[end], OccPos()))
@@ -532,4 +579,14 @@ end
 # TODO 8/31: 
 # compile the SNN for the 3D model and ask how many neurons there are.
 # unrolled net will get the same obs but use its OWN latent calls from prevstates as the input
-# not the traces calls. 
+# not the traces calls.
+
+
+# these are the last two images in the gt_tr and proposal. they are different. 
+
+[0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0] ==
+
+[0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0]
+
+
+image_example = [[Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty()], PixelColor[Empty(), Empty(), Object(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty()], [Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty()], [Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty()], [Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty()], [Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty()], [Occluder(), Occluder(), Occluder(), Occluder(), Occluder(), Occluder(), Occluder(), Occluder(), Occluder(), Occluder()], [Occluder(), Occluder(), Occluder(), Occluder(), Occluder(), Occluder(), Occluder(), Occluder(), Occluder(), Occluder()], [Occluder(), Occluder(), Occluder(), Occluder(), Occluder(), Occluder(), Occluder(), Occluder(), Occluder(), Occluder()], [Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty()]]

@@ -17,7 +17,7 @@ get_y_pos(col) = only(findall([pix == Object() for pix in col]))
 get_occluder_pos(img) = first(findall([any(pix == Occluder() for pix in col) for col in img]))
 
 occluder_informed_x_prior(occ) = [occ ≤ x ≤ occ + OccluderLength() - 1 ? 1. : 0. for x in SqPos()] |> normalize
-uninformed_y_prior() = unif(SqPos())
+uninformed_y_prior() = uniform(SqPos())
 @gen (static) function _init_proposal(img)
     occluder_pos = get_occluder_pos(img)
     occₜ ~ Cat(onehot(occluder_pos, OccPos()))

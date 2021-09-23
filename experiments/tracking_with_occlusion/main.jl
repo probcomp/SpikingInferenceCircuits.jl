@@ -1,10 +1,12 @@
 using DynamicModels
-include("model.jl")
-include("groundtruth_rendering.jl")
-include("prior_proposal.jl")
-include("visualize.jl")
-include("locally_optimal_proposal.jl")
+# include("model.jl")
+# include("groundtruth_rendering.jl")
+# include("prior_proposal.jl")
+# include("visualize.jl")
+# include("locally_optimal_proposal.jl")
 
+# note this should import all of the include statements above. 
+include("flux_proposal.jl")
 
 
 use_ngf() = false
@@ -17,7 +19,9 @@ end
 
 model = @DynamicModel(init_latent_model, step_latent_model, obs_model, 5)
 init_prop = @compile_initial_proposal(_init_proposal, 1)
-step_prop = @compile_step_proposal(_step_proposal, 5, 1)
+#step_prop = @compile_step_proposal(_step_proposal, 5, 1)
+#step_prop = @compile_step_proposal(flux_proposal_MAP, 5, 1)
+step_prop = @compile_step_proposal(flux_proposal, 5, 1)
 
 @load_generated_functions()
 
@@ -107,34 +111,43 @@ occluded_bounce_constraints() = choicemap(
 )
 
 generate_occluded_bounce_tr() = generate(model, (15,), occluded_bounce_constraints())[1]
+generate_bounce_tr() = generate(model, (15,))[1]
+
+
 
 ## Script to run inference + make visualizations
 gt_tr = generate_occluded_bounce_tr()
+#gt_tr = generate_bounce_tr();
 (unweighed_trs, _) = do_inference(gt_tr)
 
 # Inference results animation:
-(fig, t) = make_gt_particle_viz(gt_tr, unweighed_trs); fig
+(fig, t) = make_gt_particle_viz(gt_tr, unweighed_trs)
 
-# Spiketrain figure:
-f = make_spiketrain_fig(
-    last(unweighed_trs)[1], 1:3; nest_all_at=(:steps => 2 => :latents),
-    resolution=(600, 450), figure_title="Dynamically Weighted Spike Code from Inference"
-)
+display(fig)
+animate(t, get_args(gt_tr)[1])
 
 
+println("past fig")
+# # Spiketrain figure:
+# f = make_spiketrain_fig(
+#     last(unweighed_trs)[1], 1:3; nest_all_at=(:steps => 2 => :latents),
+#     resolution=(600, 450), figure_title="Dynamically Weighted Spike Code from Inference"
+# )
 
 
-# Draw observations:
-tr, _= generate(model, (2,), choicemap(
-    (:init => :latents => :xₜ => :val, 6),
-    (:init => :latents => :yₜ => :val, 6),
-    (:init => :latents => :occₜ => :val, 7)
-))
 
-#using CairoMakie
-#CairoMakie.activate!()
-GLMakie.activate!()
-(fig, t) = draw_obs(tr); fig
+
+# # Draw observations:
+# tr, _= generate(model, (2,), choicemap(
+#     (:init => :latents => :xₜ => :val, 6),
+#     (:init => :latents => :yₜ => :val, 6),
+#     (:init => :latents => :occₜ => :val, 7)
+# ))
+
+# #using CairoMakie
+# #CairoMakie.activate!()
+# GLMakie.activate!()
+# (fig, t) = draw_obs(tr); fig
 
 # yeah this is right -- for the bottom two there are only 2 steps
 
