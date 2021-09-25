@@ -556,8 +556,8 @@ occluded_bounce_constraints() = choicemap(
 )
 
 generate_occluded_bounce_tr() = generate(model, (15,), occluded_bounce_constraints())[1]
-nn_proposal = load_ann("one_hidden_layer")    
-#nn_symbolic_proposal = load_ann("one_hidden_layer_symbolic")
+#nn_proposal = load_ann("one_hidden_layer")    
+nn_symbolic_proposal = load_ann("one_hidden_layer_symbolic")
 
 image_digitize(img) = vcat([digitize(impix) for impix in vcat(img...)]...)
 
@@ -597,9 +597,11 @@ end
 
 @gen (static) function flux_symbolic_proposal(occₜ₋₁, xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, img)
     latent_array = [xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, occₜ₋₁]
-    img_dig = image_digitize_by_row(img)
-    # this is incorrect -- extract_image_array expects a choicemap, but img is already vectorized.
-    prevstate_and_img_digitized = vcat(lv_to_onehot_array(latent_array, lv_ranges_symbolic), img_dig)
+    curr_ballpos = find_ball_location(img)
+    curr_occpos = get_occluder_pos(img)
+    ball_and_occluderpos = [curr_ballpos[1], curr_ballpos[2], curr_occpos]
+    prevstate_and_img_digitized = vcat(lv_to_onehot_array(latent_array, lv_ranges),
+                                       lv_to_onehot_array(ball_and_occluderpos, lv_ranges_symbolic))
     nextstate, img, nextstate_probs = extract_latents_from_nn(nn_symbolic_proposal(prevstate_and_img_digitized))
     occₜ ~ Cat(nextstate_probs[end])
     xₜ ~ Cat(nextstate_probs[1])
@@ -613,8 +615,11 @@ end
 
 @gen (static) function flux_symbolic_proposal_MAP(occₜ₋₁, xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, img)
     latent_array = [xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, occₜ₋₁]
-    img_dig = image_digitize_by_row(img)
-    prevstate_and_img_digitized = vcat(lv_to_onehot_array(latent_array, lv_ranges_symbolic), img_dig)
+    curr_ballpos = find_ball_location(img)
+    curr_occpos = get_occluder_pos(img)
+    ball_and_occluderpos = [curr_ballpos[1], curr_ballpos[2], curr_occpos]
+    prevstate_and_img_digitized = vcat(lv_to_onehot_array(latent_array, lv_ranges),
+                                       lv_to_onehot_array(ball_and_occluderpos, lv_ranges_symbolic))
     nextstate, img, nextstate_probs = extract_latents_from_nn(nn_symbolic_proposal(prevstate_and_img_digitized))
     occₜ ~ Cat(onehot(nextstate[end], OccPos()))
     xₜ ~ Cat(onehot(nextstate[1], SqPos()))
