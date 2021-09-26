@@ -48,3 +48,12 @@ Map2Dargs(args...) = collect(
     ]
     for arg in args
 )
+
+truncate_value(val, dom) = 
+    if val < minimum(dom)
+        minimum(dom)
+    elseif val > maximum(dom)
+        maximum(dom)
+    else
+        val
+    end

@@ -1,5 +1,6 @@
 using Gen
 using ProbEstimates
+using DynamicModels
 include("model_hyperparameters.jl")
 include("modeling_utils.jl")
 
@@ -8,6 +9,7 @@ struct Empty <: PixelColor; end
 struct Object <: PixelColor; end
 struct Occluder <: PixelColor; end
 PixelColors() = [Empty(), Object(), Occluder()]
+ColorFlipProb() = 0.01
 
 bern_probs(p) = [p, 1-p]
 
@@ -17,11 +19,21 @@ bern_probs(p) = [p, 1-p]
     return x_in_range && y_in_range
 end
 
+uniform_from_other_colors(color) = normalize([c == color ? 0. : 1. for c in PixelColors()])
+@gen (static) function maybe_flip_color(color)
+    flip1 ~ BoolCat(bern_probs(sqrt(ColorFlipProb())))
+    flip2 ~ BoolCat(bern_probs(sqrt(ColorFlipProb())))
+    color ~ LCat(PixelColors())(
+        flip1 && flip2 ? uniform_from_other_colors(color) : onehot(color, PixelColors())
+    )
+    return color
+end
+
 @gen (static) function render_pixel(occ, sqx, sqy, x, y)
     is_occluded = occ ≤ x ≤ occ + OccluderLength() - 1
     in_sq ~ is_in_square(sqx, sqy, x, y)
     color = is_occluded ? Occluder() : in_sq ? Object() : Empty()
-    pixel_color ~ LCat(PixelColors())(onehot(color, PixelColors()))
+    pixel_color ~ maybe_flip_color(color)
     return pixel_color
 end
 
@@ -66,3 +78,5 @@ vel_change_probs(vxₜ₋₁, xₜ₋₁) =
 	# yₜ ~ Cat(truncated_discretized_gaussian(yₜ₋₁ + vyₜ, 2., positions(SquareSideLength())))
 	return (occₜ, xₜ, yₜ, vxₜ, vyₜ)
 end
+
+model = @DynamicModel(init_latent_model, step_latent_model, obs_model, 5)

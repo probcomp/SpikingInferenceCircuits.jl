@@ -1,0 +1,33 @@
+digraph G {
+  graph [dpi="288.0",nodesep="0.15",pack="true",rankdir="LR",ratio="compress"];
+  node [fontname="Courier",orientation="30",penwidth="3.0",shape="triangle"];
+  edge [fontname="Courier",labelangle="25",labeldistance="2",penwidth="1.2"];
+  n1 [label="Neuron",shape="triangle"];
+  n2 [label="Neuron",shape="triangle"];
+  n3 [label="Neuron",shape="triangle"];
+  n4 [label="Neuron",shape="triangle"];
+  n5 [label="Neuron",shape="triangle"];
+  n6 [label="Neuron",shape="triangle"];
+  n7 [label="Neuron",shape="triangle"];
+  n8 [label="Neuron",shape="triangle"];
+  n1 -> n1;
+  n1 -> n2;
+  n2 -> n2;
+  n2 -> n7;
+  n3 -> n2;
+  n3 -> n7;
+  n4 -> n2;
+  n4 -> n7;
+  n5 -> n2;
+  n5 -> n7;
+  n6 -> n2;
+  n6 -> n7;
+  n7 -> n1;
+  n7 -> n2;
+  n7 -> n7;
+  n8 -> n3;
+  n8 -> n4;
+  n8 -> n5;
+  n8 -> n6;
+  n8 -> n8;
+}

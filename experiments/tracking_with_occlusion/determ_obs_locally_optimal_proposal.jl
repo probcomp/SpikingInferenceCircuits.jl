@@ -32,6 +32,8 @@ uninformed_y_prior() = unif(SqPos())
 
     vxₜ ~ VelCat(uniform(Vels()))
 	vyₜ ~ VelCat(uniform(Vels()))
+
+    return (occₜ, xₜ, yₜ, vxₜ, vyₜ)
 end
 
 vel_to_idx(vel) = vel - first(Vels()) + 1
@@ -79,4 +81,9 @@ end
 
     vxₜ ~ VelCat(vel_step_dist(xₜ, xₜ₋₁, vxₜ₋₁))
     vyₜ ~ VelCat(vel_step_dist(yₜ, yₜ₋₁, vyₜ₋₁))
+
+    return (occₜ, xₜ, yₜ, vxₜ, vyₜ)
 end
+
+initial_locopt_proposal = @compile_initial_proposal(_init_proposal, 1)
+step_locopt_proposal = @compile_step_proposal(_step_proposal, 5, 1)
