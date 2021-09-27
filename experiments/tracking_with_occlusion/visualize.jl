@@ -32,7 +32,7 @@ to_color_matrix(vec_of_vecs_of_pixel_color) = [
 	to_idx(vec_of_vecs_of_pixel_color[x][y])
 		for x=1:length(vec_of_vecs_of_pixel_color),
 			y=1:length(vec_of_vecs_of_pixel_color[1])	
-] |> transpose
+]
 
 observed_imgs(tr) = [
     tr[:init => :obs][1],
@@ -167,7 +167,7 @@ function draw_gt_and_particles(tr, particles, inference_method_str)
     # ax1d.tellheight = true
     # trim!(fig.layout)
 
-    hyperparam_label = Label(fig, "p_pixel_flip = $(p_flip()). OccOneOffProb = $(OccOneOffProb()).  VelOneOffProb = $(VelOneOffProb()).")
+    hyperparam_label = Label(fig, "p_pixel_flip = $(p_flip()). OccOneOffProb = $(OccOneOffProb()).  VelStd = $(VelStd()).  PixelFlipProb = $(p_pixel_flip()).")
     inference_label = Label(fig, inference_method_str)
     hyperparam_label.tellwidth = false; inference_label.tellwidth = false
     fig[4, :] = hyperparam_label; fig[5, :] = inference_label;
@@ -200,7 +200,7 @@ function draw_gt_particles_img_only(tr, particles, inference_method_str)
     xlims!(ax2d, (0.5, last(Positions()) + 0.5))
     colsize!(fig.layout, 1, Relative(1))
 
-    hyperparam_label = Label(fig, "p_pixel_flip = $(p_flip()). OccOneOffProb = $(OccOneOffProb()).  VelOneOffProb = $(VelOneOffProb()).")
+    hyperparam_label = Label(fig, "p_pixel_flip = $(p_flip()). OccOneOffProb = $(OccOneOffProb()).  VelStd = $(VelStd()).  PixelFlipProb = $(p_pixel_flip()).")
     inference_label = Label(fig, inference_method_str)
     hyperparam_label.tellwidth = false; inference_label.tellwidth = false
     hyperparam_label.tellheight = true; inference_label.tellheight = true

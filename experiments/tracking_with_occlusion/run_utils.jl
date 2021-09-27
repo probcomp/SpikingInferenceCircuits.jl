@@ -1,9 +1,9 @@
 obs_choicemap_to_vec_of_vec(ch) = [
     [
         ch[:img_inner => x => y => :pixel_color => :color => :val]
-        for x=1:ImageSideLength()
+        for y=1:ImageSideLength()
     ]
-    for y=1:ImageSideLength()
+    for x=1:ImageSideLength()
 ]
 
 ### Inference visualization:
@@ -11,14 +11,14 @@ function make_gt_particle_viz(gt_tr, unweighted_inferred_trs)
     GLMakie.activate!()
     nparticles = length(first(unweighted_inferred_trs))
     draw_gt_and_particles(gt_tr, unweighted_inferred_trs,
-    "$nparticles-particle SMC w/ locally-optimal proposal. Run in $(use_ngf() ? "NeuralGen-Fast." : "Vanilla Gen.")"
+    "$nparticles-particle SMC w/ nearly locally-optimal proposal. Run in $(use_ngf() ? "NeuralGen-Fast." : "Vanilla Gen.")"
     );
 end
 function make_gt_particle_viz_img_only(gt_tr, unweighted_inferred_trs)
     GLMakie.activate!()
     nparticles = length(first(unweighted_inferred_trs))
     draw_gt_particles_img_only(gt_tr, unweighted_inferred_trs,
-    "$nparticles-particle SMC w/ locally-optimal proposal. Run in $(use_ngf() ? "NeuralGen-Fast." : "Vanilla Gen.")"
+    "$nparticles-particle SMC w/ nearly locally-optimal proposal. Run in $(use_ngf() ? "NeuralGen-Fast." : "Vanilla Gen.")"
     );
 end
 
@@ -69,14 +69,21 @@ occluded_bounce_constraints() = choicemap(
 	(:init => :latents => :vxₜ => :val, 2),
     (:init => :latents => :vyₜ => :val, -1),
     (:init => :latents => :occₜ => :val, 8),
+    (:steps => 1 => :latents => :vxₜ => :val, 2),
+    (:steps => 1 => :latents => :vyₜ => :val, -1),
     (:steps => 1 => :latents => :xₜ => :val, 5),
     (:steps => 1 => :latents => :yₜ => :val, 8),
     (:steps => 1 => :latents => :occₜ => :val, 8),
+    (:steps => 2 => :latents => :vxₜ => :val, 2),
+    (:steps => 2 => :latents => :vyₜ => :val, -1),
     (:steps => 2 => :latents => :xₜ => :val, 7),
     (:steps => 2 => :latents => :yₜ => :val, 7),
     (:steps => 2 => :latents => :occₜ => :val, 8),
     (:steps => 3 => :latents => :occₜ => :val, 8),
-    (:steps => 4 => :latents => :occₜ => :val, 8)
+    (:steps => 4 => :latents => :occₜ => :val, 8),
+    (:steps => 5 => :latents => :occₜ => :val, 8),
+    (:steps => 6 => :latents => :occₜ => :val, 8),
+    (:steps => 7 => :latents => :occₜ => :val, 8)
 )
 
 generate_occluded_bounce_tr() = generate(model, (15,), occluded_bounce_constraints())[1]

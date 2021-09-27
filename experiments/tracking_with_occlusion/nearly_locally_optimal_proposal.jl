@@ -1,5 +1,5 @@
 function occ_likelihood(img, x)
-    num_correct = sum([pix == Occluder() ? 1 : 0 for pix in img[x:(x + OccluderLength() - 1)]])
+    num_correct = sum([pix == Occluder() ? 1 : 0 for pix in Iterators.flatten(img[x:(x + OccluderLength() - 1)])])
     num_incorrect = OccluderLength() * size(img)[1] - num_correct
     return (1 - ColorFlipProb())^num_correct * (ColorFlipProb() * 1/2)^(num_incorrect)
 end

@@ -7,6 +7,7 @@ p_flip() = 0.0
 
 OccOneOffProb() = 0.3
 VelOneOffProb() = 0.2
+VelStd() = 0.3
 
 Positions() = 1:ImageSideLength()
 SqPos()     = 1:(ImageSideLength() - SquareSideLength() + 1)

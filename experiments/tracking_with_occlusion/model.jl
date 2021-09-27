@@ -45,8 +45,8 @@ xs() = [[pixx for _=1:ImageSideLength()] for pixx=1:ImageSideLength()]
         fill(fill(occ, ImageSideLength()), ImageSideLength()),
         fill(fill(x, ImageSideLength()), ImageSideLength()),
         fill(fill(y, ImageSideLength()), ImageSideLength()),
-        fill(1:ImageSideLength(), ImageSideLength()),
-        xs()
+        xs(),
+        fill(1:ImageSideLength(), ImageSideLength())
     )
     return (img_inner,)
 end
@@ -64,9 +64,9 @@ end
 
 vel_change_probs(vxₜ₋₁, xₜ₋₁) =
     if (xₜ₋₁ ≤ first(SqPos()) && vxₜ₋₁ < 0) || (xₜ₋₁ ≥ last(SqPos()) && vxₜ₋₁ > 0)
-        maybe_one_off(-vxₜ₋₁, VelOneOffProb(), Vels())
+        discretized_gaussian(-vxₜ₋₁, VelStd(), Vels())
     else
-        maybe_one_off(vxₜ₋₁, VelOneOffProb(), Vels())
+        discretized_gaussian(vxₜ₋₁, VelStd(), Vels())
     end
 @gen (static) function step_latent_model(occₜ₋₁, xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁)
     vxₜ ~ VelCat(vel_change_probs(vxₜ₋₁, xₜ₋₁))
