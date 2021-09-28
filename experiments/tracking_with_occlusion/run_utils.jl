@@ -1,3 +1,13 @@
+function get_returned_obs(gt_tr)
+    firstcm, restcms = get_dynamic_model_obs(gt_tr)
+    selection = select((
+        :img_inner => x => y => :pixel_color => :color
+        for x in positions(SquareSideLength()) for y in positions(SquareSideLength())
+    )...)
+    filtercm(cm) = get_selected(cm, selection)
+    return (filtercm(firstcm), map(filtercm, restcms))
+end
+
 obs_choicemap_to_vec_of_vec(ch) = [
     [
         ch[:img_inner => x => y => :pixel_color => :color => :val]

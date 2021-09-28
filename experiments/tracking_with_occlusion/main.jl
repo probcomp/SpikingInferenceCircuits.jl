@@ -14,27 +14,24 @@ end
 
 @load_generated_functions()
 
-### Run inference:
-function get_returned_obs(tr)
-    firstcm, restcms = get_dynamic_model_obs(gt_tr)
-    selection = select((
-        :img_inner => x => y => :pixel_color => :color
-        for x in positions(SquareSideLength()) for y in positions(SquareSideLength())
-    )...)
-    filtercm(cm) = get_selected(cm, selection)
-    return (filtercm(firstcm), map(filtercm, restcms))
-end
-do_inference(tr; n_particles=10) = dynamic_model_smc(
-    model, get_returned_obs(tr),
-    cm -> (obs_choicemap_to_vec_of_vec(cm),),
-    initial_near_locopt_proposal, step_near_locopt_proposal, n_particles
-);
+include("z_estimates.jl")
 
-# ## Script to run inference + make visualizations
-VelOneOffProb() = 0.1
-gt_tr = generate_occluded_bounce_tr();
-(unweighted_trs, weighted_trs) = do_inference(gt_tr; n_particles=30);
-(fig, t) = make_gt_particle_viz_img_only(gt_tr, unweighted_trs); fig
+
+
+
+
+# ### Run inference:
+# do_inference(tr; n_particles=10) = dynamic_model_smc(
+#     model, get_returned_obs(tr),
+#     cm -> (obs_choicemap_to_vec_of_vec(cm),),
+#     initial_near_locopt_proposal, step_near_locopt_proposal, n_particles
+# );
+
+# # ## Script to run inference + make visualizations
+# VelOneOffProb() = 0.1
+# gt_tr = generate_occluded_bounce_tr();
+# (unweighted_trs, weighted_trs) = do_inference(gt_tr; n_particles=30);
+# (fig, t) = make_gt_particle_viz_img_only(gt_tr, unweighted_trs); fig
 
 
 
