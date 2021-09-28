@@ -1,7 +1,17 @@
+# I think this version of `importance_samples` would work, but I am not 100% sure whether it will
+# interact with NeuralGen-Fast properly, so I will manually write out the `propose` and `update` calls.
+# function importance_samples(prev_tr, obs_cm, obs_to_prop_input, proposal, n_particles)
+#     t = get_args(prev_tr)[1]
+#     trace_translator = Gen.SimpleExtendingTraceTranslator((t+1,), (UnknownChange(),), obs_cm, proposal, (obs_to_prop_input,))
+#     return [trace_translator(prev_tr) for _=1:n_particles]
+# end
 function importance_sample(prev_tr, obs_choicemap, obs_to_prop_input, proposal)
     choices, propose_score, _ = propose(proposal, (prev_tr, obs_to_prop_input(obs_choicemap)))
     t = get_args(prev_tr)[1]
-    newtr, assess_score, _, _ = update(prev_tr, (t + 1,), (UnknownChange(),), merge(obs_choicemap, choices))
+    newtr, assess_score, _, _ = update(
+        prev_tr, (t + 1,), (UnknownChange(),),
+        merge(DynamicModels.nest_at(:steps => t + 1 => :obs, obs_choicemap), choices)
+    )
     return (newtr, assess_score - propose_score)
 end
 importance_samples(prev_tr, obs_cm, obs_to_prop_input, proposal, n_particles) = [importance_sample(prev_tr, obs_cm, obs_to_prop_input, proposal) for _=1:n_particles]
