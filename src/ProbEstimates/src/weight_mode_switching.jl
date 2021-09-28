@@ -1,6 +1,7 @@
 global weighttype = :noisy
 global assemblysize = DefaultAssemblySize()
 global latency      = DefaultLatency()
+global use_autonormalization = DefaultUseAutonormalization()
 
 function AssemblySize()
     return assemblysize
@@ -96,4 +97,9 @@ function with_weight_type(f, typ::Symbol)
     return v
 end
 
-use_noisy_weights!()
+function set_autonormalization!(use_autonorm)
+    global use_autonormalization = use_autonorm
+end
+function is_using_autonormalization()
+    return global use_autonormalization
+end

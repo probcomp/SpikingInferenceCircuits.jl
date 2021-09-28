@@ -4,7 +4,7 @@ ProbEstimates.MinProb() = 1/25
 ProbEstimates.Latency() = 50.
 ProbEstimates.AssemblySize() = 200
 ProbEstimates.MaxRate() = 1.0
-ProbEstimates.UseLowPrecisionMultiply() = false
+ProbEstimates.set_autonormalization!(true)
 
 use_ngf() = true
 if use_ngf()
