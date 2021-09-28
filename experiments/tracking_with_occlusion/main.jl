@@ -1,7 +1,8 @@
 includet("model.jl")
 includet("groundtruth_rendering.jl")
-includet("prior_proposal.jl")
 includet("visualize.jl")
+include("obs_aux_proposal.jl")
+includet("prior_proposal.jl")
 includet("nearly_locally_optimal_proposal.jl")
 includet("run_utils.jl")
 

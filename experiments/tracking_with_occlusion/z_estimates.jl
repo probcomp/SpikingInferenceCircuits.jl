@@ -87,7 +87,7 @@ end
 
 function plot_z_estimate_comparison(gold_standard_z_ests, z_estimates, labels)
     f = Figure()
-    ax = Axis(f[1, 1], aspect=AxisAspect(1), xlabel="Gold-Standard Log(P[yₜ | xₜ₋₁]) Estimate", ylabel="Log(P[yₜ | xₜ₋₁]) Estimate")
+    ax = Axis(f[1, 1], xlabel="Gold-Standard Log(P[yₜ | xₜ₋₁]) Estimate", ylabel="Log(P[yₜ | xₜ₋₁]) Estimate")
     plots = []
     for (label, ests) in zip(labels, z_estimates)
         gold_standard_with_repeats = (
@@ -99,7 +99,7 @@ function plot_z_estimate_comparison(gold_standard_z_ests, z_estimates, labels)
             scatter!(ax, gold_standard_with_repeats, ests_flat)
         )
     end
-    m = minimum(gold_standard_z_ests); M = maximum(gold_standard_z_ests)
+    m = minimum(v for v in gold_standard_z_ests if !isinf(v)); M = maximum(gold_standard_z_ests)
     yx = lines!(ax, [Point2f0(m, m), Point2f0(M, M)])
     Legend(f[1, 2], [plots..., yx], [labels..., "y=x (0-variance z-estimate)"])
     return f
