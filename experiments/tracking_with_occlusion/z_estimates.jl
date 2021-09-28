@@ -85,19 +85,20 @@ function z_estimates_comparison(
     return (gold_standard_z_ests, z_estimates)
 end
 
+function scatter_z_ests!(ax, gold_standard_z_ests, ests)
+    gold_standard_with_repeats = (
+        [[gs for _ in estimates] for (gs, estimates) in zip(gold_standard_z_ests, ests)]
+            |> Iterators.flatten |> collect
+    )
+    ests_flat = ests |> Iterators.flatten |> collect
+    return scatter!(ax, gold_standard_with_repeats, ests_flat)
+end
 function plot_z_estimate_comparison(gold_standard_z_ests, z_estimates, labels)
     f = Figure()
     ax = Axis(f[1, 1], xlabel="Gold-Standard Log(P[yₜ | xₜ₋₁]) Estimate", ylabel="Log(P[yₜ | xₜ₋₁]) Estimate")
     plots = []
-    for (label, ests) in zip(labels, z_estimates)
-        gold_standard_with_repeats = (
-            [[gs for _ in estimates] for (gs, estimates) in zip(gold_standard_z_ests, ests)]
-                |> Iterators.flatten |> collect
-        )
-        ests_flat = ests |> Iterators.flatten |> collect
-        push!(plots,
-            scatter!(ax, gold_standard_with_repeats, ests_flat)
-        )
+    for ests in z_estimates
+        push!(plots, scatter_z_ests!(ax, gold_standard_z_ests, ests))
     end
     m = minimum(v for v in gold_standard_z_ests if !isinf(v)); M = maximum(gold_standard_z_ests)
     yx = lines!(ax, [Point2f0(m, m), Point2f0(M, M)])
@@ -105,10 +106,27 @@ function plot_z_estimate_comparison(gold_standard_z_ests, z_estimates, labels)
     return f
 end
 
+# `z_estimates` and `labels` should be Matrices of equal dimensionality;
+# the plot will have a grid of scatter plots
+function plot_z_estimate_comparison_grid(gold_standard_z_ests, z_estimates, labels)
+    f = Figure()
+    m = minimum(v for v in gold_standard_z_ests if !isinf(v)); M = maximum(gold_standard_z_ests)
+    yx = nothing
+    for (idx, label, ests) in zip(keys(labels), labels, z_estimates)
+        (y, x) = Tuple(idx)
+        ax = Axis(f[y, x], xlabel="Gold-Standard Log(P[yₜ | xₜ₋₁]) Estimate", ylabel="Log(P[yₜ | xₜ₋₁]) Estimate", title=label)
+        scatter_z_ests!(ax, gold_standard_z_ests, ests)
+        yx = lines!(ax, [Point2f0(m, m), Point2f0(M, M)])
+    end
+    ysize = size(labels)[1]
+    Legend(f[ysize + 1, :], [yx], ["y=x (Perfect Log(P[yₜ | xₜ₋₁]) Estimate)"])
+    return f
+end
+
 ### Script to run this
 
-specs = [(step_prior_proposal, 10), (step_near_locopt_proposal, 10)];
-labels = ["Prior Proposal (10 particles)", "Nearly Locally Optimal Proposal (10 particles)"];
+specs = [(step_prior_proposal, 10) (step_near_locopt_proposal, 10)];
+labels = ["Prior Proposal (10 particles)" "Nearly Locally Optimal Proposal (10 particles)"];
 (gold, ests) = z_estimates_comparison(
     [generate_occluded_bounce_tr()],
     get_returned_obs,
@@ -118,4 +136,4 @@ labels = ["Prior Proposal (10 particles)", "Nearly Locally Optimal Proposal (10 
     n_particles_goldstandard=10,
     n_estimates_per_spec=1
 );
-plot_z_estimate_comparison(gold, ests, labels)
+plot_z_estimate_comparison_grid(gold, ests, labels)
