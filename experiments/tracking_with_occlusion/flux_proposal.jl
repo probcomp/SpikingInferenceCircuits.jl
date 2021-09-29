@@ -338,15 +338,21 @@ nn_one_hidden(input_datapoint) = Flux.Chain(
 #nn_one_hidden(input_datapoint) = Flux.Chain(Flux.Dense(length(input_datapoint), length(input_datapoint), Flux.tanh), Flux.Dense(length(input_datapoint), sum([length(l) for l in lv_ranges]), Flux.tanh), Flux.softmax) #, x->parse_code_by_varb(x))
 
 nn_two_hidden(input_datapoint) = Flux.Chain(
-    Flux.Dense(length(input_datapoint), length(input_datapoint)),
-    Flux.Dense(length(input_datapoint), length(input_datapoint)),
-    Flux.Dense(length(input_datapoint), sum([length(l) for l in lv_ranges]), Flux.sigmoid))
+    Flux.Dense(length(input_datapoint),
+               Int(round(mean([length(input_datapoint), sum([length(l) for l in lv_ranges])]))), Flux.tanh),
+    Flux.Dense(Int(round(mean([length(input_datapoint), sum([length(l) for l in lv_ranges])]))), 
+               Int(round(mean([length(input_datapoint), sum([length(l) for l in lv_ranges])]))), Flux.tanh),
+    Flux.Dense(Int(round(mean([length(input_datapoint), sum([length(l) for l in lv_ranges])]))),
+               sum([length(l) for l in lv_ranges]), Flux.tanh))
+
+    
+
 
 @with_kw mutable struct Args
     η = 3e-4             # learning rate (orig 3e-4)
     λ = 1e-4             # L2 regularizer param, implemented as weight decay
     batchsize = 5        # batch size
-    epochs = 10  # number of epochs
+    epochs = 200  # number of epochs
     training_samples = 40
     validation_samples = 20
     num_smc_steps = 10
@@ -356,7 +362,7 @@ nn_two_hidden(input_datapoint) = Flux.Chain(
     save_every_n_epochs = epochs / 2   # Save the model every x epochs.
     tblogger = true       # log training with tensorboard
     savepath = "/Users/nightcrawler/SpikingInferenceCircuits.jl/experiments/tracking_with_occlusion/ann_logging/"
-    model_name = "one_hidden_layer_symbolic"
+    model_name = "two_hidden_layers_symbolic"
 end            
 
 
@@ -385,6 +391,8 @@ function train_nn_on_model(nn_args::Args, nn_generator::Function, input_encoder:
     #  validation_data, training_data)
     vdr, validation_data = generate_training_data(nn_args.validation_samples, nn_args.num_smc_steps, input_encoder)
     nn_model = nn_generator(validation_data[1][1])
+    modelpath = joinpath(nn_args.savepath,
+                         string(nn_args.model_name, "nn_model.bson"))
     println("Generated Validation Set")
     nn_args.seed > 0 && Random.seed!(nn_args.seed)
     use_cuda = nn_args.cuda && CUDA.has_cuda_gpu()
@@ -438,7 +446,6 @@ function train_nn_on_model(nn_args::Args, nn_generator::Function, input_encoder:
                 
         if epoch > 0 && epoch % nn_args.save_every_n_epochs == 0
             !ispath(nn_args.savepath) && mkpath(nn_args.savepath)
-            modelpath = joinpath(nn_args.savepath, string(nn_args.model_name, "nn_model.bson"))
             let model=Flux.cpu(nn_model), nn_args=struct2dict(nn_args)
                 BSON.@save modelpath nn_model epoch nn_args
             end
@@ -469,7 +476,7 @@ end
 
 function load_ann(model_name)
     Core.eval(Main, :(import NNlib))
-    b = BSON.@load string("./ann_logging/", model_name, "nn_model.bson") nn_model epoch nn_args
+    b = BSON.@load string("./saved_ann_models/", model_name, "nn_model.bson") nn_model epoch nn_args
     nn_model_w_softmax(x) = vcat(parse_code_by_varb_no_zeros(nn_model(x))...)
     return nn_model_w_softmax
 end
@@ -556,11 +563,11 @@ occluded_bounce_constraints() = choicemap(
 )
 
 generate_occluded_bounce_tr() = generate(model, (15,), occluded_bounce_constraints())[1]
-#nn_proposal = load_ann("one_hidden_layer")    
-nn_symbolic_proposal = load_ann("one_hidden_layer_symbolic")
+nn_proposal = load_ann("one_hidden_layer")    
+#nn_symbolic_proposal = load_ann("one_hidden_layer_symbolic")
+nn_symbolic_proposal = load_ann("two_hidden_layers_symbolic")
 
 image_digitize(img) = vcat([digitize(impix) for impix in vcat(img...)]...)
-
 
 
 # these proposals assume that velocity can be learned but it cant. you only have the previous velocity
@@ -577,8 +584,6 @@ image_digitize(img) = vcat([digitize(impix) for impix in vcat(img...)]...)
     yₜ ~ Cat(nextstate_probs[2])
     vxₜ ~ VelCat(nextstate_probs[3])
     vyₜ ~ VelCat(nextstate_probs[4])
-#    vxₜ ~ VelCat(vel_step_dist(xₜ, xₜ₋₁, vxₜ₋₁))
- #   vyₜ ~ VelCat(vel_step_dist(yₜ, yₜ₋₁, vyₜ₋₁))
 end
 
 
@@ -608,8 +613,6 @@ end
     yₜ ~ Cat(nextstate_probs[2])
     vxₜ ~ VelCat(nextstate_probs[3])
     vyₜ ~ VelCat(nextstate_probs[4])
-#    vxₜ ~ VelCat(vel_step_dist(xₜ, xₜ₋₁, vxₜ₋₁))
- #   vyₜ ~ VelCat(vel_step_dist(yₜ, yₜ₋₁, vyₜ₋₁))
 end
 
 
@@ -639,9 +642,3 @@ end
 
 # these are the last two images in the gt_tr and proposal. they are different. 
 
-[0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0] ==
-
-[0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0]
-
-
-image_example = [[Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty()], PixelColor[Empty(), Empty(), Object(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty()], [Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty()], [Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty()], [Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty()], [Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty()], [Occluder(), Occluder(), Occluder(), Occluder(), Occluder(), Occluder(), Occluder(), Occluder(), Occluder(), Occluder()], [Occluder(), Occluder(), Occluder(), Occluder(), Occluder(), Occluder(), Occluder(), Occluder(), Occluder(), Occluder()], [Occluder(), Occluder(), Occluder(), Occluder(), Occluder(), Occluder(), Occluder(), Occluder(), Occluder(), Occluder()], [Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty(), Empty()]]
