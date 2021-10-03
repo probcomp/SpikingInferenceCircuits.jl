@@ -5,6 +5,7 @@
 #     trace_translator = Gen.SimpleExtendingTraceTranslator((t+1,), (UnknownChange(),), obs_cm, proposal, (obs_to_prop_input,))
 #     return [trace_translator(prev_tr) for _=1:n_particles]
 # end
+
 function importance_sample(prev_tr, obs_choicemap, obs_to_prop_input, proposal)
     choices, propose_score, _ = propose(proposal, (prev_tr, obs_to_prop_input(obs_choicemap)))
     t = get_args(prev_tr)[1]
@@ -99,7 +100,7 @@ function scatter_z_ests!(ax, gold_standard_z_ests, ests)
             |> Iterators.flatten |> collect
     )
     ests_flat = ests |> Iterators.flatten |> collect
-    return scatter!(ax, gold_standard_with_repeats, ests_flat)
+    return scatter!(ax, gold_standard_with_repeats, ests_flat, color=:black)
 end
 function plot_z_estimate_comparison(gold_standard_z_ests, z_estimates, labels)
     f = Figure()
@@ -131,6 +132,53 @@ function plot_z_estimate_comparison_grid(gold_standard_z_ests, z_estimates, labe
     return f
 end
 
+function plot_z_estimate_comparison_grid_v2(
+    gold_standard_z_ests, z_estimates,
+    xlabels, ylabels
+)
+    f = Figure()
+    grid = f[1, 1] = GridLayout()
+    keys = CartesianIndices((length(ylabels), length(xlabels)))
+    axs = [
+        Axis(grid[y, x])
+        for (y, x) in map(Tuple, keys)
+    ]
+
+    m = minimum(v for v in gold_standard_z_ests if !isinf(v)); M = maximum(gold_standard_z_ests)
+    yx = nothing
+    for (idx, ests) in zip(keys, z_estimates)
+        (y, x) = Tuple(idx)
+        ax = axs[y, x]
+        scatter_z_ests!(ax, gold_standard_z_ests, ests)
+        yx = lines!(ax, [Point2f0(m, m), Point2f0(M, M)]; color=:black)
+    end
+
+    for (x, xlabel) in enumerate(xlabels)
+        axs[1, x].title = xlabel
+
+        hidexdecorations!.(axs[1:(end-1), x], grid=false)
+        # linkxaxes!(axs[x, :]...)
+    end
+    for (y, ylabel) in enumerate(ylabels)
+        axs[y, 1].ylabel = ylabel
+
+        hideydecorations!.(axs[y, 2:end], grid=false)
+        # linkyaxes!(axs[:, y]...)
+    end
+    linkaxes!(axs...)
+    
+    Label(grid[end, :, Bottom()], "Gold-Standard Log(P[yₜ | xₜ₋₁]) Estimate", valign=:top, padding=(0, 0, 0, 30))
+    Label(grid[:, 1, Left()], "Log(P[yₜ | xₜ₋₁]) Estimate", halign=:right, padding=(0, 100, 0, 0), rotation = pi/2)
+
+    leg = Legend(f[2, 1], [yx], ["y=x (Perfect Log(P[yₜ | xₜ₋₁]) Estimate)"])
+    leg.tellheight = true
+    leg.tellwidth=false
+
+    rowgap!(grid, 10)
+
+    return f
+end
+
 ### Script to run this
 
 ngf_setter(use_ngf, use_autonorm) =
@@ -148,18 +196,22 @@ specs = [
     (step_prior_proposal, 10, ngf_setter(true, true)) (step_near_locopt_proposal, 10, ngf_setter(true, true)) ;
     (step_prior_proposal, 10, ngf_setter(true, false)) (step_near_locopt_proposal, 10, ngf_setter(true, false)) ;
 ];
-labels = [
-    "Prior Proposal (10 particles; Gen)" "Nearly Locally Optimal Proposal (10 particles; Gen)" ; 
-    "Prior Proposal (10 particles; NeuralGen-Fast w/ Auto-Normalization)" "Nearly Locally Optimal Proposal (10 particles; NeuralGen-Fast w/ Auto-Normalization)" ;
-    "Prior Proposal (10 particles; NeuralGen-Fast w/out Auto-Normalization)" "Nearly Locally Optimal Proposal (10 particles; NeuralGen-Fast w/out Auto-Normalization)" 
-];
-(gold, ests) = z_estimates_comparison(
-    [generate_occluded_bounce_tr()],
-    get_returned_obs,
-    obs_choicemap_to_vec_of_vec,
-    specs;
-    n_particles_when_producing_prev_traces=1,
-    n_particles_goldstandard=10,
-    n_estimates_per_spec=1
-);
-plot_z_estimate_comparison_grid(gold, ests, labels)
+# labels = [
+#     "Prior Proposal (10 particles; Gen)" "Nearly Locally Optimal Proposal (10 particles; Gen)" ; 
+#     "Prior Proposal (10 particles; NeuralGen-Fast w/ Auto-Normalization)" "Nearly Locally Optimal Proposal (10 particles; NeuralGen-Fast w/ Auto-Normalization)" ;
+#     "Prior Proposal (10 particles; NeuralGen-Fast w/out Auto-Normalization)" "Nearly Locally Optimal Proposal (10 particles; NeuralGen-Fast w/out Auto-Normalization)" 
+# ];
+# (gold, ests) = z_estimates_comparison(
+#     [generate_occluded_bounce_tr()],
+#     get_returned_obs,
+#     obs_choicemap_to_vec_of_vec,
+#     specs;
+#     n_particles_when_producing_prev_traces=2,
+#     n_particles_goldstandard=10,
+#     n_estimates_per_spec=3
+# );
+# plot_z_estimate_comparison_grid(gold, ests, labels)
+
+xlabels = ["Prior Proposal", "Nearly Locally\nOptimal Proposal"]
+ylabels = ["Vanilla Gen", "NeuralGen-Fast\nw/ Auto-Norm", "NeuralGen-Fast\nw/out Auto-Norm"]
+plot_z_estimate_comparison_grid_v2(gold, ests, xlabels, ylabels)

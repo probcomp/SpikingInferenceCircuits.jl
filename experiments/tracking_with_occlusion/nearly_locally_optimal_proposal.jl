@@ -44,7 +44,7 @@ pointwise_product(x, y) = x .* y
         normalize(
             pointwise_product(
                 init_occ_probs(img),
-                maybe_one_off(occₜ₋₁, OccOneOffProb(), positions(OccluderLength()))
+                discretized_gaussian(occₜ₋₁, OccOneOffProb(), positions(OccluderLength()))
             )
         )
     )

@@ -101,5 +101,5 @@ function set_autonormalization!(use_autonorm)
     global use_autonormalization = use_autonorm
 end
 function is_using_autonormalization()
-    return global use_autonormalization
+    return use_autonormalization
 end
