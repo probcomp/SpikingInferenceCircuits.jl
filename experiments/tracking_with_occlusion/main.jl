@@ -20,8 +20,8 @@ end
 model = @DynamicModel(init_latent_model, step_latent_model, obs_model, 5)
 init_prop = @compile_initial_proposal(_init_proposal, 1)
 #step_prop = @compile_step_proposal(_step_proposal, 5, 1)
-#step_prop = @compile_step_proposal(flux_proposal_MAP, 5, 1)
-step_prop = @compile_step_proposal(flux_symbolic_proposal_MAP, 5, 1)
+step_prop = @compile_step_proposal(flux_proposal_MAP, 5, 1)
+#step_prop = @compile_step_proposal(flux_symbolic_proposal_MAP, 5, 1)
 
 @load_generated_functions()
 
