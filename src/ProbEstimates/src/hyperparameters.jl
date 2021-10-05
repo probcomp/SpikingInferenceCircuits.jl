@@ -4,10 +4,11 @@ DefaultLatency() = 50 # ms
 MaxRate() = 0.2 # KHz
 DefaultAssemblySize() = 10 # neurons
 MinProb() = 0.1
+DefaultUseAutonormalization() = false
 
 # Do we use ``single-line compression'' multiplication, which results in low precision?
 # If not, we use ``neural-floating-point''-style multiplication.
-UseLowPrecisionMultiply() = true
+UseLowPrecisionMultiply() = !is_using_autonormalization()
 
 # assembly sizes used for multiplication in either auto-normalized or low-precision multiply implementation
 MultAssemblySize() = AssemblySize()
@@ -41,3 +42,5 @@ DoRecipPECheck() = true
 # By default, don't truncate fwd dists, and truncate recip dists if we are not using perfect weights
 TruncateFwdDists()   = false
 TruncateRecipDists() = weight_type() !== :perfect
+
+
