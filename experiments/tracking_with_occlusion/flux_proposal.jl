@@ -566,7 +566,7 @@ generate_occluded_bounce_tr() = generate(model, (15,), occluded_bounce_constrain
 #nn_proposal = load_ann("one_hidden_layer")    
 #nn_symbolic_proposal = load_ann("one_hidden_layer_symbolic")
 nn_symbolic_proposal = load_ann("one_hidden_layer_symbolic")
-nn_proposal = load_ann("one_hidden_layer_untrained")
+nn_proposal = load_ann("one_hidden_layer")
 
 
 image_digitize(img) = vcat([digitize(impix) for impix in vcat(img...)]...)
