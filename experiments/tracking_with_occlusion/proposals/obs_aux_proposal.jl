@@ -1,8 +1,36 @@
 # fill in the auxiliary variables in the observation model
+prob_flip1_given_no_flip() =
+    if use_aux_vars
+        let p = ColorFlipProb()
+            (√(p) - p) / (1 - p)
+            # √(p)
+        end
+    else
+        0.
+    end
+prob_flip2_given_no_flip(flip1) =
+    if use_aux_vars
+        flip1 ? 0.0 : √(ColorFlipProb())
+    else
+        0.
+    end
+
 @gen (static) function _fill_in_flips(is_correct)
-    flip1 ~ BoolCat(bern_probs(is_correct ? sqrt(ColorFlipProb()) : 1.0))
-    flip2 ~ BoolCat(bern_probs(is_correct ? (flip1 ? 0.0 : sqrt(ColorFlipProb())) : 1.0))
+    flip1 ~ BoolCat(bern_probs(
+        is_correct ? prob_flip1_given_no_flip() : 1.0
+    ))
+    flip2 ~ BoolCat(bern_probs(
+        is_correct ? prob_flip2_given_no_flip(flip1) : 1.0)
+    )
 end
+# @gen (static) function _fill_in_flips(is_correct)
+#     flip1 ~ BoolCat(bern_probs(
+#         is_correct ? flip1_prob() : 1.0
+#     ))
+#     flip2 ~ BoolCat(bern_probs(
+#         is_correct ? flip2_prob(flip1) : 1.0)
+#     )
+# end
 @gen (static) function fill_in_flips(is_correct)
     {:pixel_color} ~ _fill_in_flips(is_correct)
 end

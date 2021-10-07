@@ -1,9 +1,9 @@
-includet("model.jl")
+includet("model/model.jl")
 includet("groundtruth_rendering.jl")
 includet("visualize.jl")
-include("obs_aux_proposal.jl")
-includet("prior_proposal.jl")
-includet("nearly_locally_optimal_proposal.jl")
+include("proposals/obs_aux_proposal.jl")
+includet("proposals/prior_proposal.jl")
+includet("proposals/nearly_locally_optimal_proposal.jl")
 includet("run_utils.jl")
 
 use_ngf() = false
@@ -14,8 +14,6 @@ else
 end
 
 @load_generated_functions()
-
-include("z_estimates.jl")
 
 
 

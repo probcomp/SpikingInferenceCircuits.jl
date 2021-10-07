@@ -11,6 +11,13 @@ struct Occluder <: PixelColor; end
 PixelColors() = [Empty(), Object(), Occluder()]
 ColorFlipProb() = 0.01
 
+global use_aux_vars = true
+function set_use_aux_vars!(val)
+    global use_aux_vars = val
+end
+flip1_prob() = use_aux_vars ? sqrt(ColorFlipProb()) : ColorFlipProb()
+flip2_prob(flip1) = use_aux_vars ? sqrt(ColorFlipProb()) : (flip1 ? 1.0 : 0.0)
+
 bern_probs(p) = [p, 1-p]
 
 @gen (static) function is_in_square(squarex, squarey, x, y)
@@ -21,8 +28,8 @@ end
 
 uniform_from_other_colors(color) = normalize([c == color ? 0. : 1. for c in PixelColors()])
 @gen (static) function maybe_flip_color(color)
-    flip1 ~ BoolCat(bern_probs(sqrt(ColorFlipProb())))
-    flip2 ~ BoolCat(bern_probs(sqrt(ColorFlipProb())))
+    flip1 ~ BoolCat(bern_probs(flip1_prob()))
+    flip2 ~ BoolCat(bern_probs(flip2_prob(flip1)))
     color ~ LCat(PixelColors())(
         flip1 && flip2 ? uniform_from_other_colors(color) : onehot(color, PixelColors())
     )
