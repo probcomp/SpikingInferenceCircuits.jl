@@ -1,4 +1,4 @@
-function scatter_z_ests!(ax, gold_standard_z_ests, ests)
+function scatter_z_ests!(ax, gold_standard_z_ests, ests, min_est=nothing, max_est=nothing)
     gold_standard_with_repeats = (
         [[gs for _ in estimates] for (gs, estimates) in zip(gold_standard_z_ests, ests)]
             |> Iterators.flatten |> collect
@@ -6,13 +6,20 @@ function scatter_z_ests!(ax, gold_standard_z_ests, ests)
 
     ### Scatter plot, which won't include values of -Inf ###
     ests_flat = ests |> Iterators.flatten |> collect
+    if isnothing(min_est)
+        min_est = [e for e in ests_flat if !isinf(e) && !isnan(e)] |> minimum
+    end
+    if isnothing(max_est)
+        max_est = [e for e in ests_flat if !isinf(e) && !isnan(e)] |> maximum
+    end
     non_inf_scatter = scatter!(ax, gold_standard_with_repeats, ests_flat, color=:black)
 
     ### Plot marks for all the values of -Inf ###
     original_limits = ax.elements[:yaxis].attributes.limits[]
     original_limits = ax.finallimits[]
-    original_min_x, original_min_y = original_limits.origin
-    original_max_x, original_max_y = original_limits.origin + original_limits.widths
+    original_min_x, _ = original_limits.origin
+    original_max_x, _ = original_limits.origin + original_limits.widths
+    original_min_y, original_max_y = min_est - 20, max_est + 20
 
     # Now get the non-inf gold standard estimates for which -inf estimates occurred, and plot them.
     inf_est_gold_vals = [v for v in gold_standard_with_repeats[findall(x -> isinf(x) || isnan(x), ests_flat)] if !(isinf(v) || isnan(v))]
@@ -23,7 +30,7 @@ function scatter_z_ests!(ax, gold_standard_z_ests, ests)
     )
     # TODO: after the `linkaxes!` call which occurs in `plot_z_estimate_comparison_grid_v2`,
     # these axes may change again.
-    ylims!(ax, (original_min_y - 1, original_max_y))
+    ylims!(ax, (original_min_y - 2, original_max_y))
     xlims!(ax, (original_min_x, original_max_x))
 
     return (non_inf_scatter, inf_scatter)
@@ -50,11 +57,16 @@ the plot will have a grid of scatter plots
 function plot_z_estimate_comparison_grid(gold_standard_z_ests, z_estimates, labels)
     f = Figure()
     m = minimum(v for v in gold_standard_z_ests if !isinf(v)); M = maximum(gold_standard_z_ests)
+    
+    flattened_ests = z_estimates |> Iterators.flatten |> Iterators.flatten
+    nonzero_flattened_ests = [v for v in flattened_ests if !isinf(v) && !isnan(v)]
+    min_est = minimum(nonzero_flattened_ests); max_est = maximum(nonzero_flattened_ests)
+    
     yx = nothing
     for (idx, label, ests) in zip(keys(labels), labels, z_estimates)
         (y, x) = Tuple(idx)
         ax = Axis(f[y, x], xlabel="Gold-Standard Log(P[yₜ | xₜ₋₁]) Estimate", ylabel="Log(P[yₜ | xₜ₋₁]) Estimate", title=label)
-        scatter_z_ests!(ax, gold_standard_z_ests, ests)
+        scatter_z_ests!(ax, gold_standard_z_ests, ests, min_est, max_est)
         yx = lines!(ax, [Point2f0(m, m), Point2f0(M, M)])
     end
     ysize = size(labels)[1]
@@ -86,11 +98,15 @@ function plot_z_estimate_comparison_grid_v2(
     good_gold_ests = (v for v in gold_standard_z_ests if !isinf(v) && !isnan(v))
     m = minimum(good_gold_ests); M = maximum(good_gold_ests)
 
+    flattened_ests = z_estimates |> Iterators.flatten |> Iterators.flatten
+    nonzero_flattened_ests = [v for v in flattened_ests if !isinf(v) && !isnan(v)]
+    min_est = minimum(nonzero_flattened_ests); max_est = maximum(nonzero_flattened_ests)
+
     yx = nothing; inf_val_plot = nothing;
     for (idx, ests) in zip(keys, z_estimates)
         (y, x) = Tuple(idx)
         ax = axs[y, x]
-        (_, inf_val_plot) = scatter_z_ests!(ax, gold_standard_z_ests, ests)
+        (_, inf_val_plot) = scatter_z_ests!(ax, gold_standard_z_ests, ests, min_est, max_est)
         yx = lines!(ax, [Point2f0(m, m), Point2f0(M, M)]; color=:black)
     end
 

@@ -12,4 +12,4 @@ function plot_spec(filename, spec)
 end
 names_specs = collect(zip(filenames, specs))
 
-plot_spec(names_specs[1]...)
+f = plot_spec(names_specs[1]...)
