@@ -3,7 +3,6 @@ prob_flip1_given_no_flip() =
     if use_aux_vars
         let p = ColorFlipProb()
             (√(p) - p) / (1 - p)
-            # √(p)
         end
     else
         0.
