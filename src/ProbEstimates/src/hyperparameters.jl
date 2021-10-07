@@ -3,7 +3,7 @@
 DefaultLatency() = 50 # ms
 MaxRate() = 0.2 # KHz
 DefaultAssemblySize() = 10 # neurons
-MinProb() = 0.1
+DefaultMinProb() = 0.1
 DefaultUseAutonormalization() = false
 
 # Do we use ``single-line compression'' multiplication, which results in low precision?
