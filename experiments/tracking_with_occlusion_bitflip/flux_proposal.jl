@@ -476,7 +476,7 @@ end
 
 function load_ann(model_name)
     Core.eval(Main, :(import NNlib))
-    b = BSON.@load string("./saved_ann_models/", model_name, "nn_model.bson") nn_model epoch nn_args
+    b = BSON.@load string("/Users/nightcrawler/SpikingInferenceCircuits.jl/experiments/tracking_with_occlusion_bitflip/saved_ann_models/", model_name, "nn_model.bson") nn_model epoch nn_args
     nn_model_w_softmax(x) = vcat(parse_code_by_varb_no_zeros(nn_model(x))...)
     return nn_model_w_softmax
 end
@@ -500,7 +500,6 @@ function make_comparison_vids(ann_answers, gt_trace)
     display(fig2)
     animate(t2, length_smc-1)
     make_video(fig2, t2, length_smc-1, "gt.mp4")
-
     (fig, t) = draw_obs(map(b->b[2], ann_answers))
     display(fig)
     animate(t, length_smc-1)
@@ -554,15 +553,6 @@ end
 #    return gt_image, gt_latents, latents_extracted_from_encoded, image_from_decoded_data
 
 
-
-occluded_bounce_constraints() = choicemap(
-	(:init => :latents => :xₜ => :val, 1),
-	(:init => :latents => :vxₜ => :val, 2),
-    (:init => :latents => :occₜ => :val, 8),
-    (:steps => 5 => :latents => :occₜ => :val, 8)
-)
-
-generate_occluded_bounce_tr() = generate(model, (15,), occluded_bounce_constraints())[1]
 #nn_symbolic_proposal = load_ann("one_hidden_layer_symbolic")
 nn_proposal = load_ann("one_hidden_layer")
 
@@ -575,8 +565,8 @@ image_digitize(img) = vcat([digitize(impix) for impix in vcat(img...)]...)
 
 @gen (static) function flux_proposal(occₜ₋₁, xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, img)
     latent_array = [xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, occₜ₋₁]
-    img_dig = image_digitize_by_row(img)
-    # this is incorrect -- extract_image_array expects a choicemap, but img is already vectorized.
+#    img_dig = image_digitize_by_row(img)
+    img_dig = image_digitize(img)
     prevstate_and_img_digitized = vcat(lv_to_onehot_array(latent_array, lv_ranges), img_dig)
     nextstate, img, nextstate_probs = extract_latents_from_nn(nn_proposal(prevstate_and_img_digitized))
     occₜ ~ Cat(nextstate_probs[end])
@@ -590,7 +580,8 @@ end
 
 @gen (static) function flux_proposal_MAP(occₜ₋₁, xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, img)
     latent_array = [xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, occₜ₋₁]
-    img_dig = image_digitize_by_row(img)
+#    img_dig = image_digitize_by_row(img)
+    img_dig = image_digitize(img)
     prevstate_and_img_digitized = vcat(lv_to_onehot_array(latent_array, lv_ranges), img_dig)
     nextstate, img, nextstate_probs = extract_latents_from_nn(nn_proposal(prevstate_and_img_digitized))
     occₜ ~ Cat(onehot(nextstate[end], OccPos()))

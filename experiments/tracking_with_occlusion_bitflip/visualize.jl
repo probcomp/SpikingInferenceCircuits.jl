@@ -1,5 +1,6 @@
 using GLMakie
 using Colors
+using FunctionalCollections
 
 to_color(::Empty) = colorant"white"
 to_color(::Object) = colorant"royalblue3"
@@ -28,6 +29,8 @@ end
 
 ### Trace data utils ###
 
+# NOTE THIS IS MISSING A TRANSPOSE CALL FROM PREVIOUSLY. LIKELY THE REASON FOR FAILURE. 
+
 to_color_matrix(vec_of_vecs_of_pixel_color) = [
 	to_idx(vec_of_vecs_of_pixel_color[x][y])
 		for x=1:length(vec_of_vecs_of_pixel_color),
@@ -55,10 +58,24 @@ sq_x_center(tr, t) = latents_choicemap(tr, t)[:xₜ => :val]
 sq_y_center(tr, t) = latents_choicemap(tr, t)[:yₜ => :val]
 sq_center(tr, t) = Point2f0(sq_x_center(tr, t), sq_y_center(tr, t))
 
+
+function draw_obs(obs::Vector{FunctionalCollections.PersistentVector{FunctionalCollections.PersistentVector{PixelColor}}})
+    fig = Figure()
+    ax = Axis(fig[1, 1], aspect=DataAspect(), title="ANN Predicted Image")
+    t = Observable(0)
+    draw_obs!(ax, t, obs)
+    return (fig, t)
+end
+
 function draw_obs!(ax, t, tr)
     obs = observed_imgs(tr)
     heatmap!(ax, @lift(to_color_matrix(obs[$t + 1])), colormap=map(to_color, PixelColors()))
 end
+
+function draw_obs!(ax, t, obs::Vector{FunctionalCollections.PersistentVector{FunctionalCollections.PersistentVector{PixelColor}}})
+    heatmap!(ax, @lift(to_color_matrix(obs[$t + 1])), colormap=map(to_color, PixelColors()))
+end
+
 function draw_gt_sq!(ax, t, tr)
     # hollow_rect!(
     #     ax,

@@ -14,10 +14,7 @@ else
     ProbEstimates.use_perfect_weights!()
 end
 
-
-
 include("z_estimates.jl")
-
 
 step_proposal_flux = @compile_step_proposal(flux_proposal_MAP, obs_aux_proposal, 5, 1)
 @load_generated_functions()
@@ -43,7 +40,8 @@ VelOneOffProb() = 0.1
 gt_tr = generate_occluded_bounce_tr();
 (unweighted_trs, weighted_trs) = do_inference(gt_tr; n_particles=30);
 (fig, t) = make_gt_particle_viz_img_only(gt_tr, unweighted_trs); fig
-
+display(fig)
+animate(t, get_args(gt_tr)[1])
 
 
 
