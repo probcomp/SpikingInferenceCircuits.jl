@@ -39,3 +39,36 @@ particlecount_auxvar_proposal_20211007_1047AM = (
         ),
     ]
 )
+
+# ANN MAP in NG-F
+proposal_comparison_ann_map_ngf_20211007_427pm = (
+    filenames=["/Users/georgematheos/Developer/research/Spiking/SpikingInferenceCircuits.jl/experiments/tracking_with_occlusion/z_estimate_plot/saves/Proposal2021-10-07__16-15-23"],
+    specs=[
+        (
+            varied_quantity="Proposal",
+            constants_str="NG-F w/ Auto-Normalization, w/ aux vars\n10 Particles",
+            specs=[
+                (step_prior_proposal, 10, ngf_setter(true, true, true)) ;
+                (flux_proposal_MAP, 10, ngf_setter(true, true, true)) ;
+                (step_near_locopt_proposal, 10, ngf_setter(true, true, true)) ;
+            ],
+            labels=["Prior as Proposal", "Artificial Neural\nNetwork Proposal", "Nearly Locally\nOptimal Proposal"]
+        ),
+    ]
+)
+
+proposal_comparison_ann_map_ignore_ann_posoutput__ngf_20211007_459pm(
+    filenames=["/Users/georgematheos/Developer/research/Spiking/SpikingInferenceCircuits.jl/experiments/tracking_with_occlusion/z_estimate_plot/saves/Proposal2021-10-07__16-59-09"],
+    specs = [
+        (
+            varied_quantity="Proposal",
+            constants_str="NG-F w/ Auto-Normalization, w/ aux vars\n10 Particles",
+            specs=[
+                (step_prior_proposal, 10, ngf_setter(true, true, true)) ;
+                (flux_proposal_MAP, 10, ngf_setter(true, true, true)) ;
+                (step_near_locopt_proposal, 10, ngf_setter(true, true, true)) ;
+            ],
+            labels=["Prior as Proposal", "Artificial Neural\nNetwork Proposal", "Nearly Locally\nOptimal Proposal"]
+        ),
+    ]
+)
