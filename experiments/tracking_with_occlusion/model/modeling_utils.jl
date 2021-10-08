@@ -25,6 +25,8 @@ discretized_gaussian(mean, std, dom) = normalize([
     cdf(Normal(mean, std), i + .5) - cdf(Normal(mean, std), i - .5) for i in dom
 ])
 
+pad(dist; amount=1e-6) = normalize(dist .+ amount)
+
 truncated_discretized_gaussian(mean, var, dom) =
     discretized_gaussian(mean, var, dom) |> truncate |> normalize
 

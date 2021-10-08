@@ -4,7 +4,7 @@ ProbEstimates.MultAssemblySize() = 100
 ProbEstimates.AutonormalizeRepeaterRate() = 5 * ProbEstimates.MaxRate()
 ProbEstimates.AutonormalizationLatency() = 500
 
-function importance_sample(prev_tr, obs_choicemap, obs_to_prop_input, proposal)
+function importance_sample(prev_tr, obs_choicemap, obs_to_prop_input, proposal; fail_cnt=0)
     try
         wt = DynamicModels.use_propose_weights!()
         choices, propose_score, _ = propose(proposal, (prev_tr, obs_to_prop_input(obs_choicemap)))
@@ -16,12 +16,12 @@ function importance_sample(prev_tr, obs_choicemap, obs_to_prop_input, proposal)
         )
         return (newtr, assess_score - propose_score)
     catch e
-        e isa InterruptException && throw(e)
+        (e isa InterruptException || fail_cnt > 8) && throw(e)
         @warn "Got exception when taking importance sample; will retry.  Exception: $e"
-        return importance_sample(prev_tr, obs_choicemap, obs_to_prop_input, proposal)
+        return importance_sample(prev_tr, obs_choicemap, obs_to_prop_input, proposal; fail_cnt = fail_cnt + 1)
     end
 end
-function importance_samples(prev_tr, obs_cm, obs_to_prop_input, proposal, n_particles)
+function importance_samples(prev_tr, obs_cm, obs_to_prop_input, proposal, n_particles; fail_cnt=0)
     try
         samples = [importance_sample(prev_tr, obs_cm, obs_to_prop_input, proposal) for _=1:n_particles]
         trs = map(first, samples)
@@ -30,11 +30,14 @@ function importance_samples(prev_tr, obs_cm, obs_to_prop_input, proposal, n_part
         # simulate noise from auto-normalization:
         (log_total_weight, log_normalized_weights) = ProbEstimates.normalize_weights(logweights)
         weights = log_normalized_weights .+ log_total_weight
+        if (ProbEstimates.weighttype == :perfect) && !any(isnan(w) || isinf(w) for w in logweights)
+            @assert !any(isnan(w) || isinf(w) for w in weights)
+        end
         return zip(trs, weights) |> collect
     catch e
-        e isa InterruptException && throw(e)
+        (e isa InterruptException || fail_cnt > 8) && throw(e)
         @warn "Got exception when taking importance samples; will retry.  Exception: $e"
-        return importance_samples(prev_tr, obs_cm, obs_to_prop_input, proposal, n_particles)
+        return importance_samples(prev_tr, obs_cm, obs_to_prop_input, proposal, n_particles; fail_cnt = fail_cnt + 1)
     end
 end
 
