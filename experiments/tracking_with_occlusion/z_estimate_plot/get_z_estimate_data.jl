@@ -70,13 +70,18 @@ function get_prevtr_obs_pairs(obs_trs, get_returned_obs; n_particles=30)
     return pairs
 end
 
+# returns an array of `n_runs` z estimates.
+# each z estimate will have the format
+# (log_z_estimate, weighted_particles)
+# where `log_z_estimate` is the log z estimate, and
+# `weighted_particles` is a vector of `(proposed_tr, logweight)` tuples
 function get_z_estimates(prev_obs_pairs, obs_transform, proposal; n_particles, n_runs)
     z_estimates = []
     for (prevtr, obs) in prev_obs_pairs
         samples = [
             importance_samples(prevtr, obs, obs_transform, proposal, n_particles) for _=1:n_runs
         ]
-        push!(z_estimates, [log_avg(wt for (tr, wt) in sample) for sample in samples])
+        push!(z_estimates, [(log_avg(wt for (tr, wt) in sample), sample) for sample in samples])
     end
     return z_estimates
 end

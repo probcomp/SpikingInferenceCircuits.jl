@@ -84,13 +84,13 @@ filenames = generate_filenames(specs)
 for (filename, spec) in zip(filenames, specs)
     println("Doing run which varies $(spec.varied_quantity)...")
     name = run_and_save_z_estimates_comparison(
-        [simulate(model, (15,)) for _=1:10],
+        [simulate(model, (15,)) for _=1:2],
         get_returned_obs,
         obs_choicemap_to_vec_of_vec,
         spec.specs;
-        n_particles_when_producing_prev_traces=3,
-        n_particles_goldstandard=20,
-        n_estimates_per_spec=4,
+        n_particles_when_producing_prev_traces=1,
+        n_particles_goldstandard=10,
+        n_estimates_per_spec=2,
         filename
     );
     println("Run saved to $name.")

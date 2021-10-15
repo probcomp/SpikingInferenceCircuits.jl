@@ -35,6 +35,7 @@ function scatter_z_ests!(ax, gold_standard_z_ests, ests, min_est=nothing, max_es
 
     return (non_inf_scatter, inf_scatter)
 end
+
 function plot_z_estimate_comparison(gold_standard_z_ests, z_estimates, labels)
     f = Figure()
     ax = Axis(f[1, 1], xlabel="Gold-Standard Log(P[yₜ | xₜ₋₁]) Estimate", ylabel="Log(P[yₜ | xₜ₋₁]) Estimate")
