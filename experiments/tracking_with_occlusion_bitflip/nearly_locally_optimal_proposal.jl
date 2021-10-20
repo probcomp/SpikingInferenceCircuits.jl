@@ -25,10 +25,11 @@ y_for_x(matrix, x) = reshape(matrix[x, :], (:,))
     yₜ ~ Cat(normalize(y_for_x(xyprobs, xₜ)))
 
     vxₜ ~ VelCat(uniform(Vels()))
-	vyₜ ~ VelCat(uniform(Vels()))
+    vyₜ ~ VelCat(uniform(Vels()))
 
     return (occₜ, xₜ, yₜ, vxₜ, vyₜ)
 end
+
 
 xy_to_vel_likelihoods(xylikelihoods, xₜ₋₁, yₜ₋₁) = [
     xylikelihoods[
@@ -67,3 +68,4 @@ end
 
 initial_near_locopt_proposal = @compile_initial_proposal(_init_near_locopt_proposal, obs_aux_proposal, 5, 1)
 step_near_locopt_proposal = @compile_step_proposal(_step_near_locopt_proposal, obs_aux_proposal, 5, 1)
+

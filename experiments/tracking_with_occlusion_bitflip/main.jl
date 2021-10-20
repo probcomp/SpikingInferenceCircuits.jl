@@ -7,6 +7,12 @@ include("nearly_locally_optimal_proposal.jl")
 include("run_utils.jl")
 include("flux_proposal.jl")
 
+#
+
+#digitize Figure 1 / code figure 1
+
+# make an animation with 4 panels showing the performance of each proposal. 
+
 use_ngf() = false
 if use_ngf()
     ProbEstimates.use_noisy_weights!()
@@ -16,7 +22,8 @@ end
 
 include("z_estimates.jl")
 
-step_proposal_flux = @compile_step_proposal(flux_proposal_MAP, obs_aux_proposal, 5, 1)
+initial_proposal_flux = @compile_initial_proposal(flux_initial_proposal, obs_aux_proposal, 5, 1)
+step_proposal_flux = @compile_step_proposal(flux_proposal, obs_aux_proposal, 5, 1)
 @load_generated_functions()
 
 
@@ -29,10 +36,16 @@ step_proposal_flux = @compile_step_proposal(flux_proposal_MAP, obs_aux_proposal,
 # );
 
 
+# do_inference(tr; n_particles=10) = dynamic_model_smc(
+#     model, get_returned_obs(tr),
+#     cm -> (obs_choicemap_to_vec_of_vec(cm),),
+#     initial_near_locopt_proposal, step_proposal_flux, n_particles
+# );
+
 do_inference(tr; n_particles=10) = dynamic_model_smc(
     model, get_returned_obs(tr),
     cm -> (obs_choicemap_to_vec_of_vec(cm),),
-    initial_near_locopt_proposal, step_proposal_flux, n_particles
+    initial_proposal_flux, step_proposal_flux, n_particles
 );
 
 # # ## Script to run inference + make visualizations
