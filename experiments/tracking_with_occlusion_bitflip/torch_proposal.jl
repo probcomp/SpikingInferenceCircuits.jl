@@ -1,11 +1,18 @@
 using PyCall
 using GenPyTorch
 using Statistics
+using Gen
+import Flux: softmax
 
-include("obs_aux_proposal.jl")
+
 include("model.jl")
 include("groundtruth_rendering.jl")
+include("visualize.jl")
+include("obs_aux_proposal.jl")
 include("prior_proposal.jl")
+include("nearly_locally_optimal_proposal.jl")
+include("run_utils.jl")
+include("obs_aux_proposal.jl")
 include("visualize.jl")
 include("ann_utils.jl")
 
@@ -18,10 +25,8 @@ F = nn.functional
 tdr, td, t_im, gt_trs = generate_training_data(1, 15, digitize_trace)
 input_dp = convert(Vector{Float64}, td[1][1])
 
-function partition_nn_output(y)
-    vec_y = y[:values]
-    [vec_y[i1+1:i2] for (i1, i2) in sliding_window(vcat(0, my_cumsum([length(r) for r in lv_ranges])))]
-end
+partition_nn_output(y) = [softmax(y[i1+1:i2]) for (i1, i2) in sliding_window(vcat(0, my_cumsum([length(r) for r in lv_ranges])))]
+
 
 
 @pydef mutable struct SingleHidden <: nn.Module
@@ -61,4 +66,62 @@ end
 
 nn_mod = SingleHidden(input_dp)
 
-model_gf = TorchGenerativeFunction(nn_mod, [TorchArg(true, torch.float)], 1)
+nn_torchgen = TorchGenerativeFunction(nn_mod, [TorchArg(true, torch.float)], 1)
+
+
+@gen (static) function pytorch_proposal(occₜ₋₁, xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, img)
+    latent_array = [xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, occₜ₋₁]
+    img_dig = image_digitize(img)
+    prevstate_and_img_digitized = vcat(lv_to_onehot_array(latent_array, lv_ranges), img_dig)
+    nextstate_array ~ nn_torchgen(prevstate_and_img_digitized)
+    nextstate_probs = partition_nn_output(nextstate_array)
+    occₜ ~ Cat(nextstate_probs[end])
+    xₜ ~ Cat(nextstate_probs[1])
+    yₜ ~ Cat(nextstate_probs[2])
+    vxₜ ~ VelCat(nextstate_probs[3])
+    vyₜ ~ VelCat(nextstate_probs[4])
+    return (occₜ, xₜ, yₜ, vxₜ, vyₜ)
+end
+
+@load_generated_functions
+
+
+# in example, measurements is the input to the proposal.
+# construct this by sampling a one step model each time and properly assigning
+# the previous states and image to the model. 
+
+function groundtruth_generator()
+    
+    # since these names are used in the global scope, explicitly declare it
+    # local to avoid overwriting the global variable
+    # obtain an execution of the model where planning succeeded
+    step = 2
+    (tr, w) = generate(model, (2,))
+
+    # construct arguments to the proposal function being trained.
+    # for you its goint to be occ, x, y, vx, vy, img
+    
+    (image, ) = tr[DynamicModels.obs_addr(step)]
+    prevstate = get_state_values(latents_choicemap(tr, step-1))
+    currstate = get_state_values(latents_choicemap(tr, step))
+
+    #latents choicemap is the choicemap itself -- might be helpful. 
+    inputs = (prevstate[end], prevstate[1], prevstate[2], prevstate[3], prevstate[4], image)
+    
+    # construct constraints for the proposal function being trained
+    constraints = Gen.choicemap()
+    constraints[:occₜ => :val] = currstate[end]
+    constraints[:xₜ => :val] = currstate[1]
+    constraints[:yₜ => :val] = currstate[2]
+    constraints[:vxₜ => :val] = currstate[3]
+    constraints[:vyₜ => :val] = currstate[4]
+    return (inputs, constraints)
+end;
+
+
+update = Gen.ParamUpdate(Gen.ADAM(0.001, 0.9, 0.999, 1e-8), 
+                         nn_torchgen => collect(get_params(nn_torchgen)))
+
+Gen.train!(pytorch_proposal, groundtruth_generator, update,
+    num_epoch=10, epoch_size=100, num_minibatch=100, minibatch_size=100,
+    evaluation_size=10, verbose=true);

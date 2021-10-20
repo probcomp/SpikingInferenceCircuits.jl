@@ -72,7 +72,7 @@ vel_change_probs(vxₜ₋₁, xₜ₋₁) =
 @gen (static) function step_latent_model(occₜ₋₁, xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁)
     vxₜ ~ VelCat(vel_change_probs(vxₜ₋₁, xₜ₋₁))
     vyₜ ~ VelCat(vel_change_probs(vyₜ₋₁, yₜ₋₁))
-	occₜ ~ Cat(discretized_gaussian(occₜ₋₁, OccOneOffProb(), positions(OccluderLength())))
+    occₜ ~ Cat(discretized_gaussian(occₜ₋₁, OccOneOffProb(), positions(OccluderLength())))
     xₜ ~ Cat(onehot(xₜ₋₁ + vxₜ, positions(SquareSideLength())))
     yₜ ~ Cat(onehot(yₜ₋₁ + vyₜ, positions(SquareSideLength())))
 	# xₜ ~ Cat(truncated_discretized_gaussian(xₜ₋₁ + vxₜ, 2., positions(SquareSideLength())))
