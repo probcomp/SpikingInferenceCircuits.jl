@@ -38,7 +38,7 @@ maxlen_lv_range = maximum(map(f-> length(f), lv_ranges))
 
 
 #
-
+ma
 # For KL, we are getting a value for each variable and summing. This operation is done on a matrix of values, with each row representing the digitized value of a latent variable. These functions makes a row for a matrix out of each variable and adds trailing zeros to ranges that are shorter than the max lv range.
 
 parse_code_by_varb(y) = [vcat(Flux.softmax(convert(Vector{Float32}, y[i1+1:i2])), zeros(maxlen_lv_range-(i2-i1))) for (i1, i2) in sliding_window(vcat(0, my_cumsum([length(r) for r in lv_ranges])))]

@@ -3,6 +3,7 @@ using GenPyTorch
 using Statistics
 using Gen
 import Flux: softmax
+#import Base: zero, +
 
 
 include("model.jl")
@@ -12,8 +13,6 @@ include("obs_aux_proposal.jl")
 include("prior_proposal.jl")
 include("nearly_locally_optimal_proposal.jl")
 include("run_utils.jl")
-include("obs_aux_proposal.jl")
-include("visualize.jl")
 include("ann_utils.jl")
 
 
@@ -21,11 +20,19 @@ torch = pyimport("torch")
 nn = torch.nn
 F = nn.functional
 
+# NOTE THIS DOESNT HAVE TO BE DEFINED IF USING DYNAMIC W CATEGORICALS or DYNAMIC W CAT, VELCAT 
+Gen.accumulate_param_gradients!(trace) = Gen.accumulate_param_gradients!(trace, nothing)
 
 tdr, td, t_im, gt_trs = generate_training_data(1, 15, digitize_trace)
 input_dp = convert(Vector{Float64}, td[1][1])
+maxlen_lv_range = maximum(map(f-> length(f), lv_ranges))
 
 partition_nn_output(y) = [softmax(y[i1+1:i2]) for (i1, i2) in sliding_window(vcat(0, my_cumsum([length(r) for r in lv_ranges])))]
+
+parse_nn_to_matrix(y) = hcat[vcat(softmax(convert(Vector{Float64}, y[i1+1:i2])), zeros(maxlen_lv_range-(i2-i1))) for (i1, i2) in sliding_window(vcat(0, my_cumsum([length(r) for r in lv_ranges])))]
+
+@dist labeled_cat(arr, labs) = labs[categorical(arr)]
+vel_list = Vels()
 
 
 
@@ -35,19 +42,21 @@ partition_nn_output(y) = [softmax(y[i1+1:i2]) for (i1, i2) in sliding_window(vca
         # like `super` or `str` or `slice` are all accessed using
         # `pybuiltin`.
         pybuiltin(:super)(SingleHidden, self).__init__()
-        self.dense1 = nn.Linear(length(input_dp),
-                                Int(round(mean([length(input_dp), sum([length(l) for l in lv_ranges])]))))
-        self.dense2 = nn.Linear(Int(round(mean([length(input_dp), sum([length(l) for l in lv_ranges])]))),
-                                sum([length(l) for l in lv_ranges]))
+        # self.dense1 = nn.Linear(
+        #     length(input_dp),
+        #     Int(round(mean([length(input_dp), sum([length(l) for l in lv_ranges])]))))
+        # self.dense2 = nn.Linear(
+        #     Int(round(mean([length(input_dp), sum([length(l) for l in lv_ranges])]))),
+        #     sum([length(l) for l in lv_ranges]))
+
+        self.dense1 = nn.Linear(
+            338, 188)
+        self.dense2 = nn.Linear(188, 38)
     end
 
     function forward(self, x)
         x = F.relu(self.dense1(x))
-        x = F.relu(self.dense2(x))
-#        output = vcat([F.softmax(y) for y in partition_nn_output(x)])
-        # for some reason can't use ... syntax here
-        #        return output[1], output[2], output[3], output[4], output[5]
-#        println(typeof(x))
+        x = self.dense2(x)
         return x
     end
 
@@ -69,45 +78,57 @@ nn_mod = SingleHidden(input_dp)
 nn_torchgen = TorchGenerativeFunction(nn_mod, [TorchArg(true, torch.float)], 1)
 
 
-@gen (static) function pytorch_proposal(occₜ₋₁, xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, img)
+@gen function pytorch_proposal(occₜ₋₁, xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, img)
     latent_array = [xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, occₜ₋₁]
     img_dig = image_digitize(img)
     prevstate_and_img_digitized = vcat(lv_to_onehot_array(latent_array, lv_ranges), img_dig)
-    nextstate_array ~ nn_torchgen(prevstate_and_img_digitized)
-    nextstate_probs = partition_nn_output(nextstate_array)
-    occₜ ~ Cat(nextstate_probs[end])
-    xₜ ~ Cat(nextstate_probs[1])
-    yₜ ~ Cat(nextstate_probs[2])
-    vxₜ ~ VelCat(nextstate_probs[3])
-    vyₜ ~ VelCat(nextstate_probs[4])
+    nextstate_probs ~ nn_torchgen(prevstate_and_img_digitized)
+  #  xprob, yprob, vxprob, vyprob, occprob = partition_nn_output(nextstate_probs)
+    # occₜ ~ Cat(occprob)
+    # xₜ ~ Cat(xprob)
+    # yₜ ~ Cat(yprob)
+    # vxₜ ~ VelCat(vxprob)
+    # vyₜ ~ VelCat(vyprob)
+    occₜ ~ Cat(softmax(nextstate_probs[31:38]))
+    xₜ ~ Cat(softmax(nextstate_probs[1:10]))
+    yₜ ~ Cat(softmax(nextstate_probs[11:20]))
+    vxₜ ~ VelCat(softmax(nextstate_probs[21:25]))
+    vyₜ ~ VelCat(softmax(nextstate_probs[26:30]))
     return (occₜ, xₜ, yₜ, vxₜ, vyₜ)
 end
 
-@load_generated_functions
+# @gen function pytorch_proposal(occₜ₋₁, xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, img)
+#     latent_array = [xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, occₜ₋₁]
+#     img_dig = image_digitize(img)
+#     prevstate_and_img_digitized = vcat(lv_to_onehot_array(latent_array, lv_ranges), img_dig)
+#     nextstate_probs ~ nn_torchgen(prevstate_and_img_digitized)
+#     xprob, yprob, vxprob, vyprob, occprob = partition_nn_output(nextstate_probs)
+#     occₜ ~ categorical(occprob)
+#     xₜ ~ categorical(xprob)
+#     yₜ ~ categorical(yprob)
+#  #   vxₜ ~ labeled_cat(vxprob, vel_list)
+#     #    vyₜ ~ labeled_cat(vyprob, vel_list)
+#     vxₜ ~ categorical(vxprob)
+#     vyₜ ~ categorical(vyprob)
+#     return (occₜ, xₜ, yₜ, vxₜ, vyₜ)
+# end
 
+@load_generated_functions
 
 # in example, measurements is the input to the proposal.
 # construct this by sampling a one step model each time and properly assigning
 # the previous states and image to the model. 
 
 function groundtruth_generator()
-    
-    # since these names are used in the global scope, explicitly declare it
-    # local to avoid overwriting the global variable
-    # obtain an execution of the model where planning succeeded
     step = 2
     (tr, w) = generate(model, (2,))
-
     # construct arguments to the proposal function being trained.
     # for you its goint to be occ, x, y, vx, vy, img
-    
     (image, ) = tr[DynamicModels.obs_addr(step)]
     prevstate = get_state_values(latents_choicemap(tr, step-1))
     currstate = get_state_values(latents_choicemap(tr, step))
-
     #latents choicemap is the choicemap itself -- might be helpful. 
     inputs = (prevstate[end], prevstate[1], prevstate[2], prevstate[3], prevstate[4], image)
-    
     # construct constraints for the proposal function being trained
     constraints = Gen.choicemap()
     constraints[:occₜ => :val] = currstate[end]
@@ -115,9 +136,13 @@ function groundtruth_generator()
     constraints[:yₜ => :val] = currstate[2]
     constraints[:vxₜ => :val] = currstate[3]
     constraints[:vyₜ => :val] = currstate[4]
+    # constraints[:occₜ] = currstate[end]
+    # constraints[:xₜ] = currstate[1]
+    # constraints[:yₜ] = currstate[2]
+    # constraints[:vxₜ] = currstate[3] + 3
+    # constraints[:vyₜ] = currstate[4] + 3
     return (inputs, constraints)
 end;
-
 
 update = Gen.ParamUpdate(Gen.ADAM(0.001, 0.9, 0.999, 1e-8), 
                          nn_torchgen => collect(get_params(nn_torchgen)))

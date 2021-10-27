@@ -1,6 +1,8 @@
 using Gen
 using ProbEstimates
 using DynamicModels
+using GenCollections
+
 include("model_hyperparameters.jl")
 include("modeling_utils.jl")
 
@@ -41,7 +43,7 @@ xs() = [[pixx for _=1:ImageSideLength()] for pixx=1:ImageSideLength()]
 @gen (static) function obs_model(occ, x, y, vx, vy)
     # TODO: Figure out whether each pixel is in the given range
     # _before_ calling `fill` to reduce the number of edges
-    img_inner ~ Map(Map(render_pixel))(
+    img_inner ~ ListMap(ListMap(render_pixel))(
         fill(fill(occ, ImageSideLength()), ImageSideLength()),
         fill(fill(x, ImageSideLength()), ImageSideLength()),
         fill(fill(y, ImageSideLength()), ImageSideLength()),

@@ -17,6 +17,16 @@ sliding_window(arr) = [[arr[i], arr[i+1]] for i in 1:length(arr)-1]
 my_cumsum(arr) = map(x-> sum(arr[1:x+1]), 0:length(arr)-1)
 image_digitize(img) = vcat([digitize(impix) for impix in vcat(img...)]...)
 
+function image_digitize(img::List{Any})
+    image_digitized = []
+    for i in 1:length(img)
+        im_row = img[i]
+        for j in 1:length(im_row)
+            push!(image_digitized, digitize(im_row[j]))
+        end
+    end
+    return vcat(image_digitized...)
+end
 
 
 """ DATA EXTRACTION FROM MENTAL PHYSICS TRACES """

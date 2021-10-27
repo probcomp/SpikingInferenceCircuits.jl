@@ -100,3 +100,24 @@ function recip_prob_estimate(tr::CatTrace)
     end
     return est
 end
+
+
+Gen.has_argument_grads(::LCat) = (true,)
+Gen.accepts_output_grad(::LCat) = false
+function Gen.choice_gradients(
+    tr::CatTrace, selection::Selection=EmptySelection(), retgrad=nothing
+)
+    @assert isnothing(retgrad)
+    @assert isempty(selection)
+
+    grad = zeros(length(tr.probs))
+    grad[tr.idx] = 1/tr.probs[tr.idx]
+    return ((grad,), EmptyChoiceMap(), EmptyChoiceMap())
+end
+Gen.accumulate_param_gradients!(trace::CatTrace, retgrad=nothing) =
+    Gen.choice_gradients(trace, EmptySelection(), retgrad)[1]
+
+function Gen.accumulate_param_gradients!(trace::CatTrace, retgrad=nothing, scale_factor=1.)
+    @assert scale_factor == 1.
+    return Gen.choice_gradients(trace, EmptySelection(), retgrad)[1]
+end
