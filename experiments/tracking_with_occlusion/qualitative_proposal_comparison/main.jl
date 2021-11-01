@@ -87,11 +87,29 @@ function exact_inference_given_prevlatents_and_occluder(image_obs_choicemap::Cho
         @assert logweights[xₜ, yₜ] == -Inf
         logweights[xₜ, yₜ] = weight
     end
-    logweights .-= logsumexp(logweights)
-    return exp.(logweights)
+    return exp.(logweights .- logsumexp(logweights))
 end
+
+function bottom_up_inference_given_occluder(image_obs_choicemap::ChoiceMap, occₜ)
+    logweights = [-Inf for _ in positions(SquareSideLength()), _ in positions(SquareSideLength())]
+    for xₜ in positions(SquareSideLength()), yₜ in positions(SquareSideLength())
+        _, weight = generate(model, (0,), merge(
+            nest_at(:init => :obs, image_obs_choicemap),
+            nest_at(:init => :latents, extend_all_with(:val, choicemap(
+                :xₜ => xₜ, :yₜ => yₜ, :vxₜ => 0, :vyₜ => 0, :occₜ => occₜ
+            )))
+        ))
+        @assert logweights[xₜ, yₜ] == -Inf
+        logweights[xₜ, yₜ] = weight
+    end
+    return exp.(logweights .- logsumexp(logweights))
+end
+
 exact_inference_results = exact_inference_given_prevlatents_and_occluder(
     obs_choicemap(gt_tr, 2), latents_choicemap(gt_tr, 2)[:occₜ => :val], latents_choicemap(gt_tr, 1)
+)
+bottom_up_inference_results = bottom_up_inference_given_occluder(
+    obs_choicemap(gt_tr, 2), latents_choicemap(gt_tr, 2)[:occₜ => :val]
 )
 
 #=
@@ -102,12 +120,15 @@ Set N = 10.
 =#
 N = 10
 locally_optimal_samples = [categorical_from_matrix(exact_inference_results) for _=1:N]
-# bottom_up_samples = # TODO
+bottom_up_samples = [categorical_from_matrix(bottom_up_inference_results) for _=1:N]
 
-locally_optimal_matrix = [
-    sum(s == (x, y) ? 1 : 0 for s in locally_optimal_samples)
+samples_to_matrix(samples) = normalize([
+    sum(s == (x, y) ? 1 : 0 for s in samples)
     for x in positions(SquareSideLength()), y in positions(SquareSideLength())
-]
+])
+
+locally_optimal_matrix = samples_to_matrix(locally_optimal_samples)
+bottom_up_matrix = samples_to_matrix(bottom_up_samples)
 
 #=
 Plotting.
@@ -115,13 +136,12 @@ Plot particle clouds from exact inference, and 2 particle approximations, and ex
 =#
 function plot_prob_matrix_squares!(ax, probability_matrix)
     maxprob = maximum(probability_matrix)
-    to_alpha(prob) = 0.8 * prob/maxprob
+    to_alpha(prob) = prob # 0.8 * prob/maxprob
     sq = nothing
     for (idx, prob) in zip(keys(probability_matrix), probability_matrix)
         (x, y) = Tuple(idx)
-        a = to_alpha(prob)
-        s = draw_sq!(ax, Observable(x), Observable(y), a)
-        if a > 0.5
+        s = draw_sq!(ax, Observable(x), Observable(y), to_alpha(prob))
+        if prob == maxprob
             sq = s
         end
     end
@@ -148,4 +168,4 @@ function plot_obs_with_particle_dist(tr, t, probability_matrix; title="")
     return f
 end
 
-f = plot_obs_with_particle_dist(gt_tr, 2, exact_inference_results)
+f = plot_obs_with_particle_dist(gt_tr, 2, bottom_up_matrix)
