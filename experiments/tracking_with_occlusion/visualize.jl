@@ -44,12 +44,15 @@ observed_imgs(tr) = [
 
 ### Figure making / trace drawing ###
 
-sq_left(tr, t)  = latents_choicemap(tr, t)[:xₜ => :val] - 0.4
-sq_bot(tr, t)   = latents_choicemap(tr, t)[:yₜ => :val] - 0.4
-sq_top(tr, t)   = sq_bot(tr, t)  + SquareSideLength() - 0.2
-sq_right(tr, t) = sq_left(tr, t) + SquareSideLength() - 0.2
-occ_left(tr, t)     = latents_choicemap(tr, t)[:occₜ => :val] - 0.4
-occ_right(tr, t)    = occ_left(tr, t) + OccluderLength() - 0.2
+sq_left(x) = x - 0.4
+sq_bot(y) = y - 0.4
+occ_left(occ) = occ - 0.4
+sq_left(tr, t)  = sq_left(latents_choicemap(tr, t)[:xₜ => :val])
+sq_bot(tr, t)   = sq_bot(latents_choicemap(tr, t)[:yₜ => :val])
+sq_top(args...)   = sq_bot(args...)  + SquareSideLength() - 0.2
+sq_right(args...) = sq_left(args...) + SquareSideLength() - 0.2
+occ_left(tr, t)     = occ_left(latents_choicemap(tr, t)[:occₜ => :val])
+occ_right(args...)    = occ_left(args...) + OccluderLength() - 0.2
 
 sq_x_center(tr, t) = latents_choicemap(tr, t)[:xₜ => :val]
 sq_y_center(tr, t) = latents_choicemap(tr, t)[:yₜ => :val]
@@ -94,12 +97,24 @@ function draw_obs(tr)
 end
 
 ### Inference drawing ###
-function draw_particle_sq!(ax, t, tr, num_particles) # tr = observable giving trace at time $t
+function draw_sq!(ax, x, y, alpha)
     poly!(
         ax,
-        @lift(Rect(sq_left($tr, $t) + 0.1, sq_bot($tr, $t) + 0.1, SquareSideLength() - 0.4, SquareSideLength() - 0.4)),
-        color=RGBA(0, 0, 0, min(1., 2.0/num_particles))
+        @lift(Rect(sq_left($x) + 0.1, sq_left($y) + 0.1, SquareSideLength() - 0.4, SquareSideLength() - 0.4)),
+        color=RGBA(0, 0, 0, alpha)
     )
+end
+function draw_particle_sq!(ax, t, tr, num_particles) # tr = observable giving trace at time $t
+    draw_sq!(ax,
+        @lift(latents_choicemap($tr, $t)[:xₜ => :val]),
+        @lift(latents_choicemap($tr, $t)[:yₜ => :val]),
+        min(1., 2.0/num_particles)
+    )
+    # poly!(
+    #     ax,
+    #     @lift(Rect(sq_left($tr, $t) + 0.1, sq_bot($tr, $t) + 0.1, SquareSideLength() - 0.4, SquareSideLength() - 0.4)),
+    #     color=RGBA(0, 0, 0, min(1., 2.0/num_particles))
+    # )
 end
 function draw_particle_occ_gt!(ax, t, tr, num_particles)
     poly!(
