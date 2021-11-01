@@ -156,16 +156,41 @@ function draw_vel_arrow!(ax, t, tr)
         color=colorant"seagreen", linewidth=4
     )
 end
-function plot_obs_with_particle_dist(tr, t, probability_matrix; title="")
-    f = Figure()
-    ax = Axis(f[1, 1], aspect=DataAspect(); title)
+function plot_obs_with_particle_dist!(figpos, tr, t, probability_matrix; title="")
+    ax = Axis(figpos, aspect=DataAspect(); title)
+    hidedecorations!(ax)
     draw_obs!(ax, Observable(t), tr)
     sq = plot_prob_matrix_squares!(ax, probability_matrix)
     ar = draw_vel_arrow!(ax, Observable(t), tr)
-    l = Legend(f[2, 1], [sq, ar], ["posterior over position", "ground truth motion into this timestep"])
-    l.tellheight = true; l.tellwidth = true
+    function make_legend(leg_figpos)
+        l = Legend(leg_figpos, [sq, ar],
+            ["Posterior over Position", "Ground Truth Motion into this Timestep"]
+        )
+        l.tellheight = true; l.tellwidth = true
+        return l
+    end
+    return make_legend
+end
+function plot_obs_with_particle_dist(tr, t, probability_matrix; title="")
+    f = Figure()
+    make_legend = plot_obs_with_particle_dist!(f[1, 1], tr, t, probability_matrix; title)
+    make_legend(f[2, 1])
 
     return f
 end
+function plot_obs_particle_dists(gt_tr, t, titles, matrices)
+    f = Figure(; resolution=(1000, 500))
+    make_legend = nothing
+    for (i, (title, matrix)) in enumerate(zip(titles, matrices))
+        make_legend = plot_obs_with_particle_dist!(f[1, i], gt_tr, t, matrix; title)
+    end
+    make_legend(f[2, :])
+    return f
+end
 
-f = plot_obs_with_particle_dist(gt_tr, 2, bottom_up_matrix)
+# f = plot_obs_with_particle_dist(gt_tr, 2, bottom_up_matrix)
+
+f = plot_obs_particle_dists(gt_tr, 2,
+    ["Exact Posterior", "$N Particles from Locally Exact Proposal", "$N Particles from Bottom-Up Proposal"],
+    [exact_inference_results, locally_optimal_matrix, bottom_up_matrix]
+)
