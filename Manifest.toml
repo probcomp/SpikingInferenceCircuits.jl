@@ -503,6 +503,14 @@ repo-url = "https://github.com/probcomp/Gen.jl"
 uuid = "ea4f424c-a589-11e8-07c0-fd5c91b9da4a"
 version = "0.4.3"
 
+[[GenCollections]]
+deps = ["FunctionalCollections", "Gen", "ReverseDiff"]
+git-tree-sha1 = "d3bab39ea83ea549e5c7092eeffc47c9f625a307"
+repo-rev = "main"
+repo-url = "https://github.com/probcomp/GenCollections.jl"
+uuid = "93d01f16-50a7-43e9-88d9-4c999de66045"
+version = "0.1.0"
+
 [[GenPyTorch]]
 deps = ["Gen", "MLDatasets", "PyCall"]
 git-tree-sha1 = "a9f9f9ebf1c8d9be887a7ff922a3fe0ffb5998be"
@@ -1143,10 +1151,10 @@ uuid = "ae029012-a4dd-5104-9daa-d747884805df"
 version = "1.1.3"
 
 [[ReverseDiff]]
-deps = ["DiffResults", "DiffRules", "ForwardDiff", "FunctionWrappers", "LinearAlgebra", "MacroTools", "NaNMath", "Random", "SpecialFunctions", "StaticArrays", "Statistics"]
-git-tree-sha1 = "63ee24ea0689157a1113dbdab10c6cb011d519c4"
+deps = ["ChainRulesCore", "DiffResults", "DiffRules", "ForwardDiff", "FunctionWrappers", "LinearAlgebra", "MacroTools", "NaNMath", "Random", "SpecialFunctions", "StaticArrays", "Statistics"]
+git-tree-sha1 = "14b09b7d28378e6e8be334edc0ade781b5c65e85"
 uuid = "37e2e3b7-166d-5795-8a7a-e32c996b4267"
-version = "1.9.0"
+version = "1.10.0"
 
 [[Revise]]
 deps = ["CodeTracking", "Distributed", "FileWatching", "JuliaInterpreter", "LibGit2", "LoweredCodeUtils", "OrderedCollections", "Pkg", "REPL", "Requires", "UUIDs", "Unicode"]
@@ -1245,7 +1253,7 @@ uuid = "549ce59a-75fd-4aaf-b0ba-30f73ee3de21"
 version = "0.1.0"
 
 [[SpikingInferenceCircuits]]
-deps = ["BSON", "Bijections", "CPTs", "CUDA", "CairoMakie", "Circuits", "Colors", "DiscreteIRTransforms", "Distributions", "DrWatson", "DynamicModels", "FileIO", "Flux", "FunctionalCollections", "GLMakie", "Gen", "GenPyTorch", "GeometryBasics", "InteractiveUtils", "Logging", "NNlib", "NaNMath", "OutputCollectors", "Parameters", "ProbEstimates", "ProgressMeter", "PyCall", "Revise", "Setfield", "SpikingCircuits", "StatsBase", "TensorBoardLogger"]
+deps = ["BSON", "Bijections", "CPTs", "CUDA", "CairoMakie", "Circuits", "Colors", "DiscreteIRTransforms", "Distributions", "DrWatson", "DynamicModels", "FileIO", "Flux", "FunctionalCollections", "GLMakie", "Gen", "GenCollections", "GenPyTorch", "GeometryBasics", "InteractiveUtils", "IteratorInterfaceExtensions", "Logging", "NNlib", "NaNMath", "OutputCollectors", "Parameters", "ProbEstimates", "ProgressMeter", "PyCall", "ReverseDiff", "Revise", "Setfield", "SpikingCircuits", "StatsBase", "TensorBoardLogger"]
 path = "/Users/nightcrawler/SpikingInferenceCircuits.jl"
 uuid = "ef694985-0566-4478-a48d-fa3dba6654f1"
 version = "0.1.0"
