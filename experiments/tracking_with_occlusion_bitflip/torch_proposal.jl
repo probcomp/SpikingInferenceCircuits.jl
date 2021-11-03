@@ -6,6 +6,7 @@ import Flux: softmax
 import Base: zero
 
 include("model.jl")
+include("modeling_utils.jl")
 include("groundtruth_rendering.jl")
 include("visualize.jl")
 include("obs_aux_proposal.jl")
@@ -24,6 +25,13 @@ F = nn.functional
 #zero(t::NTuple{5, <:Any}) = nothing
 #Gen.accumulate_param_gradients!(trace) = Gen.accumulate_param_gradients!(trace, nothing)
 
+# NOTE:
+
+macro Name(arg)
+   string(arg)
+end
+
+
 
 # init_param! also zeros the gradient; but this is done anyway if you want to do more training. 
 
@@ -34,9 +42,12 @@ end
 
 tdr, td, t_im, gt_trs = generate_training_data(1, 15, digitize_trace)
 input_dp = convert(Vector{Float64}, td[1][1])
+input_dp_pos = vcat(input_dp[1:length(SqPos())*2], input_dp[length(SqPos())*2 + length(Vels())*2 + 1:end])
+input_dp_image = input_dp[(length(input_dp) - 3*length(SqPos())^2) + 1:end]
 maxlen_lv_range = maximum(map(f-> length(f), lv_ranges))
 partition_nn_output(y) = [softmax(y[i1+1:i2]) for (i1, i2) in sliding_window(vcat(0, my_cumsum([length(r) for r in lv_ranges])))]
 lv_no_info() = zeros(sum([length(l) for l in lv_ranges]))
+lv_pos_no_info() = zeros(sum([length(l) for l in lv_ranges_symbolic]))
 
 
 @pydef mutable struct SingleHidden <: nn.Module
@@ -74,28 +85,28 @@ end
 
 
 @pydef mutable struct TwoHidden <: nn.Module
-    function __init__(self, input_dp)
+    function __init__(self, input_dp, output_ranges)
         # Note the use of pybuiltin(:super): built in Python functions
         # like `super` or `str` or `slice` are all accessed using
         # `pybuiltin`.
         pybuiltin(:super)(TwoHidden, self).__init__()
         self.dense1 = nn.Linear(
             length(input_dp),
-            Int(round(mean([length(input_dp), sum([length(l) for l in lv_ranges])]))))
+            Int(round(mean([length(input_dp), sum([length(l) for l in output_ranges])]))))
 
         self.dense2 = nn.Linear(
-            Int(round(mean([length(input_dp), sum([length(l) for l in lv_ranges])]))), 
-            Int(round(mean([length(input_dp), sum([length(l) for l in lv_ranges])]))))
+            Int(round(mean([length(input_dp), sum([length(l) for l in output_ranges])]))), 
+            Int(round(mean([length(input_dp), sum([length(l) for l in output_ranges])]))))
 
         self.dense3 = nn.Linear(
-            Int(round(mean([length(input_dp), sum([length(l) for l in lv_ranges])]))),
-            sum([length(l) for l in lv_ranges]))
+            Int(round(mean([length(input_dp), sum([length(l) for l in output_ranges])]))),
+            sum([length(l) for l in output_ranges]))
     end
 
     function forward(self, x)
-        x = F.relu(self.dense1(x))
-        x = F.relu(self.dense2(x))
-        x = self.dense3(x)
+        x = F.tanh(self.dense1(x))
+        x = F.tanh(self.dense2(x))
+        x = F.tanh(self.dense3(x))
         return x
     end
 
@@ -110,6 +121,63 @@ end
         end
         return num_features
     end
+end
+
+
+# figure out the datatype of what alex is adding here and then accomodate. 
+
+@pydef mutable struct ConvNet <: nn.Module
+    function __init__(self, input_dp)
+        pybuiltin(:super)(ConvNet, self).__init__()
+        self.conv1 = nn.Conv2d(1, 10, kernel_size=5)
+        self.conv2 = nn.Conv2d(10, 20, kernel_size=5)
+        self.fc1 = nn.Linear(320, 50)
+        self.fc2 = nn.Linear(50, 10)
+    end
+
+    function forward(self, x)
+        x = F.relu(F.max_pool2d(self.conv1(x), 2))
+        x = F.relu(F.max_pool2d(self.conv2(x), 2))
+        x = x.view(-1, 320)
+        x = F.relu(self.fc1(x))
+        x = self.fc2(x)
+        return x
+    end
+end
+
+
+#nn_mod = SingleHidden(input_dp)
+nn_mod = TwoHidden(input_dp, lv_ranges)
+nn_torchgen = TorchGenerativeFunction(nn_mod, [TorchArg(true, torch.float)], 1)
+
+nn_mod_pos = TwoHidden(input_dp_pos, lv_ranges_symbolic)
+nn_torchgen_pos = TorchGenerativeFunction(nn_mod_pos, [TorchArg(true, torch.float)], 1)
+
+nn_mod_image = TwoHidden(input_dp_image, lv_ranges_symbolic)
+nn_torchgen_image = TorchGenerativeFunction(nn_mod_pos, [TorchArg(true, torch.float)], 1)
+
+
+
+@gen function torch_proposal_image_only(occₜ₋₁, xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, img)
+    img_dig = image_digitize(img)
+    nextstate_probs ~ nn_torchgen_image(img_dig)
+    occₜ ~ Cat(softmax(nextstate_probs[31:38]))
+    xₜ ~ Cat(softmax(nextstate_probs[1:10]))
+    yₜ ~ Cat(softmax(nextstate_probs[11:20]))
+    vxₜ ~ VelCat(pos_to_vel_dist(xₜ, xₜ₋₁))
+    vyₜ ~ VelCat(pos_to_vel_dist(yₜ, yₜ₋₁))
+    return (occₜ, xₜ, yₜ, vxₜ, vyₜ)
+end
+
+@gen function torch_initial_proposal_image_only(img)
+    img_dig = image_digitize(img)
+    nextstate_probs ~ nn_torchgen_image(img_dig)
+    occₜ ~ Cat(softmax(nextstate_probs[31:38]))
+    xₜ ~ Cat(softmax(nextstate_probs[1:10]))
+    yₜ ~ Cat(softmax(nextstate_probs[11:20]))
+    vxₜ ~ VelCat(uniform(Vels()))
+    vyₜ ~ VelCat(uniform(Vels()))
+    return (occₜ, xₜ, yₜ, vxₜ, vyₜ)
 end
 
 
@@ -138,9 +206,34 @@ end
     return (occₜ, xₜ, yₜ, vxₜ, vyₜ)
 end
 
-#nn_mod = SingleHidden(input_dp)
-nn_mod = TwoHidden(input_dp)
-nn_torchgen = TorchGenerativeFunction(nn_mod, [TorchArg(true, torch.float)], 1)
+@gen function torch_proposal_position(occₜ₋₁, xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, img)
+    latent_array = [xₜ₋₁, yₜ₋₁, occₜ₋₁]
+    img_dig = image_digitize(img)
+    prevstate_and_img_digitized = vcat(lv_to_onehot_array(
+        latent_array, lv_ranges_symbolic), img_dig)
+    nextstate_probs ~ nn_torchgen_pos(prevstate_and_img_digitized)
+    occₜ ~ Cat(softmax(nextstate_probs[21:28]))
+    xₜ ~ Cat(softmax(nextstate_probs[1:10]))
+    yₜ ~ Cat(softmax(nextstate_probs[11:20]))
+    vxₜ ~ VelCat(pos_to_vel_dist(xₜ, xₜ₋₁))
+    vyₜ ~ VelCat(pos_to_vel_dist(yₜ, yₜ₋₁))
+    return (occₜ, xₜ, yₜ, vxₜ, vyₜ)
+end
+
+@gen function torch_initial_proposal_position(img)
+    img_dig = image_digitize(img)
+    no_latent_data_and_img_digitized = vcat(lv_pos_no_info(), img_dig)
+    nextstate_probs ~ nn_torchgen_pos(no_latent_data_and_img_digitized)
+    occₜ ~ Cat(softmax(nextstate_probs[21:28]))
+    xₜ ~ Cat(softmax(nextstate_probs[1:10]))
+    yₜ ~ Cat(softmax(nextstate_probs[11:20]))
+    vxₜ ~ VelCat(uniform(Vels()))
+    vyₜ ~ VelCat(uniform(Vels()))
+    return (occₜ, xₜ, yₜ, vxₜ, vyₜ)
+end
+
+
+
 
 @load_generated_functions
 
@@ -169,7 +262,7 @@ function groundtruth_generator()
 end;
 
 
-function train_torch_nn()
+function train_full_torch_nn()
     parameter_update = Gen.ParamUpdate(Gen.ADAM(0.001, 0.9, 0.999, 1e-8), 
                                        nn_torchgen => collect(get_params(nn_torchgen)))
     scores = Gen.train!(torch_proposal, groundtruth_generator, parameter_update,
@@ -189,9 +282,33 @@ function train_torch_nn()
     return params_post_training
 end
 
-function load_torch_nn()
-    params_post_training = load("saved_ann_models/nn_torchgen_trained.jld", "params_post_training")
-    [Gen.set_param!(nn_torchgen, name, params_post_training[name]) for name in keys(params_post_training) if name != "scores"]
+function train_torch_nn(mod, proposal, filename)
+    parameter_update = Gen.ParamUpdate(Gen.ADAM(0.001, 0.9, 0.999, 1e-8), 
+                                       mod => collect(get_params(mod)))
+    scores = Gen.train!(proposal, groundtruth_generator, parameter_update,
+                        num_epoch=10, epoch_size=100, num_minibatch=100, minibatch_size=100,
+                        evaluation_size=10, verbose=true);
+    params_post_training = Dict()
+    for k in keys(nn_torchgen.params)
+        params_post_training[k] = mod.params[k]
+    end
+    params_post_training["scores"] = scores
+    save(string("saved_ann_models/", filename, ".jld"), "params_post_training", params_post_training)
+    f = Figure()
+    ax = Axis(f[1,1])
+    lines!(ax, scores)
+    display(f)
+    return params_post_training
+    
+
+function load_torch_nn(mod, filename)
+    params_post_training = load(string("saved_ann_models/", filename, "nn_torchgen_trained.jld"), "params_post_training")
+    [Gen.set_param!(mod, name, params_post_training[name]) for name in keys(params_post_training) if name != "scores"]
+    f = Figure()
+    ax = Axis(f[1,1])
+    scores = params_post_training["scores"]
+    lines!(ax, scores)
+    display(f)
 end
 
 
@@ -200,3 +317,5 @@ end
 
 # next steps here are to use the 6.885 pset as a guide for loading and saving the pytorch params for
 # each run. 
+
+# if you're at velocity 1 OR 2 you'll crash into the wall at position 9. 

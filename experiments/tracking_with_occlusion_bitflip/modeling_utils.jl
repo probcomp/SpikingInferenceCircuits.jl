@@ -57,3 +57,12 @@ truncate_value(val, dom) =
     else
         val
     end
+
+cond_normalize(vec) = sum(vec) > 0 ? normalize(vec) : normalize(ones(length(vec)))
+
+pos_to_vel_dist(pos_t, pos_prev) = [
+    let pos_this_would_get_us_to = truncate_value(pos_prev + v, positions(SquareSideLength()))
+        pos_this_would_get_us_to == pos_t ? 1 : 0
+    end
+    for v in Vels()
+        ] |> cond_normalize

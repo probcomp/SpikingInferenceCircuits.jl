@@ -82,7 +82,7 @@ function draw_gt_sq!(ax, t, tr)
     #     lift(t -> (sq_left(tr, t), sq_bot(tr, t), sq_right(tr, t), sq_top(tr, t)), t),
     #     color=colorant"seagreen"
     # )
-    scatter!(ax, lift(t -> [sq_center(tr, t)], t), color=colorant"seagreen", markersize=30)
+    scatter!(ax, lift(t -> [sq_center(tr, t)], t), color=colorant"seagreen", markersize=10)
 end
 function draw_gt_occ!(ax, t, tr)
     hollow_rect!(
@@ -142,7 +142,7 @@ function draw_vel!(ax, t, tr, num_particles)
     )
 end
 plot_point!(ax, t, time_to_pt, domain;
-    n_backtrack=0, color, markersize=30, marker=:circle
+    n_backtrack=0, color, markersize=10, marker=:circle
 ) = scatter!(ax,
         @lift([time_to_pt($t)[1]]),
         @lift([time_to_pt($t)[2]]);
@@ -151,9 +151,8 @@ plot_point!(ax, t, time_to_pt, domain;
 time_to_vel(tr) = t -> (latents_choicemap(tr, t)[:vxₜ => :val], latents_choicemap(tr, t)[:vyₜ => :val])
 
 function draw_gt_and_particles(tr, particles, inference_method_str)
-    fig = Figure(resolution=(800, 1500))
+    fig = Figure(resolution=(800, 1200))
     t = Observable(0)
-
     vel_ax = Axis(fig[1, 1], aspect=DataAspect(), title="Velocity")
     draw_particles_gt!(draw_vel!, vel_ax, t, particles)
     pts = plot_point!(vel_ax, t, time_to_vel(tr), Vels(); n_backtrack=2, color=colorant"seagreen")

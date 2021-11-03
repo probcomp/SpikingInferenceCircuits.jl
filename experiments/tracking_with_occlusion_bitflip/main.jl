@@ -24,8 +24,8 @@ end
 
 include("z_estimates.jl")
 
-initial_proposal_torch = @compile_initial_proposal(torch_initial_proposal, obs_aux_proposal, 5, 1)
-step_proposal_torch = @compile_step_proposal(torch_proposal, obs_aux_proposal, 5, 1)
+initial_proposal_torch = @compile_initial_proposal(torch_initial_proposal_position, obs_aux_proposal, 5, 1)
+step_proposal_torch = @compile_step_proposal(torch_proposal_position, obs_aux_proposal, 5, 1)
 
 @load_generated_functions()
 
@@ -48,7 +48,7 @@ do_inference(tr; n_particles=10) = dynamic_model_smc(
 VelOneOffProb() = 0.1
 gt_tr = generate_occluded_bounce_tr();
 (unweighted_trs, weighted_trs) = do_inference(gt_tr; n_particles=30);
-(fig, t) = make_gt_particle_viz_img_only(gt_tr, unweighted_trs); fig
+(fig, t) = make_gt_particle_viz(gt_tr, unweighted_trs); fig
 display(fig)
 animate(t, get_args(gt_tr)[1])
 

@@ -5,6 +5,7 @@ model = @DynamicModel(init_latent_model, step_latent_model, obs_model, 5)
 @load_generated_functions()
 
 lvs = [:xₜ, :yₜ, :vxₜ, :vyₜ, :occₜ]
+lvs_symbolic = [:xₜ, :yₜ, :occₜ]
 lv_ranges = [SqPos(), SqPos(), Vels(), Vels(), OccPos()]
 lv_ranges_symbolic = [SqPos(), SqPos(), OccPos()]
 digitize(f) = f == Occluder() ? [0, 0, 1] : f == Empty() ? [0, 1, 0] : f == Object() ? [1, 0, 0] : Nothing
@@ -16,6 +17,13 @@ probs_to_lv_MAP(arr, lv_h) = lv_h[findmax(arr)[2]]
 sliding_window(arr) = [[arr[i], arr[i+1]] for i in 1:length(arr)-1]
 my_cumsum(arr) = map(x-> sum(arr[1:x+1]), 0:length(arr)-1)
 image_digitize(img) = vcat([digitize(impix) for impix in vcat(img...)]...)
+pos_to_vel_dist(pos_t, pos_prev) = [
+    let pos_this_would_get_us_to = truncate_value(pos_prev + v, positions(SquareSideLength()))
+        pos_this_would_get_us_to == pos_t ? 1 : 0
+    end
+    for v in Vels()
+        ] |> normalize
+
 
 function image_digitize(img::List{Any})
     image_digitized = []
