@@ -5,13 +5,15 @@ include("obs_aux_proposal.jl")
 include("prior_proposal.jl")
 include("nearly_locally_optimal_proposal.jl")
 include("run_utils.jl")
-include("torch_proposal.jl")
+#include("torch_proposal.jl")
 
 #
 
 #digitize Figure 1 / code figure 1
 
 # make an animation with 4 panels showing the performance of each proposal. 
+
+@load_generated_functions()
 
 use_ngf() = false
 if use_ngf()
@@ -22,10 +24,10 @@ end
 
 include("z_estimates.jl")
 
-initial_proposal_flux = @compile_initial_proposal(torch_initial_proposal, obs_aux_proposal, 5, 1)
-step_proposal_flux = @compile_step_proposal(torch_proposal, obs_aux_proposal, 5, 1)
-@load_generated_functions()
+initial_proposal_torch = @compile_initial_proposal(torch_initial_proposal, obs_aux_proposal, 5, 1)
+step_proposal_torch = @compile_step_proposal(torch_proposal, obs_aux_proposal, 5, 1)
 
+@load_generated_functions()
 
 
 # ### Run inference:
@@ -39,7 +41,7 @@ step_proposal_flux = @compile_step_proposal(torch_proposal, obs_aux_proposal, 5,
 do_inference(tr; n_particles=10) = dynamic_model_smc(
     model, get_returned_obs(tr),
     cm -> (obs_choicemap_to_vec_of_vec(cm),),
-    torch_initial_proposal, torch_proposal, n_particles
+    initial_proposal_torch, step_proposal_torch, n_particles
 );
 
 # # ## Script to run inference + make visualizations

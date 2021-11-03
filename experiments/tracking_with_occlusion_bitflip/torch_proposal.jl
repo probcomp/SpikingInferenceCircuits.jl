@@ -24,6 +24,14 @@ F = nn.functional
 #zero(t::NTuple{5, <:Any}) = nothing
 #Gen.accumulate_param_gradients!(trace) = Gen.accumulate_param_gradients!(trace, nothing)
 
+
+# init_param! also zeros the gradient; but this is done anyway if you want to do more training. 
+
+function Gen.set_param!(gf::TorchGenerativeFunction, name::String, value)
+    gf.params[name] = value
+end
+
+
 tdr, td, t_im, gt_trs = generate_training_data(1, 15, digitize_trace)
 input_dp = convert(Vector{Float64}, td[1][1])
 maxlen_lv_range = maximum(map(f-> length(f), lv_ranges))
@@ -65,7 +73,45 @@ lv_no_info() = zeros(sum([length(l) for l in lv_ranges]))
 end
 
 
-#@gen (static) function 
+@pydef mutable struct TwoHidden <: nn.Module
+    function __init__(self, input_dp)
+        # Note the use of pybuiltin(:super): built in Python functions
+        # like `super` or `str` or `slice` are all accessed using
+        # `pybuiltin`.
+        pybuiltin(:super)(TwoHidden, self).__init__()
+        self.dense1 = nn.Linear(
+            length(input_dp),
+            Int(round(mean([length(input_dp), sum([length(l) for l in lv_ranges])]))))
+
+        self.dense2 = nn.Linear(
+            Int(round(mean([length(input_dp), sum([length(l) for l in lv_ranges])]))), 
+            Int(round(mean([length(input_dp), sum([length(l) for l in lv_ranges])]))))
+
+        self.dense3 = nn.Linear(
+            Int(round(mean([length(input_dp), sum([length(l) for l in lv_ranges])]))),
+            sum([length(l) for l in lv_ranges]))
+    end
+
+    function forward(self, x)
+        x = F.relu(self.dense1(x))
+        x = F.relu(self.dense2(x))
+        x = self.dense3(x)
+        return x
+    end
+
+    function num_flat_features(self, x)
+        # Note: x.size() returns a tuple, not a tensor.
+        # Therefore, we treat it like a Julia tuple and
+        # index using 1-based indexing.
+        size = x.size()[2:end]
+        num_features = 1
+        for s in size
+            num_features *= s
+        end
+        return num_features
+    end
+end
+
 
 @gen function torch_proposal(occₜ₋₁, xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, img)
     latent_array = [xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, occₜ₋₁]
@@ -83,7 +129,7 @@ end
 @gen function torch_initial_proposal(img)
     img_dig = image_digitize(img)
     no_latent_data_and_img_digitized = vcat(lv_no_info(), img_dig)
-    nextstate_probs = nn_torchgen(no_latent_data_and_img_digitized)
+    nextstate_probs ~ nn_torchgen(no_latent_data_and_img_digitized)
     occₜ ~ Cat(softmax(nextstate_probs[31:38]))
     xₜ ~ Cat(softmax(nextstate_probs[1:10]))
     yₜ ~ Cat(softmax(nextstate_probs[11:20]))
@@ -92,9 +138,11 @@ end
     return (occₜ, xₜ, yₜ, vxₜ, vyₜ)
 end
 
-nn_mod = SingleHidden(input_dp)
+#nn_mod = SingleHidden(input_dp)
+nn_mod = TwoHidden(input_dp)
 nn_torchgen = TorchGenerativeFunction(nn_mod, [TorchArg(true, torch.float)], 1)
 
+@load_generated_functions
 
 # in example, measurements is the input to the proposal.
 # construct this by sampling a one step model each time and properly assigning
@@ -124,8 +172,31 @@ end;
 function train_torch_nn()
     parameter_update = Gen.ParamUpdate(Gen.ADAM(0.001, 0.9, 0.999, 1e-8), 
                                        nn_torchgen => collect(get_params(nn_torchgen)))
-    Gen.train!(torch_proposal, groundtruth_generator, parameter_update,
-               num_epoch=10, epoch_size=100, num_minibatch=100, minibatch_size=100,
-               evaluation_size=10, verbose=true);
+    scores = Gen.train!(torch_proposal, groundtruth_generator, parameter_update,
+                        num_epoch=100, epoch_size=100, num_minibatch=100, minibatch_size=100,
+                        evaluation_size=10, verbose=true);
+    params_post_training = Dict()
+    for k in keys(nn_torchgen.params)
+        params_post_training[k] = nn_torchgen.params[k]
+    end
+    params_post_training["scores"] = scores
+    save("saved_ann_models/nn_torchgen_trained.jld", "params_post_training", params_post_training)
+    #    end
+    f = Figure()
+    ax = Axis(f[1,1])
+    lines!(ax, scores)
+    display(f)
+    return params_post_training
 end
 
+function load_torch_nn()
+    params_post_training = load("saved_ann_models/nn_torchgen_trained.jld", "params_post_training")
+    [Gen.set_param!(nn_torchgen, name, params_post_training[name]) for name in keys(params_post_training) if name != "scores"]
+end
+
+
+# NOTE THE GENPYTORCH MNIST EXAMPLE WILL BE REALLY USEFUL ONCE YOU CAN SAVE PARAMS. 
+
+
+# next steps here are to use the 6.885 pset as a guide for loading and saving the pytorch params for
+# each run. 
