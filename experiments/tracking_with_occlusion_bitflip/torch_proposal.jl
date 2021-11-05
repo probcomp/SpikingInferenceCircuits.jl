@@ -2,6 +2,8 @@ using PyCall
 using GenPyTorch
 using Statistics
 using Gen
+using JLD
+using PyCallJLD
 import Flux: softmax
 import Base: zero
 
@@ -31,10 +33,7 @@ macro Name(arg)
    string(arg)
 end
 
-
-
 # init_param! also zeros the gradient; but this is done anyway if you want to do more training. 
-
 function Gen.set_param!(gf::TorchGenerativeFunction, name::String, value)
     gf.params[name] = value
 end
@@ -48,6 +47,10 @@ maxlen_lv_range = maximum(map(f-> length(f), lv_ranges))
 partition_nn_output(y) = [softmax(y[i1+1:i2]) for (i1, i2) in sliding_window(vcat(0, my_cumsum([length(r) for r in lv_ranges])))]
 lv_no_info() = zeros(sum([length(l) for l in lv_ranges]))
 lv_pos_no_info() = zeros(sum([length(l) for l in lv_ranges_symbolic]))
+
+
+
+""" PYTHON DEFINITIONS FOR TORCH NETS """ 
 
 
 @pydef mutable struct SingleHidden <: nn.Module
@@ -146,22 +149,93 @@ end
 end
 
 
+""" UTILITIES FOR GENERATING TRAINING DATA AND TRAINING TORCH NETS """ 
+
 #nn_mod = SingleHidden(input_dp)
-nn_mod = TwoHidden(input_dp, lv_ranges)
-nn_torchgen = TorchGenerativeFunction(nn_mod, [TorchArg(true, torch.float)], 1)
+nn_mod_full = TwoHidden(input_dp, lv_ranges)
+nn_torchgen_full = TorchGenerativeFunction(nn_mod_full, [TorchArg(true, torch.float)], 1)
 
 nn_mod_pos = TwoHidden(input_dp_pos, lv_ranges_symbolic)
 nn_torchgen_pos = TorchGenerativeFunction(nn_mod_pos, [TorchArg(true, torch.float)], 1)
 
 nn_mod_image = TwoHidden(input_dp_image, lv_ranges_symbolic)
-nn_torchgen_image = TorchGenerativeFunction(nn_mod_pos, [TorchArg(true, torch.float)], 1)
+nn_torchgen_image = TorchGenerativeFunction(nn_mod_image, [TorchArg(true, torch.float)], 1)
+
+
+# in example, measurements is the input to the proposal.
+# construct this by sampling a one step model each time and properly assigning
+# the previous states and image to the model. 
+
+function groundtruth_generator()
+    step = 2
+    (tr, w) = generate(model, (2,))
+    # construct arguments to the proposal function being trained.
+    # for you its goint to be occ, x, y, vx, vy, img
+    (image, ) = tr[DynamicModels.obs_addr(step)]
+    prevstate = get_state_values(latents_choicemap(tr, step-1))
+    currstate = get_state_values(latents_choicemap(tr, step))
+    inputs = (prevstate[end], prevstate[1], prevstate[2], prevstate[3], prevstate[4], image)
+    # construct constraints for the proposal function being trained
+    constraints = Gen.choicemap()
+    constraints[:occₜ => :val] = currstate[end]
+    constraints[:xₜ => :val] = currstate[1]
+    constraints[:yₜ => :val] = currstate[2]
+    constraints[:vxₜ => :val] = currstate[3]
+    constraints[:vyₜ => :val] = currstate[4]
+    return (inputs, constraints)
+end;
 
 
 
-@gen function torch_proposal_image_only(occₜ₋₁, xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, img)
+function train_torch_nn(torchfunction, proposal, filename)
+    parameter_update = Gen.ParamUpdate(Gen.ADAM(0.001, 0.9, 0.999, 1e-8), 
+                                       torchfunction => collect(get_params(torchfunction)))
+    scores = Gen.train!(proposal, groundtruth_generator, parameter_update,
+                        num_epoch=100, epoch_size=100, num_minibatch=100, minibatch_size=100,
+                        evaluation_size=10, verbose=true);
+    params_post_training = Dict()
+    for k in keys(torchfunction.params)
+        params_post_training[k] = torchfunction.params[k]
+    end
+    params_post_training["scores"] = scores
+    PyCallJLD.save(string("saved_ann_models/", filename, ".jld"), "params_post_training", params_post_training)
+    f = Figure()
+    ax = Axis(f[1,1])
+    lines!(ax, scores)
+    display(f)
+    return params_post_training
+end
+
+    
+
+function load_torch_nn(torchfunction, filename)
+    params_post_training = PyCallJLD.load(string("saved_ann_models/", filename, ".jld"),
+                                          "params_post_training")
+    [Gen.set_param!(torchfunction, name, params_post_training[name]) for name in keys(
+         params_post_training) if name != "scores"]
+    f = Figure()
+    ax = Axis(f[1,1])
+    scores = params_post_training["scores"]
+    lines!(ax, scores)
+    display(f)
+end
+
+
+# next steps here are to use the 6.885 pset as a guide for loading and saving the pytorch params for
+# each run. 
+
+    # if you're at velocity 1 OR 2 you'll crash into the wall at position 9.
+
+
+                   
+
+
+""" CUSTOM PROPOSALS FOR SMC """ 
+    
+@gen function torch_proposal_image(occₜ₋₁, xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, img)
     img_dig = image_digitize(img)
     nextstate_probs ~ nn_torchgen_image(img_dig)
-    occₜ ~ Cat(softmax(nextstate_probs[31:38]))
+    occₜ ~ Cat(softmax(nextstate_probs[21:28]))
     xₜ ~ Cat(softmax(nextstate_probs[1:10]))
     yₜ ~ Cat(softmax(nextstate_probs[11:20]))
     vxₜ ~ VelCat(pos_to_vel_dist(xₜ, xₜ₋₁))
@@ -169,10 +243,10 @@ nn_torchgen_image = TorchGenerativeFunction(nn_mod_pos, [TorchArg(true, torch.fl
     return (occₜ, xₜ, yₜ, vxₜ, vyₜ)
 end
 
-@gen function torch_initial_proposal_image_only(img)
+@gen function torch_initial_proposal_image(img)
     img_dig = image_digitize(img)
     nextstate_probs ~ nn_torchgen_image(img_dig)
-    occₜ ~ Cat(softmax(nextstate_probs[31:38]))
+    occₜ ~ Cat(softmax(nextstate_probs[21:28]))
     xₜ ~ Cat(softmax(nextstate_probs[1:10]))
     yₜ ~ Cat(softmax(nextstate_probs[11:20]))
     vxₜ ~ VelCat(uniform(Vels()))
@@ -181,11 +255,11 @@ end
 end
 
 
-@gen function torch_proposal(occₜ₋₁, xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, img)
+@gen function torch_proposal_full(occₜ₋₁, xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, img)
     latent_array = [xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, occₜ₋₁]
     img_dig = image_digitize(img)
     prevstate_and_img_digitized = vcat(lv_to_onehot_array(latent_array, lv_ranges), img_dig)
-    nextstate_probs ~ nn_torchgen(prevstate_and_img_digitized)
+    nextstate_probs ~ nn_torchgen_full(prevstate_and_img_digitized)
     occₜ ~ Cat(softmax(nextstate_probs[31:38]))
     xₜ ~ Cat(softmax(nextstate_probs[1:10]))
     yₜ ~ Cat(softmax(nextstate_probs[11:20]))
@@ -194,10 +268,10 @@ end
     return (occₜ, xₜ, yₜ, vxₜ, vyₜ)
 end
 
-@gen function torch_initial_proposal(img)
+@gen function torch_initial_proposal_full(img)
     img_dig = image_digitize(img)
     no_latent_data_and_img_digitized = vcat(lv_no_info(), img_dig)
-    nextstate_probs ~ nn_torchgen(no_latent_data_and_img_digitized)
+    nextstate_probs ~ nn_torchgen_full(no_latent_data_and_img_digitized)
     occₜ ~ Cat(softmax(nextstate_probs[31:38]))
     xₜ ~ Cat(softmax(nextstate_probs[1:10]))
     yₜ ~ Cat(softmax(nextstate_probs[11:20]))
@@ -233,89 +307,9 @@ end
 end
 
 
-
-
 @load_generated_functions
 
-# in example, measurements is the input to the proposal.
-# construct this by sampling a one step model each time and properly assigning
-# the previous states and image to the model. 
 
-function groundtruth_generator()
-    step = 2
-    (tr, w) = generate(model, (2,))
-    # construct arguments to the proposal function being trained.
-    # for you its goint to be occ, x, y, vx, vy, img
-    (image, ) = tr[DynamicModels.obs_addr(step)]
-    prevstate = get_state_values(latents_choicemap(tr, step-1))
-    currstate = get_state_values(latents_choicemap(tr, step))
-    #latents choicemap is the choicemap itself -- might be helpful. 
-    inputs = (prevstate[end], prevstate[1], prevstate[2], prevstate[3], prevstate[4], image)
-    # construct constraints for the proposal function being trained
-    constraints = Gen.choicemap()
-    constraints[:occₜ => :val] = currstate[end]
-    constraints[:xₜ => :val] = currstate[1]
-    constraints[:yₜ => :val] = currstate[2]
-    constraints[:vxₜ => :val] = currstate[3]
-    constraints[:vyₜ => :val] = currstate[4]
-    return (inputs, constraints)
-end;
+train_torch_nn(nn_torchgen_image, torch_proposal_image, @Name(nn_torchgen_full))
+#load_torch_nn(nn_torchgen_image, @Name(nn_torchgen_image))
 
-
-function train_full_torch_nn()
-    parameter_update = Gen.ParamUpdate(Gen.ADAM(0.001, 0.9, 0.999, 1e-8), 
-                                       nn_torchgen => collect(get_params(nn_torchgen)))
-    scores = Gen.train!(torch_proposal, groundtruth_generator, parameter_update,
-                        num_epoch=100, epoch_size=100, num_minibatch=100, minibatch_size=100,
-                        evaluation_size=10, verbose=true);
-    params_post_training = Dict()
-    for k in keys(nn_torchgen.params)
-        params_post_training[k] = nn_torchgen.params[k]
-    end
-    params_post_training["scores"] = scores
-    save("saved_ann_models/nn_torchgen_trained.jld", "params_post_training", params_post_training)
-    #    end
-    f = Figure()
-    ax = Axis(f[1,1])
-    lines!(ax, scores)
-    display(f)
-    return params_post_training
-end
-
-function train_torch_nn(mod, proposal, filename)
-    parameter_update = Gen.ParamUpdate(Gen.ADAM(0.001, 0.9, 0.999, 1e-8), 
-                                       mod => collect(get_params(mod)))
-    scores = Gen.train!(proposal, groundtruth_generator, parameter_update,
-                        num_epoch=10, epoch_size=100, num_minibatch=100, minibatch_size=100,
-                        evaluation_size=10, verbose=true);
-    params_post_training = Dict()
-    for k in keys(nn_torchgen.params)
-        params_post_training[k] = mod.params[k]
-    end
-    params_post_training["scores"] = scores
-    save(string("saved_ann_models/", filename, ".jld"), "params_post_training", params_post_training)
-    f = Figure()
-    ax = Axis(f[1,1])
-    lines!(ax, scores)
-    display(f)
-    return params_post_training
-    
-
-function load_torch_nn(mod, filename)
-    params_post_training = load(string("saved_ann_models/", filename, "nn_torchgen_trained.jld"), "params_post_training")
-    [Gen.set_param!(mod, name, params_post_training[name]) for name in keys(params_post_training) if name != "scores"]
-    f = Figure()
-    ax = Axis(f[1,1])
-    scores = params_post_training["scores"]
-    lines!(ax, scores)
-    display(f)
-end
-
-
-# NOTE THE GENPYTORCH MNIST EXAMPLE WILL BE REALLY USEFUL ONCE YOU CAN SAVE PARAMS. 
-
-
-# next steps here are to use the 6.885 pset as a guide for loading and saving the pytorch params for
-# each run. 
-
-# if you're at velocity 1 OR 2 you'll crash into the wall at position 9. 
