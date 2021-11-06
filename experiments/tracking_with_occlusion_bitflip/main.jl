@@ -22,7 +22,7 @@ else
     ProbEstimates.use_perfect_weights!()
 end
 
-include("z_estimates.jl")
+#include("z_estimates.jl")
 
 initial_proposal_torch = @compile_initial_proposal(torch_initial_proposal_image, obs_aux_proposal, 5, 1)
 step_proposal_torch = @compile_step_proposal(torch_proposal_image, obs_aux_proposal, 5, 1)
@@ -53,7 +53,7 @@ display(fig)
 animate(t, get_args(gt_tr)[1])
 
 
-bottom_up_samples = [categorical_from_matrix(bottom_up_inference_results) for _=1:N]
+#bottom_up_samples = [categorical_from_matrix(bottom_up_inference_results) for _=1:N]
 
 
 

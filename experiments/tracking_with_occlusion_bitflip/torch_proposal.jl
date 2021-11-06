@@ -1,6 +1,7 @@
 using PyCall
 using GenPyTorch
 using Statistics
+using GenCollections
 using Gen
 using JLD
 using PyCallJLD
@@ -310,6 +311,6 @@ end
 @load_generated_functions
 
 
-train_torch_nn(nn_torchgen_image, torch_proposal_image, @Name(nn_torchgen_full))
-#load_torch_nn(nn_torchgen_image, @Name(nn_torchgen_image))
+train_torch_nn(nn_torchgen_image, torch_proposal_image, @Name(nn_torchgen_image))
+load_torch_nn(nn_torchgen_image, @Name(nn_torchgen_image))
 

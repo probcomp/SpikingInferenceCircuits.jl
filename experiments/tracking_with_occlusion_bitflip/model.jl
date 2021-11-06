@@ -1,8 +1,6 @@
 using Gen
 using ProbEstimates
 using DynamicModels
-using GenCollections
-
 include("model_hyperparameters.jl")
 include("modeling_utils.jl")
 
@@ -12,6 +10,13 @@ struct Object <: PixelColor; end
 struct Occluder <: PixelColor; end
 PixelColors() = [Empty(), Object(), Occluder()]
 ColorFlipProb() = 0.01
+
+global use_aux_vars = true
+function set_use_aux_vars!(val)
+    global use_aux_vars = val
+end
+flip1_prob() = use_aux_vars ? sqrt(ColorFlipProb()) : ColorFlipProb()
+flip2_prob(flip1) = use_aux_vars ? sqrt(ColorFlipProb()) : (flip1 ? 1.0 : 0.0)
 
 bern_probs(p) = [p, 1-p]
 
@@ -23,8 +28,8 @@ end
 
 uniform_from_other_colors(color) = normalize([c == color ? 0. : 1. for c in PixelColors()])
 @gen (static) function maybe_flip_color(color)
-    flip1 ~ BoolCat(bern_probs(sqrt(ColorFlipProb())))
-    flip2 ~ BoolCat(bern_probs(sqrt(ColorFlipProb())))
+    flip1 ~ BoolCat(bern_probs(flip1_prob()))
+    flip2 ~ BoolCat(bern_probs(flip2_prob(flip1)))
     color ~ LCat(PixelColors())(
         flip1 && flip2 ? uniform_from_other_colors(color) : onehot(color, PixelColors())
     )
@@ -43,7 +48,7 @@ xs() = [[pixx for _=1:ImageSideLength()] for pixx=1:ImageSideLength()]
 @gen (static) function obs_model(occ, x, y, vx, vy)
     # TODO: Figure out whether each pixel is in the given range
     # _before_ calling `fill` to reduce the number of edges
-    img_inner ~ ListMap(ListMap(render_pixel))(
+    img_inner ~ Map(Map(render_pixel))(
         fill(fill(occ, ImageSideLength()), ImageSideLength()),
         fill(fill(x, ImageSideLength()), ImageSideLength()),
         fill(fill(y, ImageSideLength()), ImageSideLength()),
@@ -64,22 +69,21 @@ end
 	return (occₜ, xₜ, yₜ, vxₜ, vyₜ)
 end
 
-vel_change_probs(vxₜ₋₁, xₜ₋₁) = 
+vel_change_probs(vxₜ₋₁, xₜ₋₁) =
     if (xₜ₋₁ ≤ first(SqPos()) && vxₜ₋₁ < 0) || (xₜ₋₁ ≥ last(SqPos()) && vxₜ₋₁ > 0)
         discretized_gaussian(-vxₜ₋₁, VelStd(), Vels())
     else
         discretized_gaussian(vxₜ₋₁, VelStd(), Vels())
     end
-
 @gen (static) function step_latent_model(occₜ₋₁, xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁)
     vxₜ ~ VelCat(vel_change_probs(vxₜ₋₁, xₜ₋₁))
     vyₜ ~ VelCat(vel_change_probs(vyₜ₋₁, yₜ₋₁))
-    occₜ ~ Cat(discretized_gaussian(occₜ₋₁, OccOneOffProb(), positions(OccluderLength())))
+	occₜ ~ Cat(discretized_gaussian(occₜ₋₁, OccOneOffProb(), positions(OccluderLength())))
     xₜ ~ Cat(onehot(xₜ₋₁ + vxₜ, positions(SquareSideLength())))
     yₜ ~ Cat(onehot(yₜ₋₁ + vyₜ, positions(SquareSideLength())))
 	# xₜ ~ Cat(truncated_discretized_gaussian(xₜ₋₁ + vxₜ, 2., positions(SquareSideLength())))
 	# yₜ ~ Cat(truncated_discretized_gaussian(yₜ₋₁ + vyₜ, 2., positions(SquareSideLength())))
-    return (occₜ, xₜ, yₜ, vxₜ, vyₜ)
+	return (occₜ, xₜ, yₜ, vxₜ, vyₜ)
 end
 
 model = @DynamicModel(init_latent_model, step_latent_model, obs_model, 5)
