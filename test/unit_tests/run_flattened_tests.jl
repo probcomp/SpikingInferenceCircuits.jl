@@ -11,34 +11,29 @@ using .PulseIR: ConcreteStreamSamples, ConcreteThresholdedIndicator, ConcreteOff
 using .PulseIR: PoissonStreamSamples, PoissonThresholdedIndicator, PoissonOffGate, PoissonAsyncOnGate
 using .SDCs: PulseMux
 
-function simulate_get_output_evts(impl, runtime; inputs)
-    (flattened, in_to_idx, out_to_idx, _) = Circuits.flatten(impl)
-
-    idx_to_out = Any[nothing for _ in out_to_idx]
-    for (out, idx) in pairs(out_to_idx)
-        idx_to_out[idx] = out
-    end
-
-    inps = [(time, map(x -> in_to_idx[x], itr)) for (time, itr) in inputs]
+function simulate_get_output_evts(impl, runtime; 
+        inputs)
+    inlined, names, state = Circuits.inline(impl)
+    inps = [(time, map(x -> Circuits.valname(state.inputs[(x, )]), itr)) 
+            for (time, itr) in inputs]
     events = Sim.simulate_for_time_and_get_events(
-        flattened,
-        runtime;
-        inputs=inps
-    )
-    
+                                                  inlined,
+                                                  runtime;
+                                                  inputs=inps
+                                                 )
     return [
-        (
-            t, c,
-            typeof(e)(
-                try idx_to_out[e.name]
-                catch err
-                    @error "Couldn't find key $(e.name) in $idx_to_out"
-                end
+            (
+             t, c,
+             typeof(e)(
+                       try Circuits.valname(state.outputs[(e.name, )])
+                       catch err
+                           @error "Couldn't find key $((e.name, )) in $(state.outputs)"
+                       end
+                      )
             )
-        )
-        for (t, c, e) in events
+            for (t, c, e) in events
             if c === nothing && e isa Sim.OutputSpike
-    ]
+           ]
 end
 
 includet("spiketrain_utils.jl")

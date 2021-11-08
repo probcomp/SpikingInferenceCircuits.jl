@@ -13,8 +13,7 @@ impl = implement_deep(sync, Spiking())
 println("Implemented.")
 
 get_events(impl) = simulate_get_output_evts(impl, 500.;
-    inputs=[(0., (1 => 1, 2 => 1, 3 => 1))]
-)
+                                            inputs=[(0., (1 => 1, 2 => 1, 3 => 1))])
 events = get_events(impl)
 
 dict = out_st_dict(events)

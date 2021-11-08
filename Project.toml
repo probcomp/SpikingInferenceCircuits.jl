@@ -6,6 +6,7 @@ version = "0.1.0"
 [deps]
 Bijections = "e2ed5e7c-b2de-5872-ae92-c73ca462fb04"
 CPTs = "b537e094-b773-4c3d-913e-03cd2b143e52"
+CircuitViz = "e42f04d7-ca66-4ed3-963b-f5c19d0970ef"
 Circuits = "f5b243b3-c95b-4650-9ac7-659d8f0b0982"
 DiscreteIRTransforms = "cd928ed5-b656-48f4-b878-e6af8c2e2ad2"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
