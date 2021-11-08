@@ -24,8 +24,12 @@ end
 
 #include("z_estimates.jl")
 
-initial_proposal_torch = @compile_initial_proposal(torch_initial_proposal_image, obs_aux_proposal, 5, 1)
-step_proposal_torch = @compile_step_proposal(torch_proposal_image, obs_aux_proposal, 5, 1)
+#initial_proposal = @compile_initial_proposal(_init_near_locopt_proposal, obs_aux_proposal, 5, 1)
+#step_proposal = @compile_step_proposal(_step_near_locopt_proposal, obs_aux_proposal, 5, 1)
+
+initial_proposal = @compile_initial_proposal(torch_initial_proposal_image, obs_aux_proposal, 5, 1)
+step_proposal = @compile_step_proposal(torch_proposal_image, obs_aux_proposal, 5, 1)
+
 
 @load_generated_functions()
 
@@ -41,7 +45,7 @@ step_proposal_torch = @compile_step_proposal(torch_proposal_image, obs_aux_propo
 do_inference(tr; n_particles=10) = dynamic_model_smc(
     model, get_returned_obs(tr),
     cm -> (obs_choicemap_to_vec_of_vec(cm),),
-    initial_proposal_torch, step_proposal_torch, n_particles
+    initial_proposal, step_proposal, n_particles
 );
 
 # # ## Script to run inference + make visualizations

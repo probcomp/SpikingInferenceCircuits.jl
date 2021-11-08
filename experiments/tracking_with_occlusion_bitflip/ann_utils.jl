@@ -36,6 +36,25 @@ function image_digitize(img::List{Any})
     return vcat(image_digitized...)
 end
 
+function image_to_RGB(img::List{Any})
+    image_digitized = zeros(Float64, 1, 3, length(img), length(img))
+    for i in 1:length(img)
+        im_row = img[i]
+        for j in 1:length(im_row)
+            if im_row[j] == Occluder()
+                image_digitized[1, 1, i, j] = 1
+            elseif im_row[j] == Object()
+                image_digitized[1, 2, i, j] = 1
+            elseif im_row[j] == Empty()
+                image_digitized[1, 3, i, j] = 1
+            end
+        end
+    end
+    return image_digitized
+end
+
+
+
 
 """ DATA EXTRACTION FROM MENTAL PHYSICS TRACES """
 

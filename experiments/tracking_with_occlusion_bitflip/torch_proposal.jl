@@ -20,8 +20,17 @@ include("ann_utils.jl")
 
 
 torch = pyimport("torch")
+torchvision = pyimport("torchvision")
 nn = torch.nn
 F = nn.functional
+
+image_transformer(mean, std, im) = torchvision.transforms.Compose(
+    [torchvision.transforms.ToPILImage(),
+     torchvision.transforms.ToTensor(),
+     torchvision.transforms.Normalize(mean, std)])(PyObject(im))
+
+
+                                    
 
 # NOTE THESE DONT HAVE TO BE DEFINED IF USING DYNAMIC W CATEGORICALS or DYNAMIC W CAT, VELCAT 
 #zero(t::NTuple{5, <:Any}) = (0.0, 0.0, 0.0, 0.0, 0.0)
@@ -128,26 +137,64 @@ end
 end
 
 
-# figure out the datatype of what alex is adding here and then accomodate. 
+# view w a neg 1 means "infer dimensions given that other dimension is specified".
+# start w 10x10. Get a 10x10 image 10 times b/c of kernel edge. Maxpool to 5x5.
+# Kernel then only has 2 tries apiece, which is then pooled again. This is too much
+# dim reduction for our data. Pad the edges with zeros. 9 x 20 final. 
+
+
+
 
 @pydef mutable struct ConvNet <: nn.Module
     function __init__(self, input_dp)
         pybuiltin(:super)(ConvNet, self).__init__()
-        self.conv1 = nn.Conv2d(1, 10, kernel_size=5)
-        self.conv2 = nn.Conv2d(10, 20, kernel_size=5)
-        self.fc1 = nn.Linear(320, 50)
-        self.fc2 = nn.Linear(50, 10)
+        self.conv1 = nn.Conv2d(3, 10, kernel_size=3, padding="same")
+        self.conv2 = nn.Conv2d(10, 20, kernel_size=3)
+        self.fc1 = nn.Linear(180, 50)
+        self.fc2 = nn.Linear(50, 28)
     end
 
     function forward(self, x)
         x = F.relu(F.max_pool2d(self.conv1(x), 2))
-        x = F.relu(F.max_pool2d(self.conv2(x), 2))
-        x = x.view(-1, 320)
+        x = F.relu(F.max_pool2d(self.conv2(x), 1))
+        x = x.view(-1, 180)
         x = F.relu(self.fc1(x))
         x = self.fc2(x)
         return x
     end
 end
+
+nn_mod_conv = ConvNet(input_dp_image);
+nn_torchgen_conv = TorchGenerativeFunction(nn_mod_conv, [TorchArg(true, torch.float)], 1);
+
+
+# 320 neurons after convolving a 28x28 image comes from the following:
+# Conv2d layers work exactly as expected. 24x24x10 after first conv b/c no padding.
+# maxpool2d w kernel 2 takes you down to 12x12x10. (i.e. a max boxfilter over a 2x2 box)
+# you end up w 10 channels of 12x12 after step 1, 20 channels of 4x4 after step 2 (b/c of kernel size...running a 5x5 over a 12x12 image). Leaves you with 320 neurons. 
+
+# @pydef mutable struct ConvNetTest <: nn.Module
+#     function __init__(self, input_dp)
+#         pybuiltin(:super)(ConvNetTest, self).__init__()
+#         self.conv1 = nn.Conv2d(3, 10, kernel_size=(5,5), stride=1)
+#         self.conv2 = nn.Conv2d(10, 20, kernel_size=(5,5), stride=1)
+#         self.fc1 = nn.Linear(320, 50)
+#         self.fc2 = nn.Linear(50, 10)
+#     end
+
+#     function forward(self, x)
+#         x = F.relu(F.max_pool2d(self.conv1(x), 2))
+#         x = F.relu(F.max_pool2d(self.conv2(x), 2))
+#         x = x.view(-1, 320)
+#         x = F.relu(self.fc1(x))
+#         x = self.fc2(x)
+        
+#         return x
+#     end
+# end
+
+# nn_mod_conv = ConvNetTest(input_dp_image);
+# nn_torchgen_conv = TorchGenerativeFunction(nn_mod_conv, [TorchArg(true, torch.float)], 1);
 
 
 """ UTILITIES FOR GENERATING TRAINING DATA AND TRAINING TORCH NETS """ 
@@ -161,6 +208,10 @@ nn_torchgen_pos = TorchGenerativeFunction(nn_mod_pos, [TorchArg(true, torch.floa
 
 nn_mod_image = TwoHidden(input_dp_image, lv_ranges_symbolic)
 nn_torchgen_image = TorchGenerativeFunction(nn_mod_image, [TorchArg(true, torch.float)], 1)
+
+nn_mod_conv = ConvNet(input_dp_image)
+nn_torchgen_conv = TorchGenerativeFunction(nn_mod_conv, [TorchArg(true, torch.float)], 1)
+
 
 
 # in example, measurements is the input to the proposal.
@@ -308,9 +359,51 @@ end
 end
 
 
+@gen function torch_proposal_conv(occₜ₋₁, xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, img)
+    img_dig = image_to_RGB(img)
+    nextstate_probs ~ nn_torchgen_conv(img_dig)
+    occₜ ~ Cat(softmax(nextstate_probs[21:28]))
+    xₜ ~ Cat(softmax(nextstate_probs[1:10]))
+    yₜ ~ Cat(softmax(nextstate_probs[11:20]))
+    vxₜ ~ VelCat(pos_to_vel_dist(xₜ, xₜ₋₁))
+    vyₜ ~ VelCat(pos_to_vel_dist(yₜ, yₜ₋₁))
+    return (occₜ, xₜ, yₜ, vxₜ, vyₜ)
+end
+
+@gen function torch_initial_proposal_conv(img)
+    img_dig = image_to_RGB(img)
+    nextstate_probs ~ nn_torchgen_conv(img_dig)
+    occₜ ~ Cat(softmax(nextstate_probs[21:28]))
+    xₜ ~ Cat(softmax(nextstate_probs[1:10]))
+    yₜ ~ Cat(softmax(nextstate_probs[11:20]))
+    vxₜ ~ VelCat(uniform(Vels()))
+    vyₜ ~ VelCat(uniform(Vels()))
+    return (occₜ, xₜ, yₜ, vxₜ, vyₜ)
+end
+
+
+
+
+
 @load_generated_functions
 
 
-train_torch_nn(nn_torchgen_image, torch_proposal_image, @Name(nn_torchgen_image))
-load_torch_nn(nn_torchgen_image, @Name(nn_torchgen_image))
+train_torch_nn(nn_torchgen_conv, torch_proposal_conv, @Name(nn_torchgen_conv))
+#load_torch_nn(nn_torchgen_image, @Name(nn_torchgen_image))
 
+
+
+function load_test_set()
+    test_x, test_y = MLDatasets.MNIST.testdata()
+    N = length(test_y)
+    x = zeros(Float64, N, 1, 28, 28)
+    y = Vector{Int}(undef, N)
+    for i=1:N
+        x[i, 1, :, :] = test_x[:,:,i]
+        y[i] = test_y[i]+1
+    end
+    x, y
+end
+
+
+# Format of 2D convnet is a N=batchsize, numcolorchannels, dimsx, dimsy matrix
