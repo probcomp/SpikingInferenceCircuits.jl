@@ -136,7 +136,7 @@ Plot particle clouds from exact inference, and 2 particle approximations, and ex
 =#
 function plot_prob_matrix_squares!(ax, probability_matrix)
     maxprob = maximum(probability_matrix)
-    to_alpha(prob) = prob # 0.8 * prob/maxprob
+    to_alpha(prob) = 1.8 * prob # prob == 0 ? 0. : max(0.05, 1.8 * prob) # 0.8 * prob/maxprob
     sq = nothing
     for (idx, prob) in zip(keys(probability_matrix), probability_matrix)
         (x, y) = Tuple(idx)
@@ -156,6 +156,10 @@ function draw_vel_arrow!(ax, t, tr)
         color=colorant"seagreen", linewidth=4
     )
 end
+arrowshape() = PolyElement(color = :seagreen, points = Point2f0[
+    (.16*x, .16*y + .2) for (x, y) in
+    [(0, 1), (0, 2), (5, 2), (5, 3), (7, 1.5), (5, 0), (5, 1)]
+])
 function plot_obs_with_particle_dist!(figpos, tr, t, probability_matrix; title="")
     ax = Axis(figpos, aspect=DataAspect(); title)
     hidedecorations!(ax)
@@ -163,7 +167,7 @@ function plot_obs_with_particle_dist!(figpos, tr, t, probability_matrix; title="
     sq = plot_prob_matrix_squares!(ax, probability_matrix)
     ar = draw_vel_arrow!(ax, Observable(t), tr)
     function make_legend(leg_figpos)
-        l = Legend(leg_figpos, [sq, ar],
+        l = Legend(leg_figpos, [sq, arrowshape()],
             ["Posterior over Position", "Ground Truth Motion into this Timestep"]
         )
         l.tellheight = true; l.tellwidth = true
@@ -182,7 +186,10 @@ function plot_obs_particle_dists(gt_tr, t, titles, matrices)
     f = Figure(; resolution=(1000, 500))
     make_legend = nothing
     for (i, (title, matrix)) in enumerate(zip(titles, matrices))
-        make_legend = plot_obs_with_particle_dist!(f[1, i], gt_tr, t, matrix; title)
+        ml = plot_obs_with_particle_dist!(f[1, i], gt_tr, t, matrix; title)
+        if isnothing(make_legend)
+            make_legend = ml
+        end
     end
     make_legend(f[2, :])
     return f
