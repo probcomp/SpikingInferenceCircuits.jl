@@ -5,6 +5,7 @@ include("obs_aux_proposal.jl")
 include("prior_proposal.jl")
 include("nearly_locally_optimal_proposal.jl")
 include("run_utils.jl")
+include("ann_utils.jl")
 #include("torch_proposal.jl")
 
 #
@@ -27,8 +28,8 @@ end
 #initial_proposal = @compile_initial_proposal(_init_near_locopt_proposal, obs_aux_proposal, 5, 1)
 #step_proposal = @compile_step_proposal(_step_near_locopt_proposal, obs_aux_proposal, 5, 1)
 
-initial_proposal = @compile_initial_proposal(torch_initial_proposal_image, obs_aux_proposal, 5, 1)
-step_proposal = @compile_step_proposal(torch_proposal_image, obs_aux_proposal, 5, 1)
+initial_proposal = @compile_initial_proposal(torch_initial_proposal_conv, obs_aux_proposal, 5, 1)
+step_proposal = @compile_step_proposal(torch_proposal_conv, obs_aux_proposal, 5, 1)
 
 
 @load_generated_functions()

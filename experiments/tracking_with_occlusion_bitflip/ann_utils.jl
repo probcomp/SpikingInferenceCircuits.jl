@@ -16,14 +16,7 @@ probs_to_lv_MAP(arr, lv_h) = lv_h[findmax(arr)[2]]
 #nn_probs_to_probs(arr) = sum(arr) == 0 ? normalize(ones(length(arr))) : normalize(arr)
 sliding_window(arr) = [[arr[i], arr[i+1]] for i in 1:length(arr)-1]
 my_cumsum(arr) = map(x-> sum(arr[1:x+1]), 0:length(arr)-1)
-image_digitize(img) = vcat([digitize(impix) for impix in vcat(img...)]...)
-pos_to_vel_dist(pos_t, pos_prev) = [
-    let pos_this_would_get_us_to = truncate_value(pos_prev + v, positions(SquareSideLength()))
-        pos_this_would_get_us_to == pos_t ? 1 : 0
-    end
-    for v in Vels()
-        ] |> normalize
-
+#image_digitize(img) = vcat([digitize(impix) for impix in vcat(img...)]...)
 
 function image_digitize(img::List{Any})
     image_digitized = []
@@ -36,7 +29,35 @@ function image_digitize(img::List{Any})
     return vcat(image_digitized...)
 end
 
+function image_digitize(img)
+    image_digitized = []
+    for i in 1:length(img)
+        im_row = img[i]
+        for j in 1:length(im_row)
+            push!(image_digitized, digitize(im_row[j]))
+        end
+    end
+    return vcat(image_digitized...)
+end
+
 function image_to_RGB(img::List{Any})
+    image_digitized = zeros(Float64, 1, 3, length(img), length(img))
+    for i in 1:length(img)
+        im_row = img[i]
+        for j in 1:length(im_row)
+            if im_row[j] == Occluder()
+                image_digitized[1, 1, i, j] = 1
+            elseif im_row[j] == Object()
+                image_digitized[1, 2, i, j] = 1
+            elseif im_row[j] == Empty()
+                image_digitized[1, 3, i, j] = 1
+            end
+        end
+    end
+    return image_digitized
+end
+
+function image_to_RGB(img)
     image_digitized = zeros(Float64, 1, 3, length(img), length(img))
     for i in 1:length(img)
         im_row = img[i]
