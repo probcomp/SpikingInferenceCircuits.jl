@@ -74,8 +74,9 @@ get_smc_circuit_inputs(
     observations::Vector{<:NamedTuple}
 ) = get_smc_circuit_inputs(
     time_to_simulate_for, interval_between_observations,
-    [[key => val for (key, val) in nt] for nt in observations]
+    [[key => val for (key, val) in nt] for nt in pairs(observations)]
 )
+
 function get_smc_circuit_inputs(
     time_to_simulate_for,
     interval_between_observations,

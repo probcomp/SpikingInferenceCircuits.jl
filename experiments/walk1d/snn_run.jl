@@ -37,20 +37,19 @@ smccircuit = SMC(
 println("SMC Circuit Constructed.")
 
 impl = Circuits.memoized_implement_deep(smccircuit, Spiking());
+#impl = Circuits.inline(impl)[1]
 println("Circuit fully implemented using Poisson Process neurons.")
 
 includet("../utils/simulation_utils.jl")
 
 inputs = get_smc_circuit_inputs(
-    RUNTIME(), # number of ms to simulate for
-    INTER_OBS_INTERVAL(),      # send in a new observation every 1000 ms
-    [
-        (obs = x,)
-        for x in [5, 8, 10, 17, 17, 15, 11, 13, 10, 10, 12]
-    ]
-    # the above is an observation sequence sampled for ground truth
-    # [5, 8, 12, 12, 14, 13, 11, 13, 10, 9, 12]
-)
+                                RUNTIME(),
+                                INTER_OBS_INTERVAL(),
+                                [
+                                 (obs = x,)
+                                 for x in [5, 8, 10, 17, 17, 15, 11, 13, 10, 10, 12]
+                                ]
+                               )
 println("Constructed input spike sequence.")
 
 events = simulate_and_get_events(impl, RUNTIME(), inputs; dir=@__DIR__)
