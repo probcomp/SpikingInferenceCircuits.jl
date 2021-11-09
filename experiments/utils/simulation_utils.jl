@@ -66,70 +66,69 @@ function simulate_and_get_events(
     return events
 end
 
-# latents and observations should be indexed (not labeled)
-# TODO: support labels
-get_smc_circuit_inputs(
-    time_to_simulate_for, interval_between_observations,
-    # vector of named tuples giving value for each observation address at each timestep
-    observations::Vector{<:NamedTuple}
-) = get_smc_circuit_inputs(
-    time_to_simulate_for, interval_between_observations,
-    [[key => val for (key, val) in nt] for nt in pairs(observations)]
-)
+function get_smc_circuit_inputs(
+        time_to_simulate_for, interval_between_observations,
+        observations::Vector{<:NamedTuple}
+    )
+    return get_smc_circuit_inputs(
+                                  time_to_simulate_for, interval_between_observations,
+                                  [[key => val for (key, val) in nt] for nt in pairs(observations)]
+                                 )
+end
 
 function get_smc_circuit_inputs(
-    time_to_simulate_for,
-    interval_between_observations,
-    # vector of vectors [obs0, obs1, ...] where obsT is obs at time t
-    # each inner obsT vector should be a list of all the circuit input addresses
-    # to trigger to convey the observation at time T
-    observations::Vector{<:Vector{<:Pair}}
-)
+        time_to_simulate_for,
+        interval_between_observations,
+        # vector of vectors [obs0, obs1, ...] where obsT is obs at time t
+        # each inner obsT vector should be a list of all the circuit input addresses
+        # to trigger to convey the observation at time T
+        observations::Vector{<:Vector{<:Pair}}
+    )
     first_obs, remaining_obs = Iterators.peel(observations)
     inputs = Tuple{Float64, Tuple}[
-        (
-            0.,
-            (
-                (:obs => obs_in_addr for obs_in_addr in first_obs)...,
-                :is_initial_obs
-            )
-        )
-    ]
+                                   (
+                                    0.,
+                                    (
+                                     (:obs => obs_in_addr for obs_in_addr in first_obs)...,
+                                     :is_initial_obs
+                                    )
+                                   )
+                                  ]
     t = 0
     while t < time_to_simulate_for
         t += interval_between_observations
         obs, remaining_obs = Iterators.peel(remaining_obs)
         push!(inputs, 
-            (t, ((:obs => obs_in_addr for obs_in_addr in obs)...,))
-        )
+              (t, ((:obs => obs_in_addr for obs_in_addr in obs)...,))
+             )
     end
     return inputs
 end
 
 # latents and observations should be indexed (not labeled)
 function get_smc_circuit_inputs_with_initial_latents(
-    time_to_simulate_for,
-    interval_between_observations,
-    initial_latents,
-    observations,
-    nparticles
-)
-    obs_inputs = get_smc_circuit_inputs(
         time_to_simulate_for,
         interval_between_observations,
-        observations
+        initial_latents,
+        observations,
+        nparticles
     )
+    obs_inputs = get_smc_circuit_inputs(
+                                        time_to_simulate_for,
+                                        interval_between_observations,
+                                        observations
+                                       )
     first_input, rest = Iterators.peel(obs_inputs)
     @assert first_input[1] == 0.
     return [
-        (0., (
-            (
-                :initial_latents => i => key => val
-                for (key, val) in pairs(initial_latents)
-                    for i=1:nparticles
-            )...,
-            (input for input in first_input[2] if input != :is_initial_obs)...
-        )),
-        rest...
-    ]
+            (0., (
+                  (
+                   :initial_latents => i => key => val
+                   for (key, val) in pairs(initial_latents)
+                   for i=1:nparticles
+                  )...,
+                  (input for input in first_input[2] if input != :is_initial_obs)...
+                 )),
+            rest...
+           ]
 end

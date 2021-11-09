@@ -42,13 +42,11 @@ println("Circuit fully implemented using Poisson Process neurons.")
 
 includet("../utils/simulation_utils.jl")
 
+obs = [(obs = x,) for x in [5, 8, 10, 17, 17, 15, 11, 13, 10, 10, 12]]
 inputs = get_smc_circuit_inputs(
                                 RUNTIME(),
                                 INTER_OBS_INTERVAL(),
-                                [
-                                 (obs = x,)
-                                 for x in [5, 8, 10, 17, 17, 15, 11, 13, 10, 10, 12]
-                                ]
+                                obs
                                )
 println("Constructed input spike sequence.")
 
