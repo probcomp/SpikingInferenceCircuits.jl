@@ -59,8 +59,10 @@ function draw_representative_imgs_square!(f, figpos, counts=[0, 2, 4, 6])
     end
 end
 
-function draw_representative_imgs_line!(f, figpos, counts=[0, 2, 4, 6])
-    layout = f[figpos...] = GridLayout()
+function draw_representative_imgs_line!(f, figpos, counts=[2, 6, 10])
+    outer_layout = f[figpos...] = GridLayout()
+    layout = outer_layout[1, 2] = GridLayout()
+    colsize!(outer_layout, 2, Relative(2/3)) 
     trs = get_trs_with_various_flipcounts(counts)
 
     for i=1:length(counts)
@@ -75,4 +77,6 @@ function draw_representative_imgs_line!(f, figpos, counts=[0, 2, 4, 6])
         padding=(0,0,0,40),
         valign=:top
     )
+
+    return outer_layout
 end

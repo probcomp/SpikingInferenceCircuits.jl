@@ -29,6 +29,14 @@ function set_ngf_hyperparams_for_noaux!(hyperparams)
     ProbEstimates.set_assembly_size!(floor(hyperparams.neuron_budget / 3))
 end
 
+function get_k(hyperparams; use_aux)
+    if use_aux
+        neurons_per_assembly = hyperparams.neuron_budget / 11
+    else
+        neurons_per_assembly = hyperparams.neuron_budget / 3
+    end
+    hyperparams.latency * neurons_per_assembly * hyperparams.frequency
+end
 ### 
 function color_dist(color)
     p = ColorFlipProb()

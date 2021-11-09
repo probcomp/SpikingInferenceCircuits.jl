@@ -44,22 +44,23 @@ function space_scaling_plot!(f, pltpos, legpos; cpt_sizes=CPTSizes, our_sizes=Ou
 end
 
 function singlepix_variance_scaling_plot!(plotpos; ps=0.0001:0.00001:0.05, hyperparams=default_hyperparams())
-    k = get_k(default_hyperparams())
+    k_aux = get_k(default_hyperparams(); use_aux=true)
+    k_noaux = get_k(default_hyperparams(); use_aux=false)
     ax = Axis(plotpos,
-        xlabel="Probability of Pixel Flip",
+        xlabel="Probability of Pixel Error",
         ylabel="Fractional Variance",
-        title="Fractional Variance of Flipped Pixel\n Probability Estimate (E[Latency] = 5ms)",
+        title="Fractional Variance of Incorrect Pixel\n Probability Estimate (E[Latency] = $(hyperparams.latency)ms)",
         xscale=log10
     )
-    noaux = lines!(ax, (ps), ([analytic_direct_fracvar(p, k) for p in ps]))
-    withaux = lines!(ax, (ps), ([analytic_prod_fracvar(sqrt(p), k/2) for p in ps]))
+    noaux = lines!(ax, (ps), ([analytic_direct_fracvar(p, k_aux) for p in ps]))
+    withaux = lines!(ax, (ps), ([analytic_prod_fracvar(sqrt(p), k_noaux) for p in ps]))
     return (ax, noaux, withaux)
 end
 function singlepix_latency_scaling_plot!(plotpos; probs=0.0001:0.00001:0.05, fracvar=0.5, hyperparams=default_hyperparams())
     ax = Axis(plotpos,
-        xlabel="Probability of Pixel Flip",
+        xlabel="Probability of Pixel Error",
         ylabel="Expected Latency (ms)",
-        title="Expected Latency to Score Flipped Pixel\nat Fractional Variance $fracvar",
+        title="Expected Latency to Score Incorrect Pixel\nat Fractional Variance $fracvar",
         xscale=log10
     )
 
@@ -67,23 +68,23 @@ function singlepix_latency_scaling_plot!(plotpos; probs=0.0001:0.00001:0.05, fra
     withaux_latencies = [k_to_Elatency(withaux_k_for_fracvar(p, fracvar), hyperparams.neuron_budget, hyperparams.frequency) for p in probs]
     noaux = lines!(ax, (probs), noaux_latencies)
     withaux = lines!(ax, (probs), withaux_latencies)
-    ylims!(ax, (0, 400))
+    # ylims!(ax, (0, 400))
 
     return (ax, noaux, withaux)
 end
 function image_variance_scaling_plot!(plotpos; p_pix_flip=ColorFlipProb(), sidewidth=10, n_flips_range=1:10, hyperparams=default_hyperparams())
     ax = Axis(plotpos,
-        xlabel="Number of Pixel Flips",
+        xlabel="Number of Incorrect Pixels",
         ylabel="Fractional Variance",
-        title="Fractional Variance of Image Likelihood\nvs Num Pixels Flipped. (P[flip] = $p_pix_flip.)"
+        title="Fractional Variance of Image Likelihood\nvs Num Incorrect Pixels. (P[pixel error] = $p_pix_flip.)"
     )
 
-    k = get_k(default_hyperparams())
+    # k = get_k(default_hyperparams())
     # noaux_vals = exp.([analytic_logfracvar_for_num_pixelflips_noaux(p_pix_flip, n_flip, sidewidth^2, k) for n_flip in n_flips_range])
     # aux_vals = exp.([analytic_logfracvar_for_num_pixelflips_withaux(p_pix_flip, n_flip, sidewidth^2, k) for n_flip in n_flips_range])
     @assert ColorFlipProb() == p_pix_flip
-    noaux_vals = image_likelihood_fracvars(hyperparams, sidewidth, n_flips_range, false, 2_000)
-    aux_vals = image_likelihood_fracvars(hyperparams, sidewidth, n_flips_range, true, 2_000)
+    noaux_vals = image_likelihood_fracvars(hyperparams, sidewidth, n_flips_range, false, 10_000)
+    aux_vals = image_likelihood_fracvars(hyperparams, sidewidth, n_flips_range, true, 10_000)
     noaux = lines!(ax, n_flips_range, noaux_vals)
     withaux = lines!(ax, n_flips_range, aux_vals)
 
@@ -96,13 +97,13 @@ function auxvar_legend!(pos, (noaux, withaux))
 end
 
 function make_figure()
-    f = Figure(;resolution=(2000, 750))
+    f = Figure(;resolution=(2000, 600))
     space_scaling_plot!(f, f[1, 1], f[2, 1])
 
     singlepix_variance_scaling_plot!(f[1, 2])
     singlepix_latency_scaling_plot!(f[1, 3])
     (_, noaux, withaux) = image_variance_scaling_plot!(f[1, 4])
-    auxvar_legend!(f[2, 2], (noaux, withaux))
+    auxvar_legend!(f[2, 1:4], (noaux, withaux))
 
     for (i, l) in zip(1:4, map(x -> "($x)", ["a", "b", "c", "d"]))
         Label(f.layout[1, i, BottomLeft()], l,
@@ -111,14 +112,14 @@ function make_figure()
         )
     end
 
-    draw_representative_imgs_line!(f, (2, 3:4))
-    Label(f.layout[2, 3:4, BottomLeft()], "(e)", textsize=26, padding=(0,0,0,25))
+    # outer_layout = draw_representative_imgs_line!(f, (2, 3:4))
+    # Label(outer_layout[1, 2, BottomLeft()], "(e)", textsize=26, padding=(0,0,0,25))
 
-    rowsize!(f.layout, 2, Relative(1/3))
+    # rowsize!(f.layout, 2, Relative(1/3))
     # f.layout[2, :].padding=(0,20,0,0)
-    rowgap!(f.layout, 60)
+    # rowgap!(f.layout, 60)
 
     f
 end
 
-make_figure()
+f = make_figure()
