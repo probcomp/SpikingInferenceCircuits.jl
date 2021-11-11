@@ -161,14 +161,14 @@ arrowshape() = PolyElement(color = :seagreen, points = Point2f0[
     [(0, 1), (0, 2), (5, 2), (5, 3), (7, 1.5), (5, 0), (5, 1)]
 ])
 function plot_obs_with_particle_dist!(figpos, tr, t, probability_matrix; title="")
-    ax = Axis(figpos, aspect=DataAspect(); title)
+    ax = Axis(figpos, aspect=DataAspect())
     hidedecorations!(ax)
     draw_obs!(ax, Observable(t), tr)
     sq = plot_prob_matrix_squares!(ax, probability_matrix)
     ar = draw_vel_arrow!(ax, Observable(t), tr)
     function make_legend(leg_figpos)
         l = Legend(leg_figpos, [sq, arrowshape()],
-            ["Posterior over Position", "Ground Truth Motion into this Timestep"]
+            ["Posterior over Position", "Ground Truth Motion into this Timestep"]; labelsize=30
         )
         l.tellheight = true; l.tellwidth = true
         return l
@@ -183,7 +183,7 @@ function plot_obs_with_particle_dist(tr, t, probability_matrix; title="")
     return f
 end
 function plot_obs_particle_dists(gt_tr, t, titles, matrices)
-    f = Figure(; resolution=(1000, 500))
+    f = Figure(; resolution=(2000, 650))
     make_legend = nothing
     for (i, (title, matrix)) in enumerate(zip(titles, matrices))
         ml = plot_obs_with_particle_dist!(f[1, i], gt_tr, t, matrix; title)
@@ -191,6 +191,11 @@ function plot_obs_particle_dists(gt_tr, t, titles, matrices)
             make_legend = ml
         end
     end
+
+    for (i, (l, caption)) in enumerate(zip(["d", "e", "f"], titles))
+        Label(f.layout[1, i, Bottom()], "($l) $caption", textsize = 30 )
+    end
+
     make_legend(f[2, :])
     return f
 end
