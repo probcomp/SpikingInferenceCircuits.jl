@@ -196,14 +196,27 @@ function draw_particle_squares_for_variable!(ax, varvals, time_to_particles, n_p
     T = length(time_to_particles) - 1
     for (t, val_to_particles) in zip(0:T, time_to_particles)
         for (val, particles) in zip(varvals, val_to_particles)
-            _draw_particles!(ax, val, t - 0.5, particles, n_particles)
+            _draw_particles!(ax, val, (t - 0.5, t + 0.5), particles, n_particles)
         end
     end
-    ax.xticks = (-0.5):(T+0.5)
-    ax.yticks = (first(varvals) - 0.5):(last(varvals) + 0.5)
+    # ax.xticks = (-0.5):(T+0.5)
+    # ax.yticks = (first(varvals) - 0.5):(last(varvals) + 0.5)
+    ax.xticks = -1:(T+1)
+    ax.yticks = (first(varvals) - 1):(last(varvals) + 1)
+    ax.xgridvisible = false
+    ax.ygridvisible = false
+    ax.xminorgridvisible = true
+    ax.yminorgridvisible = true
+    ax.xminorticks = IntervalsBetween(2)
+    ax.yminorticks = IntervalsBetween(2)
+    xlims!(ax, (-0.5, T + 0.5))
+    ylims!(ax, (first(varvals) - 0.5, last(varvals) + 0.5))
 end
-function _draw_particles!(ax, pos, leftmost_x, particles, n_particles)
+function _draw_particles!(ax, pos, (leftmost_x, rightmost_x), particles, n_particles)
     max_padding = 0.1
+
+    # TODO: improve the algorithm for how
+    # the particles get drawn
 
     space_between_squares = max_padding / n_particles
     current_x = leftmost_x + space_between_squares

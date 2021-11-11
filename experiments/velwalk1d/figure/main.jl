@@ -68,6 +68,8 @@ function make_figure(gt_tr, inferred_trs)
     
     make_exact_bayes_filter_heatmaps!(make_layout(f, (1, 1)), gt_tr)
     draw_particles_visualization!(make_layout(f, (2, 1)), inferred_trs)
+    make_layout(f, (3, 1))
+    rowsize!(f.layout, 3, Relative(1/3))
     # draw_value_spiketrains!(make_layout(f, (3, 1)), inferred_trs)
     # draw_score_spiketrains!(make_layout(f, (4, 1)), inferred_trs)
 
