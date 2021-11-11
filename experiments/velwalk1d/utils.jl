@@ -1,9 +1,11 @@
 function get_enumeration_grids(tr)
-    logweight_grids = enumeration_bayes_filter_from_groundtruth(
+    ProbEstimates.with_weight_type(:perfect, () -> begin
+        logweight_grids = enumeration_bayes_filter_from_groundtruth(
             tr, initial_latent_model, step_latent_model, obs_model, (xₜ=Positions(),vₜ=Vels())
         ) |> DynamicModels.nest_all_addrs_at_val
-    weight_grids = [exp.(logweight_grid) for logweight_grid in logweight_grids]
-    return weight_grids
+        weight_grids = [exp.(logweight_grid) for logweight_grid in logweight_grids]
+        weight_grids
+    end)
 end
 
 function x_vel_counts(trs, t)

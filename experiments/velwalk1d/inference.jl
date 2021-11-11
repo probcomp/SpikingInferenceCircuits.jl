@@ -37,7 +37,10 @@ function init_posterior(obs)
     ProbEstimates.use_perfect_weights!()
     logprobs, _ = enumeration_filter_init(initial_latent_model, obs_model,
         choicemap((:obs => :val, obs)),
-        Dict((:xₜ => :val) => Positions(), (:vₜ => :val) => [0]) # vel shouldn't matter, so keep constant to speed this up # Vels())
+        Dict(
+            (:xₜ => :val) => Positions(),
+            (:vₜ => :val) => [0] # vel shouldn't matter, so keep constant to speed this up
+        ) 
     )
     ProbEstimates.reset_weights_to!(orig_typ)
     return sum(exp.(logprobs), dims=2) |> normalize |> to_vect

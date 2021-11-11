@@ -24,11 +24,13 @@ mean(varvals)       = pvec      -> mean_idx(pvec)          + first(varvals) - 1
 percentile(varvals) = (pvec, p) -> percentile_idx(pvec, p) + first(varvals) - 1
 #############################################################################
 
+### Heatmap + groundtruth + obs visualization ###
 function plot_variable_over_time!(
     layout, posterior_probvec_at_times;
     times, groundtruth, varname, varvals,
     observations=nothing,
-    show_medians=true, show_means=true, show_percentiles=true, markersize=15
+    show_medians=true, show_means=true, show_percentiles=true, show_colorbar=true,
+    markersize=15
 )
     layout[1, 1] = ax = Axis(layout[1, 1], xlabel="Time", ylabel=varname)
     inf_matrix = hcat(posterior_probvec_at_times...) |> transpose
@@ -39,7 +41,9 @@ function plot_variable_over_time!(
         colormap=cgrad([:white, :black], [0., 0.4, 1.0]),
         colorrange = (0, min(maxprob + 0.1, 1.0))
     )
-    layout[1, 2] = Colorbar(layout[1, 2], hm, label="Posterior probability")
+    if show_colorbar
+        layout[1, 2] = Colorbar(layout[1, 2], hm, label="Posterior probability")
+    end
 
     if !isnothing(observations)
         obsplt(f) = f(ax,
@@ -108,9 +112,10 @@ function plot_variable_over_time!(
     return (ax, (obs_plts, gt_plts, medplts, meanplts, per5plts, per95plts))
 end
 
-function draw_2d_posterior!(layout, posterior_probability_grids, tr; show_statistics=true)
+function draw_2d_posterior!(layout, posterior_probability_grids, tr; show_statistics=true, show_colorbars=true)
     vel_layout = GridLayout(); pos_layout = GridLayout()
     layout[1, :] = vel_layout; layout[2, :] = pos_layout
+    rowsize!(layout, 1, Relative(1/3))
 
     times = 0:(get_args(tr)[1])
     pos_observations = [obs_choicemap(tr, t)[:obs => :val] for t in times]
@@ -122,7 +127,7 @@ function draw_2d_posterior!(layout, posterior_probability_grids, tr; show_statis
         [sum(grid, dims=1) |> normalize |> to_vect for grid in posterior_probability_grids];
         times, groundtruth=gt_vel, varname="Velocity", varvals=Vels(),
         observations=nothing,
-        show_medians=show_statistics, show_means=show_statistics, show_percentiles=show_statistics, markersize=15
+        show_medians=show_statistics, show_means=show_statistics, show_percentiles=show_statistics, markersize=15, show_colorbar=show_colorbars
     )
 
     posret = plot_variable_over_time!(
@@ -133,7 +138,7 @@ function draw_2d_posterior!(layout, posterior_probability_grids, tr; show_statis
         observations=pos_observations,
         varname="Position",
         varvals=Positions(),
-        show_medians=show_statistics, show_means=show_statistics, show_percentiles=show_statistics, markersize=15
+        show_medians=show_statistics, show_means=show_statistics, show_percentiles=show_statistics, markersize=15, show_colorbar=show_colorbars
     )
 
     return (vel_layout, pos_layout, velret, posret)
@@ -167,3 +172,49 @@ function make_2d_posterior_figure(
 
     return fig
 end
+
+### Particle squares visualization ###
+
+# pos_particles[t][pos] is a vector of pairs
+# (weight, color) for each particle at that position at that time,
+# giving the particle's weight and the color to use to draw it.
+# The weights should be normalized (so the sum of weights should be 1).
+# vel_particles has an analogous format.
+# Particles are plotted in the square [time-0.5, time+0.5]x[pos-0.5, time+0.5]
+# and similarly for velocities
+function draw_particles!(layout, pos_particles, vel_particles, n_particles)
+    velax = layout[1, 1] = Axis(layout[1, 1]; xlabel="Time", ylabel="Velocity")
+    posax = layout[2, 1] = Axis(layout[2, 1]; xlabel="Time", ylabel="Position")
+    rowsize!(layout, 1, Relative(1/3))
+    draw_particles!(posax, velax, pos_particles, vel_particles, n_particles)
+end
+function draw_particles!(posax, velax, pos_particles, vel_particles, n_particles)
+    draw_particle_squares_for_variable!(posax, Positions(), pos_particles, n_particles)
+    draw_particle_squares_for_variable!(velax, Vels(), vel_particles, n_particles)
+end
+function draw_particle_squares_for_variable!(ax, varvals, time_to_particles, n_particles)
+    T = length(time_to_particles) - 1
+    for (t, val_to_particles) in zip(0:T, time_to_particles)
+        for (val, particles) in zip(varvals, val_to_particles)
+            _draw_particles!(ax, val, t - 0.5, particles, n_particles)
+        end
+    end
+    ax.xticks = (-0.5):(T+0.5)
+    ax.yticks = (first(varvals) - 0.5):(last(varvals) + 0.5)
+end
+function _draw_particles!(ax, pos, leftmost_x, particles, n_particles)
+    max_padding = 0.1
+
+    space_between_squares = max_padding / n_particles
+    current_x = leftmost_x + space_between_squares
+    for (weight, color) in particles
+        # TODO: be more careful with the sizes?
+        size = (1 - max_padding) * sqrt(weight)
+        draw_particle!(ax, pos, current_x, size, color)
+        current_x += size/2
+        current_x += space_between_squares
+    end
+end
+draw_particle!(ax, ypos, startx, size, color) =
+    # poly!(ax, [Rect(startx, ypos - sidelength/2, sidelength, sidelength)], color=color)
+    scatter!(ax, [startx + size/2], [ypos], markersize=50*size, color=color)
