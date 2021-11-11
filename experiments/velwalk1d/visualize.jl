@@ -100,6 +100,9 @@ function plot_variable_over_time!(
         )
         per5plts = [percplt(lines!, 0.05)]
         per95plts = [percplt(lines!, 0.95)]
+    else
+        per5plts = nothing
+        per95plts = nothing
     end
 
     return (ax, (obs_plts, gt_plts, medplts, meanplts, per5plts, per95plts))

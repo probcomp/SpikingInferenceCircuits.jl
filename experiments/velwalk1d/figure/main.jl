@@ -18,7 +18,7 @@ ProbEstimates.DoRecipPECheck() = false
 include("../utils.jl")
 
 make_exact_bayes_filter_heatmaps!(layout, gt_tr) =
-    draw_2d_posterior!(layout, get_enumeration_grids(gt_tr); show_statistics=false)
+    draw_2d_posterior!(layout, get_enumeration_grids(gt_tr), gt_tr; show_statistics=false)
 
 function make_layout(f, fpos)
     f[fpos...] = GridLayout()
@@ -43,3 +43,5 @@ make_figure(gt_tr; n_particles=10) = make_figure(gt_tr,
     )
 )
 make_figure(; n_particles=10, n_steps=10) = make_figure(generate(model, (n_steps,))[1]; n_particles)
+
+make_figure(generate(model, (10,))[1], [])
