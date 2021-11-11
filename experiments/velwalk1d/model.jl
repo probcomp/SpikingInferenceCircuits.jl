@@ -29,3 +29,6 @@ end
     obs ~ Cat(discretized_gaussian(xₜ, ObsStd(), Positions()))
     return (obs,)
 end
+
+model = @DynamicModel(initial_latent_model, step_latent_model, obs_model, 2)
+@load_generated_functions()
