@@ -72,6 +72,12 @@ In particular I think in places where we try to get a reciprocal probability est
 by calling `use_only_recip_weights!`, we could run into trouble (since I put any call to `recip_score`
 into the trace's recip column, regardless of the weight mode).
 =#
+
+"""
+    module Spiketrains
+
+Produce spiketrains from Neural-Gen-Fast inference.
+"""
 module Spiketrains
 using Distributions: Exponential, DiscreteUniform
 using ProbEstimates: MaxRate, AssemblySize, Latency, K_fwd, K_recip, with_weight_type
@@ -82,6 +88,14 @@ nest(a, b) = a => b
 nest(a::Pair, b) = a.first => nest(a.second, b)
 
 ### Line Specs ###
+
+"""
+    abstract type LineSpec end
+
+A `LineSpec` specifies the information in a line in a SpikeTrain.  E.g.
+this might specify a line of text to insert into the spiketrain, or the type of value conveyed
+by a line of spikes (e.g. a discrete variable taking a value, or a dense-coded value, etc.)
+"""
 abstract type LineSpec end
 function get_lines(specs, tr, spiketrain_data_args; nest_all_at=nothing)
     spiketrain_data =
@@ -96,7 +110,7 @@ get_labels(lines) = map(get_label, lines)
 
 get_line(spec::LineSpec, tr; nest_all_at=nothing) = get_line(spec, tr, nothing; nest_all_at)
 
-### Text ###
+### Text-Related Line Specs (ie. lines of text for different values in spiketrains) ###
 abstract type Text <: LineSpec; end
 struct SampledValue <: Text; addr; name; end
 struct FwdScoreText <: Text; addr; name; end
@@ -119,6 +133,12 @@ get_fwd_score(ch, addr) = ch[nest(addr, :fwd_score)]
 get_recip_score(ch, addr) = ch[nest(addr, :recip_score)]
 
 ### Grouped Line Specs ###
+"""
+A LabeledLineGroup describes a collection of lines in a spiketrain which
+should all share a label.  (E.g. this might be used when showing
+multiple lines used to convey a single value, to label all those lines
+with the name of that value.)
+"""
 struct LabeledLineGroup
     label_spec::Text
     line_specs::Vector{LineSpec}
@@ -136,11 +156,23 @@ get_group_labels(groups::Vector{LabeledLineGroup}, tr; nest_all_at) =
 get_group_label(group::LabeledLineGroup, tr) = get_line(group.label_spec, tr)
 
 ### Spikes ###
+"""
+    DenseValueSpiketrain
+
+Stores the information describing the transmission of a dense-value.
+"""
 struct DenseValueSpiketrain
     ready_time   :: Float64
     neuron_times :: Vector{Vector{Float64}}
     # neuron_times[i] = spiketrain for the `i`th neuron in the output gate assembly
 end
+"""
+    ISSpiketrains
+
+Stores the information describing the spiketrains from importance-sampling a trace.
+Includes the value spiketrains, the forward-probability-estimate spiketrains,
+and the reciprocal-probability-estimate spiketrains.
+"""
 struct ISSpiketrains
     valtimes::Dict{<:Any, Float64}
     val_trains::Dict{<:Any, Vector{Float64}}
@@ -148,13 +180,37 @@ struct ISSpiketrains
     fwd_trains::Dict{<:Any, DenseValueSpiketrain}
 end
 
+"""
+    SpikelineInScore
+
+A line of spikes which is part of the information for conveying a continuous score.
+Can be the "ready" indicator line, the assembly for the spike-count,
+or a neuron within the assembly for spike-count.
+"""
 abstract type SpikelineInScore end
 struct CountAssembly <: SpikelineInScore; end
 struct NeuronInCountAssembly <: SpikelineInScore; idx; end
 struct IndLine <: SpikelineInScore; end
 
+"""
+    SpiketrainSpec <: LineSpec
+
+Specifies a line in a spiketrain visualization which is a spiketrain (ie. a line of spikes
+occurring at different times).
+"""
 abstract type SpiketrainSpec <: LineSpec; end
+"""
+    VarValLine
+
+Spiketrain for the "neuron" describing a discrete variable taking a particular value.
+"""
 struct VarValLine <: SpiketrainSpec; addr; value; end
+
+"""
+    ScoreLine
+
+Spiketrain within a score.  (The particular spiketrain for this score is described by `line_to_show`.)
+"""
 struct ScoreLine <: SpiketrainSpec
     do_recip_score::Bool # alternatively do fwd
     addr
@@ -192,6 +248,14 @@ function get_label(spec::ScoreLine)
     end
 end
 
+"""
+Sample an `ISSpiketrains` for a SNN simulation that produced the same results
+as the NG-F importance-sampling simulation which produced `tr`.
+
+`nest_all_at` is a Gen address specifying the submap in `tr` that was sampled by the NG-F
+importance-sampling simulation.  (E.g. this might be the address for a timestep in a dynamic model
+for which importance-sampling occurred during SMC.)
+"""
 function sample_spiketimes_for_trace(
     tr,
     inter_sample_time_dist,
