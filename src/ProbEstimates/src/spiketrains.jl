@@ -167,7 +167,13 @@ get_line(spec::VarValLine, tr, trains; nest_all_at) =
     try
         tr[nest(nest_all_at, spec.addr)] == spec.value ? trains.val_trains[spec.addr] : []
     catch e
+        display(get_submap(get_choices(tr), nest_all_at))
+        println(get_choices(tr)[nest(nest_all_at, spec.addr)])
+        println("traceval: ", tr[nest(nest_all_at, spec.addr)])
+        display(keys(trains.val_trains))
+        println("trains: $(trains.val_trains[spec.addr])")
         @error "Error looking up $(nest(nest_all_at, spec.addr)) in trace." exception=(e, catch_backtrace())
+        error()
     end
 get_line(spec::ScoreLine, tr, trains; nest_all_at) = get_score_line(spec.line_to_show, (spec.do_recip_score ? trains.recip_trains : trains.fwd_trains)[spec.addr])
 get_score_line(::IndLine, trains::DenseValueSpiketrain) = [trains.ready_time]
@@ -336,8 +342,8 @@ function spiketrains_for_n_spikes(num_spikes, num_neurons, neuron_rate, starttim
 end
 
 function to_int(v)
-    @assert isapprox(v, floor(v)) "v = $v"
-    return Int(floor(v))
+    @assert isapprox(v, floor(v)) || isapprox(v, ceil(v)) "v = $v"
+    return Int(isapprox(v, floor(v)) ? floor(v) : ceil(v))
 end
 
 ### Some default distributions for spiketrain production ###

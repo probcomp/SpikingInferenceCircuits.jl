@@ -94,10 +94,12 @@ function get_group_endpoint_indices(group_labels)
     return [(idx - st + 1, idx - nd + 1) for (st, nd) in idxpairs]
 end
 
-function draw_lines!(ax, lines, labels, colors, time, xmin, xmax)
+function draw_lines!(ax, lines, labels, colors, time, xmin, xmax; hide_y_decorations=true)
     lines, labels, colors = map(reverse, (lines, labels, colors))
 
-    hideydecorations!(ax, ticklabels=false)
+    if hide_y_decorations
+        hideydecorations!(ax, ticklabels=false)
+    end
     if isempty(lines) 
         @warn "Lines was empty; not drawing anything."
         return nothing;
@@ -116,8 +118,11 @@ function draw_lines!(ax, lines, labels, colors, time, xmin, xmax)
 
     xlims!(ax, compute_xlims(lines, xmin, xmax))
     ylims!(ax, (first(ypositions) - 1, last(ypositions) + 1))
-    ax.yticks = (ypositions[1:length(labels)], labels)
-    ax.yticklabelcolor[] = colors
+
+    if !isempty(labels)
+        ax.yticks = (ypositions[1:length(labels)], labels)
+        ax.yticklabelcolor[] = colors
+    end
 
     return nothing
 end
