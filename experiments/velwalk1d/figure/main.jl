@@ -20,8 +20,14 @@ ProbEstimates.DoRecipPECheck() = false
 include("../utils.jl")
 ProbEstimates.use_noisy_weights!()
 
-function make_layout(f, fpos)
-    f[fpos...] = GridLayout()
+function make_layout(f, fpos; title=nothing)
+    layout = f[fpos...] = GridLayout()
+
+    if !isnothing(title)
+        Label(layout[1, 1, Top()], title, textsize=26, padding=(0, 0, 20, 0))
+    end
+
+    return layout
 end
 
 make_exact_bayes_filter_heatmaps!(layout, gt_tr) =
@@ -132,14 +138,6 @@ function draw_value_spiketrains!(layout, time_per_step, gt_tr, inferred_trs)
 
     ylims!(velax, (0, n_particles * length(Vels()) + 1))
     ylims!(posax, (0, n_particles * length(Positions()) + 1))
-    # velax.yticks = (
-    #     (n_particles/2):n_particles:((length(Vels()) - 1/2) * n_particles),
-    #     ["$i" for i in Vels()]
-    # )
-    # posax.yticks = (
-    #     (n_particles/2):n_particles:((length(Positions()) - 1/2) * n_particles),
-    #     ["$i" for i in Positions()]
-    # )
 
     for (ax, varvals) in [(velax, Vels()), (posax, Positions())]
         ax.yticks = ((n_particles/2):n_particles:((length(varvals) - 1/2) * n_particles), ["$i" for i in varvals])
@@ -149,19 +147,22 @@ function draw_value_spiketrains!(layout, time_per_step, gt_tr, inferred_trs)
     end
 end
 
+function draw_score_spiketrains!(layout, inferred_trs)
+
+end
+
 #=
 inferred_trs is a vector [[(tr, log_importance_weight) for _=1:n_particles] for _=1:n_timesteps]
 The first 2 particles at each timestep are "distinguished".
 =#
 function make_figure(gt_tr, inferred_trs)
-    f = Figure(;resolution=(1000, 1400))
-    
-    make_exact_bayes_filter_heatmaps!(make_layout(f, (1, 1)), gt_tr)
-    draw_particles_visualization!(make_layout(f, (2, 1)), inferred_trs)
-    make_layout(f, (3, 1))
+    f = Figure(;resolution=(1000, 1650))
+
+    make_exact_bayes_filter_heatmaps!(make_layout(f, (1, 1); title="Posterior"), gt_tr)
+    draw_particles_visualization!(make_layout(f, (2, 1); title="Particles from Inference"), inferred_trs)
+    draw_value_spiketrains!(make_layout(f, (3, 1); title="Spiketrains from Particle-Value Assemblies"), 200, gt_tr, inferred_trs)
     rowsize!(f.layout, 3, Relative(1/3))
-    draw_value_spiketrains!(make_layout(f, (3, 1)), 200, gt_tr, inferred_trs)
-    # draw_score_spiketrains!(make_layout(f, (4, 1)), inferred_trs)
+    draw_score_spiketrains!(make_layout(f, (4, 1); title="Spiketrains from Particle-Weight Assemblies"), inferred_trs)
 
     f
 end
@@ -172,4 +173,4 @@ make_figure(gt_tr; n_particles=10) = make_figure(gt_tr,
 )
 make_figure(; n_particles=10, n_steps=6) = make_figure(generate(model, (n_steps,))[1]; n_particles)
 
-make_figure(gt_tr; n_particles=3)
+make_figure(gt_tr, inferred_trs)
