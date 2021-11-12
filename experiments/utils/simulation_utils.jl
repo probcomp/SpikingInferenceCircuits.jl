@@ -66,15 +66,14 @@ function simulate_and_get_events(
     return events
 end
 
-function get_smc_circuit_inputs(
-        time_to_simulate_for, interval_between_observations,
-        observations::Vector{<:NamedTuple}
-    )
-    return get_smc_circuit_inputs(
-                                  time_to_simulate_for, interval_between_observations,
-                                  [[key => val for (key, val) in nt] for nt in pairs(observations)]
-                                 )
-end
+get_smc_circuit_inputs(
+    time_to_simulate_for, interval_between_observations,
+    # vector of named tuples giving value for each observation address at each timestep
+    observations::Vector{<:NamedTuple}
+) = get_smc_circuit_inputs(
+    time_to_simulate_for, interval_between_observations,
+    [[key => val for (key, val) in pairs(nt)] for nt in observations] # This is the line that I got wrong -- I put the `pair` around the wrong thing!
+)
 
 function get_smc_circuit_inputs(
         time_to_simulate_for,
