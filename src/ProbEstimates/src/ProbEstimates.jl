@@ -44,7 +44,7 @@ include("normalize_weights.jl")
 # overwrite methods in DynamicModels so that inference uses the noise model
 include("dynamic_models_overwrites.jl")
 
-include("spiketrains.jl")
+include("spiketrains/spiketrains.jl")
 
 # Check if 2 submaps are equal, ignoring `:recip_score` and `:fwd_score` values
 function choicemaps_have_equal_values(cm1, cm2)
