@@ -56,8 +56,16 @@ function produce_autonormalization_spiketrains(
     normalization_spiketimes = []
     particle_spiketimes = [[] for _ in unnormalized_log_values]
     
-    rates = exp.(unnormalized_log_values)
-    if sum(rates) == 0
+    # if NaNs have appearred...we don't want to deal with them!
+    # [[TODO: better understand why this sometimes happens.
+    # surely we aren't proposing such low probability values that log(1/Q) is inf and log(P) is -inf.
+    # so what's going on??  Something with ProbEstimates?]]
+    unnormalized_log_values_nonan = [isnan(ulv) ? -Inf : ulv for ulv in unnormalized_log_values]
+    rates = exp.(unnormalized_log_values_nonan)
+    total_rate = exp(logsumexp(unnormalized_log_values_nonan))
+
+    if total_rate ≤ 0 || isnan(total_rate) || isinf(total_rate)
+        @warn "all rates were 0. unnormalized_log_values = $unnormalized_log_values"
         return AutonormalizationData(
             normalization_spiketimes,
             particle_spiketimes
@@ -101,6 +109,14 @@ function produce_autonormalization_spiketrains(
             n_spikes_before_end_of_simulation,
             starttime + total_simulation_time
         )
+    end
+
+    if all(isempty(p) for p in particle_spiketimes)
+        println("---GOT EMPTY SPIKETIMES---")
+        display(particle_spiketimes)
+        display(normalization_spiketimes)
+        println()
+        println()
     end
 
     return AutonormalizationData(
