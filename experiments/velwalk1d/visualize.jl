@@ -1,4 +1,5 @@
 using GLMakie
+using Colors
 
 ### 2D Visualizations ###
 
@@ -201,14 +202,14 @@ function draw_particle_squares_for_variable!(ax, varvals, time_to_particles, n_p
     end
     # ax.xticks = (-0.5):(T+0.5)
     # ax.yticks = (first(varvals) - 0.5):(last(varvals) + 0.5)
-    ax.xticks = -1:(T+1)
-    ax.yticks = (first(varvals) - 1):(last(varvals) + 1)
-    ax.xgridvisible = false
-    ax.ygridvisible = false
-    ax.xminorgridvisible = true
-    ax.yminorgridvisible = true
-    ax.xminorticks = IntervalsBetween(2)
-    ax.yminorticks = IntervalsBetween(2)
+    # ax.xticks = -1:(T+1)
+    # ax.yticks = (first(varvals) - 1):(last(varvals) + 1)
+    # ax.xgridvisible = false
+    # ax.ygridvisible = false
+    # ax.xminorgridvisible = true
+    # ax.yminorgridvisible = true
+    # ax.xminorticks = IntervalsBetween(2)
+    # ax.yminorticks = IntervalsBetween(2)
     xlims!(ax, (-0.5, T + 0.5))
     ylims!(ax, (first(varvals) - 0.5, last(varvals) + 0.5))
 end
@@ -223,7 +224,9 @@ function _draw_particles!(ax, pos, (leftmost_x, rightmost_x), particles, n_parti
     for (weight, color) in particles
         # TODO: be more careful with the sizes?
         size = (1 - max_padding) * sqrt(weight)
-        draw_particle!(ax, pos, current_x, size, color)
+        draw_particle!(ax, pos, current_x, size,
+            RGBA(convert(RGB, parse(Colorant, color)), weight)
+        )
         current_x += size/2
         current_x += space_between_squares
     end

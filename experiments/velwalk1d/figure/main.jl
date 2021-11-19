@@ -41,8 +41,7 @@ get_vel(tr) = latents_choicemap(tr, get_args(tr)[1])[:vₜ => :val]
 vel_to_idx(v) = v - first(Vels()) + 1
 function draw_particles_visualization!(layout, inferred_trs)
     n_particles = length(first(inferred_trs))
-    colors = vcat([:red, :blue], [:black for _=1:(n_particles - 2)])
-    n_particles = length(first(inferred_trs))
+    colors = vcat([:blue, :red], [:black for _=1:(n_particles - 2)])
     pos_particles = []
     vel_particles = []
 
@@ -156,11 +155,11 @@ function draw_value_spiketrains!(layout, (min_time, max_time), pos_spiketrains, 
     n_particles = length(first(inferred_trs))
 
     poscolors = vcat(
-        (vcat([:red, :blue], [:black for _=1:(n_particles-2)])
+        (vcat([:blue, :red], [:black for _=1:(n_particles-2)])
         for _ in Positions())...
     )
     velcolors = vcat(
-        (vcat([:red, :blue], [:black for _=1:(n_particles-2)])
+        (vcat([:blue, :red], [:black for _=1:(n_particles-2)])
         for _ in Vels())...
     )
 
@@ -182,7 +181,7 @@ end
 function draw_score_spiketrains!(layout, (min_time, max_time), normalized_weight_spiketrains, normalization_line_train)
     n_particles = length(normalized_weight_spiketrains)
     weight_ax = layout[1, 1] = Axis(layout[1, 1])
-    normalized_weight_colors = vcat([:red, :blue], [:black for _=1:(n_particles-2)])
+    normalized_weight_colors = vcat([:blue, :red], [:black for _=1:(n_particles-2)])
     ProbEstimates.Spiketrains.SpiketrainViz.draw_lines!(weight_ax, reverse(normalized_weight_spiketrains), [], reverse(normalized_weight_colors), 0, min_time, max_time; hide_y_decorations = false)
     xlims!(weight_ax, (min_time, max_time))
 
@@ -235,6 +234,8 @@ make_figure(; n_particles=10, n_steps=6) = make_figure(generate(model, (n_steps,
 
 # make_figure(gt_tr, inferred_trs)
 
+### DRAFT 2 ###
+
 relative_vel_size() = length(Vels()) / (length(Vels()) + length(Positions()))
 function setup_vel_pos_axes(layout)
     velax = Axis(layout[1, 1], ylabel="Velocity")
@@ -263,7 +264,7 @@ function draw_traj_obs!(layout, tr)
 
     lines!(velax, times, gt_vel, color=:black)
     lines!(posax, times, gt_pos, color=:black)
-    scatter!(posax, times, pos_observations, color=:grey)
+    scatter!(posax, times, pos_observations, color=:seagreen, markersize=12)
 end
 function draw_filtering_posterior!(layout, tr)
     times = 0:(get_args(tr)[1])
@@ -292,21 +293,74 @@ function draw_filtering_posterior!(layout, tr)
         colormap=cgrad([:white, :black], [0., 0.4, 1.0]),
         colorrange = (0, min(pos_maxprob + 0.1, 1.0))
     )
-    pos_obs = scatter!(posax, times, pos_observations, color=:gray)
+    pos_obs = scatter!(posax, times, pos_observations, color=:seagreen, markersize=12)
 
     return velax
 end
 
+function draw_inferred_particles!(layout, inferred_trs)
+    n_particles = length(first(inferred_trs))
+    colors = vcat([:blue, :red], [:black for _=1:(n_particles - 2)])
+    n_particles = length(first(inferred_trs))
+    pos_particles = []
+    vel_particles = []
 
-function draw_inferred_particles!(layout, gt_tr)
-    Axis(layout[1, 1])
+    for trs_and_weights in inferred_trs
+        @assert length(trs_and_weights) == n_particles
+
+        poss = [[] for _ in Positions()]
+        vels = [[] for _ in Vels()]
+        push!(pos_particles, poss)
+        push!(vel_particles, vels)
+
+        trs = map(x -> x[1], trs_and_weights)
+        logweights = map(x -> x[2], trs_and_weights)
+        normalized_weights = exp.(logweights .- logsumexp(logweights))
+        positions = map(get_pos, trs)
+        velocities = map(get_vel, trs)
+        
+        for (wt, color, pos, vel) in zip(normalized_weights, colors, positions, velocities)
+            push!(poss[pos], (wt, color))
+            push!(vels[vel_to_idx(vel)], (wt, color))
+        end
+    end
+
+    (velax, posax) = setup_vel_pos_axes(layout)
+    draw_particle_squares_for_variable!(posax, Positions(), pos_particles, n_particles)
+    draw_particle_squares_for_variable!(velax, Vels(), vel_particles, n_particles)
 end
 function draw_value_weight_spiketrains!(value_layout, weight_layout, gt_tr, inferred_trs)
     Axis(value_layout[1, 1])
     Axis(weight_layout[1, 1])
 end
 
+"""
+Reorder the particles so that the 2 traces which have the highest
+weights later into inference are put first.
+"""
+function move_highweight_trs_first(inferred_trs)
+    laststep_trs = last(inferred_trs)
+    n_particles = length(laststep_trs)
+    logweights = [wt for (_, wt) in laststep_trs]
+    sortedperm = sortperm(logweights)
+    maxidx = sortedperm[end]
+    nextidx = sortedperm[end-1]
+    
+    outputperm = [
+        maxidx,
+        nextidx,
+        (
+            i for i in 1:n_particles
+            if !(i in (maxidx, nextidx))
+        )...
+    ]
+    return [
+        trs[outputperm] for trs in inferred_trs
+    ]
+end
 function make_figure_2(gt_tr, inferred_trs; time_per_step=200)
+    inferred_trs = move_highweight_trs_first(inferred_trs)
+
     # Page = 8.5 x 11 in
     # margins: .75 on each side
     # remaining space: 7 x 9.5
