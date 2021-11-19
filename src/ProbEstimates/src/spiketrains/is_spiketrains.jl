@@ -171,10 +171,13 @@ function fwd_spiketimes(
             num_spikes, assembly_size, neuron_rate * p, ready_times[addr]
         )
 
-        # TODO: handle the case where we get 0 spikes
-
-        ready_time = last(sort(reduce(vcat, neuron_times; init=Float64[]))) + rand(dist_to_ready_spike)
-        times[addr] = DenseValueSpiketrain(ready_time, neuron_times)
+        flat_neuron_times = reduce(vcat, neuron_times; init=Float64[])
+        if isempty(flat_neuron_times)
+            times[addr] = DenseValueSpiketrain(Inf, neuron_times)
+        else
+            ready_time = last(sort(flat_neuron_times)) + rand(dist_to_ready_spike)
+            times[addr] = DenseValueSpiketrain(ready_time, neuron_times)
+        end
     end
 
     return times
