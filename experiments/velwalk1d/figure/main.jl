@@ -11,6 +11,8 @@ Next: Spiketrains for post-multiplication score-line for each particle, with col
 =#
 using DynamicModels
 
+set_theme!(font="Arial")
+
 include("../model.jl")
 Positions() = 1:10
 SwitchProb() = 0.0
@@ -244,7 +246,7 @@ function setup_vel_pos_axes(layout)
     rowsize!(layout, 1, Relative(relative_vel_size()))
     velax.xticksvisible = false
     velax.xticklabelsvisible = false
-    posax.xlabelpadding = -2.0
+    posax.xlabelpadding = -5.0
     rowgap!(layout, 10)
     ylims!(velax, (first(Vels()) - 0.5, last(Vels()) + 0.5))
     ylims!(posax, (first(Positions()) - 0.5, last(Positions()) + 0.5))
@@ -368,7 +370,7 @@ function draw_weight_spiketrains_2!(layout, (min_time, max_time), normalized_wei
     rowsize!(layout, 1, Relative(0.85))
     weightax.xticksvisible = false
     weightax.xticklabelsvisible = false
-    logax.xlabelpadding = -2.0
+    logax.xlabelpadding = -5.0
     rowgap!(layout, 10)
     ylims!(weightax, (0, length(normalized_weight_lines) + 1))
     ylims!(logax, (0, 1))
@@ -446,13 +448,13 @@ function make_figure_2(gt_tr, inferred_trs; time_per_step=200)
         rowsize!(f.layout, i, Relative(h))
     end
 
-    subcaption_padding = (-25, 0, 5, 30)
-    subcaption_align = :left
-    Label(f.layout[1, 1, Bottom()], "(c) Trajectory & Observations", textsize=20, padding=subcaption_padding, halign=subcaption_align)
-    Label(f.layout[2, 1, Bottom()], "(d) Exact Filtering Posterior", textsize=20, padding=subcaption_padding, halign=subcaption_align)
-    Label(f.layout[3, 1, Bottom()], "(e) Inferred Particles", textsize=20, padding=subcaption_padding, halign=subcaption_align)
-    Label(f.layout[4, 1, Bottom()], "(f) Value Spiketrains", textsize=20, padding=subcaption_padding, halign=subcaption_align)
-    Label(f.layout[5, 1, Bottom()], "(g) Weight Spiketrains", textsize=20, padding=subcaption_padding, halign=subcaption_align)
+    subcaption_padding = (0, 0, 5, 45)
+    subcaption_align = :center
+    Label(f.layout[1, 1, Bottom()], "(c) Trajectory & Observations", textsize=17, padding=subcaption_padding, halign=subcaption_align)
+    Label(f.layout[2, 1, Bottom()], "(d) Exact Filtering Posterior", textsize=17, padding=subcaption_padding, halign=subcaption_align)
+    Label(f.layout[3, 1, Bottom()], "(e) Inferred Particles", textsize=17, padding=subcaption_padding, halign=subcaption_align)
+    Label(f.layout[4, 1, Bottom()], "(f) Value Spiketrains", textsize=17, padding=subcaption_padding, halign=subcaption_align)
+    Label(f.layout[5, 1, Bottom()], "(g) Weight Spiketrains", textsize=17, padding=subcaption_padding, halign=subcaption_align)
 
     draw_traj_obs!(traj_obs_layout, gt_tr)
     ax = draw_filtering_posterior!(posterior_layout, gt_tr)
