@@ -42,7 +42,8 @@ function get_lines_for_particles(
     expected_log_weight_updates, # this should be the log of the weight-update factors computed here
     spiketrain_data_args;
     nest_all_at=nothing,
-    other_factors_to_multiply_in=[1. for _ in trs]
+    other_factors_to_multiply_in=[1. for _ in trs],
+    num_autonormalization_spikes
 )
     needs_autonormalization = any(spec isa Union{LogNormalization, NormalizedWeight} for spec in specs)
     needs_is = needs_autonormalization || any(spec isa ParticleLineSpec && spec.spec isa SpiketrainSpec for spec in specs)
@@ -62,7 +63,8 @@ function get_lines_for_particles(
             get_autonormalization_data(
                 is_spiketrain_data,
                 other_factors_to_multiply_in;
-                expected_log_weight_updates # used to check that the computed pre-normalization particle weights are correct
+                expected_log_weight_updates, # used to check that the computed pre-normalization particle weights are correct
+                num_autonormalization_spikes
             )
         else
             nothing

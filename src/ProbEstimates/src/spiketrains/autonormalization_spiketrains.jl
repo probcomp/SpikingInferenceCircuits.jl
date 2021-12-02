@@ -51,7 +51,12 @@ function produce_autonormalization_spiketrains(
     n_spikes_to_accumulate_before_ending_autonormalization,
     speedup_factor,
     autonormalization_repeater_rate,
-    total_simulation_time
+    total_simulation_time,
+
+    # the user can specify the number of auto-normalization spikes which they want to 
+    # have occur in this simulation; if they do this, auto-normalization spikes will
+    # continue to be sent in until this number have been sent in
+    num_autonormalization_spikes=nothing
 )
     normalization_spiketimes = []
     particle_spiketimes = [[] for _ in unnormalized_log_values]
@@ -76,8 +81,14 @@ function produce_autonormalization_spiketrains(
     current_time = starttime
 
     n_iters_in_loop = 0
+    not_done_accumulating() =
+        if isnothing(num_autonormalization_spikes)
+            num_accumulated_spikes < n_spikes_to_accumulate_before_ending_autonormalization
+        else
+            length(normalization_spiketimes) < num_autonormalization_spikes
+        end
 
-    while num_accumulated_spikes < n_spikes_to_accumulate_before_ending_autonormalization
+    while not_done_accumulating()
         time_to_repeater = rand(Exponential(1/autonormalization_repeater_rate))
         spikes_before_then = rand(Poisson(sum(rates) * time_to_repeater))
         total_this_would_accumulate_to = num_accumulated_spikes + spikes_before_then
@@ -85,7 +96,7 @@ function produce_autonormalization_spiketrains(
         _add_spikes_to_autonormalization!(particle_spiketimes, rates, current_time, time_to_repeater, spikes_before_then, starttime + total_simulation_time)
         current_time += time_to_repeater
 
-        if total_this_would_accumulate_to < n_spikes_to_accumulate_before_ending_autonormalization
+        if !isnothing(num_autonormalization_spikes) || total_this_would_accumulate_to < n_spikes_to_accumulate_before_ending_autonormalization
             num_accumulated_spikes = total_this_would_accumulate_to
             push!(normalization_spiketimes, current_time)
 
@@ -97,7 +108,7 @@ function produce_autonormalization_spiketrains(
         # for debugging infinite loops:
         n_iters_in_loop += 1
         if n_iters_in_loop > 10^6
-            error("n_iters_in_loop = $n_iters_in_loop")
+            error("n_iters_in_loop = $n_iters_in_loop ;; num_accumulated_spikes = $num_accumulated_spikes ;; length(normalization_spiketimes) = $(length(normalization_spiketimes)) ;; num_autonormalization_spikes = $num_autonormalization_spikes ;; not_done_accumulating() = $(not_done_accumulating())")
         end
     end
 
@@ -152,7 +163,8 @@ function get_autonormalization_data(
     speedup_factor=AutonormalizeSpeedupFactor(),
     autonormalization_repeater_rate=AutonormalizeRepeaterRate(),
     total_weight_readout_time=Latency(),
-    expected_log_weight_updates
+    expected_log_weight_updates,
+    num_autonormalization_spikes
 )
     autonorm_starttime = get_time_when_scores_all_ready(is_spiketrain_data)
     # log_score_updates = get_log_score_updates(is_spiketrain_data)::Vector{<:Real}
@@ -171,6 +183,7 @@ function get_autonormalization_data(
         log_unnormalized_weights;
         n_spikes_to_accumulate_before_ending_autonormalization,
         speedup_factor, autonormalization_repeater_rate,
-        total_simulation_time=total_weight_readout_time
+        total_simulation_time=total_weight_readout_time,
+        num_autonormalization_spikes
     )
 end

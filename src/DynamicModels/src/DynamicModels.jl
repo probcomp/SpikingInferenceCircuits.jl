@@ -255,4 +255,8 @@ export enumeration_filter_init, enumeration_filter_step
 include("particle_gibbs.jl")
 export single_step_particle_gibbs_rejuv_kernel, single_step_particle_gibbs
 
+# SMC simulations, but where the proposed values are fixed ahead-of-time by the user
+include("controlled_smc.jl")
+export predetermined_dynamic_model_smc
+
 end

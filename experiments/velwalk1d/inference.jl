@@ -1,5 +1,14 @@
 # TODO: refector so we don't repeat ourselves so much!
 
+function predetermined_smc(tr, n_particles, initprop, stepprop, prop_cms; ess_threshold=Inf)
+    obss = get_dynamic_model_obs(tr)
+    (unweighted_inferences, weighted_inferences) = DynamicModels.predetermined_dynamic_model_smc(
+        get_gen_fn(tr), obss, cm -> (cm[:obs => :val],),
+        initprop, stepprop, n_particles, prop_cms; ess_threshold
+    )
+    return (unweighted_inferences, weighted_inferences)
+end
+
 function smc(tr, n_particles, initprop, stepprop; ess_threshold=Inf)
     obss = get_dynamic_model_obs(tr)
     (unweighted_inferences, weighted_inferences) = dynamic_model_smc(

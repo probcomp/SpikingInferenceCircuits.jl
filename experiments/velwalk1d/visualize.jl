@@ -194,10 +194,14 @@ function draw_particles!(posax, velax, pos_particles, vel_particles, n_particles
     draw_particle_squares_for_variable!(velax, Vels(), vel_particles, n_particles)
 end
 function draw_particle_squares_for_variable!(ax, varvals, time_to_particles, n_particles)
+    particle_of_each_color = nothing
     T = length(time_to_particles) - 1
     for (t, val_to_particles) in zip(0:T, time_to_particles)
         for (val, particles) in zip(varvals, val_to_particles)
-            _draw_particles!(ax, val, (t - 0.5, t + 0.5), particles, n_particles)
+            p = _draw_particles!(ax, val, (t - 0.5, t + 0.5), particles, n_particles)
+            if isnothing(particle_of_each_color) || isempty(particle_of_each_color)
+                particle_of_each_color = p
+            end
         end
     end
     # ax.xticks = (-0.5):(T+0.5)
@@ -211,26 +215,33 @@ function draw_particle_squares_for_variable!(ax, varvals, time_to_particles, n_p
     # ax.xminorticks = IntervalsBetween(2)
     # ax.yminorticks = IntervalsBetween(2)
     xlims!(ax, (-0.5, T + 0.5))
+    ax.xticks = 0:T
     ylims!(ax, (first(varvals) - 0.5, last(varvals) + 0.5))
+
+    return particle_of_each_color
 end
 function _draw_particles!(ax, pos, (leftmost_x, rightmost_x), particles, n_particles)
     max_padding = 0.1
 
     # TODO: improve the algorithm for how
     # the particles get drawn
-
-    space_between_squares = max_padding / n_particles
-    current_x = leftmost_x + space_between_squares
+    space_between_squares = 0.1 # max_padding / n_particles
+    center = (leftmost_x + rightmost_x)/2
+    # println("center = $center ; n_particles = $n_particles ; space_between_squares = $space_between_squares")
+    current_x = center - ((n_particles - 1)/2 * space_between_squares)
+    particle_of_each_color = []
     for (weight, color) in particles
         # TODO: be more careful with the sizes?
         size = (1 - max_padding) * sqrt(weight)
-        draw_particle!(ax, pos, current_x, size,
+        plt = draw_particle!(ax, pos, current_x, size,
             RGBA(convert(RGB, parse(Colorant, color)), weight)
         )
-        current_x += size/2
+        push!(particle_of_each_color, plt)
         current_x += space_between_squares
     end
+
+    return particle_of_each_color
 end
 draw_particle!(ax, ypos, startx, size, color) =
     # poly!(ax, [Rect(startx, ypos - sidelength/2, sidelength, sidelength)], color=color)
-    scatter!(ax, [startx + size/2], [ypos], markersize=50*size, color=color)
+    scatter!(ax, [startx], [ypos], markersize=50*size, color=color)
