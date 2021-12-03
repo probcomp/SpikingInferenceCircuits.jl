@@ -387,23 +387,7 @@ end
 
 @load_generated_functions
 
-
 train_torch_nn(nn_torchgen_conv, torch_proposal_conv, @Name(nn_torchgen_conv))
-#load_torch_nn(nn_torchgen_image, @Name(nn_torchgen_image))
-
-
-
-function load_test_set()
-    test_x, test_y = MLDatasets.MNIST.testdata()
-    N = length(test_y)
-    x = zeros(Float64, N, 1, 28, 28)
-    y = Vector{Int}(undef, N)
-    for i=1:N
-        x[i, 1, :, :] = test_x[:,:,i]
-        y[i] = test_y[i]+1
-    end
-    x, y
-end
-
+#load_torch_nn(nn_torchgen_conv, @Name(nn_torchgen_conv))
 
 # Format of 2D convnet is a N=batchsize, numcolorchannels, dimsx, dimsy matrix

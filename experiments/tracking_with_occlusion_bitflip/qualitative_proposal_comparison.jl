@@ -8,7 +8,7 @@ include("obs_aux_proposal.jl")
 include("prior_proposal.jl")
 include("nearly_locally_optimal_proposal.jl")
 
-
+GLMakie.activate!()
 # TODO: includet("../proposals/bottom_up_proposal.jl")
 
 ProbEstimates.use_perfect_weights!()
@@ -27,6 +27,13 @@ get_values_deep(cm) = Iterators.flatten((
                 for (r, v) in get_values_deep(sub)
     )
 ))
+
+samples_to_matrix(samples) = normalize([
+    sum(s == (x, y) ? 1 : 0 for s in samples)
+    for x in positions(SquareSideLength()), y in positions(SquareSideLength())
+])
+
+
 @load_generated_functions()
 
 categorical_from_matrix(matrix) =
@@ -74,8 +81,12 @@ function exact_inference_given_prevlatents_and_occluder(image_obs_choicemap::Cho
     for vxₜ in Vels(), vyₜ in Vels()
         xₜ = vxₜ + latentsₜ₋₁[:xₜ => :val]
         yₜ = vyₜ + latentsₜ₋₁[:yₜ => :val]
-        @assert xₜ in Set(positions(SquareSideLength()))
-        @assert yₜ in Set(positions(SquareSideLength()))
+        println(yₜ)
+        #     @assert xₜ in Set(positions(SquareSideLength()))
+        #     @assert yₜ in Set(positions(SquareSideLength()))
+        if xₜ ∉ Set(positions(SquareSideLength())) || yₜ ∉ Set(positions(SquareSideLength()))
+            continue
+        end
         newtr, weight, _, _ = update(
             initial_tr, (1,), (UnknownChange(),),
             merge(
@@ -106,12 +117,7 @@ function bottom_up_inference_given_occluder(image_obs_choicemap::ChoiceMap, occ�
     return exp.(logweights .- logsumexp(logweights))
 end
 
-exact_inference_results = exact_inference_given_prevlatents_and_occluder(
-    obs_choicemap(gt_tr, 2), latents_choicemap(gt_tr, 2)[:occₜ => :val], latents_choicemap(gt_tr, 1)
-)
-bottom_up_inference_results = bottom_up_inference_given_occluder(
-    obs_choicemap(gt_tr, 2), latents_choicemap(gt_tr, 2)[:occₜ => :val]
-)
+
 
 function get_torch_samples(tr, step, num_samples)
     (image, ) = tr[DynamicModels.obs_addr(step)]
@@ -122,34 +128,10 @@ function get_torch_samples(tr, step, num_samples)
     return [(s[2], s[3]) for s in samples]
 end
 
-# GET THE IMAGE OUT OF THIS TRACE AND 
 
-#=
-Other proposals:
-Set N = 10.
-(1) Collect N samples from the locally-optimal proposal.  (That is, sample from the exact Bayesian infernece above.)
-(2) Collect N samples from the bottom-up proposal.
-=#
-N = 10
-locally_optimal_samples = [categorical_from_matrix(exact_inference_results) for _=1:N]
-bottom_up_samples = [categorical_from_matrix(bottom_up_inference_results) for _=1:N]
-
-torch_nn_samples = get_torch_samples(gt_tr, 2, N)
+""" PLOTTING METHODS """ 
 
 
-samples_to_matrix(samples) = normalize([
-    sum(s == (x, y) ? 1 : 0 for s in samples)
-    for x in positions(SquareSideLength()), y in positions(SquareSideLength())
-])
-
-locally_optimal_matrix = samples_to_matrix(locally_optimal_samples)
-bottom_up_matrix = samples_to_matrix(bottom_up_samples)
-torch_matrix = samples_to_matrix(torch_nn_samples)
-
-#=
-Plotting.
-Plot particle clouds from exact inference, and 2 particle approximations, and export the visuals.
-=#
 function plot_prob_matrix_squares!(ax, probability_matrix)
     maxprob = maximum(probability_matrix)
     to_alpha(prob) = prob # 0.8 * prob/maxprob
@@ -206,9 +188,62 @@ function plot_obs_particle_dists(gt_tr, t, titles, matrices)
     return f
 end
 
+
+
+#=
+Other proposals:
+Set N = 10.
+(1) Collect N samples from the locally-optimal proposal.  (That is, sample from the exact Bayesian infernece above.)
+(2) Collect N samples from the bottom-up proposal.
+=#
+
+
+""" PROPOSAL COMPARISON """ 
+
+function compare_proposals(num_samples::Int)
+    println("in int compare")
+    for i in 1:num_samples
+        tr, w = generate(model, (2,))
+        compare_proposals(tr)
+    end
+end
+    
+function compare_proposals(tr::Trace)
+    println("in tace")
+    println(latents_choicemap(tr, 1)[:xₜ => :val])
+    println(latents_choicemap(tr, 1)[:yₜ => :val])
+    exact_inference_results = exact_inference_given_prevlatents_and_occluder(
+            obs_choicemap(tr, 2), latents_choicemap(tr, 2)[:occₜ => :val], latents_choicemap(tr, 1))
+    bottom_up_inference_results = bottom_up_inference_given_occluder(
+        obs_choicemap(tr, 2), latents_choicemap(tr, 2)[:occₜ => :val])
+    N = 10
+    locally_optimal_samples = [categorical_from_matrix(exact_inference_results) for _=1:N]
+    bottom_up_samples = [categorical_from_matrix(bottom_up_inference_results) for _=1:N]
+    torch_nn_samples = get_torch_samples(tr, 2, N)
+    locally_optimal_matrix = samples_to_matrix(locally_optimal_samples)
+    bottom_up_matrix = samples_to_matrix(bottom_up_samples)
+    torch_matrix = samples_to_matrix(torch_nn_samples)
+    f = plot_obs_particle_dists(tr, 2,
+                                    ["Exact Posterior", "$N Particles from Locally Exact Proposal", "$N Particles from Bottom-Up Proposal", "$N Particles from ConvNet"],
+                                    [exact_inference_results, locally_optimal_matrix, bottom_up_matrix, torch_matrix])
+    display(f)
+end
+
+
+
+
+#=
+Plotting.
+Plot particle clouds from exact inference, and 2 particle approximations, and export the visuals.
+=#
+
+
 # f = plot_obs_with_particle_dist(gt_tr, 2, bottom_up_matrix)
 
-f = plot_obs_particle_dists(gt_tr, 2,
-    ["Exact Posterior", "$N Particles from Locally Exact Proposal", "$N Particles from Bottom-Up Proposal", "$N Particles from ConvNet"],
-    [exact_inference_results, locally_optimal_matrix, bottom_up_matrix, torch_matrix]
-)
+
+
+
+
+# write a function that performs everything above as a loop over an amount of traces.
+# use multiple dispatch to take a trace and if you feed a trace, just add it to a list and
+# call the base case 

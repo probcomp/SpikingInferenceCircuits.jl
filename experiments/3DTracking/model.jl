@@ -232,9 +232,6 @@ end
 
 
 
-
-
-
 function max_distance_inside_grid(ϕ, θ)
     max_x_boundary = Xs()[end] / (cos(ϕ) * cos(θ))
     max_y_pos_boundary = neg_to_inf(Ys()[end] / (cos(ϕ) * sin(θ)))

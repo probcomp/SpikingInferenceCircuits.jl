@@ -679,6 +679,12 @@ git-tree-sha1 = "8076680b162ada2a031f707ac7b4953e30667a37"
 uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 version = "0.21.2"
 
+[[JSON3]]
+deps = ["Dates", "Mmap", "Parsers", "StructTypes", "UUIDs"]
+git-tree-sha1 = "7d58534ffb62cd947950b3aa9b993e63307a6125"
+uuid = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
+version = "1.9.2"
+
 [[JuliaInterpreter]]
 deps = ["CodeTracking", "InteractiveUtils", "Random", "UUIDs"]
 git-tree-sha1 = "76112882a210564b616dbdf371fc0fbbae28d31f"
@@ -835,10 +841,10 @@ uuid = "856f044c-d86e-5d09-b602-aeab76dc8ba7"
 version = "2021.1.1+2"
 
 [[MLDatasets]]
-deps = ["BinDeps", "ColorTypes", "DataDeps", "DelimitedFiles", "FixedPointNumbers", "GZip", "MAT", "PyCall", "Requires"]
-git-tree-sha1 = "0e9a2eb57eee5e21a4f1503bb63d152376ff90d2"
+deps = ["BinDeps", "ColorTypes", "DataDeps", "DelimitedFiles", "FixedPointNumbers", "GZip", "JSON3", "MAT", "PyCall", "Requires"]
+git-tree-sha1 = "2dc653c644214a64bb44016bb9c45149e6f67ee4"
 uuid = "eb30cadb-4394-5ae3-aed4-317e484a6458"
-version = "0.5.11"
+version = "0.5.13"
 
 [[MacroTools]]
 deps = ["Markdown", "Random"]
@@ -1265,7 +1271,7 @@ uuid = "549ce59a-75fd-4aaf-b0ba-30f73ee3de21"
 version = "0.1.0"
 
 [[SpikingInferenceCircuits]]
-deps = ["BSON", "Bijections", "CPTs", "CUDA", "CairoMakie", "Circuits", "Colors", "DiscreteIRTransforms", "Distributions", "DrWatson", "DynamicModels", "FileIO", "Flux", "FunctionalCollections", "GLMakie", "Gen", "GenCollections", "GenPyTorch", "GeometryBasics", "InteractiveUtils", "IteratorInterfaceExtensions", "JLD", "Logging", "NNlib", "NaNMath", "OutputCollectors", "Parameters", "ProbEstimates", "ProgressMeter", "PyCall", "PyCallJLD", "ReverseDiff", "Revise", "Setfield", "SpikingCircuits", "StatsBase", "TensorBoardLogger"]
+deps = ["BSON", "Bijections", "CPTs", "CUDA", "CairoMakie", "Circuits", "Colors", "DiscreteIRTransforms", "Distributions", "DrWatson", "DynamicModels", "FileIO", "Flux", "FunctionalCollections", "GLMakie", "Gen", "GenCollections", "GenPyTorch", "GeometryBasics", "InteractiveUtils", "IteratorInterfaceExtensions", "JLD", "Logging", "MLDatasets", "NNlib", "NaNMath", "OutputCollectors", "Parameters", "ProbEstimates", "ProgressMeter", "PyCall", "PyCallJLD", "ReverseDiff", "Revise", "Setfield", "SpikingCircuits", "StatsBase", "TensorBoardLogger"]
 path = "/Users/nightcrawler/SpikingInferenceCircuits.jl"
 uuid = "ef694985-0566-4478-a48d-fa3dba6654f1"
 version = "0.1.0"
@@ -1314,6 +1320,12 @@ deps = ["Adapt", "DataAPI", "Tables"]
 git-tree-sha1 = "44b3afd37b17422a62aea25f04c1f7e09ce6b07f"
 uuid = "09ab397b-f2b6-538f-b94a-2f83cf4a842a"
 version = "0.5.1"
+
+[[StructTypes]]
+deps = ["Dates", "UUIDs"]
+git-tree-sha1 = "d24a825a95a6d98c385001212dc9020d609f2d4f"
+uuid = "856f2bd8-1eba-4b0a-8007-ebc267875bd4"
+version = "1.8.1"
 
 [[SuiteSparse]]
 deps = ["Libdl", "LinearAlgebra", "Serialization", "SparseArrays"]
