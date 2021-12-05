@@ -33,7 +33,7 @@ smccircuit = SMC(
     GenFnWithInputDomains(obs_model, latent_domains()),
     GenFnWithInputDomains(_exact_init_proposal, obs_domains()),
     GenFnWithInputDomains(_approx_step_proposal, latent_obs_domains()),
-    [:xₜ, :vₜ], [:obs], [:xₜ, :vₜ], NPARTICLES();
+    [:xₜ, :vₜ], [:yᵈₜ], [:xₜ, :vₜ], NPARTICLES();
     truncation_minprob=MinProb()
 )
 println("SMC Circuit Constructed.")

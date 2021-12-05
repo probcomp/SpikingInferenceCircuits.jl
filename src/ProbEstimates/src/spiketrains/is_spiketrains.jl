@@ -49,23 +49,26 @@ function sample_is_spiketimes_for_trace(
     assess_sampling_tree,
     propose_addr_topological_order,
     to_ready_spike_dist;
+    vars_disc_to_cont,
     nest_all_at=nothing, wta_memory=Latency()
 )
     valtimes = sampled_value_times(inter_sample_time_dist, propose_sampling_tree, propose_addr_topological_order)
     val_trains = value_trains(valtimes, tr, MaxRate(), K_recip(), wta_memory; nest_all_at)
-    recip_times = recip_spiketimes(valtimes, propose_addr_topological_order, tr, AssemblySize(), MaxRate(), K_recip(), to_ready_spike_dist; nest_all_at)
+    recip_times = recip_spiketimes(valtimes, propose_addr_topological_order, tr, AssemblySize(), MaxRate(), K_recip(), to_ready_spike_dist; nest_all_at, vars_disc_to_cont)
     fwd_times   = fwd_spiketimes(
         fwd_score_ready_times(valtimes, assess_sampling_tree),
-        keys(assess_sampling_tree), tr, AssemblySize(), MaxRate(), K_fwd(), to_ready_spike_dist; nest_all_at
+        keys(assess_sampling_tree), tr, AssemblySize(), MaxRate(), K_fwd(), to_ready_spike_dist; nest_all_at, vars_disc_to_cont
     )
     
+    display(val_trains)
+        
     return ISSpiketrains(valtimes, val_trains, recip_times, fwd_times)
 end
-sample_is_spiketimes_for_trace(tr, propose_sampling_tree, assess_sampling_tree, propose_addr_topological_order; nest_all_at=nothing) =
+sample_is_spiketimes_for_trace(tr, propose_sampling_tree, assess_sampling_tree, propose_addr_topological_order; nest_all_at=nothing, vars_disc_to_cont) =
     sample_is_spiketimes_for_trace(
         tr, DefaultInterSampleTimeDist(), propose_sampling_tree,
         assess_sampling_tree, propose_addr_topological_order, DefaultToReadySpikeDist();
-        nest_all_at
+        nest_all_at, vars_disc_to_cont
     )
 
 fwd_score_ready_times(propose_ready_times, assess_sampling_tree) = Dict(
@@ -97,12 +100,6 @@ function value_trains(
     d = Dict{Any, Vector{Float64}}()
     ch = get_ch(tr, nest_all_at)
     for (addr, first_spike_time) in valtimes
-        num_spikes = try
-            get_recip_score(ch, addr) * count_threshold |> to_int
-        catch e
-            @error "count threshold = $count_threshold; addr = $addr; get_recip_score(ch, addr) = $(get_recip_score(ch, addr))" exception=(e, catch_backtrace())
-            error()
-        end
         p = with_weight_type(:perfect, () -> exp(Gen.project(tr, Gen.select(nest(nest_all_at, addr)))))
         rate = neuron_rate * p
         d[addr] = poisson_process_train_with_rate(first_spike_time, rate, memory)
@@ -129,23 +126,44 @@ function recip_spiketimes(
     neuron_rate,
     count_threshold,
     dist_to_ready_spike;
-    nest_all_at
+    nest_all_at, vars_disc_to_cont
 )
     ch = get_ch(tr, nest_all_at)
     times = Dict{Any, DenseValueSpiketrain}() # addr => [ [ times at which this neuron spikes ] for i=1:assembly_size ]
     for addr in addrs
-        num_spikes = try
-            get_recip_score(ch, addr) * count_threshold |> to_int
-        catch e
-            @error "count threshold = $count_threshold; addr = $addr; get_recip_score(ch, addr) = $(get_recip_score(ch, addr))" exception=(e, catch_backtrace())
-            error()
+        if addr in keys(vars_disc_to_cont)
+            sumest_over_pcontgivendisc = get_recip_score(ch, addr)
+            pcontgivendisc = exp(project(tr, select(vars_disc_to_cont[addr](nest_all_at))))
+            sumest = sumest_over_pcontgivendisc * pcontgivendisc
+            num_spikes = try
+                (sumest * ContinuousToDiscreteScoreNumSpikes()) |> to_int
+            catch
+                @error("""
+                    get_recip_score(ch, $addr) = $(get_recip_score(ch, addr))) ;
+                    pcontgivendisc [exp(project(tr, select($(vars_disc_to_cont[addr](nest_all_at)))))] = $(exp(project(tr, select(vars_disc_to_cont[addr](nest_all_at)))));
+                    sumest * ContinuousToDiscreteScoreNumSpikes() = $(sumest * ContinuousToDiscreteScoreNumSpikes()))
+                """)
+                error()
+            end
+
+            neuron_times = spiketrains_for_n_spikes_in_time(
+                num_spikes, LatencyForContinuousToDiscreteScore(), ready_times[addr], assembly_size
+            )
+        else
+            num_spikes = try
+                get_recip_score(ch, addr) * count_threshold |> to_int
+            catch e
+                @error "count threshold = $count_threshold; addr = $addr; get_recip_score(ch, addr) = $(get_recip_score(ch, addr))" exception=(e, catch_backtrace())
+                error()
+            end
+            
+            neuron_times = spiketrains_for_n_spikes(
+                num_spikes, assembly_size, neuron_rate, ready_times[addr]
+            )
         end
-        
-        neuron_times = spiketrains_for_n_spikes(
-            num_spikes, assembly_size, neuron_rate, ready_times[addr]
-        )
+
         ready_time = last(sort(reduce(vcat, neuron_times; init=Float64[]))) + rand(dist_to_ready_spike)
-        times[addr] = DenseValueSpiketrain(ready_time, neuron_times)
+        times[addr] = DenseValueSpiketrain(ready_time, neuron_times)    
     end
 
     return times
@@ -158,12 +176,16 @@ function fwd_spiketimes(
     neuron_rate,
     count_threshold,
     dist_to_ready_spike;
-    nest_all_at
+    nest_all_at, vars_disc_to_cont
 )
     ch = get_ch(tr, nest_all_at)
     # get_score = do_recip_score ? get_recip_score : get_fwd_score
     times = Dict{Any, DenseValueSpiketrain}() # addr => [ [ times at which this neuron spikes ] for i=1:assembly_size ]
     for addr in addrs
+        if addr in keys(vars_disc_to_cont)
+            # There is no model-score for discrete -> continuous conversions; hence there is no fwd-spiketrain.
+            continue;
+        end
         num_spikes = get_fwd_score(ch, addr) * count_threshold |> to_int
         p = with_weight_type(:perfect, () -> exp(Gen.project(tr, Gen.select(nest(nest_all_at, addr)))))
         
@@ -190,6 +212,19 @@ function spiketrains_for_n_spikes(num_spikes, num_neurons, neuron_rate, starttim
         t += rand(Exponential(1 / (neuron_rate * num_neurons)))
         idx = rand(DiscreteUniform(1, num_neurons))
         push!(times[idx], t)
+    end
+    return times
+end
+function spiketrains_for_n_spikes_in_time(num_spikes, time_window_length, starttime, num_neurons)
+    # Poisson-process spikes are uniformly distributed given the interval they fell within
+    times = [[] for _=1:num_neurons]
+    for _=1:num_spikes
+        t = uniform_continuous(starttime, starttime + time_window_length)
+        idx = rand(DiscreteUniform(1, num_neurons))
+        push!(times[idx], t)
+    end
+    for t in times
+        sort!(t)
     end
     return times
 end

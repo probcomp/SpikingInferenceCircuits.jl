@@ -6,6 +6,7 @@ Produce spiketrains from Neural-Gen-Fast inference.
 module Spiketrains
 using Distributions: Exponential, DiscreteUniform
 using ProbEstimates: MaxRate, AssemblySize, Latency, K_fwd, K_recip, with_weight_type
+using ProbEstimates: ContinuousToDiscreteScoreNumSpikes, LatencyForContinuousToDiscreteScore
 using Gen
 
 nest(::Nothing, b) = b

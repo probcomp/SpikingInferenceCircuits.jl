@@ -4,6 +4,8 @@ using Distributions
 
 include("hyperparameters.jl")
 
+recip_truncate(probs, inverts_continuous) = inverts_continuous ? normalize(probs) : recip_truncate(probs)
+fwd_truncate(probs, inverts_continuous) = inverts_continuous ? normalize(probs) : fwd_truncate(probs)
 recip_truncate(probs) = TruncateRecipDists() ? truncate(probs) : probs
 fwd_truncate(probs)   = TruncateFwdDists()   ? truncate(probs) : probs
 function truncate(pvec)
@@ -35,7 +37,7 @@ include("weight_mode_switching.jl")
 
 include("pseudomarginal_dist.jl")
 
-export LCat, Cat, PseudoMarginalizedDist
+export LCat, Cat, ContinuousInvertingCat, PseudoMarginalizedDist
 
 include("compilation_compatibility.jl")
 

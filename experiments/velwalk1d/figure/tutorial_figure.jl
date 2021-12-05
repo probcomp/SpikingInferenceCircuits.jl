@@ -13,7 +13,7 @@ include("shared.jl")
 
 function draw_traj_obs!(layout, tr)
     times = 0:(get_args(tr)[1])
-    pos_observations = [obs_choicemap(tr, t)[:obs => :val] for t in times]
+    pos_observations = [obs_choicemap(tr, t)[:yᵈₜ => :val] for t in times]
     gt_pos           = [latents_choicemap(tr, t)[:xₜ => :val] for t in times]
     gt_vel           = [latents_choicemap(tr, t)[:vₜ => :val] for t in times]
 
@@ -25,7 +25,7 @@ function draw_traj_obs!(layout, tr)
 end
 function draw_filtering_posterior!(layout, tr)
     times = 0:(get_args(tr)[1])
-    pos_observations = [obs_choicemap(tr, t)[:obs => :val] for t in times]
+    pos_observations = [obs_choicemap(tr, t)[:yᵈₜ => :val] for t in times]
     
     filter_results = get_enumeration_grids(gt_tr)
     vel_posterior = [sum(grid, dims=1) |> normalize |> to_vect for grid in filter_results]

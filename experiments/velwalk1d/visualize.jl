@@ -119,7 +119,7 @@ function draw_2d_posterior!(layout, posterior_probability_grids, tr; show_statis
     rowsize!(layout, 1, Relative(1/3))
 
     times = 0:(get_args(tr)[1])
-    pos_observations = [obs_choicemap(tr, t)[:obs => :val] for t in times]
+    pos_observations = [obs_choicemap(tr, t)[:yᵈₜ => :val] for t in times]
     gt_pos           = [latents_choicemap(tr, t)[:xₜ => :val] for t in times]
     gt_vel           = [latents_choicemap(tr, t)[:vₜ => :val] for t in times]
 

@@ -1,7 +1,6 @@
 using CairoMakie
 using DynamicModels
 using Colors
-CairoMakie.activate!()
 
 set_theme!(font="Arial")
 

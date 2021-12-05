@@ -43,7 +43,8 @@ function get_lines_for_particles(
     spiketrain_data_args;
     nest_all_at=nothing,
     other_factors_to_multiply_in=[1. for _ in trs],
-    num_autonormalization_spikes
+    num_autonormalization_spikes=nothing,
+    vars_disc_to_cont=Dict()
 )
     needs_autonormalization = any(spec isa Union{LogNormalization, NormalizedWeight} for spec in specs)
     needs_is = needs_autonormalization || any(spec isa ParticleLineSpec && spec.spec isa SpiketrainSpec for spec in specs)
@@ -51,7 +52,7 @@ function get_lines_for_particles(
     is_spiketrain_data = 
         if needs_is
             [
-                sample_is_spiketimes_for_trace(tr, spiketrain_data_args...; nest_all_at)
+                sample_is_spiketimes_for_trace(tr, spiketrain_data_args...; nest_all_at, vars_disc_to_cont)
                 for tr in trs
             ]
         else

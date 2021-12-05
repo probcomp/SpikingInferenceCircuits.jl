@@ -31,6 +31,9 @@ AutonormalizeSpeedupFactor() = 2
 AutonormalizeRepeaterRate() = 5 * MaxRate()
 WeightAutonormalizationParams() = (AutonormalizeCountThreshold(), AutonormalizeSpeedupFactor(), AutonormalizeRepeaterRate())
 
+LatencyForContinuousToDiscreteScore() = Latency() / 2
+ContinuousToDiscreteScoreNumSpikes() = LatencyForContinuousToDiscreteScore() * MaxRate() * AssemblySize()
+
 # Error check hyperparams:
 AutonormalizationLatency() = Latency()
 AutonormalizationMinResultingRate() = 1/Latency()

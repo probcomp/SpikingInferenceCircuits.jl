@@ -26,8 +26,8 @@ end
     return (xₜ, vₜ)
 end
 @gen (static) function obs_model(xₜ, vₜ)
-    obs ~ Cat(discretized_gaussian(xₜ, ObsStd(), Positions()))
-    return (obs,)
+    yᵈₜ ~ Cat(discretized_gaussian(xₜ, ObsStd(), Positions()))
+    return (yᵈₜ,)
 end
 
 model = @DynamicModel(initial_latent_model, step_latent_model, obs_model, 2)

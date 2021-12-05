@@ -8,8 +8,10 @@ function controlled_initialize_particle_filter(model::GenerativeFunction{T,U}, m
     traces = Vector{Any}(undef, num_particles)
     log_weights = Vector{Float64}(undef, num_particles)
     for (i, prop_choices) in enumerate(prop_choices_for_partilces)
-        prop_weight = with_proposal_weighttype(() -> assess(proposal, proposal_args, prop_choices)[1])
-        (traces[i], model_weight) = generate(model, model_args, merge(observations, prop_choices))
+        (prop_tr, prop_weight) = with_proposal_weighttype(() -> generate(proposal, proposal_args, prop_choices))
+        # I think it is important to use `get_choices(prop_tr)` rather than `prop_choices` when updating the model trace,
+        # to make sure the right bookkeeping for the recip prob estimates occurs
+        (traces[i], model_weight) = generate(model, model_args, merge(observations, get_choices(prop_tr)))
         log_weights[i] = model_weight - prop_weight
     end
     Gen.ParticleFilterState{U}(traces, Vector{U}(undef, num_particles),
@@ -19,14 +21,29 @@ function extend_trace_controlled(
     prev_model_trace,  prop_choices,
     (new_args, argdiffs, new_observations, proposal, proposal_args)
 )
-    prop_weight = with_proposal_weighttype(() -> assess(proposal, (prev_model_trace, proposal_args...), prop_choices)[1])
+
+    (prop_tr, prop_weight) = with_proposal_weighttype(() -> generate(proposal, (prev_model_trace, proposal_args...), prop_choices))
+    # I think it is important to use `get_choices(prop_tr)` rather than `prop_choices` when updating the model trace,
+    # to make sure the right bookkeeping for the recip prob estimates occurs
+    prop_choices = get_choices(prop_tr)
 
     # computing the new trace via update
-    constraints = merge(prop_choices, new_observations)
+    constraints = merge(new_observations, prop_choices)
+
+    # if new_args[1] == 2
+    #     addr = :steps => 2 => :obs => :yᶜₜ => :val
+    #     println("constraints[$addr] = $(constraints[addr])")
+    #     println("pre_updated_trace has value at address: $(has_value(get_choices(prev_model_trace), addr))")
+    #     println("argdiffs: $argdiffs")
+    # end
+
     (new_model_trace, log_model_weight, _, discard) = update(
         prev_model_trace, new_args,
         argdiffs, constraints
     )
+    # if new_args[1] == 2
+    #     println("new_model_trace[$addr] = $(get_choices(new_model_trace)[addr])")
+    # end
 
     if !isempty(discard)
         @error("Can only extend the trace with random choices, not remove them.")

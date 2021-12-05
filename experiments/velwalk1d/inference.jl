@@ -3,7 +3,16 @@
 function predetermined_smc(tr, n_particles, initprop, stepprop, prop_cms; ess_threshold=Inf)
     obss = get_dynamic_model_obs(tr)
     (unweighted_inferences, weighted_inferences) = DynamicModels.predetermined_dynamic_model_smc(
-        get_gen_fn(tr), obss, cm -> (cm[:obs => :val],),
+        get_gen_fn(tr), obss, cm -> (cm[:yᵈₜ => :val],),
+        initprop, stepprop, n_particles, prop_cms; ess_threshold
+    )
+    return (unweighted_inferences, weighted_inferences)
+end
+
+function predetermined_smc_contobs(tr, n_particles, initprop, stepprop, prop_cms; ess_threshold=Inf)
+    obss = get_dynamic_model_obs(tr)
+    (unweighted_inferences, weighted_inferences) = DynamicModels.predetermined_dynamic_model_smc(
+        get_gen_fn(tr), obss, cm -> (cm[:yᶜₜ => :val],),
         initprop, stepprop, n_particles, prop_cms; ess_threshold
     )
     return (unweighted_inferences, weighted_inferences)
@@ -12,7 +21,7 @@ end
 function smc(tr, n_particles, initprop, stepprop; ess_threshold=Inf)
     obss = get_dynamic_model_obs(tr)
     (unweighted_inferences, weighted_inferences) = dynamic_model_smc(
-        get_gen_fn(tr), obss, cm -> (cm[:obs => :val],),
+        get_gen_fn(tr), obss, cm -> (cm[:yᵈₜ => :val],),
         initprop, stepprop, n_particles; ess_threshold
     )
     return (unweighted_inferences, weighted_inferences)
@@ -45,7 +54,7 @@ function init_posterior(obs)
     orig_typ = ProbEstimates.weight_type()
     ProbEstimates.use_perfect_weights!()
     logprobs, _ = enumeration_filter_init(initial_latent_model, obs_model,
-        choicemap((:obs => :val, obs)),
+        choicemap((:yᵈₜ => :val, obs)),
         Dict(
             (:xₜ => :val) => Positions(),
             (:vₜ => :val) => [0] # vel shouldn't matter, so keep constant to speed this up
@@ -59,7 +68,7 @@ function vel_step_posterior(xₜ₋₁, vₜ₋₁, obs)
     ProbEstimates.use_perfect_weights!()
     logprobs, _ = enumeration_filter_step(
         step_latent_model, obs_model,
-        choicemap((:obs => :val, obs)),
+        choicemap((:yᵈₜ => :val, obs)),
         Dict((:xₜ => :val) => Positions(), (:vₜ => :val) => Vels()),
         [0.], [(xₜ₋₁, vₜ₋₁)]
         )
@@ -115,14 +124,14 @@ smc_approx_proposal(tr, n_particles) = smc(tr, n_particles, exact_init_proposal,
 
 ### Gibbs Rejuvenation ###
 @gen (static) function rejuv_proposal_init(tr)
-    {:init => :latents} ~ _exact_init_proposal(obs_choicemap(tr, 0)[:obs => :val])
+    {:init => :latents} ~ _exact_init_proposal(obs_choicemap(tr, 0)[:yᵈₜ => :val])
 end
 @gen (static) function rejuv_proposal_step(tr)
     t = get_args(tr)[1]
     {:steps => t => :latents} ~ _exact_step_proposal(
         latents_choicemap(tr, t - 1)[:xₜ => :val],
         latents_choicemap(tr, t - 1)[:vₜ => :val],
-        obs_choicemap(tr, t)[:obs => :val]
+        obs_choicemap(tr, t)[:yᵈₜ => :val]
     )
 end
 @load_generated_functions()
@@ -163,7 +172,7 @@ function prior_smc_exact_rejuv(tr, n_particles; is_gibbs=true)
     
     obss = get_dynamic_model_obs(tr)
     (unweighted_inferences, weighted_inferences) = dynamic_model_smc(
-    get_gen_fn(tr), obss, cm -> (cm[:obs => :val],),
+    get_gen_fn(tr), obss, cm -> (cm[:yᵈₜ => :val],),
     prior_init_proposal, prior_step_proposal, n_particles;
     rejuvenate
     )

@@ -16,7 +16,7 @@ function draw_obs_particles!(layout, tr, inferred_trs)
 
     # draw obs
     times = 0:(get_args(tr)[1])
-    pos_observations = [obs_choicemap(tr, t)[:obs => :val] for t in times]
+    pos_observations = [obs_choicemap(tr, t)[:yᵈₜ => :val] for t in times]
     obs = scatter!(posax, times, pos_observations, color=:seagreen, markersize=20, marker='■')
 
     l = Legend(layout[2, 1], [obs, particles], ["Observed Positions", "Inferred Particles"], orientation=:horizontal)
@@ -101,9 +101,9 @@ tr = generate(model, (2,), choicemap(
     (:steps => 2 => :latents => :xₜ => :val, 5),
     (:steps => 2 => :latents => :vₜ => :val, 0),
 
-    (:init => :obs => :obs => :val, 4),
-    (:steps => 1 => :obs => :obs => :val, 5),
-    (:steps => 2 => :obs => :obs => :val, 5),
+    (:init => :obs => :yᵈₜ => :val, 4),
+    (:steps => 1 => :obs => :yᵈₜ => :val, 5),
+    (:steps => 2 => :obs => :yᵈₜ => :val, 5),
 ))[1]
 
 inferred_trs = predetermined_smc(tr, 3, exact_init_proposal, approx_step_proposal,
