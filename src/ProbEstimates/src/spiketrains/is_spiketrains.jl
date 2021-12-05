@@ -182,10 +182,10 @@ function fwd_spiketimes(
     # get_score = do_recip_score ? get_recip_score : get_fwd_score
     times = Dict{Any, DenseValueSpiketrain}() # addr => [ [ times at which this neuron spikes ] for i=1:assembly_size ]
     for addr in addrs
-        if addr in keys(vars_disc_to_cont)
-            # There is no model-score for discrete -> continuous conversions; hence there is no fwd-spiketrain.
-            continue;
-        end
+        # if addr in keys(vars_disc_to_cont)
+        #     # There is no model-score for discrete -> continuous conversions; hence there is no fwd-spiketrain.
+        #     continue;
+        # end
         num_spikes = get_fwd_score(ch, addr) * count_threshold |> to_int
         p = with_weight_type(:perfect, () -> exp(Gen.project(tr, Gen.select(nest(nest_all_at, addr)))))
         

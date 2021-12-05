@@ -43,10 +43,15 @@ function get_spiketrain_figure(
     return f
 end
 
-function draw_group_labels!(f, ax, group_labels, colors)
-    colsize!(f.layout, 1, Relative(0.7))
+draw_group_labels!(f, ax, group_labels, colors) = draw_group_labels!(f, f.layout, ax, group_labels, colors)
+function draw_group_labels!(f, layout, ax, group_labels, colors)
+    colsize!(layout, 1, Relative(0.7))
     endpoint_indices = get_group_endpoint_indices(group_labels)
+    println("ENDPOINT INDICES:")
+    display(endpoint_indices)
 
+    # ax.yticks = 1:first(endpoint_indices)[1]
+    
     rhs(pos, px_area) = Point2f0((px_area.origin + px_area.widths)[1], pos[2])
     brackets = [
         lift(ax.elements[:yaxis].tickpositions, ax.scene.px_area) do pos, p

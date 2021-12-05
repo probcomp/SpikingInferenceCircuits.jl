@@ -1,9 +1,3 @@
-#=
-TODOs - 
-- Draft of figure without correct continuous-noise model [if this is possible without things crashing]
-- Add correct continuous-noise model
-=#
-
 # include("shared.jl")
 # include("../model_continuous_obs.jl")
 # include("../proposals_continuous_obs.jl")
@@ -43,8 +37,9 @@ function setup_obs_pos_vel_axes(layout)
     return (obsax, posax, velax)
 end
 
-function draw_particle_value_spiketrains!(layout, (obs_lines, pos_lines, vel_lines, _, _, _), particleidx; time_per_step=100)
+function draw_particle_value_spiketrains!(layout, (obs_lines, pos_lines, vel_lines, _, _, _), particleidx; time_per_step)
     (obsax, posax, velax) = setup_obs_pos_vel_axes(layout)
+    colsize!(layout, 1, Relative(0.7))
 
     velax.xlabel = "Time (ms)"
 
@@ -67,19 +62,46 @@ function draw_particle_value_spiketrains!(layout, (obs_lines, pos_lines, vel_lin
     
     for (ax, varvals) in [(velax, Vels()), (posax, Positions()), (obsax, Positions())]
         ylims!(ax, (0, length(varvals) + 1))
-        ax.yticks = (1:length(varvals), ["$i" for i in varvals])
+        # ax.yticks = (1:length(varvals), ["$i" for i in varvals])
         ax.ygridvisible = false
         ax.yminorgridvisible = true
         ax.yminorticks = IntervalsBetween(2)
     end
 end
 
-function draw_weight_output_spiketrains!(layout, (_, _, _, normalized_weight_lines, normalization_line, _))
-    Axis(layout[1, 1])
-    Axis(layout[2, 1])
+function draw_weight_output_spiketrains!(layout, (_, _, _, normalized_weight_lines, normalization_line, _); time_per_step)
+    println()
+    println("---WEIGHT LINES---")
+    display(normalized_weight_lines)
+    display(normalization_line)
+    draw_weight_spiketrains_2!(layout, (0, time_per_step), normalized_weight_lines, normalization_line)
+    colsize!(layout, 1, Relative(0.7))
 end
-function draw_weight_internals_spiketrains!(layout, (_, _, _, _, _, weight_internal_spiketrains), _)
-    Axis(layout[1, 1])
+function draw_weight_internals_spiketrains!(f, layout, (_, _, _, _, _, (weightterm_texts, weightterm_lines)), t; time_per_step)
+    ax = Axis(layout[1, 1], xlabel="Time (ms)")
+    (min_time, max_time) = (0, time_per_step)
+    xlims!(ax, (min_time, max_time))
+
+    spikelines = collect(Iterators.flatten((line..., []) for line in weightterm_lines))
+
+    # set up y-ticks to be in the center of the groups of lines corresponding to assemblies.
+    # the minor-y-ticks will then be in between these.
+    # draw_group_labels! uses these y-ticks as guides to know where the groups are.
+    interval_between = length(first(weightterm_lines)) + 1
+    ax.yticks=(interval_between/2 + 1):interval_between:length(spikelines)
+
+    ProbEstimates.Spiketrains.SpiketrainViz.draw_lines!(ax, spikelines, [], [:red for _ in spikelines], 0, min_time, max_time; hide_y_decorations = false)
+    ProbEstimates.Spiketrains.SpiketrainViz.draw_group_labels!(
+        f, layout, ax,
+        [(l, 1) for l in weightterm_texts],
+        [:red for _ in spikelines]
+    )
+
+    ax.yticksvisible=false
+    ax.yticklabelsvisible=false
+    ax.ygridvisible=false
+    ax.yminorgridvisible = true
+    ax.yminorticks = IntervalsBetween(2)
 end
 
 function to_obs_nest_addr(p::Pair)
@@ -125,12 +147,38 @@ function get_spiketrains_for_one_timestep_figure(
         for particle_idx=1:n_particle_value_trains for linespec in varval_specs
     ]
 
+    num_neurons_in_assembly_to_show = 5
+    weight_term_specs = [
+        ProbEstimates.Spiketrains.ParticleLineSpec(1, linespec)
+        for linespec in [
+            [ProbEstimates.Spiketrains.FwdScoreLine(:xₜ, ProbEstimates.Spiketrains.NeuronInCountAssembly(i)) for i=1:num_neurons_in_assembly_to_show]...,
+            [ProbEstimates.Spiketrains.FwdScoreLine(:vₜ, ProbEstimates.Spiketrains.NeuronInCountAssembly(i)) for i=1:num_neurons_in_assembly_to_show]...,
+            [ProbEstimates.Spiketrains.FwdScoreLine(:yᵈₜ, ProbEstimates.Spiketrains.NeuronInCountAssembly(i)) for i=1:num_neurons_in_assembly_to_show]...,
+            [ProbEstimates.Spiketrains.RecipScoreLine(:xₜ, ProbEstimates.Spiketrains.NeuronInCountAssembly(i)) for i=1:num_neurons_in_assembly_to_show]...,
+            [ProbEstimates.Spiketrains.RecipScoreLine(:vₜ, ProbEstimates.Spiketrains.NeuronInCountAssembly(i)) for i=1:num_neurons_in_assembly_to_show]...,
+            [ProbEstimates.Spiketrains.RecipScoreLine(:yᵈₜ, ProbEstimates.Spiketrains.NeuronInCountAssembly(i)) for i=1:num_neurons_in_assembly_to_show]...,
+        ]
+    ]
+
+    weight_term_text_specs = [
+        ProbEstimates.Spiketrains.ParticleLineSpec(1, linespec)
+        for linespec in [
+            ProbEstimates.Spiketrains.FwdScoreText(:xₜ),
+            ProbEstimates.Spiketrains.FwdScoreText(:vₜ),
+            ProbEstimates.Spiketrains.FwdScoreText(:yᵈₜ),
+            ProbEstimates.Spiketrains.RecipScoreText(:xₜ),
+            ProbEstimates.Spiketrains.RecipScoreText(:vₜ),
+        ]
+    ]
+
     all_specs = vcat(
         obs_particle_linespecs,
         pos_particle_linespecs,
         vel_particle_linespecs,
         normalized_weight_specs,
-        [normalization_line_spec]
+        [normalization_line_spec],
+        weight_term_specs,
+        weight_term_text_specs
     )
 
     # println()
@@ -141,12 +189,12 @@ function get_spiketrains_for_one_timestep_figure(
     # println()
     # println()
 
-    obs_lines = [[[ (;var="obs", particle=i, val=pos)  ] for pos in Positions()] for i=1:n_particle_value_trains]
-    pos_lines = [[[ (;var="pos", particle=i, val=pos) ] for pos in Positions()] for i=1:n_particle_value_trains]
-    vel_lines = [[[ (;var="vel", particle=i, val=vel) ] for vel in Vels()] for i=1:n_particle_value_trains]
-    normalized_weight_lines = [[(var=:normalized_weight, particle=i)] for i=1:n_particles]
-    normalization_line = [(;var="normalization_line")]
-    collectors = vcat(obs_lines..., pos_lines..., vel_lines..., normalized_weight_lines, [normalization_line])
+    # obs_lines = [[[ (;var="obs", particle=i, val=pos)  ] for pos in Positions()] for i=1:n_particle_value_trains]
+    # pos_lines = [[[ (;var="pos", particle=i, val=pos) ] for pos in Positions()] for i=1:n_particle_value_trains]
+    # vel_lines = [[[ (;var="vel", particle=i, val=vel) ] for vel in Vels()] for i=1:n_particle_value_trains]
+    # normalized_weight_lines = [[(var=:normalized_weight, particle=i)] for i=1:n_particles]
+    # normalization_line = [(;var="normalization_line")]
+    # collectors = vcat(obs_lines..., pos_lines..., vel_lines..., normalized_weight_lines, [normalization_line])
 
     # println()
     # println("---OUTPUTS---")
@@ -198,13 +246,19 @@ function get_spiketrains_for_one_timestep_figure(
     vel_lines = [[[] for _ in Vels()] for _=1:n_particle_value_trains]
     normalized_weight_lines = [[] for _=1:n_particles]
     normalization_line = []
+    weight_term_lines = [[[] for _=1:num_neurons_in_assembly_to_show] for _=1:6]
 
-    for (line, newline) in zip(lines, vcat(obs_lines..., pos_lines..., vel_lines..., normalized_weight_lines, [normalization_line]))
+    for (line, newline) in zip(lines, vcat(obs_lines..., pos_lines..., vel_lines..., normalized_weight_lines, [normalization_line], weight_term_lines...))
         for time in line
             push!(newline, time)
         end
     end
 
+    weight_term_texts = ["" for _=1:6]
+    weight_term_texts[1:5] = lines[end-4:end]
+    continuous_term_spikecount = length(weight_term_lines[end])
+    continuous_term_estimate = continuous_term_spikecount / ProbEstimates.ContinuousToDiscreteScoreNumSpikes()
+    weight_term_texts[end] = "p(yᶜₜ | yᵈₜ)/Q[yᵈₜ ; yᶜₜ] ≈ $continuous_term_estimate"
 
     # println("obs lines:")
     # display(obs_lines)
@@ -215,18 +269,28 @@ function get_spiketrains_for_one_timestep_figure(
     # println("vel lines:")
     # display(vel_lines)
 
+    println()
+    println("---WEIGHT TERM LINES---")
+    display(weight_term_texts)
+    display(weight_term_lines)
+    println()
+    println()
+    println()
+
     # TODO: get spiketrains for the internal weight lines
 
-    return (obs_lines, pos_lines, vel_lines, normalized_weight_lines, normalization_line, nothing)
+    return (obs_lines, pos_lines, vel_lines, normalized_weight_lines, normalization_line, (weight_term_texts, weight_term_lines))
 end
 
-function make_one_timestep_figure(gt_tr, inferred_trs; start_caption_letter='a')
+function make_one_timestep_figure(gt_tr, inferred_trs; start_caption_letter='a', time_per_step=150)
     f = Figure(;resolution=(800, 1500))
 
     particle1_layout = f[1, 1] = GridLayout()
     particle2_layout = f[2, 1] = GridLayout()
     weight_output_layout = f[3, 1] = GridLayout()
     weight_internals_layout = f[4, 1] = GridLayout()
+
+    rowsize!(f.layout, 3, Relative(1/8))
 
     subcaption_padding = (0, 0, 5, 45)
     subcaption_align = :center
@@ -239,10 +303,10 @@ function make_one_timestep_figure(gt_tr, inferred_trs; start_caption_letter='a')
 
     spiketrains = get_spiketrains_for_one_timestep_figure(gt_tr, inferred_trs; n_particle_value_trains=2)
 
-    draw_particle_value_spiketrains!(particle1_layout, spiketrains, 1)
-    draw_particle_value_spiketrains!(particle2_layout, spiketrains, 2)
-    draw_weight_output_spiketrains!(weight_output_layout, spiketrains)
-    draw_weight_internals_spiketrains!(weight_internals_layout, spiketrains, 1)
+    draw_particle_value_spiketrains!(particle1_layout, spiketrains, 1; time_per_step)
+    draw_particle_value_spiketrains!(particle2_layout, spiketrains, 2; time_per_step)
+    draw_weight_output_spiketrains!(weight_output_layout, spiketrains; time_per_step)
+    draw_weight_internals_spiketrains!(f, weight_internals_layout, spiketrains, 1; time_per_step)
 
     f
 end

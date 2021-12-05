@@ -126,7 +126,6 @@ function maybe_put_est_into_trace!(tr, est, default_mode)
         tr.fwd_score = est
     elseif weight_type() == :recip || (weight_type() == :noisy && default_mode == :recip)
         if isnothing(tr.recip_score)
-            println("putting estimate $(1/est) as recip score (default_mode = $default_mode ; weight_type = $(weight_type())")
             tr.recip_score = 1/est
         end
     else

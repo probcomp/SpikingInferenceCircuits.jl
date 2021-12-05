@@ -22,13 +22,16 @@ function extend_trace_controlled(
     (new_args, argdiffs, new_observations, proposal, proposal_args)
 )
 
-    (prop_tr, prop_weight) = with_proposal_weighttype(() -> generate(proposal, (prev_model_trace, proposal_args...), prop_choices))
+    (prop_tr, prop_weight) = with_proposal_weighttype(
+        () -> generate(proposal, (prev_model_trace, proposal_args...), prop_choices)
+    )
+
     # I think it is important to use `get_choices(prop_tr)` rather than `prop_choices` when updating the model trace,
     # to make sure the right bookkeeping for the recip prob estimates occurs
     prop_choices = get_choices(prop_tr)
 
     # computing the new trace via update
-    constraints = merge(new_observations, prop_choices)
+    constraints = Gen.merge(new_observations, prop_choices)
 
     # if new_args[1] == 2
     #     addr = :steps => 2 => :obs => :yᶜₜ => :val
