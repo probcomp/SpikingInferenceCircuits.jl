@@ -84,9 +84,9 @@ FwdScoreLine(addr, line_to_show) = ScoreLine(false, addr, line_to_show)
 
 get_line(spec::VarValLine, tr, trains; nest_all_at) = 
     try
-        if spec.addr == :yᵈₜ
-            println("tr[nest(nest_all_at, spec.addr)] = $(tr[nest(nest_all_at, spec.addr)]) ; spec.value = $(spec.value); $(trains.val_trains[spec.addr])")
-        end
+        # if spec.addr == :yᵈₜ
+        #     println("tr[nest(nest_all_at, spec.addr)] = $(tr[nest(nest_all_at, spec.addr)]) ; spec.value = $(spec.value); $(trains.val_trains[spec.addr])")
+        # end
         tr[nest(nest_all_at, spec.addr)] == spec.value ? trains.val_trains[spec.addr] : []
     catch e
         display(get_submap(get_choices(tr), nest_all_at))

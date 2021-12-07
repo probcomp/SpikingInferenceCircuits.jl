@@ -2,41 +2,6 @@ include("shared.jl")
 include("../model_continuous_obs.jl")
 include("../proposals_continuous_obs.jl")
 
-relative_vel_size_withobs() = length(Vels()) / (length(Vels()) + 2*length(Positions()))
-relative_posobs_size() = length(Positions()) / (length(Vels()) + 2*length(Positions()))
-function setup_obs_pos_vel_axes(layout)
-    obsax = Axis(layout[1, 1], ylabel="yᵈₜ Neurons")
-    posax = Axis(layout[2, 1], ylabel="xₜ Neurons")
-    velax = Axis(layout[3, 1], ylabel="vₜ Neurons")
-
-    linkxaxes!(obsax, posax, velax)
-
-    rowsize!(layout, 1, Relative(relative_posobs_size()))
-    rowsize!(layout, 2, Relative(relative_posobs_size()))
-    rowsize!(layout, 3, Relative(relative_vel_size_withobs()))
-
-    rowgap!(layout, 10)
-
-    obsax.xticksvisible = false
-    obsax.xticklabelsvisible = false
-    posax.xticksvisible = false
-    posax.xticklabelsvisible = false
-    velax.xlabelpadding = -5.0
-    
-    ylims!(velax, (first(Vels()) - 0.5, last(Vels()) + 0.5))
-    ylims!(posax, (first(Positions()) - 0.5, last(Positions()) + 0.5))
-    ylims!(obsax, (first(Positions()) - 0.5, last(Positions()) + 0.5))
-    
-    obsax.xgridvisible = false
-    obsax.ygridvisible = false
-    posax.xgridvisible = false
-    posax.ygridvisible = false
-    velax.xgridvisible = false
-    velax.ygridvisible = false
-    
-    return (obsax, posax, velax)
-end
-
 function draw_particle_value_spiketrains!(layout, (obs_lines, pos_lines, vel_lines, _, _, _), particleidx; time_per_step)
     (obsax, posax, velax) = setup_obs_pos_vel_axes(layout)
     colsize!(layout, 1, Relative(0.7))
@@ -106,17 +71,6 @@ function draw_weight_internals_spiketrains!(f, layout, (_, _, _, _, _, (weightte
     ax.yminorticks = IntervalsBetween(2)
 end
 
-function to_obs_nest_addr(p::Pair)
-    if p.first == :init
-        @assert p.second == :latents
-        return :init => :obs
-    else
-        @assert p.first == :steps 
-        (t, rest) = p.second 
-        @assert rest == :latents 
-        return :steps => t => :obs 
-    end
-end
 function get_spiketrains_for_one_timestep_figure(
     gt_tr, inferred_trs;
     num_autonormalization_spikes=nothing,

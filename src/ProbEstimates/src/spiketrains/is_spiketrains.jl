@@ -59,9 +59,7 @@ function sample_is_spiketimes_for_trace(
         fwd_score_ready_times(valtimes, assess_sampling_tree),
         keys(assess_sampling_tree), tr, AssemblySize(), MaxRate(), K_fwd(), to_ready_spike_dist; nest_all_at, vars_disc_to_cont
     )
-    
-    display(val_trains)
-        
+            
     return ISSpiketrains(valtimes, val_trains, recip_times, fwd_times)
 end
 sample_is_spiketimes_for_trace(tr, propose_sampling_tree, assess_sampling_tree, propose_addr_topological_order; nest_all_at=nothing, vars_disc_to_cont) =

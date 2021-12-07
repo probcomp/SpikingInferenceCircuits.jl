@@ -1,3 +1,13 @@
+function get_enumeration_grids_contobs(tr)
+    ProbEstimates.with_weight_type(:perfect, () -> begin
+        grids = enumeration_bayes_filter_from_groundtruth(
+            tr, initial_latent_model_contobs, step_latent_model_contobs, obs_model_continuous,
+            (xₜ=Positions(), vₜ=Vels(), yᵈₜ=Positions()), 1
+        ) |> DynamicModels.nest_all_addrs_at_val
+        weight_grids = [exp.(grid) for grid in grids]
+        weight_grids
+    end)
+end
 function get_enumeration_grids(tr)
     ProbEstimates.with_weight_type(:perfect, () -> begin
         logweight_grids = enumeration_bayes_filter_from_groundtruth(
