@@ -26,6 +26,14 @@ function smc(tr, n_particles, initprop, stepprop; ess_threshold=Inf)
     )
     return (unweighted_inferences, weighted_inferences)
 end
+function smc_contobs(tr, n_particles, initprop, stepprop; ess_threshold=Inf)
+    obss = get_dynamic_model_obs(tr)
+    (unweighted_inferences, weighted_inferences) = dynamic_model_smc(
+        get_gen_fn(tr), obss, cm -> (cm[:yᶜₜ => :val],),
+        initprop, stepprop, n_particles; ess_threshold
+    )
+    return (unweighted_inferences, weighted_inferences)
+end
 
 @gen (static) function _prior_init_proposal(obs)
     xₜ ~ Cat(unif(Positions()))

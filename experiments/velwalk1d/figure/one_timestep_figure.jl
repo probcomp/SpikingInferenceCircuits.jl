@@ -1,6 +1,6 @@
-# include("shared.jl")
-# include("../model_continuous_obs.jl")
-# include("../proposals_continuous_obs.jl")
+include("shared.jl")
+include("../model_continuous_obs.jl")
+include("../proposals_continuous_obs.jl")
 
 relative_vel_size_withobs() = length(Vels()) / (length(Vels()) + 2*length(Positions()))
 relative_posobs_size() = length(Positions()) / (length(Vels()) + 2*length(Positions()))
@@ -42,6 +42,7 @@ function draw_particle_value_spiketrains!(layout, (obs_lines, pos_lines, vel_lin
     colsize!(layout, 1, Relative(0.7))
 
     velax.xlabel = "Time (ms)"
+    velax.xlabelpadding = -5.0
 
     (min_time, max_time) = (0, time_per_step)
     xlims!(obsax, (min_time, max_time))
@@ -52,8 +53,8 @@ function draw_particle_value_spiketrains!(layout, (obs_lines, pos_lines, vel_lin
     poscolors = [color for _ in Positions()]
     velcolors = [color for _ in Vels()]
 
-    println("particle index = $particleidx; OBS LINES:")
-    display(obs_lines)
+    # println("particle index = $particleidx; OBS LINES:")
+    # display(obs_lines)
 
     #                                                  (ax, lines, labels, colors, time, xmin, xmax)
     ProbEstimates.Spiketrains.SpiketrainViz.draw_lines!(obsax, reverse(obs_lines[particleidx]), [], reverse(poscolors), 0, min_time, max_time; hide_y_decorations = false)
@@ -70,10 +71,10 @@ function draw_particle_value_spiketrains!(layout, (obs_lines, pos_lines, vel_lin
 end
 
 function draw_weight_output_spiketrains!(layout, (_, _, _, normalized_weight_lines, normalization_line, _); time_per_step)
-    println()
-    println("---WEIGHT LINES---")
-    display(normalized_weight_lines)
-    display(normalization_line)
+    # println()
+    # println("---WEIGHT LINES---")
+    # display(normalized_weight_lines)
+    # display(normalization_line)
     draw_weight_spiketrains_2!(layout, (0, time_per_step), normalized_weight_lines, normalization_line)
     colsize!(layout, 1, Relative(0.7))
 end
@@ -81,8 +82,9 @@ function draw_weight_internals_spiketrains!(f, layout, (_, _, _, _, _, (weightte
     ax = Axis(layout[1, 1], xlabel="Time (ms)")
     (min_time, max_time) = (0, time_per_step)
     xlims!(ax, (min_time, max_time))
+    ax.xlabelpadding = -5
 
-    spikelines = collect(Iterators.flatten((line..., []) for line in weightterm_lines))
+    spikelines = collect(Iterators.flatten((line[1:3]..., [], [], []) for line in weightterm_lines))
 
     # set up y-ticks to be in the center of the groups of lines corresponding to assemblies.
     # the minor-y-ticks will then be in between these.
@@ -269,37 +271,159 @@ function get_spiketrains_for_one_timestep_figure(
     # println("vel lines:")
     # display(vel_lines)
 
-    println()
-    println("---WEIGHT TERM LINES---")
-    display(weight_term_texts)
-    display(weight_term_lines)
-    println()
-    println()
-    println()
+    # println()
+    # println("---WEIGHT TERM LINES---")
+    # display(weight_term_texts)
+    # display(weight_term_lines)
+    # println()
+    # println()
+    # println()
 
     # TODO: get spiketrains for the internal weight lines
 
     return (obs_lines, pos_lines, vel_lines, normalized_weight_lines, normalization_line, (weight_term_texts, weight_term_lines))
 end
 
-function make_one_timestep_figure(gt_tr, inferred_trs; start_caption_letter='a', time_per_step=150)
-    f = Figure(;resolution=(800, 1500))
+function draw_assembly_spikes!(layout, gt_tr, ax_to_link_to; maxtime)
+    ax = Axis(layout[1, 1], xlabel="Time (ms)")
+    linkyaxes!(ax_to_link_to, ax)
+    ax.ygridvisible = false
+    ax.yticksvisible=false
+    ax.xlabelpadding = -5.0
 
-    particle1_layout = f[1, 1] = GridLayout()
-    particle2_layout = f[2, 1] = GridLayout()
-    weight_output_layout = f[3, 1] = GridLayout()
-    weight_internals_layout = f[4, 1] = GridLayout()
+    contval = gt_tr[:steps => 2 => :obs => :yᶜₜ => :val]
+    excitations = [exp(Gen.logpdf(normal, contval, discval, Yᶜ_STD())) for discval in Positions()]
+
+    trains = [[] for _ in Positions()]
+    num_spikes = poisson(sum(excitations) * ProbEstimates.ContinuousToDiscreteScoreNumSpikes())
+    for _=1:num_spikes
+        idx = categorical(normalize(excitations))
+        time = uniform_discrete(0, ProbEstimates.Latency())
+        push!(trains[idx], time)
+    end
+    for train in trains
+        sort!(train)
+    end
+
+    ProbEstimates.Spiketrains.SpiketrainViz.draw_lines!(
+        ax, reverse(trains), [], [:black for train in trains], 0, 0, ProbEstimates.Latency() + 10;
+        hide_y_decorations = false
+    )
+end
+
+function draw_obs_particles_2steps!(layout, tr, inferred_trs)
+    inferred_trs = inferred_trs[end-1:end]
+
+    axislayout = layout[1, 1] = GridLayout()
+    (velax, posax) = setup_vel_pos_axes(axislayout)
+    n_particles = length(first(inferred_trs))
+
+    colors = [:red, :blue, (:black for _=3:n_particles)...]
+    # draw inferred trs
+    # (pos_particles, vel_particles) = get_particle_weights_colors(inferred_trs)
+    # particles = draw_particle_squares_for_variable!(posax, Positions(), pos_particles, n_particles; starttime=1, T=2)
+    # draw_particle_squares_for_variable!(velax, Vels(), vel_particles, n_particles; starttime=1, T=2)    
+    particles = []
+    for t=(1:get_args(tr)[1])
+        for (i, (color, (particle, _))) in enumerate(zip(colors, inferred_trs[t]))
+            vel = latents_choicemap(particle, t)[:vₜ => :val]
+            pos = latents_choicemap(particle, t)[:xₜ => :val]
+
+            c = n_particles/2
+            scatter!(velax, [Point2f0(t + (i - c)/50, vel)]; color, markersize=12)
+            push!(particles, scatter!(posax, [Point2f0(t + (i - c)/50, pos)]; color, markersize=12))
+        end
+    end
+
+    # draw obs
+    times = 1:(get_args(tr)[1])
+    pos_observations = [
+        (
+            let cm = obs_choicemap(tr, t)
+                let (key, _) = first(get_submaps_shallow(cm))
+                    obs_choicemap(tr, t)[key => :val]
+                end
+            end
+        )
+        for t in times
+    ]
+    obs = lines!(posax, times, pos_observations, color=:seagreen, linewidth=5)#, markersize=20, marker='■')
+
+    l = Legend(layout[2, 1], [obs, particles], ["Observed Positions", "Inferred Particles"], orientation=:horizontal)
+    l.tellwidth=false
+    l.tellheight=true
+    rowgap!(layout, 10)
+
+    # xlims!(posax, (1., 3.))
+    # xlims!(velax, (1., 3.))
+    posax.xticks = ([1, 2], ["t-1", "t"])
+end
+
+function draw_tuning_curves!(layout, gt_tr, inferred_trs)
+    ax = Axis(layout[1, 1], ylabel="yᵈₜ", xlabel="pdf(yᶜₜ | yᵈₜ)")
+    ax.xlabelpadding = -5.0
+    ax.yticks=Positions()
+    yvals = (first(Positions()) - 1):0.01:(last(Positions()) + 1)
+    density(xᵈ, σ) = [exp(Gen.logpdf(normal, c, xᵈ, σ)) for c in (first(Positions()) - 1):0.01:(last(Positions()) + 1)]
+    density_points(xᵈ, σ) = [Point2f0(d + 1, i) for (i, d) in zip(yvals, density(xᵈ, σ))]
+
+    maxval = -Inf
+    trueval = gt_tr[:steps => 2 => :obs => :yᶜₜ => :val]
+    for i in Positions()
+        dens = density(i, Yᶜ_STD())
+        maxval = max(maxval, maximum(dens))
+        lines!(ax, density_points(i, Yᶜ_STD()), color=RGBA(0, 0, 0, min(1, 0.1 + exp(Gen.logpdf(normal, trueval, i, Yᶜ_STD())/5))))
+    end
+    ax.xticks=[0, ceil(maxval) + 1]
+
+    ax.ygridvisible = false
+    ax.xgridvisible=false
+    ax.topspinevisible = false
+    ax.rightspinevisible=false
+
+    scatter!(ax, [Point2f0(0, trueval)], color=:seagreen, markersize=12, marker='■')
+    for (i, ((tr, _), color)) in enumerate(Iterators.reverse(zip(inferred_trs[3], [:red, :blue, [:black for _=3:length(inferred_trs[3])]...])))
+        scatter!(ax, [Point2f0((i + 1)/5, tr[:steps => 2 => :latents => :yᵈₜ => :val])]; color, markersize=12)
+    end
+    return ax
+end
+
+function make_one_timestep_figure(gt_tr, inferred_trs; start_caption_letter='a', time_per_step=150)
+    f = Figure(;resolution=(2000, 1500))
+
+    # lhs_layout = f[1, 1] = GridLayout()
+    # rhs_layout = f[1, 2] = GridLayout()
+
+    particle1_layout = f.layout[1, 2] = GridLayout()
+    particle2_layout = f.layout[2, 2] = GridLayout()
+    weight_output_layout = f.layout[3, 2] = GridLayout()
+    weight_internals_layout = f.layout[4, 2] = GridLayout()
 
     rowsize!(f.layout, 3, Relative(1/8))
+    colsize!(f.layout, 2, Relative(800/2000))
+
+    toprow_layout = f[1, 1] = GridLayout()
+    transition_layout = toprow_layout[1, 1] = GridLayout()
+    tuningcurve_layout = toprow_layout[1, 2] = GridLayout()
+    qassembly_layout = toprow_layout[1, 3] = GridLayout()
+    colsize!(toprow_layout, 1, Relative(2/5))
+    colsize!(toprow_layout, 2, Relative(1/10))
+    draw_obs_particles_2steps!(transition_layout, gt_tr, inferred_trs)
+    ax = draw_tuning_curves!(tuningcurve_layout, gt_tr, inferred_trs)
+    draw_assembly_spikes!(qassembly_layout, gt_tr, ax; maxtime=time_per_step)
 
     subcaption_padding = (0, 0, 5, 45)
     subcaption_align = :center
+    Label(toprow_layout[1, 1, Bottom()], "($start_caption_letter) Observation and Particle Transition", textsize=17, padding=subcaption_padding, halign=subcaption_align)
+    Label(toprow_layout[1, 2, Bottom()], "($(start_caption_letter+1)) Tuning Curves", textsize=17, padding=subcaption_padding, halign=subcaption_align)
+    Label(toprow_layout[1, 3, Bottom()], "($(start_caption_letter + 2)) Spikes from assembly for Q[yᵈₜ ; yᶜₜ]", textsize=17, padding=subcaption_padding, halign=subcaption_align)
+    start_caption_letter += 3
 
     letters = [start_caption_letter + i for i=0:4]
-    Label(f.layout[1, 1, Bottom()], "($(letters[1])) Particle 1 Value Spiketrains", textsize=17, padding=subcaption_padding, halign=subcaption_align)
-    Label(f.layout[2, 1, Bottom()], "($(letters[2])) Particle 2 Value Spiketrains", textsize=17, padding=subcaption_padding, halign=subcaption_align)
-    Label(f.layout[3, 1, Bottom()], "($(letters[3])) Weight-Output Spiketrains", textsize=17, padding=subcaption_padding, halign=subcaption_align)
-    Label(f.layout[4, 1, Bottom()], "($(letters[4])) Internal Weight Term Spiktrains for Particle 1", textsize=17, padding=subcaption_padding, halign=subcaption_align)
+    Label(f.layout[1, 2, Bottom()], "($(letters[1])) Particle 1 Value Spiketrains", textsize=17, padding=subcaption_padding, halign=subcaption_align)
+    Label(f.layout[2, 2, Bottom()], "($(letters[2])) Particle 2 Value Spiketrains", textsize=17, padding=subcaption_padding, halign=subcaption_align)
+    Label(f.layout[3, 2, Bottom()], "($(letters[3])) Weight-Output Assembly-Level Spiketrains", textsize=17, padding=subcaption_padding, halign=subcaption_align)
+    Label(f.layout[4, 2, Bottom()], "($(letters[4])) Internal Weight Term Spiketrains for Particle 1", textsize=17, padding=subcaption_padding, halign=subcaption_align)
 
     spiketrains = get_spiketrains_for_one_timestep_figure(gt_tr, inferred_trs; n_particle_value_trains=2)
 
@@ -308,9 +432,10 @@ function make_one_timestep_figure(gt_tr, inferred_trs; start_caption_letter='a',
     draw_weight_output_spiketrains!(weight_output_layout, spiketrains; time_per_step)
     draw_weight_internals_spiketrains!(f, weight_internals_layout, spiketrains, 1; time_per_step)
 
-    f
+    (f, ax)
 end
 
-# include("trace_and_particles.jl")
+include("trace_and_particles.jl")
 
-f = make_one_timestep_figure(tr, inferred_trs)
+(f, ax) = make_one_timestep_figure(tr, inferred_trs)
+f

@@ -15,7 +15,7 @@ function get_time_when_scores_all_ready(is_spiketrain_data)
         for datum in is_spiketrain_data
     )
 
-    maximum(all_ready_times)
+    maximum([time for time in all_ready_times if !isinf(time)])
 end
 
 # This didn't seem to align with what was happening in Gen particle filtering, so I'm just
@@ -90,9 +90,12 @@ function produce_autonormalization_spiketrains(
 
     while not_done_accumulating()
         time_to_repeater = rand(Exponential(1/autonormalization_repeater_rate))
+        println("time_to_repeater = $time_to_repeater")
         spikes_before_then = rand(Poisson(sum(rates) * time_to_repeater))
+        println("spikes_before_then = $spikes_before_then")
         total_this_would_accumulate_to = num_accumulated_spikes + spikes_before_then
 
+        println("--first addspikes call [current_time=$current_time ; starttime=$starttime ; total_simulation_time=$total_simulation_time]--")
         _add_spikes_to_autonormalization!(particle_spiketimes, rates, current_time, time_to_repeater, spikes_before_then, starttime + total_simulation_time)
         current_time += time_to_repeater
 
@@ -116,6 +119,7 @@ function produce_autonormalization_spiketrains(
 
     if time_left_in_simulation > 0
         n_spikes_before_end_of_simulation = rand(Poisson(sum(rates) * time_left_in_simulation))
+        println("--second addspikes call--")
         _add_spikes_to_autonormalization!(particle_spiketimes, rates, current_time, time_left_in_simulation,
             n_spikes_before_end_of_simulation,
             starttime + total_simulation_time
@@ -124,6 +128,7 @@ function produce_autonormalization_spiketrains(
 
     if all(isempty(p) for p in particle_spiketimes)
         println("---GOT EMPTY SPIKETIMES---")
+        println("unnormalized_log_values: $unnormalized_log_values ; rates at end = $rates")
         display(particle_spiketimes)
         display(normalization_spiketimes)
         println()
@@ -141,7 +146,9 @@ function _add_spikes_to_autonormalization!(
     number_of_spikes_to_add,
     time_after_which_not_to_add_spikes
 )
+    println("adding $number_of_spikes_to_add spikes!")
     if current_time ≥ time_after_which_not_to_add_spikes
+        println("returning since current_time ≥ time_after_which_not_to_add_spikes [$current_time ≥ $time_after_which_not_to_add_spikes]")
         return;
     end
     # Poisson process spikes are uniformly distributed within an interval, given the number of spikes in that interval
@@ -167,6 +174,9 @@ function get_autonormalization_data(
     num_autonormalization_spikes
 )
     autonorm_starttime = get_time_when_scores_all_ready(is_spiketrain_data)
+    if isinf(autonorm_starttime) # this means the scores don't all end up being ready in time
+
+    end
     # log_score_updates = get_log_score_updates(is_spiketrain_data)::Vector{<:Real}
 
     log_score_updates = expected_log_weight_updates

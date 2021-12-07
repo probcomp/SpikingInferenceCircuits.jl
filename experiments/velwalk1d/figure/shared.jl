@@ -188,3 +188,37 @@ function draw_weight_spiketrains_2!(layout, (min_time, max_time), normalized_wei
 
     return (weightax, logax)
 end
+
+function draw_obs_particles!(layout, tr, inferred_trs)
+    axislayout = layout[1, 1] = GridLayout()
+    (velax, posax) = setup_vel_pos_axes(axislayout)
+    n_particles = length(first(inferred_trs))
+
+    xlims!(posax, (0., 3.))
+    xlims!(velax, (0., 3.))
+
+    # draw inferred trs
+    (pos_particles, vel_particles) = get_particle_weights_colors(inferred_trs)
+    particles = draw_particle_squares_for_variable!(posax, Positions(), pos_particles, n_particles)
+    println(particles)
+    draw_particle_squares_for_variable!(velax, Vels(), vel_particles, n_particles)    
+
+    # draw obs
+    times = 0:(get_args(tr)[1])
+    pos_observations = [
+        (
+            let cm = obs_choicemap(tr, t)
+                let (key, _) = first(get_submaps_shallow(cm))
+                    obs_choicemap(tr, t)[key => :val]
+                end
+            end
+        )
+        for t in times
+    ]
+    obs = lines!(posax, times, pos_observations, color=:seagreen, linewidth=5)#, markersize=20, marker='■')
+
+    l = Legend(layout[2, 1], [obs, particles], ["Observed Positions", "Inferred Particles"], orientation=:horizontal)
+    l.tellwidth=false
+    l.tellheight=true
+    rowgap!(layout, 10)
+end

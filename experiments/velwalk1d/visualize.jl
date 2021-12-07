@@ -193,10 +193,9 @@ function draw_particles!(posax, velax, pos_particles, vel_particles, n_particles
     draw_particle_squares_for_variable!(posax, Positions(), pos_particles, n_particles)
     draw_particle_squares_for_variable!(velax, Vels(), vel_particles, n_particles)
 end
-function draw_particle_squares_for_variable!(ax, varvals, time_to_particles, n_particles)
+function draw_particle_squares_for_variable!(ax, varvals, time_to_particles, n_particles; starttime=0, T=(length(time_to_particles) - 1))
     particle_of_each_color = nothing
-    T = length(time_to_particles) - 1
-    for (t, val_to_particles) in zip(0:T, time_to_particles)
+    for (t, val_to_particles) in zip(starttime:T, time_to_particles)
         for (val, particles) in zip(varvals, val_to_particles)
             p = _draw_particles!(ax, val, (t - 0.5, t + 0.5), particles, n_particles)
             if isnothing(particle_of_each_color) || isempty(particle_of_each_color)
@@ -214,8 +213,8 @@ function draw_particle_squares_for_variable!(ax, varvals, time_to_particles, n_p
     # ax.yminorgridvisible = true
     # ax.xminorticks = IntervalsBetween(2)
     # ax.yminorticks = IntervalsBetween(2)
-    xlims!(ax, (-0.5, T + 0.5))
-    ax.xticks = 0:T
+    xlims!(ax, (starttime-0.5, T + 0.5))
+    ax.xticks = starttime:T
     ylims!(ax, (first(varvals) - 0.5, last(varvals) + 0.5))
 
     return particle_of_each_color

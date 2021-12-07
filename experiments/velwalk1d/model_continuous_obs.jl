@@ -1,4 +1,4 @@
-Yᶜ_STD() = 0.2
+Yᶜ_STD() = 0.4
 
 @gen (static) function initial_latent_model_contobs()
     xₜ ~ Cat(unif(Positions()))

@@ -222,7 +222,7 @@ function dynamic_model_smc(
     resample_rejuvenate_and_track_traces!(state)
 
     for (t, o) in enumerate(obs_cms)
-        Gen.particle_filter_step!(
+        _particle_filter_step!(
             state, (t,), (UnknownChange(),),
             nest_at(:steps => t => :obs, o),
             step_proposal,
@@ -232,6 +232,26 @@ function dynamic_model_smc(
     end
 
     return (unweighted_traces, weighted_traces)
+end
+function _particle_filter_step!(state::Gen.ParticleFilterState{U}, new_args::Tuple, argdiffs::Tuple,
+    observations::ChoiceMap, proposal::Gen.GenerativeFunction, proposal_args::Tuple) where {U}
+    num_particles = length(state.traces)
+    for i=1:num_particles
+        (prop_choices, prop_weight, _) = propose(proposal, (state.traces[i], proposal_args...))
+        constraints = merge(observations, prop_choices)
+        # println("CONSTRAINTS:")
+        # display(constraints)
+        (state.new_traces[i], up_weight, _, disc) = update(state.traces[i], new_args, argdiffs, constraints)
+        @assert isempty(disc)
+        state.log_weights[i] += up_weight - prop_weight
+    end
+
+    # swap references
+    tmp = state.traces
+    state.traces = state.new_traces
+    state.new_traces = tmp
+
+    return nothing
 end
 
 function nest_at(addr, submap::Gen.ChoiceMap)
