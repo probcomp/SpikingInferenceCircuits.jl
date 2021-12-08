@@ -15,7 +15,7 @@ yᶜs = [obs_choicemap(tr, t)[:yᶜₜ => :val] for t=0:2]
 
 sample_disc(yᶜₜ) = categorical(exp.([tuning_curve(pos, yᶜₜ) for pos in Positions()]) |> normalize)
 
-first_n_particles = smc_contobs(tr, 7, exact_init_proposal_contobs, approx_step_proposal_contobs; ess_threshold=Inf)[2]
+first_n_particles = smc_contobs(tr, 10, exact_init_proposal_contobs, approx_step_proposal_contobs; ess_threshold=Inf)[2]
 
 # controlled_particles = predetermined_smc_contobs(tr, 3, exact_init_proposal_contobs, approx_step_proposal_contobs,
 #     (
