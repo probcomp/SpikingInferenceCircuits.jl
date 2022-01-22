@@ -82,3 +82,8 @@ events = deserialize(save_file())
 (fig, t) = figure_for_smc_snn_run(
     events, NPARTICLES(), obs, groundtruth_pos, groundtruth_vel
 ); fig
+
+record(fig, "snn_inference.mp4", 1:9;
+               framerate = 2) do time
+           t[] = time
+       end
