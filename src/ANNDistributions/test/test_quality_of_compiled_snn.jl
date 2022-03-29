@@ -117,6 +117,19 @@ function do_sim_get_counts_val_score(args...; allow_no_score, kwargs...)
     end
 end
 
+# Variant of the above for making spiketrain visualizations
+function do_sim_get_events_counts_val_score(args...; allow_no_score, kwargs...)
+    events = get_events(args...; kwargs...)
+    val_score = get_val_score(events)
+    if !allow_no_score && isnothing(val_score[2])
+        # if we got no score and this isn't allowed, try again!
+        println("Redoing a run since we got no score from it!")
+        return do_sim_get_counts_val_score(args...; allow_no_score, kwargs...)
+    else
+        return (events, (inspect_counts(events), val_score))
+    end
+end
+
 average(list) = sum(list)/length(list)
 function test_for_assmt(impl, assmt; n_runs=5)
     runs = [
@@ -186,4 +199,4 @@ println()
 
 # println("Now starting larger test run.")
 # result = test_random_assmts(impl)
-# BSON.@save "test_result.bson" result
+# BSON.@save "test_result.bson" resultk
