@@ -6,19 +6,18 @@ include("model.jl")
 ProbEstimates.use_perfect_weights!()
 #ProbEstimates.use_noisy_weights!()
 
-model = @DynamicModel(initial_model, step_model, obs_model, 9)
+model = @DynamicModel(initial_model, step_model, obs_model, 10)
 initial_proposal_compiled = @compile_initial_proposal(initial_proposal, 2)
-step_proposal_compiled = @compile_step_proposal(step_proposal, 9, 2)
+step_proposal_compiled = @compile_step_proposal(step_proposal, 10, 2)
 #step_proposal_compiled = @compile_step_proposal(step_model, 9, 2)
 #initial_proposal_compiled = @compile_initial_proposal(initial_model, 2)
 
 @load_generated_functions()
 
-NSTEPS = 20
-NPARTICLES = 20
+NSTEPS = 15
+NPARTICLES = 100
 
 tr = simulate(model, (NSTEPS,))
-
 
 x_traj = [(:steps => i => :latents => :xₜ => :val, X_init + i) for i in 1:NSTEPS]
 y_traj = [(:steps => i => :latents => :yₜ => :val, Y_init + i) for i in 1:NSTEPS]
@@ -54,8 +53,7 @@ observations = get_dynamic_model_obs(tr)
     ch -> (ch[:obs_θ => :val], ch[:obs_ϕ => :val]),
     initial_proposal_compiled, step_proposal_compiled,
     NPARTICLES, # n particles
-    ess_threshold=NPARTICLES
-)
+    ess_threshold=NPARTICLES)
 
 #OK next step is figuring out which particles are moving in depth vs not
 

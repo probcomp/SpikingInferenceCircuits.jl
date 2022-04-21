@@ -8,8 +8,6 @@ include("run_utils.jl")
 include("ann_utils.jl")
 #include("torch_proposal.jl")
 
-#
-
 #digitize Figure 1 / code figure 1
 
 # make an animation with 4 panels showing the performance of each proposal. 
@@ -25,14 +23,14 @@ end
 
 #include("z_estimates.jl")
 
-#initial_proposal = @compile_initial_proposal(_init_near_locopt_proposal, obs_aux_proposal, 5, 1)
-#step_proposal = @compile_step_proposal(_step_near_locopt_proposal, obs_aux_proposal, 5, 1)
+initial_proposal = @compile_initial_proposal(_init_near_locopt_proposal, obs_aux_proposal, 5, 1)
+step_proposal = @compile_step_proposal(_step_near_locopt_proposal, obs_aux_proposal, 5, 1)
 
-initial_proposal = @compile_initial_proposal(torch_initial_proposal_conv, obs_aux_proposal, 5, 1)
-step_proposal = @compile_step_proposal(torch_proposal_conv, obs_aux_proposal, 5, 1)
-
+#initial_proposal = @compile_initial_proposal(torch_initial_proposal_conv, obs_aux_proposal, 5, 1)
+#step_proposal = @compile_step_proposal(torch_proposal_conv, obs_aux_proposal, 5, 1)
 
 @load_generated_functions()
+
 
 
 # ### Run inference:
@@ -59,17 +57,6 @@ animate(t, get_args(gt_tr)[1])
 
 
 #bottom_up_samples = [categorical_from_matrix(bottom_up_inference_results) for _=1:N]
-
-
-
-
-
-
-
-
-
-
-
 
 
 # # Inference results animation:

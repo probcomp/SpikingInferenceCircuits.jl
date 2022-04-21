@@ -1,7 +1,7 @@
+using GenCollections
 using Gen
 using ProbEstimates
 using DynamicModels
-using GenCollections
 include("model_hyperparameters.jl")
 include("modeling_utils.jl")
 

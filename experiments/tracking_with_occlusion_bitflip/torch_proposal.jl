@@ -1,8 +1,8 @@
 using PyCall
+using Gen
 using GenPyTorch
 using Statistics
 using GenCollections
-using Gen
 using JLD
 using PyCallJLD
 import Flux: softmax
@@ -28,9 +28,6 @@ image_transformer(mean, std, im) = torchvision.transforms.Compose(
     [torchvision.transforms.ToPILImage(),
      torchvision.transforms.ToTensor(),
      torchvision.transforms.Normalize(mean, std)])(PyObject(im))
-
-
-                                    
 
 # NOTE THESE DONT HAVE TO BE DEFINED IF USING DYNAMIC W CATEGORICALS or DYNAMIC W CAT, VELCAT 
 #zero(t::NTuple{5, <:Any}) = (0.0, 0.0, 0.0, 0.0, 0.0)
@@ -241,7 +238,7 @@ end;
 
 function train_torch_nn(torchfunction, proposal, filename)
     parameter_update = Gen.ParamUpdate(Gen.ADAM(0.001, 0.9, 0.999, 1e-8), 
-                                       torchfunction => collect(get_params(torchfunction)))
+                                       torchfunction => collect(GenPyTorch.get_params(torchfunction)))
     scores = Gen.train!(proposal, groundtruth_generator, parameter_update,
                         num_epoch=100, epoch_size=100, num_minibatch=100, minibatch_size=100,
                         evaluation_size=10, verbose=true);

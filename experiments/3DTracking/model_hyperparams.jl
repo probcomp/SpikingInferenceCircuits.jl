@@ -1,9 +1,12 @@
 # Xs() = 1:10
 # Ys() = -5:5
 # Heights() = 1:10
+veldiv = 1
 ydiv = 1
 #Vels() = -3:ydiv:3
-Vels() = -1:ydiv:1
+Vels() = -1:veldiv:1
+PredatorVelScale() = 2
+PreyVelScale() = 1
 Xs() = 1:10
 Ys() = -5:ydiv:5
 Zs() = 1:10
@@ -19,4 +22,4 @@ Rs() = Int64(floor(sqrt(Xs()[1]^2 + Zs()[1]^2))):Int64(ceil(norm_3d(Xs()[end], Y
 
 ϕs() = 0:ϕstep():1.4
 θs() = -1.4:θstep():1.4
-MinProb() = 0.1
+MinProb() = 0.01
