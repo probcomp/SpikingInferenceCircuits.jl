@@ -14,14 +14,12 @@ import NaNMath as nm
 # model will assign probabilities to impossible distances. also make the model bound by the grid whenplacre
 # choosing distances!
 
-# NOTES 8/3/2021
-# the nanmath and the isfinite calls in onehot, maybe_one_off. After running again, all scores are NaN. 
-# Usually on a 20 particle run get mostly non-nan scores. May be worth debugging a bit with George.
-# Re-added nanmath and its fine. It's the isfinite calls in the distributions. 
-# like the drawings from Xuan's paper.
-
 # pseudo-marginal tumbling state (draw uniform, draw from previous).
 # 1D trajectories in paramecia.
+
+# note there are two source of uncertainty at play. if its moving downwards, it can be moving in depth or height. so there are automatically two different explanations for the same phenomenon. it will get confused this way. number 2, the different velocities of the two stimulus types can be a confound. currently i think the model is close to what i want. i would rather velocity be perceived in spherical space. then translated to XYZ space. 
+
+
 
 using ProbEstimates: Cat, LCat
 
@@ -37,10 +35,19 @@ round_to_pt1(x) = round(x, digits=1)
 # in the first step, these have no impact b/c the initial position is drawn. 
 # helpful to think of v here as VThatLeadtoXYZInit
 
+# x = back and forth
+# y = left and right
+# z = up and down (held constant in this model)
+
+
 @gen (static) function initial_model()
-    vxₜ = { :vxₜ } ~ LCat(Vels())(unif(Vels()))
-    vyₜ = { :vyₜ } ~ LCat(Vels())(unif(Vels()))
-    vzₜ = { :vzₜ } ~ LCat(Vels())(unif(Vels()))
+    is_prey = { :is_prey } ~ bernoulli(.5)
+    vxₜ_dir = { :vxₜ } ~ LCat(Vels())(unif(Vels()))
+    vyₜ_dir = { :vyₜ } ~ LCat(Vels())(unif(Vels()))
+    vzₜ_dir = { :vzₜ } ~ LCat(Vels())(unif(Vels()))
+    vxₜ = vxₜ_dir * (is_prey ? PreyVelScale() : PredatorVelScale())
+    vyₜ = vyₜ_dir * (is_prey ? PreyVelScale() : PredatorVelScale())
+    vzₜ = vzₜ_dir * (is_prey ? PreyVelScale() : PredatorVelScale())
     xₜ = { :xₜ } ~ Cat(unif(Xs()))
     yₜ = { :yₜ } ~ LCat(Ys())(unif(Ys()))
     zₜ = { :zₜ } ~ Cat(unif(Zs()))
@@ -50,21 +57,23 @@ round_to_pt1(x) = round(x, digits=1)
     true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(
         round_to_pt1(nm.atan(yₜ / xₜ)), 0.1, θs()))
     r_max = max_distance_inside_grid(true_ϕ, true_θ)
-    r_probvec = normalize(
-        vcat(truncated_discretized_gaussian(
-            true_r <= r_max ? true_r : r_max, 2, Rs())[1:Int(r_max)],
-             zeros(length(Rs())-Int(r_max))))
+   r_probvec = normalize(vcat(truncated_discretized_gaussian(
+       true_r <= r_max ? true_r : r_max, 2, Rs())[1:Int(r_max)],
+                    zeros(length(Rs())-Int(r_max))))
     rₜ = { :rₜ } ~ LCat(Rs())(r_probvec)
-    return (vxₜ, vyₜ, vzₜ, xₜ, yₜ, zₜ, rₜ, true_ϕ, true_θ)
+    return (vxₜ, vyₜ, vzₜ, xₜ, yₜ, zₜ, rₜ, true_ϕ, true_θ, is_prey)
 end
 
-# x = back and forth
-# y = left and right
-# z = up and down (held constant in this model)
-@gen (static) function step_model(vxₜ₋₁, vyₜ₋₁, vzₜ₋₁, xₜ₋₁, yₜ₋₁, zₜ₋₁, rₜ₋₁, ephi, etheta)
-    vxₜ = { :vxₜ } ~ LCat(Vels())(truncated_discretized_gaussian(vxₜ₋₁, 0.4, Vels()))
-    vyₜ = { :vyₜ } ~ LCat(Vels())(truncated_discretized_gaussian(vyₜ₋₁, 0.4, Vels()))
-    vzₜ = { :vzₜ } ~ LCat(Vels())(truncated_discretized_gaussian(vzₜ₋₁, 0.4, Vels()))
+
+@gen (static) function step_model(vxₜ₋₁, vyₜ₋₁, vzₜ₋₁, xₜ₋₁, yₜ₋₁, zₜ₋₁, rₜ₋₁, ephi, etheta, is_prey)
+    vel_σ = .4
+    is_prey = { :is_prey } ~ bernoulli(is_prey ? .99 : .01)
+    vxₜ_dir = { :vxₜ } ~ LCat(Vels())(truncated_discretized_gaussian(vxₜ₋₁, vel_σ, Vels()))
+    vyₜ_dir = { :vyₜ } ~ LCat(Vels())(truncated_discretized_gaussian(vyₜ₋₁, vel_σ, Vels()))
+    vzₜ_dir = { :vzₜ } ~ LCat(Vels())(truncated_discretized_gaussian(vzₜ₋₁, vel_σ, Vels()))
+    vxₜ = vxₜ_dir * (is_prey ? PreyVelScale() : PredatorVelScale())
+    vyₜ = vyₜ_dir * (is_prey ? PreyVelScale() : PredatorVelScale())
+    vzₜ = vzₜ_dir * (is_prey ? PreyVelScale() : PredatorVelScale())
     xₜ = { :xₜ } ~ Cat(truncated_discretized_gaussian(xₜ₋₁ + vxₜ, .2, Xs()))
     yₜ = { :yₜ } ~ LCat(Ys())(truncated_discretized_gaussian(yₜ₋₁ + vyₜ, .2, Ys()))
     zₜ = { :zₜ } ~ Cat(truncated_discretized_gaussian(zₜ₋₁ + vzₜ, .2, Zs()))
@@ -81,14 +90,20 @@ end
             true_r <= r_max ? true_r : r_max, 2, Rs())[1:Int(r_max)],
              zeros(length(Rs())-Int(r_max))))
     rₜ = { :rₜ } ~ LCat(Rs())(r_probvec)
-    return (vxₜ, vyₜ, vzₜ, xₜ, yₜ, zₜ, rₜ, true_ϕ, true_θ)
+    # YES you want dtheta and dphi once you've inferred a distance.
+
+    # YOU WANT TRUE THETA WHICH IS A FUNCTION OF YOUR OBSERVATION AND PREVIOUS VELOCITY.
+    # KALMAN FILTER.
+    
+    
+
+    
+    return (vxₜ, vyₜ, vzₜ, xₜ, yₜ, zₜ, rₜ, true_ϕ, true_θ, is_prey)
 end
 
 # if this is receiving a sample of r, then it could be shorter than x. 
 
 @gen (static) function obs_model(vxₜ, vyₜ, vzₜ, xₜ, yₜ, zₜ, rₜ, true_ϕ, true_θ)
-    # can't propose to these b/c they are the final observations we're scoring.
-    # have to propose to the exact theta and phi.
     obs_ϕ = { :obs_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(true_ϕ, 0.1, ϕs()))
     obs_θ = { :obs_θ } ~ LCat(θs())(truncated_discretized_gaussian(true_θ, 0.1, θs()))
     return (obs_θ, obs_ϕ)
@@ -99,9 +114,6 @@ end
 # you're directly making sure you don't propose unrealistic steps for x y and z. but should be fine
 # since r is one or two off. 
 
-
-    # should the proposal balance the model? i.e. incorporate data and the past?
-    
     # likely issue here is its very possible that delta
     # x y and z could be larger than the velocity. this prob creates nans. think about
     # how to address this problem.
@@ -122,46 +134,51 @@ end
 
 
 @gen (static) function step_proposal(vxₜ₋₁, vyₜ₋₁, vzₜ₋₁, xₜ₋₁, yₜ₋₁, zₜ₋₁,
-                                     rₜ₋₁,true_ϕ, true_θ, obs_θ, obs_ϕ) # θ and ϕ are noisy
-    # instead of sampling (x, y, h) then computing r (as we do in the model)
-    # in the proposal we sample (r, x, y) and then compute h
+                                     rₜ₋₁, true_ϕ, true_θ, is_prey, obs_θ, obs_ϕ) 
     true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(obs_θ, 0.2, θs()))
     true_ϕ = { :true_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(obs_ϕ, 0.2, ϕs()))
-
     r_max = max_distance_inside_grid(true_ϕ, true_θ)
-    r_probvec = normalize(
-        vcat(truncated_discretized_gaussian(
-            rₜ₋₁ <= r_max ? rₜ₋₁ : r_max, 2, Rs())[1:Int(r_max)],
-             zeros(length(Rs())-Int(r_max))))
+    σᵣ = is_prey ? 2*PreyVelScale() : 2*PredatorVelScale()
+    r_probvec = normalize(vcat(truncated_discretized_gaussian(
+        rₜ₋₁ <= r_max ? rₜ₋₁ : r_max, σᵣ, Rs())[1:Int(r_max)],
+                               zeros(length(Rs())-Int(r_max))))
     rₜ = { :rₜ } ~ LCat(Rs())(r_probvec)
-    proposal_x = rₜ * cos(true_ϕ) * cos(true_θ)
-    proposal_y = rₜ * cos(true_ϕ) * sin(true_θ)
-    proposal_z = rₜ * sin(true_ϕ)
-
-    vx_prop = limit_delta_pos(round(proposal_x), xₜ₋₁)
-    vy_prop = limit_delta_pos(round(proposal_y), yₜ₋₁)
-    vz_prop = limit_delta_pos(round(proposal_z), zₜ₋₁)
+    x_prop = Int(round(rₜ * cos(true_ϕ) * cos(true_θ)))
+    y_prop = Int(round(rₜ * cos(true_ϕ) * sin(true_θ)))
+    z_prop = Int(round(rₜ * sin(true_ϕ)))
+    
+    vx_prop = limit_delta_pos(x_prop, xₜ₋₁, is_prey)
+    vy_prop = limit_delta_pos(y_prop, yₜ₋₁, is_prey)
+    vz_prop = limit_delta_pos(z_prop, zₜ₋₁, is_prey)
     
     xₜ = { :xₜ } ~ LCat(Xs())(truncated_discretized_gaussian(xₜ₋₁ + vx_prop, .1, Xs()))
     yₜ = { :yₜ } ~ LCat(Ys())(truncated_discretized_gaussian(yₜ₋₁ + vy_prop, .1, Ys()))
     zₜ = { :zₜ } ~ LCat(Zs())(truncated_discretized_gaussian(zₜ₋₁ + vz_prop, .1, Zs()))
-    # any choice of v here will be consistent with the model b/c its one or two off in the model.
-    vxₜ = { :vxₜ } ~ LCat(Vels())(truncated_discretized_gaussian(vx_prop, .4, Vels()))
-    vyₜ = { :vyₜ } ~ LCat(Vels())(truncated_discretized_gaussian(vy_prop, .4, Vels()))
-    vzₜ = { :vzₜ } ~ LCat(Vels())(truncated_discretized_gaussian(vz_prop, .4, Vels()))
+
+    is_prey = { :is_prey } ~ bernoulli(vx_prop > PreyVelScale() || vy_prop > PreyVelScale() || vz_prop > PreyVelScale() ? .05 : .5)
+    
+    vx_index = scale_velocity(vx_prop, is_prey)
+    vy_index = scale_velocity(vy_prop, is_prey)
+    vz_index = scale_velocity(vz_prop, is_prey)
+    
+    vxₜ = { :vxₜ } ~ LCat(Vels())(truncated_discretized_gaussian(vx_index, .4, Vels()))
+    vyₜ = { :vyₜ } ~ LCat(Vels())(truncated_discretized_gaussian(vy_index, .4, Vels()))
+    vzₜ = { :vzₜ } ~ LCat(Vels())(truncated_discretized_gaussian(vz_index, .4, Vels()))
 end
 
+
 @gen (static) function initial_proposal(obs_θ, obs_ϕ)
-    true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(obs_θ, 0.2, θs()))
-    true_ϕ = { :true_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(obs_ϕ, 0.2, ϕs()))
-    # r_max on the first draw is guaranteed to not leave the cube
+    true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(obs_θ, 0.3, θs()))
+    true_ϕ = { :true_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(obs_ϕ, 0.3, ϕs()))
     r_max = max_distance_inside_grid(true_ϕ, true_θ)
+    # THIS IS A BID FROM MOMENT 1. YOU GET NO MORE BIDS. YOU CAN USE A UNIFORM TOO.
+#    rₜ = { :rₜ } ~ LCat(Rs())(
+ #       truncated_discretized_gaussian(round(norm_3d(X_init, Y_init, Z_init)), 1, Rs()))
+    # SWITCH TO THIS IF YOU WANT COMPLETELY UNINFORMED DISTANCE BIDS TO START 
     l = length(Rs())
- #   r_probvec = normalize(vcat(ones(Int64(r_max)), zeros(Int64(l-r_max))))
-#    rₜ = { :rₜ } ~ LCat(Rs())(r_probvec)
-    rₜ = { :rₜ } ~ LCat(Rs())(
-        truncated_discretized_gaussian(round(norm_3d(X_init, Y_init, Z_init)),
-                                       1, Rs()))
+    r_probvec = normalize(vcat(ones(Int64(r_max)), zeros(Int64(l-r_max))))
+    rₜ = { :rₜ } ~ LCat(Rs())(r_probvec)
+    is_prey = { :is_prey } ~ bernoulli(.5)
     x_prop = rₜ * cos(true_ϕ) * cos(true_θ)
     y_prop = rₜ * cos(true_ϕ) * sin(true_θ)
     z_prop = rₜ * sin(true_ϕ)
@@ -170,9 +187,10 @@ end
     xₜ = { :xₜ } ~ LCat(Xs())(truncated_discretized_gaussian(round(x_prop), .4, Xs()))
     yₜ = { :yₜ } ~ LCat(Ys())(truncated_discretized_gaussian(round(y_prop), .4, Ys()))
     zₜ = { :zₜ } ~ LCat(Zs())(truncated_discretized_gaussian(round(z_prop), .4, Zs()))
-    vxₜ = { :vxₜ } ~ LCat(Vels())(unif(Vels()))
-    vyₜ = { :vyₜ } ~ LCat(Vels())(unif(Vels()))
-    vzₜ = { :vzₜ } ~ LCat(Vels())(unif(Vels()))
+    # add in conditional velocities here. 
+    vxₜ_dir = { :vxₜ } ~ LCat(Vels())(unif(Vels()))
+    vyₜ_dir = { :vyₜ } ~ LCat(Vels())(unif(Vels()))
+    vzₜ_dir = { :vzₜ } ~ LCat(Vels())(unif(Vels()))
 end
 
 function max_distance_inside_grid(ϕ, θ)
@@ -185,13 +203,16 @@ function max_distance_inside_grid(ϕ, θ)
     return r_max
 end
 
-function limit_delta_pos(p_prop, p_prev)
-    if p_prop - p_prev > Vels()[end]
-        return Vels()[end]
-    elseif p_prop - p_prev < Vels()[1]
-        return Vels()[1]
+
+
+function limit_delta_pos(p_prop, p_prev, is_prey)
+    v_scale = is_prey ? PreyVelScale() : PredatorVelScale() / PreyVelScale()
+    if (p_prop - p_prev) > (Vels()[end] * v_scale)
+        return Vels()[end] * v_scale
+    elseif (p_prop - p_prev) < (Vels()[1] * v_scale)
+        return Vels()[1] * v_scale
     else
-        return p_prop - p_prev
+        return Int(round(p_prop - p_prev))
     end
 end
 

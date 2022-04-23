@@ -2,22 +2,21 @@ using Base: Int64
 using DynamicModels: @DynamicModel, @compile_initial_proposal, @compile_step_proposal, get_dynamic_model_obs, dynamic_model_smc
 using ProbEstimates
 
+
 include("model.jl")
 ProbEstimates.use_perfect_weights!()
 #ProbEstimates.use_noisy_weights!()
 
-model = @DynamicModel(initial_model, step_model, obs_model, 10)
+model = @DynamicModel(initial_model, step_model, obs_model, 9)
 initial_proposal_compiled = @compile_initial_proposal(initial_proposal, 2)
-step_proposal_compiled = @compile_step_proposal(step_proposal, 10, 2)
-#step_proposal_compiled = @compile_step_proposal(step_model, 9, 2)
-#initial_proposal_compiled = @compile_initial_proposal(initial_model, 2)
+step_proposal_compiled = @compile_step_proposal(step_proposal, 9, 2)
 
 @load_generated_functions()
 
 NSTEPS = 15
-NPARTICLES = 100
+NPARTICLES = 20
 
-tr = simulate(model, (NSTEPS,))
+#tr = simulate(model, (NSTEPS,))
 
 x_traj = [(:steps => i => :latents => :xₜ => :val, X_init + i) for i in 1:NSTEPS]
 y_traj = [(:steps => i => :latents => :yₜ => :val, Y_init + i) for i in 1:NSTEPS]
@@ -26,13 +25,13 @@ vx_traj = [(:steps => i => :latents => :vxₜ => :val, 1) for i in 1:NSTEPS]
 vy_traj = [(:steps => i => :latents => :vyₜ => :val, 1) for i in 1:NSTEPS]
 vz_traj = [(:steps => i => :latents => :vzₜ => :val, 0) for i in 1:NSTEPS]
 
-# tr, w = generate(model, (NSTEPS,), choicemap(
-#     (:init => :latents => :xₜ => :val, X_init),
-#     (:init => :latents => :yₜ => :val, Y_init),
-#     (:init => :latents => :zₜ => :val, Z_init),
-#     (:init => :latents => :vxₜ => :val, 1),
-#     (:init => :latents => :vyₜ => :val, 1), 
-#     (:init => :latents => :vzₜ => :val, 0),
+tr, w = generate(model, (NSTEPS,), choicemap(
+    (:init => :latents => :xₜ => :val, X_init),
+    (:init => :latents => :yₜ => :val, Y_init),
+    (:init => :latents => :zₜ => :val, Z_init),
+    (:init => :latents => :vxₜ => :val, 1),
+    (:init => :latents => :vyₜ => :val, 1), 
+    (:init => :latents => :vzₜ => :val, 0)))
 #     x_traj...,
 #     y_traj...,
 #     z_traj...,
@@ -53,7 +52,7 @@ observations = get_dynamic_model_obs(tr)
     ch -> (ch[:obs_θ => :val], ch[:obs_ϕ => :val]),
     initial_proposal_compiled, step_proposal_compiled,
     NPARTICLES, # n particles
-    ess_threshold=NPARTICLES)
+    ess_threshold=NPARTICLES/2)
 
 #OK next step is figuring out which particles are moving in depth vs not
 

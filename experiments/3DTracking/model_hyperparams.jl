@@ -7,8 +7,8 @@ ydiv = 1
 Vels() = -1:veldiv:1
 PredatorVelScale() = 2
 PreyVelScale() = 1
-Xs() = 1:10
-Ys() = -5:ydiv:5
+Xs() = 1:20
+Ys() = -10:ydiv:10
 Zs() = 1:10
 X_init = 3
 Y_init = 0
@@ -23,3 +23,6 @@ Rs() = Int64(floor(sqrt(Xs()[1]^2 + Zs()[1]^2))):Int64(ceil(norm_3d(Xs()[end], Y
 ϕs() = 0:ϕstep():1.4
 θs() = -1.4:θstep():1.4
 MinProb() = 0.01
+
+scale_velocity(vel, is_prey) = is_prey ? Int(round(vel / PreyVelScale())) : Int(round(vel / PredatorVelScale()))
+
