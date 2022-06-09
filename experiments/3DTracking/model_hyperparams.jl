@@ -3,8 +3,8 @@
 # Heights() = 1:10
 veldiv = 1
 ydiv = 1
-#Vels() = -3:ydiv:3
-Vels() = -1:veldiv:1
+Vels() = -1:ydiv:1
+#Vels() = -1:veldiv:1
 PredatorVelScale() = 2
 PreyVelScale() = 1
 Xs() = 1:20
@@ -16,6 +16,7 @@ Z_init = 5
 Rs() = Int64(floor(sqrt(Xs()[1]^2 + Zs()[1]^2))):Int64(ceil(norm_3d(Xs()[end], Ys()[end], Zs()[end])))
 ϕstep() = 0.1
 θstep() = 0.1
+SphericalVels() = -1:θStep():1
 
 # x = 1, y = 5 takes up .19 radians that are unavailable in az.
 # vis field is 1.57 radians. 
