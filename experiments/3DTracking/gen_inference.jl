@@ -13,8 +13,8 @@ step_proposal_compiled = @compile_step_proposal(step_proposal, 11, 2)
 
 @load_generated_functions()
 
-NSTEPS = 20
-NPARTICLES = 20
+NSTEPS = 15
+NPARTICLES = 5
 
 #tr = simulate(model, (NSTEPS,))
 

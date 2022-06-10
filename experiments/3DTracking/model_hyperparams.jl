@@ -16,7 +16,8 @@ Z_init = 5
 Rs() = Int64(floor(sqrt(Xs()[1]^2 + Zs()[1]^2))):Int64(ceil(norm_3d(Xs()[end], Ys()[end], Zs()[end])))
 ϕstep() = 0.1
 θstep() = 0.1
-SphericalVels() = -1:θstep():1
+#SphericalVels() = -1.6:θstep():1.6
+SphericalVels() = -.5:θstep():.5
 
 # x = 1, y = 5 takes up .19 radians that are unavailable in az.
 # vis field is 1.57 radians. 

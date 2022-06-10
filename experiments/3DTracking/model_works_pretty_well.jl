@@ -7,18 +7,21 @@ using GeometryBasics
 using FileIO
 import NaNMath as nm
 
-# if you have time, add a second type of animal. this one goes -1, 0, or 1 in every direction. 
+# "exact" is another word for "true"
+
+# i think the bug here is that the model accounts for all distances, while
+# the proposal is bound by the grid. what can happen is that at the edges, the
+# model will assign probabilities to impossible distances. also make the model bound by the grid whenplacre
+# choosing distances!
+
+# NOTES 8/3/2021
+# the nanmath and the isfinite calls in onehot, maybe_one_off. After running again, all scores are NaN. 
+# Usually on a 20 particle run get mostly non-nan scores. May be worth debugging a bit with George.
+# Re-added nanmath and its fine. It's the isfinite calls in the distributions. 
+# like the drawings from Xuan's paper.
 
 # pseudo-marginal tumbling state (draw uniform, draw from previous).
 # 1D trajectories in paramecia.
-
-
-# Notes: might be a confound that initial_model draws a distance.
-
-
-# USE VARIABLES AS BINS 
-
-
 
 using ProbEstimates: Cat, LCat
 
@@ -34,172 +37,141 @@ round_to_pt1(x) = round(x, digits=1)
 # in the first step, these have no impact b/c the initial position is drawn. 
 # helpful to think of v here as VThatLeadtoXYZInit
 
-# SUMMARY -- Initial model draws a random Cartesian velocity and position for the point. It samples a distance based on the XYZ position (e.g. current self position is known and a vector to the sampled XYZ position is used as the mean of a gaussian sample for distance. The location of the retinal az and alt coordinate is sampled using trig. This is a proxy of what happens in the brain (prob accomplished by a lookup table). 
-#
-# scoring under this model should be uniform. initial proposal will make an azimuth altitude calculation, back propose an XYZ value based on a randomly sampled distance. under this model, any choice should be scored equally. cycle works by first seeing something, then backproposing to XYZ space -- without a distance cue, any XYZ position / distance combination is equally likely along the observed az alt vector.
-
-# step proposal calculates a new az alt based on previous retinal velocity and retinal position, and proposes a new distance that is relatively close to the previous distance (i.e. it could come backwards or forwards along the depth vector, but not by a lot). the step model contains information about how things can move in XYZ space independently of the egocentric reference frame. this is where knowledge can get pretty deep if you want (i.e. base the vx, vy, vz on switching models, create different items with different velocity profiles / different markov probabilities for stepping velocity).
-
-# the depth bid is picked up in the tectum / midbrain. cortex will move the XYZ position forward in space based on how it thinks things move and what it knows about where other things are. retina is always tracking az alt (and its always working! think of occlusion where an object passes in front of a barrier...in this case, az alt predictions will be completely perfect but uncertainty changes at the level of the XYZ model, and particles that are more distant than the barrier should immediatley collapse!). in this sense, retina is doing az alt position and velocity estimates, tectum / midbrain is representing those and assigning a depth -- this depth is random if there's no further information. If you have a single dot on a screen moving diagonally, cortex will score XYZ interpretations of persistent depth and perspective traversal EQUALLY. Tectum will assign multiple distances which will be ambiguous to the model. 
-
 @gen (static) function initial_model()
-    a = println("in initial model")
-    dxₜ = { :dx } ~ LCat(Vels())(unif(Vels()))
-    dyₜ = { :dy } ~ LCat(Vels())(unif(Vels()))
-    dzₜ = { :dz } ~ LCat(Vels())(unif(Vels()))
-    xₜ = { :x } ~ Cat(unif(Xs()))
-    yₜ = { :y } ~ LCat(Ys())(unif(Ys()))
-    zₜ = { :z } ~ Cat(unif(Zs()))
+    vxₜ = { :vxₜ } ~ LCat(Vels())(unif(Vels()))
+    vyₜ = { :vyₜ } ~ LCat(Vels())(unif(Vels()))
+    vzₜ = { :vzₜ } ~ LCat(Vels())(unif(Vels()))
+    xₜ = { :xₜ } ~ Cat(unif(Xs()))
+    yₜ = { :yₜ } ~ LCat(Ys())(unif(Ys()))
+    zₜ = { :zₜ } ~ Cat(unif(Zs()))
     true_r = round(norm_3d(xₜ, yₜ, zₜ))
     true_ϕ = { :true_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(
         round_to_pt1(nm.asin(zₜ / true_r)), 0.1, ϕs()))
     true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(
         round_to_pt1(nm.atan(yₜ / xₜ)), 0.1, θs()))
     r_max = max_distance_inside_grid(true_ϕ, true_θ)
-    a = println(        vcat(truncated_discretized_gaussian(
-            true_r <= r_max ? true_r : r_max, 2, Rs())[1:Int(r_max)],
-             zeros(length(Rs())-Int(r_max))))
     r_probvec = normalize(
-        vcat(truncated_discretized_gaussian(
-            true_r <= r_max ? true_r : r_max, 2, Rs())[1:Int(r_max)],
+        vcat(maybe_one_or_two_off(
+            true_r <= r_max ? true_r : r_max, .2, Rs())[1:Int(r_max)],
              zeros(length(Rs())-Int(r_max))))
-    rₜ = { :r } ~ LCat(Rs())(r_probvec)
-    dϕ = { :dϕ } ~ LCat(SphericalVels())(unif(SphericalVels()))
-    dθ = { :dθ } ~ LCat(SphericalVels())(unif(SphericalVels()))    
-    return (dxₜ, dyₜ, dzₜ, xₜ, yₜ, zₜ, rₜ, true_ϕ, true_θ, dϕ, dθ)
+    rₜ = { :rₜ } ~ LCat(Rs())(r_probvec)
+    return (vxₜ, vyₜ, vzₜ, xₜ, yₜ, zₜ, rₜ, true_ϕ, true_θ)
 end
 
 # x = back and forth
 # y = left and right
 # z = up and down (held constant in this model)
-@gen (static) function step_model(dxₜ₋₁, dyₜ₋₁, dzₜ₋₁, xₜ₋₁, yₜ₋₁, zₜ₋₁, rₜ₋₁, true_ϕₜ₋₁, true_θₜ₋₁, dϕₜ₋₁, dθₜ₋₁)
-    a = println("in step_model")
-    dxₜ = { :dx } ~ LCat(Vels())(truncated_discretized_gaussian(dxₜ₋₁, 0.4, Vels()))
-    dyₜ = { :dy } ~ LCat(Vels())(truncated_discretized_gaussian(dyₜ₋₁, 0.4, Vels()))
-    dzₜ = { :dz } ~ LCat(Vels())(truncated_discretized_gaussian(dzₜ₋₁, 0.4, Vels()))
-    xₜ = { :x } ~ Cat(truncated_discretized_gaussian(xₜ₋₁ + dxₜ, .2, Xs()))
-    yₜ = { :y } ~ LCat(Ys())(truncated_discretized_gaussian(yₜ₋₁ + dyₜ, .2, Ys()))
-    zₜ = { :z } ~ Cat(truncated_discretized_gaussian(zₜ₋₁ + dzₜ, .2, Zs()))
+@gen (static) function step_model(vxₜ₋₁, vyₜ₋₁, vzₜ₋₁, xₜ₋₁, yₜ₋₁, zₜ₋₁, rₜ₋₁, ephi, etheta)
+    vxₜ = { :vxₜ } ~ LCat(Vels())(maybe_one_or_two_off(vxₜ₋₁, 0.2, Vels()))
+    vyₜ = { :vyₜ } ~ LCat(Vels())(maybe_one_or_two_off(vyₜ₋₁, 0.2, Vels()))
+    vzₜ = { :vzₜ } ~ LCat(Vels())(maybe_one_or_two_off(vzₜ₋₁, 0.2, Vels()))
+    xₜ = { :xₜ } ~ Cat(maybe_one_off(xₜ₋₁ + vxₜ, .2, Xs()))
+    yₜ = { :yₜ } ~ LCat(Ys())(maybe_one_off(yₜ₋₁ + vyₜ, .2, Ys()))
+    zₜ = { :zₜ } ~ Cat(maybe_one_off(zₜ₋₁ + vzₜ, .2, Zs()))
     # Here: a stochastic mapping from (x, y, h) -> (r, θ, ϕ)
     # For now: just use dimension-wise discretized Gaussians.
     true_r = round(norm_3d(xₜ, yₜ, zₜ))
-    r_max = max_distance_inside_grid(true_ϕₜ₋₁, true_θₜ₋₁)
-    r_probvec = normalize(
-        vcat(truncated_discretized_gaussian(
-            true_r <= r_max ? true_r : r_max, .1, Rs())[1:Int(r_max)],
-             zeros(length(Rs())-Int(r_max))))
-    rₜ = { :rₜ } ~ LCat(Rs())(r_probvec)
-    # BUG HERE -- DISTANCE IS SAMPLED, SO R CAN END UP BEING SMALLER THAN THE RESPECTIVE COMPONENTS OF ITS VECTOR.
-    # have to tighten up the variance on the truncated gaussian sample for r. 
     true_ϕ = { :true_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(
-        round_to_pt1(nm.asin(zₜ / rₜ)), .1, ϕs()))
-
+        round_to_pt1(nm.asin(zₜ / true_r)), .1, ϕs()))
     true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(
         round_to_pt1(nm.atan(yₜ / xₜ)), .1, θs()))
-    a = println(true_ϕ)
-    a = println(true_ϕₜ₋₁)
-    # Ah this is outside of the range. its 1.3
-    dϕ = { :dϕ } ~ LCat(SphericalVels())(truncated_discretized_gaussian(round_to_pt1(true_ϕ -  true_ϕₜ₋₁), .1, SphericalVels()))
-    a = println("past dϕ")
-    dθ = { :dθ } ~ LCat(SphericalVels())(truncated_discretized_gaussian(round_to_pt1(true_θ -  true_θₜ₋₁), .1, SphericalVels()))
-    a = println("past dθ")
-    a = println("done step model")
-    return (dxₜ, dyₜ, dzₜ, xₜ, yₜ, zₜ, rₜ, true_ϕ, true_θ, dϕ, dθ)
+    r_max = max_distance_inside_grid(true_ϕ, true_θ)
+    r_probvec = normalize(
+        vcat(maybe_one_or_two_off(
+            true_r <= r_max ? true_r : r_max, .2, Rs())[1:Int(r_max)],
+             zeros(length(Rs())-Int(r_max))))
+    rₜ = { :rₜ } ~ LCat(Rs())(r_probvec)
+    return (vxₜ, vyₜ, vzₜ, xₜ, yₜ, zₜ, rₜ, true_ϕ, true_θ)
 end
 
 # if this is receiving a sample of r, then it could be shorter than x. 
 
-@gen (static) function obs_model(dxₜ, dyₜ, dzₜ, xₜ, yₜ, zₜ, rₜ, true_ϕ, true_θ, dϕ, dθ)
-    a = println("in obs_model")
-    a = println(true_ϕ - dϕ)
-    a = println(true_θ - dθ)
-    obs_ϕ = { :obs_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(round_to_pt1(true_ϕ - dϕ), 0.1, ϕs()))
-    obs_θ = { :obs_θ } ~ LCat(θs())(truncated_discretized_gaussian(round_to_pt1(true_θ - dθ), 0.1, θs()))
-    return (obs_ϕ, obs_θ)
+@gen (static) function obs_model(vxₜ, vyₜ, vzₜ, xₜ, yₜ, zₜ, rₜ, true_ϕ, true_θ)
+    # can't propose to these b/c they are the final observations we're scoring.
+    # have to propose to the exact theta and phi.
+    obs_ϕ = { :obs_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(true_ϕ, 0.1, ϕs()))
+    obs_θ = { :obs_θ } ~ LCat(θs())(truncated_discretized_gaussian(true_θ, 0.1, θs()))
+    return (obs_θ, obs_ϕ)
 end
+
+
+# here you probably can run into proposing an unrealistic r xyz combination because
+# you're directly making sure you don't propose unrealistic steps for x y and z. but should be fine
+# since r is one or two off. 
+
+
+    # should the proposal balance the model? i.e. incorporate data and the past?
+    
+    # likely issue here is its very possible that delta
+    # x y and z could be larger than the velocity. this prob creates nans. think about
+    # how to address this problem.
 
     # if velocity is 1, x can only be 2 greater, one greater, or 0 greater than x prev.
     # if velocity is 0, can only be 1 greater, equal, or one less.
     # if velocity is -1, can be two less, one less, or equal to xprev
     # v can only be one off vprev
+
     # here compare exact vals to t-1 vals
     # if round(exact) - pos t-1 = 1,  x = maybe one off this delta + pos t-1
 
-# difference between the idea in the prior and the proposal is that step_model steps forward by generating a similar velocity, then
+# difference between the prior and the proposal is that step_model steps forward by generating a similar velocity, then
 # calculating the xyz coord, and calculating a distance (i.e. there is no role for distance perception, and no knowledge of the previous distance).
 # the step_proposal observes an az and alt, then says "the distance is probabably similar"; using the sampled distance, you
 # sample an x, y, and z and a velocity centered on the difference between the last and previous XYZ states. this way the model
 # favors explanations with similar velocities but the proposal on similar distances. proposal will ultimately let you propose bio-realistic distance metrics. 
 
 
-@gen (static) function step_proposal(dxₜ₋₁, dyₜ₋₁, dzₜ₋₁, xₜ₋₁, yₜ₋₁, zₜ₋₁,
-                                     rₜ₋₁, true_ϕₜ₋₁, true_θₜ₋₁, dϕₜ₋₁, dθₜ₋₁, obs_ϕ, obs_θ) # θ and ϕ are noisy
+@gen (static) function step_proposal(vxₜ₋₁, vyₜ₋₁, vzₜ₋₁, xₜ₋₁, yₜ₋₁, zₜ₋₁,
+                                     rₜ₋₁,true_ϕ, true_θ, obs_θ, obs_ϕ) # θ and ϕ are noisy
     # instead of sampling (x, y, h) then computing r (as we do in the model)
     # in the proposal we sample (r, x, y) and then compute h
-    
-    # martin thinks the current true theta is your previous obs added to your previous velocity and thats that.
+    true_θ = { :true_θ } ~ LCat(θs())(maybe_one_off(obs_θ, 0.2, θs()))
+    true_ϕ = { :true_ϕ } ~ LCat(ϕs())(maybe_one_off(obs_ϕ, 0.2, ϕs()))
 
-    # if you get obs_θ , you can go back and say "real dθ was probably obsθ - (true_θ - dθ : this is what gets you back to the previous assumed theta).
-    # i get a new obs_theta. it was generated by true_theta t-1. if its different than true_theta t-1, you likely miscalculated. the real true_theta t-1 is probably obs_theta.
-    # so your velocity estimate was probably wrong at t-1; the real velocity was probably obs - (true_theta t-1 - d_theta) (this gets you back to the position before the step), which is likely to be the velocity now.
-    dϕ = { :dϕ } ~ LCat(θs())(truncated_discretized_gaussian(round_to_pt1(obs_ϕ - (true_ϕₜ₋₁ - dϕₜ₋₁)), 0.1, ϕs()))
-    dθ = { :dθ } ~ LCat(θs())(truncated_discretized_gaussian(round_to_pt1(obs_θ - (true_θₜ₋₁ - dθₜ₋₁)), 0.1, θs()))
-    true_ϕ = { :true_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(round_to_pt1(obs_ϕ + dϕ), 0.2, ϕs()))
-    true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(round_to_pt1(obs_θ + dθ), 0.2, θs()))
     r_max = max_distance_inside_grid(true_ϕ, true_θ)
     r_probvec = normalize(
-        vcat(truncated_discretized_gaussian(
-            rₜ₋₁ <= r_max ? rₜ₋₁ : r_max, 2, Rs())[1:Int(r_max)],
+        vcat(maybe_one_or_two_off(
+            rₜ₋₁ <= r_max ? rₜ₋₁ : r_max, .6, Rs())[1:Int(r_max)],
              zeros(length(Rs())-Int(r_max))))
     rₜ = { :rₜ } ~ LCat(Rs())(r_probvec)
-    x_prop = rₜ * cos(true_ϕ) * cos(true_θ)
-    y_prop = rₜ * cos(true_ϕ) * sin(true_θ)
-    z_prop = rₜ * sin(true_ϕ)
-    dx_prop = limit_delta_pos(round(x_prop), xₜ₋₁)
-    dy_prop = limit_delta_pos(round(y_prop), yₜ₋₁)
-    dz_prop = limit_delta_pos(round(z_prop), zₜ₋₁)
-    xₜ = { :x } ~ LCat(Xs())(truncated_discretized_gaussian(x_prop, .1, Xs()))
-    yₜ = { :y } ~ LCat(Ys())(truncated_discretized_gaussian(y_prop, .1, Ys()))
-    zₜ = { :z } ~ LCat(Zs())(truncated_discretized_gaussian(z_prop, .1, Zs()))
+    proposal_x = rₜ * cos(true_ϕ) * cos(true_θ)
+    proposal_y = rₜ * cos(true_ϕ) * sin(true_θ)
+    proposal_z = rₜ * sin(true_ϕ)
+
+    vx_prop = limit_delta_pos(round(proposal_x), xₜ₋₁)
+    vy_prop = limit_delta_pos(round(proposal_y), yₜ₋₁)
+    vz_prop = limit_delta_pos(round(proposal_z), zₜ₋₁)
+    
+    xₜ = { :xₜ } ~ LCat(Xs())(truncated_discretized_gaussian(xₜ₋₁ + vx_prop, .1, Xs()))
+    yₜ = { :yₜ } ~ LCat(Ys())(truncated_discretized_gaussian(yₜ₋₁ + vy_prop, .1, Ys()))
+    zₜ = { :zₜ } ~ LCat(Zs())(truncated_discretized_gaussian(zₜ₋₁ + vz_prop, .1, Zs()))
     # any choice of v here will be consistent with the model b/c its one or two off in the model.
-    dxₜ = { :dx } ~ LCat(Vels())(truncated_discretized_gaussian(dx_prop, .4, Vels()))
-    dyₜ = { :dy } ~ LCat(Vels())(truncated_discretized_gaussian(dy_prop, .4, Vels()))
-    dzₜ = { :dz } ~ LCat(Vels())(truncated_discretized_gaussian(dz_prop, .4, Vels()))
-    a = println("past dz")    
+    vxₜ = { :vxₜ } ~ LCat(Vels())(onehot(vx_prop, Vels()))
+    vyₜ = { :vyₜ } ~ LCat(Vels())(onehot(vy_prop, Vels()))
+    vzₜ = { :vzₜ } ~ LCat(Vels())(onehot(vz_prop, Vels()))
 end
 
-@gen (static) function initial_proposal(obs_ϕ, obs_θ)
-    a = println("in initial proposal")
-    dϕ = { :dϕ } ~ LCat(SphericalVels())(truncated_discretized_gaussian(0, .5, SphericalVels()))
-    dθ = { :dθ } ~ LCat(SphericalVels())(truncated_discretized_gaussian(0, .5, SphericalVels()))
-    true_ϕ = { :true_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(obs_ϕ + dϕ, 0.2, ϕs()))    
-    true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(obs_θ + dθ, 0.2, θs()))
-    # Max distance function guarantees that no proposal leaves the grid. 
+@gen (static) function initial_proposal(obs_θ, obs_ϕ)
+    true_θ = { :exact_θ } ~ LCat(θs())(maybe_one_off(obs_θ, 0.2, θs()))
+    true_ϕ = { :exact_ϕ } ~ LCat(ϕs())(maybe_one_off(obs_ϕ, 0.2, ϕs()))
+    # r_max on the first draw is guaranteed to not leave the cube
     r_max = max_distance_inside_grid(true_ϕ, true_θ)
     l = length(Rs())
-    # THESE ARE TWO WAYS OF THINKING ABOUT THE PROBLEM. FIRST IS A RANDOM DISTANCE AT ONSET. SECOND IS RELATIVELY CLOSE KNOWLEDGE OF THE
-    # INITIAL DISTANCE. 
-#    r_probvec = normalize(vcat(ones(Int64(r_max)), zeros(Int64(l-r_max))))
- #   rₜ = { :rₜ } ~ LCat(Rs())(r_probvec)
-    rₜ = { :rₜ } ~ LCat(Rs())(
-        truncated_discretized_gaussian(round(norm_3d(X_init, Y_init, Z_init)),
-                                       1, Rs()))
-    x_prop = rₜ * cos(true_ϕ) * cos(true_θ)
-    y_prop = rₜ * cos(true_ϕ) * sin(true_θ)
-    z_prop = rₜ * sin(true_ϕ)
-
-    prev_x_prop = rₜ * cos(obs_ϕ) * cos(obs_θ)
-    prev_y_prop = rₜ * cos(obs_ϕ) * sin(obs_θ)
-    prev_z_prop = rₜ * sin(obs_ϕ)
-    
+ #   r_probvec = normalize(vcat(ones(Int64(r_max)), zeros(Int64(l-r_max))))
+#    rₜ = { :rₜ } ~ LCat(Rs())(r_probvec)
+    rₜ = { :rₜ } ~ LCat(Rs())(maybe_one_or_two_off(round(norm_3d(X_init, Y_init, Z_init)),
+                                                    .6, Rs()))
+    proposal_x = rₜ * cos(true_ϕ) * cos(true_θ)
+    proposal_y = rₜ * cos(true_ϕ) * sin(true_θ)
+    proposal_z = rₜ * sin(true_ϕ)
     # size in absolute terms is obtained by the az alt divs being discrete 
     # and az alt not having fixed xyz transforms when distant.
-    xₜ = { :x } ~ LCat(Xs())(truncated_discretized_gaussian(round(x_prop), .4, Xs()))
-    yₜ = { :y } ~ LCat(Ys())(truncated_discretized_gaussian(round(y_prop), .4, Ys()))
-    zₜ = { :z } ~ LCat(Zs())(truncated_discretized_gaussian(round(z_prop), .4, Zs()))
-    dxₜ = { :dx } ~ LCat(Vels())(truncated_discretized_gaussian(round_to_pt1(x_prop - prev_x_prop), .1, Vels()))
-    dyₜ = { :dy } ~ LCat(Vels())(truncated_discretized_gaussian(round_to_pt1(y_prop - prev_y_prop), .1, Vels()))
-    dzₜ = { :dz } ~ LCat(Vels())(truncated_discretized_gaussian(round_to_pt1(z_prop - prev_z_prop), .1, Vels()))    
+    xₜ = { :xₜ } ~ LCat(Xs())(maybe_one_off(round(proposal_x), .2, Xs()))
+    yₜ = { :yₜ } ~ LCat(Ys())(maybe_one_off(round(proposal_y), .2, Ys()))
+    zₜ = { :zₜ } ~ LCat(Zs())(maybe_one_off(round(proposal_z), .2, Zs()))
+    vxₜ = { :vxₜ } ~ LCat(Vels())(unif(Vels()))
+    vyₜ = { :vyₜ } ~ LCat(Vels())(unif(Vels()))
+    vzₜ = { :vzₜ } ~ LCat(Vels())(unif(Vels()))
 end
 
 function max_distance_inside_grid(ϕ, θ)
@@ -221,12 +193,6 @@ function limit_delta_pos(p_prop, p_prev)
         return p_prop - p_prev
     end
 end
-
-
-
-
-# VISUALIZATION FUNCTIONS SHOULD BE MOVED TO A viz.jl FILE IN THIS REPO. 
-
 
 
 function animate_azalt_trajectory(tr)
@@ -259,11 +225,11 @@ function animate_azalt_heatmap(tr_list, anim_now)
     
     for tr in tr_list
         choices = get_choices(tr)
-        azalt_matrices[1, findfirst(map(x -> x == choices[:init => :latents => :true_θ => :val], θs())),
-                        findfirst(map(x -> x == choices[:init => :latents => :true_ϕ => :val], ϕs()))] += 1
+        azalt_matrices[1, findfirst(map(x -> x == choices[:init => :latents => :exact_θ => :val], θs())),
+                        findfirst(map(x -> x == choices[:init => :latents => :exact_ϕ => :val], ϕs()))] += 1
         for step in 1:NSTEPS
-            obs_θ = choices[:steps => step => :latents => :true_θ => :val]
-            obs_ϕ = choices[:steps => step => :latents => :true_ϕ => :val]
+            obs_θ = choices[:steps => step => :latents => :exact_θ => :val]
+            obs_ϕ = choices[:steps => step => :latents => :exact_ϕ => :val]
             azalt_matrices[step+1,
                            findfirst(map(x -> x == obs_θ, θs())),
                            findfirst(map(x -> x == obs_ϕ, ϕs()))] += 1
@@ -359,7 +325,7 @@ end
 # also have the ground truth plotted in a different color.
 
 function render_pf_results(uw_traces, gt_trace, n_steps)
-    res = 700
+    res = 1000
     msize = 7000
     c2 = colorant"rgba(255, 0, 255, .25)"
     c1 = colorant"rgba(0, 255, 255, .25)"
