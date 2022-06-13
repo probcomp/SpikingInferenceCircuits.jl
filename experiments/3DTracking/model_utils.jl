@@ -75,9 +75,22 @@ maybe_one_or_two_off(idx, prob, dom) =
 normalize(v) = v / sum(v) 
 #normalize(v) = sum(v) > 0 ? v / sum(v) : [1/length(v) for i in v]
 
-discretized_gaussian(mean, std, dom) = normalize([
-    cdf(Distributions.Normal(mean, std), i + abs(dom[2]-dom[1])/2) - cdf(Distributions.Normal(mean, std), i - abs(dom[2]-dom[1])/2) for i in dom
-])
+function discretized_gaussian(mean, std, dom)
+    if mean > dom[end]
+        retvec = zeros(length(dom))
+        retvec[end] = 1.0
+        return retvec
+    elseif mean < dom[1]
+        retvec = zeros(length(dom))
+        retvec[1] = 1.0
+        return retvec
+    else
+        return normalize([
+            cdf(Distributions.Normal(mean, std), i + abs(dom[2]-dom[1])/2) - cdf(Distributions.Normal(mean, std), i - abs(dom[2]-dom[1])/2) for i in dom
+                ])
+    end
+end
+
 
 function truncate(pvec)
     if !isprobvec(pvec)

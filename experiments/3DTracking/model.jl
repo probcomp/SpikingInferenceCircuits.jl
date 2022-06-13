@@ -115,6 +115,7 @@ end
     a = println(true_θ - dθ)
     obs_ϕ = { :obs_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(round_to_pt1(true_ϕ - dϕ), 0.1, ϕs()))
     obs_θ = { :obs_θ } ~ LCat(θs())(truncated_discretized_gaussian(round_to_pt1(true_θ - dθ), 0.1, θs()))
+    a = println("past obs draw")
     return (obs_ϕ, obs_θ)
 end
 
@@ -134,6 +135,7 @@ end
 
 @gen (static) function step_proposal(dxₜ₋₁, dyₜ₋₁, dzₜ₋₁, xₜ₋₁, yₜ₋₁, zₜ₋₁,
                                      rₜ₋₁, true_ϕₜ₋₁, true_θₜ₋₁, dϕₜ₋₁, dθₜ₋₁, obs_ϕ, obs_θ) # θ and ϕ are noisy
+    a = println("in step proposal")
     # instead of sampling (x, y, h) then computing r (as we do in the model)
     # in the proposal we sample (r, x, y) and then compute h
     
@@ -146,6 +148,7 @@ end
     dθ = { :dθ } ~ LCat(θs())(truncated_discretized_gaussian(round_to_pt1(obs_θ - (true_θₜ₋₁ - dθₜ₋₁)), 0.1, θs()))
     true_ϕ = { :true_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(round_to_pt1(obs_ϕ + dϕ), 0.2, ϕs()))
     true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(round_to_pt1(obs_θ + dθ), 0.2, θs()))
+    a = println("past spherical")
     r_max = max_distance_inside_grid(true_ϕ, true_θ)
     r_probvec = normalize(
         vcat(truncated_discretized_gaussian(
@@ -176,6 +179,7 @@ end
 #    dθ = { :dθ } ~ LCat(SphericalVels())(truncated_discretized_gaussian(0, .5, SphericalVels()))
     true_ϕ = { :true_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(obs_ϕ + dϕ, 0.2, ϕs()))    
     true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(obs_θ + dθ, 0.2, θs()))
+    a = println("past spherical")
     # Max distance function guarantees that no proposal leaves the grid. 
     r_max = max_distance_inside_grid(true_ϕ, true_θ)
     l = length(Rs())
@@ -183,6 +187,7 @@ end
     # INITIAL DISTANCE. 
     r_probvec = normalize(vcat(ones(Int64(r_max)), zeros(Int64(l-r_max))))
     rₜ = { :rₜ } ~ LCat(Rs())(r_probvec)
+    a = println("past r")
 #    rₜ = { :rₜ } ~ LCat(Rs())(
  #       truncated_discretized_gaussian(round(norm_3d(X_init, Y_init, Z_init)),
   #                                     1, Rs()))
@@ -193,6 +198,10 @@ end
     prev_x_prop = rₜ * cos(obs_ϕ) * cos(obs_θ)
     prev_y_prop = rₜ * cos(obs_ϕ) * sin(obs_θ)
     prev_z_prop = rₜ * sin(obs_ϕ)
+
+    a = println(x_prop - prev_x_prop)
+    a = println(y_prop - prev_y_prop)
+    a = println(z_prop - prev_z_prop)
     
     # size in absolute terms is obtained by the az alt divs being discrete 
     # and az alt not having fixed xyz transforms when distant.
@@ -312,8 +321,8 @@ end
 
 function heatmap_pf_results(uw_traces, gt::Trace, nsteps)
     
-    depth_indexer = [[:steps, i, :latents, :xₜ, :val] for i in 1:nsteps]
-    height_indexer = [[:steps, i, :latents, :zₜ, :val] for i in 1:nsteps]
+    depth_indexer = [[:steps, i, :latents, :x, :val] for i in 1:nsteps]
+    height_indexer = [[:steps, i, :latents, :z, :val] for i in 1:nsteps]
                                   
     gray_cmap = range(colorant"white", stop=colorant"gray32", length=6)
     true_depth = [extract_submap_value(get_choices(gt), depth_indexer[i]) for i in 1:nsteps]
@@ -391,13 +400,13 @@ function render_pf_results(uw_traces, gt_trace, n_steps)
         for (tnum, tr) in enumerate(vcat(gt_trace, uw_traces[i]))
             ch = get_choices(tr)
             if i == 1
-                x = extract_submap_value(ch, [:init, :latents, :xₜ, :val])
-                y = extract_submap_value(ch, [:init, :latents, :yₜ, :val])
-                z = extract_submap_value(ch, [:init, :latents, :zₜ, :val])
+                x = extract_submap_value(ch, [:init, :latents, :x, :val])
+                y = extract_submap_value(ch, [:init, :latents, :y, :val])
+                z = extract_submap_value(ch, [:init, :latents, :z, :val])
             else
-                x = extract_submap_value(ch, [:steps, i-1, :latents, :xₜ, :val])
-                y = extract_submap_value(ch, [:steps, i-1, :latents, :yₜ, :val])
-                z = extract_submap_value(ch, [:steps, i-1, :latents, :zₜ, :val])
+                x = extract_submap_value(ch, [:steps, i-1, :latents, :x, :val])
+                y = extract_submap_value(ch, [:steps, i-1, :latents, :y, :val])
+                z = extract_submap_value(ch, [:steps, i-1, :latents, :z, :val])
             end
             if tnum == 1
                 push!(gt_temp, (x, y, z))
@@ -457,3 +466,11 @@ end
 # write an animation for the observations.
 # render it from the position of the camera.
 # render the noisy observations. 
+
+(l::LCat)(args...) = get_retval(simulate(l, args))
+
+
+
+
+# set truncated gaussian to deterministically go to the end.
+# obs model could be outside grid you can't see it. 
