@@ -170,8 +170,10 @@ end
 
 @gen (static) function initial_proposal(obs_ϕ, obs_θ)
     a = println("in initial proposal")
-    dϕ = { :dϕ } ~ LCat(SphericalVels())(truncated_discretized_gaussian(0, .5, SphericalVels()))
-    dθ = { :dθ } ~ LCat(SphericalVels())(truncated_discretized_gaussian(0, .5, SphericalVels()))
+    dϕ = { :dϕ } ~ LCat(SphericalVels())(unif(SphericalVels()))
+    dθ = { :dθ } ~ LCat(SphericalVels())(unif(SphericalVels()))
+#    dϕ = { :dϕ } ~ LCat(SphericalVels())(truncated_discretized_gaussian(0, .5, SphericalVels()))
+#    dθ = { :dθ } ~ LCat(SphericalVels())(truncated_discretized_gaussian(0, .5, SphericalVels()))
     true_ϕ = { :true_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(obs_ϕ + dϕ, 0.2, ϕs()))    
     true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(obs_θ + dθ, 0.2, θs()))
     # Max distance function guarantees that no proposal leaves the grid. 
@@ -179,11 +181,11 @@ end
     l = length(Rs())
     # THESE ARE TWO WAYS OF THINKING ABOUT THE PROBLEM. FIRST IS A RANDOM DISTANCE AT ONSET. SECOND IS RELATIVELY CLOSE KNOWLEDGE OF THE
     # INITIAL DISTANCE. 
-#    r_probvec = normalize(vcat(ones(Int64(r_max)), zeros(Int64(l-r_max))))
- #   rₜ = { :rₜ } ~ LCat(Rs())(r_probvec)
-    rₜ = { :rₜ } ~ LCat(Rs())(
-        truncated_discretized_gaussian(round(norm_3d(X_init, Y_init, Z_init)),
-                                       1, Rs()))
+    r_probvec = normalize(vcat(ones(Int64(r_max)), zeros(Int64(l-r_max))))
+    rₜ = { :rₜ } ~ LCat(Rs())(r_probvec)
+#    rₜ = { :rₜ } ~ LCat(Rs())(
+ #       truncated_discretized_gaussian(round(norm_3d(X_init, Y_init, Z_init)),
+  #                                     1, Rs()))
     x_prop = rₜ * cos(true_ϕ) * cos(true_θ)
     y_prop = rₜ * cos(true_ϕ) * sin(true_θ)
     z_prop = rₜ * sin(true_ϕ)
