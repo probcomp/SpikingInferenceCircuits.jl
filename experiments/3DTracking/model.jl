@@ -49,23 +49,23 @@ round_to_pt1(x) = round(x, digits=1)
     dzₜ = { :dz } ~ LCat(Vels())(unif(Vels()))
     xₜ = { :x } ~ Cat(unif(Xs()))
     yₜ = { :y } ~ LCat(Ys())(unif(Ys()))
-    zₜ = { :z } ~ Cat(unif(Zs()))
+    zₜ = { :z } ~ LCat(Zs())(unif(Zs()))
     true_r = round(norm_3d(xₜ, yₜ, zₜ))
+    true_rₜ₋₁ = round(norm_3d((xₜ-dxₜ), (yₜ-dyₜ), (zₜ-dzₜ)))
     true_ϕ = { :true_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(
         round_to_pt1(nm.asin(zₜ / true_r)), 0.1, ϕs()))
     true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(
         round_to_pt1(nm.atan(yₜ / xₜ)), 0.1, θs()))
     r_max = max_distance_inside_grid(true_ϕ, true_θ)
-    a = println(        vcat(truncated_discretized_gaussian(
-            true_r <= r_max ? true_r : r_max, 2, Rs())[1:Int(r_max)],
-             zeros(length(Rs())-Int(r_max))))
     r_probvec = normalize(
         vcat(truncated_discretized_gaussian(
             true_r <= r_max ? true_r : r_max, 2, Rs())[1:Int(r_max)],
              zeros(length(Rs())-Int(r_max))))
     rₜ = { :r } ~ LCat(Rs())(r_probvec)
-    dϕ = { :dϕ } ~ LCat(SphericalVels())(unif(SphericalVels()))
-    dθ = { :dθ } ~ LCat(SphericalVels())(unif(SphericalVels()))    
+    ϕₜ₋₁ = round_to_pt1(nm.asin((zₜ - dzₜ)/ true_rₜ₋₁))
+    θₜ₋₁ = round_to_pt1(nm.atan((yₜ - dyₜ) / (xₜ - dxₜ)))
+    dϕ = { :dϕ } ~ LCat(SphericalVels())(truncated_discretized_gaussian(true_ϕ -  ϕₜ₋₁, .2, SphericalVels()))
+    dθ = { :dθ } ~ LCat(SphericalVels())(truncated_discretized_gaussian(true_θ -  θₜ₋₁, .2, SphericalVels()))
     return (dxₜ, dyₜ, dzₜ, xₜ, yₜ, zₜ, rₜ, true_ϕ, true_θ, dϕ, dθ)
 end
 
@@ -73,49 +73,44 @@ end
 # y = left and right
 # z = up and down (held constant in this model)
 @gen (static) function step_model(dxₜ₋₁, dyₜ₋₁, dzₜ₋₁, xₜ₋₁, yₜ₋₁, zₜ₋₁, rₜ₋₁, true_ϕₜ₋₁, true_θₜ₋₁, dϕₜ₋₁, dθₜ₋₁)
-    a = println("in step_model")
+    a = println("in step model")
     dxₜ = { :dx } ~ LCat(Vels())(truncated_discretized_gaussian(dxₜ₋₁, 0.4, Vels()))
     dyₜ = { :dy } ~ LCat(Vels())(truncated_discretized_gaussian(dyₜ₋₁, 0.4, Vels()))
     dzₜ = { :dz } ~ LCat(Vels())(truncated_discretized_gaussian(dzₜ₋₁, 0.4, Vels()))
     xₜ = { :x } ~ Cat(truncated_discretized_gaussian(xₜ₋₁ + dxₜ, .2, Xs()))
     yₜ = { :y } ~ LCat(Ys())(truncated_discretized_gaussian(yₜ₋₁ + dyₜ, .2, Ys()))
-    zₜ = { :z } ~ Cat(truncated_discretized_gaussian(zₜ₋₁ + dzₜ, .2, Zs()))
+    zₜ = { :z } ~ LCat(Zs())(truncated_discretized_gaussian(zₜ₋₁ + dzₜ, .2, Zs()))
     # Here: a stochastic mapping from (x, y, h) -> (r, θ, ϕ)
     # For now: just use dimension-wise discretized Gaussians.
     true_r = round(norm_3d(xₜ, yₜ, zₜ))
-    r_max = max_distance_inside_grid(true_ϕₜ₋₁, true_θₜ₋₁)
-    r_probvec = normalize(
-        vcat(truncated_discretized_gaussian(
-            true_r <= r_max ? true_r : r_max, .1, Rs())[1:Int(r_max)],
-             zeros(length(Rs())-Int(r_max))))
-    rₜ = { :rₜ } ~ LCat(Rs())(r_probvec)
     # BUG HERE -- DISTANCE IS SAMPLED, SO R CAN END UP BEING SMALLER THAN THE RESPECTIVE COMPONENTS OF ITS VECTOR.
     # have to tighten up the variance on the truncated gaussian sample for r. 
     true_ϕ = { :true_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(
-        round_to_pt1(nm.asin(zₜ / rₜ)), .1, ϕs()))
+        round_to_pt1(nm.asin(zₜ / true_r)), .1, ϕs()))
 
     true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(
         round_to_pt1(nm.atan(yₜ / xₜ)), .1, θs()))
-    a = println(true_ϕ)
-    a = println(true_ϕₜ₋₁)
-    # Ah this is outside of the range. its 1.3
+
+    r_max = max_distance_inside_grid(true_ϕ, true_θ)
+    r_probvec = normalize(
+        vcat(truncated_discretized_gaussian(
+            true_r <= r_max ? true_r : r_max, .4, Rs())[1:Int(r_max)],
+             zeros(length(Rs())-Int(r_max))))
+    rₜ = { :rₜ } ~ LCat(Rs())(r_probvec)
     dϕ = { :dϕ } ~ LCat(SphericalVels())(truncated_discretized_gaussian(round_to_pt1(true_ϕ -  true_ϕₜ₋₁), .1, SphericalVels()))
-    a = println("past dϕ")
     dθ = { :dθ } ~ LCat(SphericalVels())(truncated_discretized_gaussian(round_to_pt1(true_θ -  true_θₜ₋₁), .1, SphericalVels()))
-    a = println("past dθ")
-    a = println("done step model")
     return (dxₜ, dyₜ, dzₜ, xₜ, yₜ, zₜ, rₜ, true_ϕ, true_θ, dϕ, dθ)
 end
 
 # if this is receiving a sample of r, then it could be shorter than x. 
 
 @gen (static) function obs_model(dxₜ, dyₜ, dzₜ, xₜ, yₜ, zₜ, rₜ, true_ϕ, true_θ, dϕ, dθ)
-    a = println("in obs_model")
-    a = println(true_ϕ - dϕ)
-    a = println(true_θ - dθ)
+    a = println("phis")
+    a = println(true_ϕ)
+    a = println(dϕ)
     obs_ϕ = { :obs_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(round_to_pt1(true_ϕ - dϕ), 0.1, ϕs()))
+    a = println(obs_ϕ)
     obs_θ = { :obs_θ } ~ LCat(θs())(truncated_discretized_gaussian(round_to_pt1(true_θ - dθ), 0.1, θs()))
-    a = println("past obs draw")
     return (obs_ϕ, obs_θ)
 end
 
@@ -135,7 +130,6 @@ end
 
 @gen (static) function step_proposal(dxₜ₋₁, dyₜ₋₁, dzₜ₋₁, xₜ₋₁, yₜ₋₁, zₜ₋₁,
                                      rₜ₋₁, true_ϕₜ₋₁, true_θₜ₋₁, dϕₜ₋₁, dθₜ₋₁, obs_ϕ, obs_θ) # θ and ϕ are noisy
-    a = println("in step proposal")
     # instead of sampling (x, y, h) then computing r (as we do in the model)
     # in the proposal we sample (r, x, y) and then compute h
     
@@ -144,11 +138,11 @@ end
     # if you get obs_θ , you can go back and say "real dθ was probably obsθ - (true_θ - dθ : this is what gets you back to the previous assumed theta).
     # i get a new obs_theta. it was generated by true_theta t-1. if its different than true_theta t-1, you likely miscalculated. the real true_theta t-1 is probably obs_theta.
     # so your velocity estimate was probably wrong at t-1; the real velocity was probably obs - (true_theta t-1 - d_theta) (this gets you back to the position before the step), which is likely to be the velocity now.
+    a = println("in step proposal")
     dϕ = { :dϕ } ~ LCat(θs())(truncated_discretized_gaussian(round_to_pt1(obs_ϕ - (true_ϕₜ₋₁ - dϕₜ₋₁)), 0.1, ϕs()))
     dθ = { :dθ } ~ LCat(θs())(truncated_discretized_gaussian(round_to_pt1(obs_θ - (true_θₜ₋₁ - dθₜ₋₁)), 0.1, θs()))
     true_ϕ = { :true_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(round_to_pt1(obs_ϕ + dϕ), 0.2, ϕs()))
     true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(round_to_pt1(obs_θ + dθ), 0.2, θs()))
-    a = println("past spherical")
     r_max = max_distance_inside_grid(true_ϕ, true_θ)
     r_probvec = normalize(
         vcat(truncated_discretized_gaussian(
@@ -168,60 +162,50 @@ end
     dxₜ = { :dx } ~ LCat(Vels())(truncated_discretized_gaussian(dx_prop, .4, Vels()))
     dyₜ = { :dy } ~ LCat(Vels())(truncated_discretized_gaussian(dy_prop, .4, Vels()))
     dzₜ = { :dz } ~ LCat(Vels())(truncated_discretized_gaussian(dz_prop, .4, Vels()))
-    a = println("past dz")    
 end
 
 @gen (static) function initial_proposal(obs_ϕ, obs_θ)
     a = println("in initial proposal")
     dϕ = { :dϕ } ~ LCat(SphericalVels())(unif(SphericalVels()))
     dθ = { :dθ } ~ LCat(SphericalVels())(unif(SphericalVels()))
-#    dϕ = { :dϕ } ~ LCat(SphericalVels())(truncated_discretized_gaussian(0, .5, SphericalVels()))
-#    dθ = { :dθ } ~ LCat(SphericalVels())(truncated_discretized_gaussian(0, .5, SphericalVels()))
     true_ϕ = { :true_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(obs_ϕ + dϕ, 0.2, ϕs()))    
     true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(obs_θ + dθ, 0.2, θs()))
-    a = println("past spherical")
     # Max distance function guarantees that no proposal leaves the grid. 
     r_max = max_distance_inside_grid(true_ϕ, true_θ)
     l = length(Rs())
-    # THESE ARE TWO WAYS OF THINKING ABOUT THE PROBLEM. FIRST IS A RANDOM DISTANCE AT ONSET. SECOND IS RELATIVELY CLOSE KNOWLEDGE OF THE
-    # INITIAL DISTANCE. 
     r_probvec = normalize(vcat(ones(Int64(r_max)), zeros(Int64(l-r_max))))
-    rₜ = { :rₜ } ~ LCat(Rs())(r_probvec)
-    a = println("past r")
-#    rₜ = { :rₜ } ~ LCat(Rs())(
- #       truncated_discretized_gaussian(round(norm_3d(X_init, Y_init, Z_init)),
-  #                                     1, Rs()))
+  #  rₜ = { :rₜ } ~ LCat(Rs())(r_probvec)
+    rₜ = { :rₜ } ~ LCat(Rs())(
+        truncated_discretized_gaussian(round(norm_3d(X_init, Y_init, Z_init)),
+                                       1, Rs()))
     x_prop = rₜ * cos(true_ϕ) * cos(true_θ)
     y_prop = rₜ * cos(true_ϕ) * sin(true_θ)
     z_prop = rₜ * sin(true_ϕ)
-
     prev_x_prop = rₜ * cos(obs_ϕ) * cos(obs_θ)
     prev_y_prop = rₜ * cos(obs_ϕ) * sin(obs_θ)
     prev_z_prop = rₜ * sin(obs_ϕ)
-
-    a = println(x_prop - prev_x_prop)
-    a = println(y_prop - prev_y_prop)
-    a = println(z_prop - prev_z_prop)
-    
     # size in absolute terms is obtained by the az alt divs being discrete 
     # and az alt not having fixed xyz transforms when distant.
-    xₜ = { :x } ~ LCat(Xs())(truncated_discretized_gaussian(round(x_prop), .4, Xs()))
-    yₜ = { :y } ~ LCat(Ys())(truncated_discretized_gaussian(round(y_prop), .4, Ys()))
-    zₜ = { :z } ~ LCat(Zs())(truncated_discretized_gaussian(round(z_prop), .4, Zs()))
-    dxₜ = { :dx } ~ LCat(Vels())(truncated_discretized_gaussian(round_to_pt1(x_prop - prev_x_prop), .1, Vels()))
-    dyₜ = { :dy } ~ LCat(Vels())(truncated_discretized_gaussian(round_to_pt1(y_prop - prev_y_prop), .1, Vels()))
-    dzₜ = { :dz } ~ LCat(Vels())(truncated_discretized_gaussian(round_to_pt1(z_prop - prev_z_prop), .1, Vels()))    
+    xₜ = { :x } ~ LCat(Xs())(truncated_discretized_gaussian(round(x_prop), 1, Xs()))
+    yₜ = { :y } ~ LCat(Ys())(truncated_discretized_gaussian(round(y_prop), 1, Ys()))
+    zₜ = { :z } ~ LCat(Zs())(truncated_discretized_gaussian(round(z_prop), 1, Zs()))
+    dxₜ = { :dx } ~ LCat(Vels())(truncated_discretized_gaussian(round_to_pt1(x_prop - prev_x_prop), 1, Vels()))
+    dyₜ = { :dy } ~ LCat(Vels())(truncated_discretized_gaussian(round_to_pt1(y_prop - prev_y_prop), 1, Vels()))
+    dzₜ = { :dz } ~ LCat(Vels())(truncated_discretized_gaussian(round_to_pt1(z_prop - prev_z_prop), 1, Vels()))    
 end
 
 function max_distance_inside_grid(ϕ, θ)
-    max_x_boundary = Xs()[end] / (cos(ϕ) * cos(θ))
-    max_y_pos_boundary = neg_to_inf(Ys()[end] / (cos(ϕ) * sin(θ)))
-    max_y_neg_boundary = neg_to_inf(Ys()[1] / (cos(ϕ) * sin(θ)))
-    max_z_boundary = Zs()[end] / sin(ϕ)
-    r_max = floor(minimum([max_x_boundary, max_y_pos_boundary,
-                     max_y_neg_boundary, max_z_boundary]))
-    return r_max
+    for (i, r) in enumerate(Rs())
+        x_prop = r * cos(ϕ) * cos(θ)
+        y_prop = r * cos(ϕ) * sin(θ)
+        z_prop = r * sin(ϕ)
+        if abs(x_prop) > Xs()[end] || abs(y_prop) > Ys()[end] || abs(z_prop) > Zs()[end]
+            println(i)
+            return Rs()[i-1]
+        end
+    end
 end
+
 
 function limit_delta_pos(p_prop, p_prev)
     if p_prop - p_prev > Vels()[end]
@@ -232,9 +216,6 @@ function limit_delta_pos(p_prop, p_prev)
         return p_prop - p_prev
     end
 end
-
-
-
 
 # VISUALIZATION FUNCTIONS SHOULD BE MOVED TO A viz.jl FILE IN THIS REPO. 
 
@@ -328,11 +309,11 @@ function heatmap_pf_results(uw_traces, gt::Trace, nsteps)
     true_depth = [extract_submap_value(get_choices(gt), depth_indexer[i]) for i in 1:nsteps]
     true_height = [extract_submap_value(get_choices(gt), height_indexer[i]) for i in 1:nsteps]
     depth_matrix = zeros(nsteps, length(0:Xs()[end]) + 1)
-    height_matrix = zeros(nsteps, length(0:Zs()[end]) + 1)
+    height_matrix = zeros(nsteps, length(Zs()) + 1)
     for t in 1:nsteps
         for tr in uw_traces[end]
             depth_matrix[t, Int64(extract_submap_value(get_choices(tr), depth_indexer[t]))] += 1
-            height_matrix[t, Int64(extract_submap_value(get_choices(tr), height_indexer[t]))] += 1
+            height_matrix[t, findall(x-> x == extract_submap_value(get_choices(tr), height_indexer[t]), Zs())[1]] += 1
         end
     end
     # also plot the true x values
@@ -351,7 +332,7 @@ function heatmap_pf_results(uw_traces, gt::Trace, nsteps)
     ax_height.xlabel = "Time"
     xlims!(ax_height, (.5, nsteps))
     xlims!(ax_depth, (.5, nsteps))
-    ylims!(ax_height, (0.0, Zs()[end]+2))
+    ylims!(ax_height, (Zs()[1], Zs()[end]+2))
     ylims!(ax_depth, (0.0, Xs()[end]+2))
     println("particle scores")
     println([get_score(tr) for tr in uw_traces[end]])

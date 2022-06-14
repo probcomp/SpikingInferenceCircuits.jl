@@ -13,8 +13,8 @@ step_proposal_compiled = @compile_step_proposal(step_proposal, 11, 2)
 
 @load_generated_functions()
 
-NSTEPS = 15
-NPARTICLES = 20
+NSTEPS = 20
+NPARTICLES = 100
 
 #tr = simulate(model, (NSTEPS,))
 
@@ -49,10 +49,10 @@ observations = get_dynamic_model_obs(tr)
 
 (unweighted_traces_at_each_step, _) = dynamic_model_smc(
     model, observations,
-    ch -> (ch[:obs_θ => :val], ch[:obs_ϕ => :val]),
+    ch -> (ch[:obs_ϕ => :val], ch[:obs_θ => :val]),
     initial_proposal_compiled, step_proposal_compiled,
     NPARTICLES, # n particles
-    ess_threshold=NPARTICLES/2)
+    ess_threshold=NPARTICLES)
 
 #OK next step is figuring out which particles are moving in depth vs not
 
