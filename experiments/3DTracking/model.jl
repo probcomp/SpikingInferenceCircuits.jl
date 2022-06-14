@@ -64,8 +64,8 @@ round_to_pt1(x) = round(x, digits=1)
     rₜ = { :r } ~ LCat(Rs())(r_probvec)
     ϕₜ₋₁ = round_to_pt1(nm.asin((zₜ - dzₜ)/ true_rₜ₋₁))
     θₜ₋₁ = round_to_pt1(nm.atan((yₜ - dyₜ) / (xₜ - dxₜ)))
-    dϕ = { :dϕ } ~ LCat(SphericalVels())(truncated_discretized_gaussian(true_ϕ -  ϕₜ₋₁, .2, SphericalVels()))
-    dθ = { :dθ } ~ LCat(SphericalVels())(truncated_discretized_gaussian(true_θ -  θₜ₋₁, .2, SphericalVels()))
+    dϕ = { :dϕ } ~ LCat(SphericalVels())(truncated_discretized_gaussian(true_ϕ - ϕₜ₋₁, .2, SphericalVels()))
+    dθ = { :dθ } ~ LCat(SphericalVels())(truncated_discretized_gaussian(true_θ - θₜ₋₁, .2, SphericalVels()))
     return (dxₜ, dyₜ, dzₜ, xₜ, yₜ, zₜ, rₜ, true_ϕ, true_θ, dϕ, dθ)
 end
 
@@ -152,16 +152,13 @@ end
     x_prop = rₜ * cos(true_ϕ) * cos(true_θ)
     y_prop = rₜ * cos(true_ϕ) * sin(true_θ)
     z_prop = rₜ * sin(true_ϕ)
-    dx_prop = limit_delta_pos(round(x_prop), xₜ₋₁)
-    dy_prop = limit_delta_pos(round(y_prop), yₜ₋₁)
-    dz_prop = limit_delta_pos(round(z_prop), zₜ₋₁)
     xₜ = { :x } ~ LCat(Xs())(truncated_discretized_gaussian(x_prop, .1, Xs()))
     yₜ = { :y } ~ LCat(Ys())(truncated_discretized_gaussian(y_prop, .1, Ys()))
     zₜ = { :z } ~ LCat(Zs())(truncated_discretized_gaussian(z_prop, .1, Zs()))
     # any choice of v here will be consistent with the model b/c its one or two off in the model.
-    dxₜ = { :dx } ~ LCat(Vels())(truncated_discretized_gaussian(dx_prop, .4, Vels()))
-    dyₜ = { :dy } ~ LCat(Vels())(truncated_discretized_gaussian(dy_prop, .4, Vels()))
-    dzₜ = { :dz } ~ LCat(Vels())(truncated_discretized_gaussian(dz_prop, .4, Vels()))
+    dxₜ = { :dx } ~ LCat(Vels())(truncated_discretized_gaussian(x_prop-xₜ₋₁, .4, Vels()))
+    dyₜ = { :dy } ~ LCat(Vels())(truncated_discretized_gaussian(y_prop-yₜ₋₁, .4, Vels()))
+    dzₜ = { :dz } ~ LCat(Vels())(truncated_discretized_gaussian(z_prop-zₜ₋₁, .4, Vels()))
 end
 
 @gen (static) function initial_proposal(obs_ϕ, obs_θ)

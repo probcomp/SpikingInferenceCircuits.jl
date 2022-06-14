@@ -3,7 +3,7 @@
 # Heights() = 1:10
 veldiv = 1
 ydiv = 1
-Vels() = -2:ydiv:2
+Vels() = -5:ydiv:5
 #Vels() = -1:veldiv:1
 PredatorVelScale() = 2
 PreyVelScale() = 1
@@ -17,7 +17,7 @@ Rs() = Int64(floor(sqrt(Xs()[1]^2))):Int64(ceil(norm_3d(Xs()[end], Ys()[end], Zs
 ϕstep() = 0.1
 θstep() = 0.1
 #SphericalVels() = -1.6:θstep():1.6
-SphericalVels() = -1.2:θstep():1.2
+SphericalVels() = -1.5:θstep():1.5
 
 #SphericalVels() = -.5:.1:.5
 
