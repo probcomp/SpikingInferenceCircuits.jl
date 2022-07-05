@@ -2,10 +2,14 @@ using Gen
 using Distributions
 using Colors
 using GLMakie
+using CairoMakie
 using StatsBase
 using GeometryBasics
 using FileIO
 import NaNMath as nm
+
+
+CairoMakie.activate!(type = "pdf")
 
 # if you have time, add a second type of animal. this one goes -1, 0, or 1 in every direction. 
 
@@ -218,18 +222,28 @@ end
 
 
 
-function animate_azalt_trajectory(tr)
+function render_azalt_trajectory(tr)
+    CairoMakie.activate!()
     gt_obs_choices = get_choices(tr)
     obs_θ = [gt_obs_choices[:steps => step => :obs => :obs_θ => :val] for step in 1:NSTEPS]
     obs_ϕ = [gt_obs_choices[:steps => step => :obs => :obs_ϕ => :val] for step in 1:NSTEPS]
-    fig = Figure(resolution=(1000, 1000))
-    ax = Axis(fig[1,1])
-    hidedecorations!(ax)
-    lines!(ax, obs_θ, obs_ϕ, linestyle=:dash, linewidth=4, color=to_colormap(:thermal, length(obs_θ)))
-    scatter!(ax, obs_θ, obs_ϕ, markersize=25, color=to_colormap(:thermal, length(obs_θ)), marker=:rect)
+    theme = Attributes(Axis = (xminorticksvisible=true, yminorticksvisible=true,
+                               xminorgridvisible=true, yminorgridvisible=true))
+    fig = with_theme(theme) do
+        fig = Figure(resolution=(1000, 1000))
+        axs = Axis(fig[1,1],
+                   xminorticks=IntervalsBetween(5), yminorticks=IntervalsBetween(5))
+        limits!(axs, θs()[1], θs()[end], ϕs()[1], ϕs()[end])
+        # for some reason have to add an extra .03 here to get it to fit the .1 x .1 box. 
+        scatter!(axs, obs_θ .+ .05, obs_ϕ .+ .05, markersize=.13, markerspace=:data,
+                 color=to_colormap(:thermal, length(obs_θ)) , marker=:rect)
+        fig
+    end
+    #    lines!(ax, obs_θ, obs_ϕ, linestyle=:dash, linewidth=4, color=to_colormap(:thermal, length(obs_θ)))
+    
     display(fig)
+    save("traj.pdf", fig)
 end
-
 
     
 function animate_azalt_heatmap(tr_list, anim_now)
@@ -295,13 +309,78 @@ function extract_submap_value(cmap, symlist)
     end
 end
 
+
+
+# you have to make a grid that contains az alt positions over time coded as a heat value, with white as nothing. 
+
+function render_static_trajectories(uw_traces, gt::Trace)
+    render_azalt_trajectory(gt)
+    GLMakie.activate!()
+    res = 700
+    fig = Figure(resolution=(2*res, 2*res), figure_padding=50)
+    lim = (Xs()[1], Xs()[end], Ys()[1], Ys()[end], Zs()[1], Zs()[end])
+    # note perspectiveness variable is 0.0 for orthographic, 1.0 for perspective, .5 for intermediate
+    preyloc_axis = Axis3(fig[2,1], 
+                         viewmode=:fit, aspect=(1,1,1), perspectiveness=0.0, protrusions=0, limits=lim,
+                         elevation = 1.2*pi, azimuth= .7*pi)
+    gt_coords = []
+    particle_coords = []
+    score_colors = []
+    for i in 1:NSTEPS+1
+        step_coords = []
+        trace_scores = []
+        gt_temp = []
+        for (tnum, tr) in enumerate(vcat(gt, uw_traces[i]))
+            ch = get_choices(tr)
+            if i == 1
+                x = extract_submap_value(ch, [:init, :latents, :x, :val])
+                y = extract_submap_value(ch, [:init, :latents, :y, :val])
+                z = extract_submap_value(ch, [:init, :latents, :z, :val])
+            else
+                x = extract_submap_value(ch, [:steps, i-1, :latents, :x, :val])
+                y = extract_submap_value(ch, [:steps, i-1, :latents, :y, :val])
+                z = extract_submap_value(ch, [:steps, i-1, :latents, :z, :val])
+            end
+            if tnum == 1
+                push!(gt_temp, (x, y, z))
+            else
+                push!(step_coords, (x, y, z))
+                push!(trace_scores, get_score(tr))
+            end
+            
+        end
+        push!(particle_coords, step_coords)
+        push!(score_colors, trace_scores)
+        push!(gt_coords, gt_temp)
+    end
+    fp(t) = convert(Vector{Point3f0}, particle_coords[t])
+    fs(t) = convert(Vector{Float64}, map(f -> isfinite(f) ? .1*log(f) : 0, (-1*score_colors[t])))
+    f_gt(t) = convert(Vector{Point3f0}, gt_coords[t])
+    #    scatter!(anim_axis, lift(t -> fp(t), time_node), color=lift(t -> fs(t), time_node), colormap=:grays, markersize=msize, alpha=.5)
+    lines!(map(x -> convert(Vector{Point3f0}, x)[1] , gt_coords), 
+           color=to_colormap(:thermal, NSTEPS+1), linewidth=2)
+
+
+# PC -> EACH INDEX IS THE VALUE OF EACH PARTICLE AT INDEX STEP. 
+     for p_index in 1:NPARTICLES
+         lines!(map(x -> convert(Point3f0, x[p_index]), particle_coords), 
+                color=to_colormap(:ice, NSTEPS+1), linewidth=2)
+     end
     
+    
+    # lines!(particle_anim_axis, lift(t -> fp(t), time_node), color=gray_w_alpha, markersize=msize, alpha=.5)
+    # scatter!(particle_anim_axis, lift(t -> f_gt(t), time_node), color=:red, markersize=msize)
+
+    # scatter!(gt_preyloc_axis, lift(t -> f_gt(t), time_node), color=:red, markersize=msize) #, marker='o')
+    # meshscatter!(particle_anim_axis, [(1, 0, 2)],
+    #              marker=fish_mesh, color=:gray, rotations=Vec3f0(1, 0, 0), markersize=.75)
+    display(fig)
+    return particle_coords, gt_coords
+end    
 
 function heatmap_pf_results(uw_traces, gt::Trace, nsteps)
-    
     depth_indexer = [[:steps, i, :latents, :x, :val] for i in 1:nsteps]
     height_indexer = [[:steps, i, :latents, :z, :val] for i in 1:nsteps]
-                                  
     gray_cmap = range(colorant"white", stop=colorant"gray32", length=6)
     true_depth = [extract_submap_value(get_choices(gt), depth_indexer[i]) for i in 1:nsteps]
     true_height = [extract_submap_value(get_choices(gt), height_indexer[i]) for i in 1:nsteps]
@@ -347,7 +426,7 @@ end
 # each particle's xyz coordinate is plotted and the score of the particle is reflected in the color.
 # also have the ground truth plotted in a different color.
 
-function render_pf_results(uw_traces, gt_trace, n_steps)
+function animate_pf_results(uw_traces, gt_trace, n_steps)
     res = 700
     msize = 7000
     c2 = colorant"rgba(255, 0, 255, .25)"

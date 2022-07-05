@@ -13,8 +13,8 @@ step_proposal_compiled = @compile_step_proposal(step_proposal, 11, 2)
 
 @load_generated_functions()
 
-NSTEPS = 20
-NPARTICLES = 100
+NSTEPS = 10
+NPARTICLES = 10
 
 #tr = simulate(model, (NSTEPS,))
 
@@ -57,7 +57,7 @@ observations = get_dynamic_model_obs(tr)
 #OK next step is figuring out which particles are moving in depth vs not
 
 heatmap_pf_results(unweighted_traces_at_each_step, tr, NSTEPS)
-render_pf_results(unweighted_traces_at_each_step, tr, NSTEPS)
+animate_pf_results(unweighted_traces_at_each_step, tr, NSTEPS)
 
 # unweighted_traces_at_each_step looks like
 # [
