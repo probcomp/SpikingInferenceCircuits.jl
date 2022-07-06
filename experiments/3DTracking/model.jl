@@ -100,7 +100,7 @@ end
         vcat(truncated_discretized_gaussian(
             true_r <= r_max ? true_r : r_max, .4, Rs())[1:Int(r_max)],
              zeros(length(Rs())-Int(r_max))))
-    rₜ = { :rₜ } ~ LCat(Rs())(r_probvec)
+    rₜ = { :r } ~ LCat(Rs())(r_probvec)
     dϕ = { :dϕ } ~ LCat(SphericalVels())(truncated_discretized_gaussian(round_to_pt1(true_ϕ -  true_ϕₜ₋₁), .1, SphericalVels()))
     dθ = { :dθ } ~ LCat(SphericalVels())(truncated_discretized_gaussian(round_to_pt1(true_θ -  true_θₜ₋₁), .1, SphericalVels()))
     return (dxₜ, dyₜ, dzₜ, xₜ, yₜ, zₜ, rₜ, true_ϕ, true_θ, dϕ, dθ)
@@ -152,7 +152,7 @@ end
         vcat(truncated_discretized_gaussian(
             rₜ₋₁ <= r_max ? rₜ₋₁ : r_max, 2, Rs())[1:Int(r_max)],
              zeros(length(Rs())-Int(r_max))))
-    rₜ = { :rₜ } ~ LCat(Rs())(r_probvec)
+    rₜ = { :r } ~ LCat(Rs())(r_probvec)
     x_prop = rₜ * cos(true_ϕ) * cos(true_θ)
     y_prop = rₜ * cos(true_ϕ) * sin(true_θ)
     z_prop = rₜ * sin(true_ϕ)
@@ -176,7 +176,7 @@ end
     l = length(Rs())
     r_probvec = normalize(vcat(ones(Int64(r_max)), zeros(Int64(l-r_max))))
   #  rₜ = { :rₜ } ~ LCat(Rs())(r_probvec)
-    rₜ = { :rₜ } ~ LCat(Rs())(
+    rₜ = { :r } ~ LCat(Rs())(
         truncated_discretized_gaussian(round(norm_3d(X_init, Y_init, Z_init)),
                                        1, Rs()))
     x_prop = rₜ * cos(true_ϕ) * cos(true_θ)
@@ -245,7 +245,56 @@ function render_azalt_trajectory(tr)
     save("traj.pdf", fig)
 end
 
+
+# just have to make the perfect trace here and you'll be set.
+# make everything deterministic. 
+
+function make_deterministic_trace()
+    x_traj = [X_init for i in 1:NSTEPS]
+    y_traj = [Y_init + i for i in 1:NSTEPS]
+    z_traj = [Z_init for i in 1:NSTEPS]
+# has to start at X Y Z INIT. First d is the diff between Xinit and x_traj[1]
+    dx_traj = vcat([x_traj[1]-X_init], diff(x_traj))
+    dy_traj = vcat([y_traj[1]-Y_init], diff(y_traj))
+    dz_traj = vcat([z_traj[1]-Z_init], diff(z_traj))
+    x_traj_choice = [(:steps => i => :latents => :x => :val, x) for (i, x) in enumerate(x_traj)]
+    y_traj_choice = [(:steps => i => :latents => :y => :val, y) for (i, y) in enumerate(y_traj)]
+    z_traj_choice = [(:steps => i => :latents => :z => :val, z) for (i, z) in enumerate(z_traj)]
+    dx_traj_choice = [(:steps => i => :latents => :dx => :val, dx) for (i, dx) in enumerate(dx_traj)]
+    dy_traj_choice = [(:steps => i => :latents => :dy => :val, dy) for (i, dy) in enumerate(dy_traj)]
+    dz_traj_choice = [(:steps => i => :latents => :dz => :val, dz) for (i, dz) in enumerate(dz_traj)]
+    true_r = [round(norm_3d(x, y, z)) for (x, y, z) in zip(x_traj, y_traj, z_traj)]
+    true_rₜ₋₁ = [round(norm_3d((x-dx), (y-dy), (z-dz))) for (x, y, z, dx, dy, dz) in zip(x_traj, y_traj, z_traj, dx_traj, dy_traj, dz_traj)]
+    true_ϕ = [round_to_pt1(nm.asin(z / r)) for (z, r) in zip(z_traj, true_r)]
+    true_θ = [round_to_pt1(nm.atan(y / x)) for (x, y) in zip(x_traj, y_traj)] 
+    true_ϕₜ₋₁ = [round_to_pt1(nm.asin((z - dz)/ r)) for (z, dz, r) in zip(z_traj, dz_traj, true_rₜ₋₁)]
+    true_θₜ₋₁ = [round_to_pt1(nm.atan((y - dy) / (x - dx))) for (x, y, dx, dy) in zip(x_traj, y_traj, dx_traj, dy_traj)]
+    dϕ = [round_to_pt1(tϕ - tϕₜ₋₁) for (tϕ, tϕₜ₋₁) in zip(true_ϕ, true_ϕₜ₋₁)]
+    dθ = [round_to_pt1(tθ - tθₜ₋₁) for (tθ, tθₜ₋₁) in zip(true_θ, true_θₜ₋₁)]
+    obsθ = [round_to_pt1(t-d) for (t, d) in zip(true_θ, dθ)]
+    obsϕ = [round_to_pt1(t-d) for (t, d) in zip(true_ϕ, dϕ)]
+    true_θ_choice = [(:steps => i => :latents => :true_θ => :val, θ) for (i, θ) in enumerate(true_θ)]
+    true_ϕ_choice = [(:steps => i => :latents => :true_ϕ => :val, ϕ) for (i, ϕ) in enumerate(true_ϕ)]
+    r_choice = [(:steps => i => :latents => :r => :val, r) for (i, r) in enumerate(true_r)]
+    dθ_choice = [(:steps => i => :latents => :true_θ => :val, θ) for (i, θ) in enumerate(dθ)]
+    dϕ_choice = [(:steps => i => :latents => :true_ϕ => :val, ϕ) for (i, ϕ) in enumerate(dϕ)]
+    obsθ_choice = [(:steps => i => :obs => :obs_θ => :val, θ) for (i, θ) in enumerate(obsθ[2:end])]
+    obsϕ_choice = [(:steps => i => :obs => :obs_ϕ => :val, ϕ) for (i, ϕ) in enumerate(obsϕ[2:end])]
+    obsθ_init = (:init => :obs => :obs_ϕ => :val, obsθ[1]) 
+    obsϕ_init = (:init => :obs => :obs_ϕ => :val, obsϕ[1])
+    x_init = (:init => :latents => :x => :val, X_init)
+    y_init = (:init => :latents => :y => :val, Y_init)
+    z_init = (:init => :latents => :z => :val, Z_init)
+    tr_choicemap = choicemap(x_init, y_init, z_init, obsθ_init, obsϕ_init,
+                             x_traj_choice..., y_traj_choice..., z_traj_choice...,
+                             dx_traj_choice..., dy_traj_choice..., dz_traj_choice...,
+                             true_θ_choice..., true_ϕ_choice..., dθ_choice..., dϕ_choice...,
+                             r_choice..., obsϕ_choice..., obsθ_choice...)
+    return tr_choicemap
+end
+
     
+
 function animate_azalt_heatmap(tr_list, anim_now)
     azalt_matrices = zeros(NSTEPS+1, length(θs()), length(ϕs()))
     obs_matrices = zeros(NSTEPS+1, length(θs()), length(ϕs()))

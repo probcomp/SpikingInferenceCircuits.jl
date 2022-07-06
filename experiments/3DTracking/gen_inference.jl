@@ -18,28 +18,9 @@ NPARTICLES = 10
 
 #tr = simulate(model, (NSTEPS,))
 
-x_traj = [(:steps => i => :latents => :x => :val, X_init + i) for i in 1:NSTEPS]
-y_traj = [(:steps => i => :latents => :y => :val, Y_init + i) for i in 1:NSTEPS]
-z_traj = [(:steps => i => :latents => :z => :val, Z_init) for i in 1:NSTEPS]
-dx_traj = [(:steps => i => :latents => :dx => :val, 1) for i in 1:NSTEPS]
-dy_traj = [(:steps => i => :latents => :dy => :val, 1) for i in 1:NSTEPS]
-dz_traj = [(:steps => i => :latents => :dz => :val, 0) for i in 1:NSTEPS]
+ocmap = make_deterministic_trace()
 
-tr, w = generate(model, (NSTEPS,), choicemap(
-    (:init => :latents => :x => :val, X_init),
-    (:init => :latents => :y => :val, Y_init),
-    (:init => :latents => :z => :val, Z_init),
-    (:init => :latents => :dx => :val, 1),
-    (:init => :latents => :dy => :val, 1), 
-    (:init => :latents => :dz => :val, 0)))
-#     x_traj...,
-#     y_traj...,
-#     z_traj...,
-#     dz_traj...,
-#     dx_traj...,
-#     dy_traj...
-# ))
-
+tr, w = generate(model, (NSTEPS,), cmap)
 
   # to constrain a step:
 #  (:steps => t => :latents => :x, val)
@@ -56,8 +37,9 @@ observations = get_dynamic_model_obs(tr)
 
 #OK next step is figuring out which particles are moving in depth vs not
 
-heatmap_pf_results(unweighted_traces_at_each_step, tr, NSTEPS)
-animate_pf_results(unweighted_traces_at_each_step, tr, NSTEPS)
+#heatmap_pf_results(unweighted_traces_at_each_step, tr, NSTEPS)
+#animate_pf_results(unweighted_traces_at_each_step, tr, NSTEPS)
+render_static_trajectories(unweighted_traces_at_each_step, tr)
 
 # unweighted_traces_at_each_step looks like
 # [
