@@ -91,10 +91,8 @@ end
     # have to tighten up the variance on the truncated gaussian sample for r. 
     true_ϕ = { :true_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(
         round_to_pt1(nm.asin(zₜ / true_r)), .1, ϕs()))
-
     true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(
         round_to_pt1(nm.atan(yₜ / xₜ)), .1, θs()))
-
     r_max = max_distance_inside_grid(true_ϕ, true_θ)
     r_probvec = normalize(
         vcat(truncated_discretized_gaussian(
@@ -247,24 +245,34 @@ end
 
 
 # just have to make the perfect trace here and you'll be set.
-# make everything deterministic. 
+# make everything deterministic.
+
+# velocities are the velocities that got you from x t-1 to x.
+# x_traj contains the initial observation and initial position.
+
+# TODO -- make sure this function is correct. Write one more function to render the azalt
+# using a choicemap generated from every value EXCEPT the obs. then plot the obs. 
 
 function make_deterministic_trace()
-    x_traj = [X_init for i in 1:NSTEPS]
-    y_traj = [Y_init + i for i in 1:NSTEPS]
-    z_traj = [Z_init for i in 1:NSTEPS]
+    x_traj = vcat([X_init], [X_init for i in 1:NSTEPS])
+    y_traj = vcat([Y_init], [Y_init + i for i in 1:NSTEPS])
+    z_traj = vcat([Z_init], [Z_init for i in 1:NSTEPS])
 # has to start at X Y Z INIT. First d is the diff between Xinit and x_traj[1]
-    dx_traj = vcat([x_traj[1]-X_init], diff(x_traj))
-    dy_traj = vcat([y_traj[1]-Y_init], diff(y_traj))
-    dz_traj = vcat([z_traj[1]-Z_init], diff(z_traj))
-    x_traj_choice = [(:steps => i => :latents => :x => :val, x) for (i, x) in enumerate(x_traj)]
-    y_traj_choice = [(:steps => i => :latents => :y => :val, y) for (i, y) in enumerate(y_traj)]
-    z_traj_choice = [(:steps => i => :latents => :z => :val, z) for (i, z) in enumerate(z_traj)]
+    dx_traj = diff(x_traj)
+    dy_traj = diff(y_traj)
+    dz_traj = diff(z_traj)
+    x_traj_choice = [(:steps => i => :latents => :x => :val, x) for (i, x) in enumerate(x_traj[2:end])]
+    y_traj_choice = [(:steps => i => :latents => :y => :val, y) for (i, y) in enumerate(y_traj[2:end])]
+    z_traj_choice = [(:steps => i => :latents => :z => :val, z) for (i, z) in enumerate(z_traj[2:end])]
     dx_traj_choice = [(:steps => i => :latents => :dx => :val, dx) for (i, dx) in enumerate(dx_traj)]
     dy_traj_choice = [(:steps => i => :latents => :dy => :val, dy) for (i, dy) in enumerate(dy_traj)]
     dz_traj_choice = [(:steps => i => :latents => :dz => :val, dz) for (i, dz) in enumerate(dz_traj)]
+
+
+
+    # Think deeply about the right answer here for true_r and rt-1. 
     true_r = [round(norm_3d(x, y, z)) for (x, y, z) in zip(x_traj, y_traj, z_traj)]
-    true_rₜ₋₁ = [round(norm_3d((x-dx), (y-dy), (z-dz))) for (x, y, z, dx, dy, dz) in zip(x_traj, y_traj, z_traj, dx_traj, dy_traj, dz_traj)]
+    true_rₜ₋₁ = [round(norm_3d((x-dx), (y-dy), (z-dz))) for (x, y, z, dx, dy, dz) in zip(x_traj[2:end], y_traj[2:end], z_traj[2:end], dx_traj, dy_traj, dz_traj)]
     true_ϕ = [round_to_pt1(nm.asin(z / r)) for (z, r) in zip(z_traj, true_r)]
     true_θ = [round_to_pt1(nm.atan(y / x)) for (x, y) in zip(x_traj, y_traj)] 
     true_ϕₜ₋₁ = [round_to_pt1(nm.asin((z - dz)/ r)) for (z, dz, r) in zip(z_traj, dz_traj, true_rₜ₋₁)]
@@ -285,6 +293,7 @@ function make_deterministic_trace()
     x_init = (:init => :latents => :x => :val, X_init)
     y_init = (:init => :latents => :y => :val, Y_init)
     z_init = (:init => :latents => :z => :val, Z_init)
+    r_init = (:init => :latents => :r => :val, true_r[1])
     tr_choicemap = choicemap(x_init, y_init, z_init, obsθ_init, obsϕ_init,
                              x_traj_choice..., y_traj_choice..., z_traj_choice...,
                              dx_traj_choice..., dy_traj_choice..., dz_traj_choice...,
@@ -375,6 +384,7 @@ function render_static_trajectories(uw_traces, gt::Trace)
     gt_coords = []
     particle_coords = []
     score_colors = []
+#    for i in 1:NSTEPS+1
     for i in 1:NSTEPS+1
         step_coords = []
         trace_scores = []
@@ -475,7 +485,8 @@ end
 # each particle's xyz coordinate is plotted and the score of the particle is reflected in the color.
 # also have the ground truth plotted in a different color.
 
-function animate_pf_results(uw_traces, gt_trace, n_steps)
+function animate_pf_results(uw_traces, gt_trace)
+    GLMakie.activate!()
     res = 700
     msize = 7000
     c2 = colorant"rgba(255, 0, 255, .25)"
@@ -496,39 +507,62 @@ function animate_pf_results(uw_traces, gt_trace, n_steps)
     observation_matrices, azalt_particle_matrices = animate_azalt_heatmap(uw_traces[end], false)
     # scatter takes a list of tuples. want a list of lists of tuples as an f(t) and lift a node to that.
     time_node = Node(1)
+    # for i in 1:n_steps+1
+    #     step_coords = []
+    #     trace_scores = []
+    #     gt_temp = []
+    #     for (tnum, tr) in enumerate(vcat(gt_trace, uw_traces[i]))
+    #         ch = get_choices(tr)
+    #         if i == 1
+    #             x = extract_submap_value(ch, [:init, :latents, :x, :val])
+    #             y = extract_submap_value(ch, [:init, :latents, :y, :val])
+    #             z = extract_submap_value(ch, [:init, :latents, :z, :val])
+    #         else
+    #             x = extract_submap_value(ch, [:steps, i-1, :latents, :x, :val])
+    #             y = extract_submap_value(ch, [:steps, i-1, :latents, :y, :val])
+    #             z = extract_submap_value(ch, [:steps, i-1, :latents, :z, :val])
+    #         end
+    #         if tnum == 1
+    #             push!(gt_temp, (x, y, z))
+    #         else
+    #             push!(step_coords, (x, y, z))
+    #             push!(trace_scores, get_score(tr))
+    #         end
+            
+    #     end
+    #     push!(particle_coords, step_coords)
+    #     push!(score_colors, trace_scores)
+    #     push!(gt_coords, gt_temp)
+    # end
     gt_coords = []
     particle_coords = []
     score_colors = []
-    for i in 1:n_steps+1
-        step_coords = []
-        trace_scores = []
-        gt_temp = []
-        for (tnum, tr) in enumerate(vcat(gt_trace, uw_traces[i]))
-            ch = get_choices(tr)
-            if i == 1
+    choices_per_particle = [get_choices(tr) for tr in vcat(gt_trace, uw_traces[end])]
+    trace_scores = [get_score(tr) for tr in uw_traces[end]]
+    for i in 0:NSTEPS
+        step_particle_coords = []
+        for (particle_num, ch) in enumerate(choices_per_particle)
+            if i == 0
                 x = extract_submap_value(ch, [:init, :latents, :x, :val])
                 y = extract_submap_value(ch, [:init, :latents, :y, :val])
                 z = extract_submap_value(ch, [:init, :latents, :z, :val])
+                println("past here")
             else
-                x = extract_submap_value(ch, [:steps, i-1, :latents, :x, :val])
-                y = extract_submap_value(ch, [:steps, i-1, :latents, :y, :val])
-                z = extract_submap_value(ch, [:steps, i-1, :latents, :z, :val])
+                x = extract_submap_value(ch, [:steps, i, :latents, :x, :val])
+                y = extract_submap_value(ch, [:steps, i, :latents, :y, :val])
+                z = extract_submap_value(ch, [:steps, i, :latents, :z, :val])
             end
-            if tnum == 1
-                push!(gt_temp, (x, y, z))
+            if particle_num == 1
+                push!(gt_coords, (x, y, z)) 
             else
-                push!(step_coords, (x, y, z))
-                push!(trace_scores, get_score(tr))
+                push!(step_particle_coords, (x, y, z))
             end
-            
         end
-        push!(particle_coords, step_coords)
-        push!(score_colors, trace_scores)
-        push!(gt_coords, gt_temp)
+        push!(particle_coords, step_particle_coords)        
     end
     fp(t) = convert(Vector{Point3f0}, particle_coords[t])
     fs(t) = convert(Vector{Float64}, map(f -> isfinite(f) ? .1*log(f) : 0, (-1*score_colors[t])))
-    f_gt(t) = convert(Vector{Point3f0}, gt_coords[t])
+    f_gt(t) = [convert(Point3f0, gt_coords[t])]
 #    scatter!(anim_axis, lift(t -> fp(t), time_node), color=lift(t -> fs(t), time_node), colormap=:grays, markersize=msize, alpha=.5)
     scatter!(particle_anim_axis, lift(t -> fp(t), time_node), color=gray_w_alpha, markersize=msize, alpha=.5)
     scatter!(particle_anim_axis, lift(t -> f_gt(t), time_node), color=:red, markersize=msize)
@@ -549,7 +583,7 @@ function animate_pf_results(uw_traces, gt_trace, n_steps)
 #    azalt_axis.padding = (20, 20, 20, 20)
 #    translate_camera(anim_axis)
     display(fig)
-    for i in 1:n_steps
+    for i in 1:NSTEPS
         sleep(.5)
         time_node[] = i
     end
