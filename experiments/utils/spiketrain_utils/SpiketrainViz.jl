@@ -50,7 +50,7 @@ function draw_spiketrain!(ax, spiketrains, names, colors, time, xmin, xmax)
     ypositions = 1:length(spiketrains)
     trainheight = 1
 
-    colors = collect(Iterators.flatten((colors, Iterators.repeated(RGB(0, 0, 0), length(names) - length(colors)))))
+    colors = collect(Iterators.flatten((colors, Iterators.repeated(RGBA(0, 0, 0, 1), length(names) - length(colors)))))
     @assert length(names) == length(colors)
 
     for (spiketrain, pos, color) in zip(spiketrains, ypositions, colors)        
@@ -72,11 +72,11 @@ compute_xlims(trains, xmin, xmax) = (
     isnothing(xmax) ? maximum(map(infmax, trains)) : xmax
 )
 
-function draw_single_spiketrain!(ax, spiketimes, ypos, height, current_time, color=RGB(0, 0, 0))
+function draw_single_spiketrain!(ax, spiketimes, ypos, height, current_time, color=RGBA(0, 0, 0, 1))
     @assert all(t isa Real for t in spiketimes) "a spiketimes vector (for a single y position) is not a vector of real numbers"
     y1 = ypos - height/2; y2 = ypos + height/2
     times = vcat([
-        [Point2f0(t - current_time, y1), Point2f0(t - current_time, y2)]
+        [Point2(t - current_time, y1), Point2(t - current_time, y2)]
         for t in spiketimes
     ]...)
 
