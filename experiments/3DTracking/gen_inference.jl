@@ -4,17 +4,25 @@ using ProbEstimates
 
 
 include("model.jl")
+include("ab_viz.jl")
 ProbEstimates.use_perfect_weights!()
 #ProbEstimates.use_noisy_weights!()
 
-model = @DynamicModel(initial_model, step_model, obs_model, 11)
+
+
+
+
+
+
+
+model = @DynamicModel(initial_model, step_model, obs_model, 9)
 initial_proposal_compiled = @compile_initial_proposal(initial_proposal, 2)
-step_proposal_compiled = @compile_step_proposal(step_proposal, 11, 2)
+step_proposal_compiled = @compile_step_proposal(step_proposal, 9, 2)
 
 @load_generated_functions()
 
 NSTEPS = 15
-NPARTICLES = 100
+NPARTICLES = 10
 
 #tr = simulate(model, (NSTEPS,))
 
