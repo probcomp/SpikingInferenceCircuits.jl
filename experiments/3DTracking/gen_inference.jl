@@ -39,7 +39,7 @@ observations = get_dynamic_model_obs(tr)
 
 #heatmap_pf_results(unweighted_traces_at_each_step, tr, NSTEPS)
 animate_pf_results(unweighted_traces_at_each_step, tr)
-#render_static_trajectories(unweighted_traces_at_each_step, tr)
+render_static_trajectories(unweighted_traces_at_each_step, tr)
 
 
 # unweighted_traces_at_each_step looks like
