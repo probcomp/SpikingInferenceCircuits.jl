@@ -11,3 +11,4 @@ experiments/figure_saves/**/*
 saves/**/*
 snn_runs/**/*
 *.png
+.DS_STORE
