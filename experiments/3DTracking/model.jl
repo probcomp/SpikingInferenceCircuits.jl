@@ -71,9 +71,9 @@ end
     # For now: just use dimension-wise discretized Gaussians.
     true_r = round(norm_3d(xₜ, yₜ, zₜ))
     true_ϕ = { :true_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(
-        round_to_pt1(nm.asin(zₜ / true_r)), .1, ϕs()))
+        round_to_pt1(nm.asin(zₜ / true_r)), .03, ϕs()))
     true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(
-        round_to_pt1(nm.atan(yₜ / xₜ)), .1, θs()))
+        round_to_pt1(nm.atan(yₜ / xₜ)), .03, θs()))
     r_max = max_distance_inside_grid(true_ϕ, true_θ)
     r_probvec = normalize(
         vcat(truncated_discretized_gaussian(
@@ -87,22 +87,34 @@ end
 @gen (static) function obs_model(dxₜ, dyₜ, dzₜ, xₜ, yₜ, zₜ, rₜ, true_ϕ, true_θ)
     # can't propose to these b/c they are the final observations we're scoring.
     # have to propose to the exact theta and phi.
-    obs_ϕ = { :obs_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(round_to_pt1(true_ϕ), 0.1, ϕs()))
-    obs_θ = { :obs_θ } ~ LCat(θs())(truncated_discretized_gaussian(round_to_pt1(true_θ), 0.1, θs()))
-    return (obs_θ, obs_ϕ)
+    obs_ϕ = { :obs_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(round_to_pt1(true_ϕ), 0.03, ϕs()))
+    obs_θ = { :obs_θ } ~ LCat(θs())(truncated_discretized_gaussian(round_to_pt1(true_θ), 0.03, θs()))
+    return (obs_ϕ, obs_θ)
 end
 
 
+# Stub this for the marquee first. Increase minprob slowly.
+# depth should be related to the previous xyz velocities. previous depth plus the norm of the
+# velocity.
+
+# josh --> you are literally using your retinal sensors. ignoring the model? just the proposal? proposal proposes and we just do what it asks us to do. VERY WELL TUNED PROPOSAL. 
+
+# either two initial obs.
+
+# six independent runs of SMC. take one particle at the end. then get 6 uncorrelated particles.# one particle is the resampled independent sample from the posterior. 
+
+
 @gen (static) function step_proposal(dxₜ₋₁, dyₜ₋₁, dzₜ₋₁, xₜ₋₁, yₜ₋₁, zₜ₋₁,
-                                     rₜ₋₁, true_ϕ, true_θ, obs_θ, obs_ϕ) # θ and ϕ are noisy
+                                     rₜ₋₁, true_ϕ, true_θ, obs_ϕ, obs_θ) # θ and ϕ are noisy
     # instead of sampling (x, y, h) then computing r (as we do in the model)
     # in the proposal we sample (r, x, y) and then compute h
-    true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(obs_θ, 0.2, θs()))
-    true_ϕ = { :true_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(obs_ϕ, 0.2, ϕs()))
+    true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(obs_θ, 0.05, θs()))
+    true_ϕ = { :true_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(obs_ϕ, 0.05, ϕs()))
     r_max = max_distance_inside_grid(true_ϕ, true_θ)
+    true_r = round(norm_3d(xₜ₋₁ + dxₜ₋₁, yₜ₋₁ + dyₜ₋₁, zₜ₋₁ + dzₜ₋₁))
     r_probvec = normalize(
         vcat(truncated_discretized_gaussian(
-            rₜ₋₁ <= r_max ? rₜ₋₁ : r_max, .6, Rs())[1:Int(r_max)],
+            true_r <= r_max ? true_r : r_max, .6, Rs())[1:Int(r_max)],
              zeros(length(Rs())-Int(r_max))))
     rₜ = { :r } ~ LCat(Rs())(r_probvec)
     x_prop = rₜ * cos(true_ϕ) * cos(true_θ)
@@ -113,21 +125,21 @@ end
     yₜ = { :y } ~ LCat(Ys())(truncated_discretized_gaussian(y_prop, .1, Ys()))
     zₜ = { :z } ~ LCat(Zs())(truncated_discretized_gaussian(z_prop, .1, Zs()))
     # any choice of v here will be consistent with the model b/c its one or two off in the model.
-    vxₜ = { :dx } ~ LCat(Vels())(truncated_discretized_gaussian(x_prop-xₜ₋₁, .1, Vels()))
-    vyₜ = { :dy } ~ LCat(Vels())(truncated_discretized_gaussian(y_prop-yₜ₋₁, .1, Vels()))
-    vzₜ = { :dz } ~ LCat(Vels())(truncated_discretized_gaussian(z_prop-zₜ₋₁, .1, Vels()))
+    dxₜ = { :dx } ~ LCat(Vels())(truncated_discretized_gaussian(x_prop-xₜ₋₁, .1, Vels()))
+    dyₜ = { :dy } ~ LCat(Vels())(truncated_discretized_gaussian(y_prop-yₜ₋₁, .1, Vels()))
+    dzₜ = { :dz } ~ LCat(Vels())(truncated_discretized_gaussian(z_prop-zₜ₋₁, .1, Vels()))
 end
 
-@gen (static) function initial_proposal(obs_θ, obs_ϕ)
-    true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(obs_θ, 0.2, θs()))
-    true_ϕ = { :true_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(obs_ϕ, 0.2, ϕs()))
+@gen (static) function initial_proposal(obs_ϕ, obs_θ)
+    true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(obs_θ, 0.05, θs()))
+    true_ϕ = { :true_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(obs_ϕ, 0.05, ϕs()))
     # r_max on the first draw is guaranteed to not leave the cube
     r_max = max_distance_inside_grid(true_ϕ, true_θ)
     l = length(Rs())
- #   r_probvec = normalize(vcat(ones(Int64(r_max)), zeros(Int64(l-r_max))))
+    r_probvec = normalize(vcat(ones(Int64(r_max)), zeros(Int64(l-r_max))))
 #    rₜ = { :rₜ } ~ LCat(Rs())(r_probvec)
     rₜ = { :r } ~ LCat(Rs())(truncated_discretized_gaussian(round(norm_3d(X_init, Y_init, Z_init)),
-                                                    .6, Rs()))
+                                                            .6, Rs()))
     x_prop = rₜ * cos(true_ϕ) * cos(true_θ)
     y_prop = rₜ * cos(true_ϕ) * sin(true_θ)
     z_prop = rₜ * sin(true_ϕ)
@@ -154,16 +166,6 @@ function max_distance_inside_grid(ϕ, θ)
 end
 
 
-function limit_delta_pos(p_prop, p_prev)
-    if p_prop - p_prev > Vels()[end]
-        return Vels()[end]
-    elseif p_prop - p_prev < Vels()[1]
-        return Vels()[1]
-    else
-        return p_prop - p_prev
-    end
-end
-
 function make_deterministic_trace()
     x_traj = vcat([X_init], [X_init for i in 1:NSTEPS])
     y_traj = vcat([Y_init], [Y_init + i for i in 1:NSTEPS])
@@ -181,19 +183,22 @@ function make_deterministic_trace()
     # Think deeply about the right answer here for true_r and rt-1. 
     true_r = [round(norm_3d(x, y, z)) for (x, y, z) in zip(x_traj, y_traj, z_traj)]
     true_ϕ = [round_to_pt1(nm.asin(z / r)) for (z, r) in zip(z_traj, true_r)]
+    true_ϕ_choice = [(:steps => i => :latents => :true_ϕ => :val, ϕ) for (i, ϕ) in enumerate(true_ϕ[2:end])]    
     true_θ = [round_to_pt1(nm.atan(y / x)) for (x, y) in zip(x_traj, y_traj)] 
-    true_θ_choice = [(:steps => i => :latents => :true_θ => :val, θ) for (i, θ) in enumerate(true_θ)]
-    true_ϕ_choice = [(:steps => i => :latents => :true_ϕ => :val, ϕ) for (i, ϕ) in enumerate(true_ϕ)]
-    r_choice = [(:steps => i => :latents => :r => :val, r) for (i, r) in enumerate(true_r)]
-    obsθ_choice = [(:steps => i => :obs => :obs_θ => :val, θ) for (i, θ) in enumerate(true_θ)]
-    obsϕ_choice = [(:steps => i => :obs => :obs_ϕ => :val, ϕ) for (i, ϕ) in enumerate(true_ϕ)]
-    obsθ_init = (:init => :obs => :obs_ϕ => :val, true_θ[1])
+    true_θ_choice = [(:steps => i => :latents => :true_θ => :val, θ) for (i, θ) in enumerate(true_θ[2:end])]
+
+    r_choice = [(:steps => i => :latents => :r => :val, r) for (i, r) in enumerate(true_r[2:end])]
+    obsθ_choice = [(:steps => i => :obs => :obs_θ => :val, θ) for (i, θ) in enumerate(true_θ[2:end])]
+    obsϕ_choice = [(:steps => i => :obs => :obs_ϕ => :val, ϕ) for (i, ϕ) in enumerate(true_ϕ[2:end])]
+    obsθ_init = (:init => :obs => :obs_θ => :val, true_θ[1])
     obsϕ_init = (:init => :obs => :obs_ϕ => :val, true_ϕ[1])
     x_init = (:init => :latents => :x => :val, X_init)
     y_init = (:init => :latents => :y => :val, Y_init)
     z_init = (:init => :latents => :z => :val, Z_init)
+    θ_init = (:init => :latents => :true_θ => :val, true_θ[1])
+    ϕ_init = (:init => :latents => :true_ϕ => :val, true_ϕ[1])
     r_init = (:init => :latents => :r => :val, true_r[1])
-    tr_choicemap = choicemap(x_init, y_init, z_init, obsθ_init, obsϕ_init,
+    tr_choicemap = choicemap(x_init, y_init, z_init, obsθ_init, obsϕ_init, θ_init, ϕ_init,
                              x_traj_choice..., y_traj_choice..., z_traj_choice...,
                              dx_traj_choice..., dy_traj_choice..., dz_traj_choice...,
                              true_θ_choice..., true_ϕ_choice..., 

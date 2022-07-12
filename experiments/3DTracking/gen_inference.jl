@@ -8,32 +8,16 @@ include("ab_viz.jl")
 ProbEstimates.use_perfect_weights!()
 #ProbEstimates.use_noisy_weights!()
 
-
-
-
-
-
-
-
 model = @DynamicModel(initial_model, step_model, obs_model, 9)
 initial_proposal_compiled = @compile_initial_proposal(initial_proposal, 2)
 step_proposal_compiled = @compile_step_proposal(step_proposal, 9, 2)
 
 @load_generated_functions()
 
-NSTEPS = 15
-NPARTICLES = 10
-
-#tr = simulate(model, (NSTEPS,))
-
+NSTEPS = 14
+NPARTICLES = 20
 cmap = make_deterministic_trace()
-
 tr, w = generate(model, (NSTEPS,), cmap)
-
-  # to constrain a step:
-#  (:steps => t => :latents => :x, val)
-#)
-
 observations = get_dynamic_model_obs(tr)
 
 (unweighted_traces_at_each_step, _) = dynamic_model_smc(
@@ -43,11 +27,11 @@ observations = get_dynamic_model_obs(tr)
     NPARTICLES, # n particles
     ess_threshold=NPARTICLES)
 
-#OK next step is figuring out which particles are moving in depth vs not
-
 #heatmap_pf_results(unweighted_traces_at_each_step, tr, NSTEPS)
 animate_pf_results(unweighted_traces_at_each_step, tr)
 render_static_trajectories(unweighted_traces_at_each_step, tr)
+println([get_score(t) for t in unweighted_traces_at_each_step[1]])
+render_obs_from_particles(unweighted_traces_at_each_step, 10);
 
 
 # unweighted_traces_at_each_step looks like
@@ -60,7 +44,6 @@ render_static_trajectories(unweighted_traces_at_each_step, tr)
 
 # by a "trace for timestep T", I mean a trace which has choices
 # for every timestep up to and including T
-
 
 #tr_init = simulate(model, (0,))
 #proposed_choices, _ = propose(step_proposal, (tr_init, 0.0, 0.0))

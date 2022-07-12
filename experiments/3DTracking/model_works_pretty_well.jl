@@ -1,7 +1,6 @@
 using Gen
 using Distributions
 using Colors
-using GLMakie
 using StatsBase
 using GeometryBasics
 using FileIO
@@ -43,7 +42,7 @@ round_to_pt1(x) = round(x, digits=1)
     dzₜ = { :dz } ~ LCat(Vels())(unif(Vels()))
     xₜ = { :x } ~ Cat(unif(Xs()))
     yₜ = { :y } ~ LCat(Ys())(unif(Ys()))
-    zₜ = { :z } ~ Cat(unif(Zs()))
+    zₜ = { :z } ~ LCat(Zs())(unif(Zs()))
     true_r = round(norm_3d(xₜ, yₜ, zₜ))
     true_ϕ = { :true_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(
         round_to_pt1(nm.asin(zₜ / true_r)), 0.1, ϕs()))
@@ -72,9 +71,9 @@ end
     # For now: just use dimension-wise discretized Gaussians.
     true_r = round(norm_3d(xₜ, yₜ, zₜ))
     true_ϕ = { :true_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(
-        round_to_pt1(nm.asin(zₜ / true_r)), .1, ϕs()))
+        round_to_pt1(nm.asin(zₜ / true_r)), .03, ϕs()))
     true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(
-        round_to_pt1(nm.atan(yₜ / xₜ)), .1, θs()))
+        round_to_pt1(nm.atan(yₜ / xₜ)), .03, θs()))
     r_max = max_distance_inside_grid(true_ϕ, true_θ)
     r_probvec = normalize(
         vcat(truncated_discretized_gaussian(
@@ -84,53 +83,38 @@ end
     return (dxₜ, dyₜ, dzₜ, xₜ, yₜ, zₜ, rₜ, true_ϕ, true_θ)
 end
 
-# if this is receiving a sample of r, then it could be shorter than x. 
 
 @gen (static) function obs_model(dxₜ, dyₜ, dzₜ, xₜ, yₜ, zₜ, rₜ, true_ϕ, true_θ)
     # can't propose to these b/c they are the final observations we're scoring.
     # have to propose to the exact theta and phi.
-    obs_ϕ = { :obs_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(round_to_pt1(true_ϕ), 0.1, ϕs()))
-    obs_θ = { :obs_θ } ~ LCat(θs())(truncated_discretized_gaussian(round_to_pt1(true_θ), 0.1, θs()))
-    return (obs_θ, obs_ϕ)
+    obs_ϕ = { :obs_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(round_to_pt1(true_ϕ), 0.03, ϕs()))
+    obs_θ = { :obs_θ } ~ LCat(θs())(truncated_discretized_gaussian(round_to_pt1(true_θ), 0.03, θs()))
+    return (obs_ϕ, obs_θ)
 end
 
 
-# here you probably can run into proposing an unrealistic r xyz combination because
-# you're directly making sure you don't propose unrealistic steps for x y and z. but should be fine
-# since r is one or two off. 
+# Stub this for the marquee first. Increase minprob slowly.
+# depth should be related to the previous xyz velocities. previous depth plus the norm of the
+# velocity.
 
+# josh --> you are literally using your retinal sensors. ignoring the model? just the proposal? proposal proposes and we just do what it asks us to do. VERY WELL TUNED PROPOSAL. 
 
-    # should the proposal balance the model? i.e. incorporate data and the past?
-    
-    # likely issue here is its very possible that delta
-    # x y and z could be larger than the velocity. this prob creates nans. think about
-    # how to address this problem.
+# either two initial obs.
 
-    # if velocity is 1, x can only be 2 greater, one greater, or 0 greater than x prev.
-    # if velocity is 0, can only be 1 greater, equal, or one less.
-    # if velocity is -1, can be two less, one less, or equal to xprev
-    # v can only be one off vprev
-
-    # here compare exact vals to t-1 vals
-    # if round(exact) - pos t-1 = 1,  x = maybe one off this delta + pos t-1
-
-# difference between the prior and the proposal is that step_model steps forward by generating a similar velocity, then
-# calculating the xyz coord, and calculating a distance (i.e. there is no role for distance perception, and no knowledge of the previous distance).
-# the step_proposal observes an az and alt, then says "the distance is probabably similar"; using the sampled distance, you
-# sample an x, y, and z and a velocity centered on the difference between the last and previous XYZ states. this way the model
-# favors explanations with similar velocities but the proposal on similar distances. proposal will ultimately let you propose bio-realistic distance metrics. 
+# six independent runs of SMC. take one particle at the end. then get 6 uncorrelated particles.# one particle is the resampled independent sample from the posterior. 
 
 
 @gen (static) function step_proposal(dxₜ₋₁, dyₜ₋₁, dzₜ₋₁, xₜ₋₁, yₜ₋₁, zₜ₋₁,
-                                     rₜ₋₁, true_ϕ, true_θ, obs_θ, obs_ϕ) # θ and ϕ are noisy
+                                     rₜ₋₁, true_ϕ, true_θ, obs_ϕ, obs_θ) # θ and ϕ are noisy
     # instead of sampling (x, y, h) then computing r (as we do in the model)
     # in the proposal we sample (r, x, y) and then compute h
-    true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(obs_θ, 0.2, θs()))
-    true_ϕ = { :true_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(obs_ϕ, 0.2, ϕs()))
+    true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(obs_θ, 0.05, θs()))
+    true_ϕ = { :true_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(obs_ϕ, 0.05, ϕs()))
     r_max = max_distance_inside_grid(true_ϕ, true_θ)
+    true_r = round(norm_3d(xₜ₋₁ + dxₜ₋₁, yₜ₋₁ + dyₜ₋₁, zₜ₋₁ + dzₜ₋₁))
     r_probvec = normalize(
         vcat(truncated_discretized_gaussian(
-            rₜ₋₁ <= r_max ? rₜ₋₁ : r_max, .6, Rs())[1:Int(r_max)],
+            true_r <= r_max ? true_r : r_max, .6, Rs())[1:Int(r_max)],
              zeros(length(Rs())-Int(r_max))))
     rₜ = { :r } ~ LCat(Rs())(r_probvec)
     x_prop = rₜ * cos(true_ϕ) * cos(true_θ)
@@ -141,21 +125,21 @@ end
     yₜ = { :y } ~ LCat(Ys())(truncated_discretized_gaussian(y_prop, .1, Ys()))
     zₜ = { :z } ~ LCat(Zs())(truncated_discretized_gaussian(z_prop, .1, Zs()))
     # any choice of v here will be consistent with the model b/c its one or two off in the model.
-    vxₜ = { :dx } ~ LCat(Vels())(truncated_discretized_gaussian(x_prop-xₜ₋₁, .1, Vels()))
-    vyₜ = { :dy } ~ LCat(Vels())(truncated_discretized_gaussian(y_prop-yₜ₋₁, .1, Vels()))
-    vzₜ = { :dz } ~ LCat(Vels())(truncated_discretized_gaussian(z_prop-zₜ₋₁, .1, Vels()))
+    dxₜ = { :dx } ~ LCat(Vels())(truncated_discretized_gaussian(x_prop-xₜ₋₁, .1, Vels()))
+    dyₜ = { :dy } ~ LCat(Vels())(truncated_discretized_gaussian(y_prop-yₜ₋₁, .1, Vels()))
+    dzₜ = { :dz } ~ LCat(Vels())(truncated_discretized_gaussian(z_prop-zₜ₋₁, .1, Vels()))
 end
 
-@gen (static) function initial_proposal(obs_θ, obs_ϕ)
-    true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(obs_θ, 0.2, θs()))
-    true_ϕ = { :true_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(obs_ϕ, 0.2, ϕs()))
+@gen (static) function initial_proposal(obs_ϕ, obs_θ)
+    true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(obs_θ, 0.05, θs()))
+    true_ϕ = { :true_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(obs_ϕ, 0.05, ϕs()))
     # r_max on the first draw is guaranteed to not leave the cube
     r_max = max_distance_inside_grid(true_ϕ, true_θ)
     l = length(Rs())
- #   r_probvec = normalize(vcat(ones(Int64(r_max)), zeros(Int64(l-r_max))))
-#    rₜ = { :rₜ } ~ LCat(Rs())(r_probvec)
-    rₜ = { :r } ~ LCat(Rs())(truncated_discretized_gaussian(round(norm_3d(X_init, Y_init, Z_init)),
-                                                    .6, Rs()))
+    r_probvec = normalize(vcat(ones(Int64(r_max)), zeros(Int64(l-r_max))))
+    rₜ = { :rₜ } ~ LCat(Rs())(r_probvec)
+ #   rₜ = { :r } ~ LCat(Rs())(truncated_discretized_gaussian(round(norm_3d(X_init, Y_init, Z_init)),
+  #                                                  .6, Rs()))
     x_prop = rₜ * cos(true_ϕ) * cos(true_θ)
     y_prop = rₜ * cos(true_ϕ) * sin(true_θ)
     z_prop = rₜ * sin(true_ϕ)
@@ -169,25 +153,18 @@ end
     dzₜ = { :dz } ~ LCat(Vels())(unif(Vels()))
 end
 
-function max_distance_inside_grid(ϕ, θ)
-    max_x_boundary = Xs()[end] / (cos(ϕ) * cos(θ))
-    max_y_pos_boundary = neg_to_inf(Ys()[end] / (cos(ϕ) * sin(θ)))
-    max_y_neg_boundary = neg_to_inf(Ys()[1] / (cos(ϕ) * sin(θ)))
-    max_z_boundary = Zs()[end] / sin(ϕ)
-    r_max = floor(minimum([max_x_boundary, max_y_pos_boundary,
-                     max_y_neg_boundary, max_z_boundary]))
-    return r_max
-end
 
-function limit_delta_pos(p_prop, p_prev)
-    if p_prop - p_prev > Vels()[end]
-        return Vels()[end]
-    elseif p_prop - p_prev < Vels()[1]
-        return Vels()[1]
-    else
-        return p_prop - p_prev
+function max_distance_inside_grid(ϕ, θ)
+    for (i, r) in enumerate(Rs())
+        x_prop = r * cos(ϕ) * cos(θ)
+        y_prop = r * cos(ϕ) * sin(θ)
+        z_prop = r * sin(ϕ)
+        if abs(x_prop) > Xs()[end] || abs(y_prop) > Ys()[end] || abs(z_prop) > Zs()[end]
+            return Rs()[i-1]
+        end
     end
 end
+
 
 function make_deterministic_trace()
     x_traj = vcat([X_init], [X_init for i in 1:NSTEPS])
