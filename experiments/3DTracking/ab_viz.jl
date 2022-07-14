@@ -118,7 +118,7 @@ end
 
 # you have to make a grid that contains az alt positions over time coded as a heat value, with white as nothing. 
 
-function render_static_trajectories(uw_traces, gt::Trace)
+function render_static_trajectories(uw_traces, gt::Trace, from_observer)
     render_azalt_trajectory(gt, "traj")
     GLMakie.activate!()
     res = 700
@@ -146,6 +146,10 @@ function render_static_trajectories(uw_traces, gt::Trace)
                 y = extract_submap_value(ch, [:steps, i, :latents, :y, :val])
                 z = extract_submap_value(ch, [:steps, i, :latents, :z, :val])
             end
+            if from_observer
+                y = -y
+            end
+            
             if particle_num == 1
                 push!(gt_coords, (x, y, z)) 
             else
@@ -170,6 +174,9 @@ function render_static_trajectories(uw_traces, gt::Trace)
     # scatter!(gt_preyloc_axis, lift(t -> f_gt(t), time_node), color=:red, markersize=msize) #, marker='o')
     # meshscatter!(particle_anim_axis, [(1, 0, 2)],
     #              marker=fish_mesh, color=:gray, rotations=Vec3f0(1, 0, 0), markersize=.75)
+    if from_observer
+        translate_camera(preyloc_axis)
+    end
     display(fig)
     return particle_coords, gt_coords
 end    
@@ -248,10 +255,14 @@ end
 # each particle's xyz coordinate is plotted and the score of the particle is reflected in the color.
 # also have the ground truth plotted in a different color.
 
-function animate_pf_results(uw_traces, gt_trace)
+function animate_pf_results(uw_traces, gt_trace, from_observer)
     GLMakie.activate!()
     res = 700
-    msize = 7000
+    if from_observer
+        msize = 100px
+    else
+        msize = 7000
+    end
     c2 = colorant"rgba(255, 0, 255, .25)"
     c1 = colorant"rgba(0, 255, 255, .25)"
     gray_w_alpha = colorant"rgba(60, 60, 60, .2)"
@@ -287,6 +298,9 @@ function animate_pf_results(uw_traces, gt_trace)
                 y = extract_submap_value(ch, [:steps, i, :latents, :y, :val])
                 z = extract_submap_value(ch, [:steps, i, :latents, :z, :val])
             end
+            if from_observer
+                y = -y
+            end
             if particle_num == 1
                 push!(gt_coords, (x, y, z)) 
             else
@@ -298,7 +312,8 @@ function animate_pf_results(uw_traces, gt_trace)
     fp(t) = convert(Vector{Point3f0}, particle_coords[t])
     fs(t) = convert(Vector{Float64}, map(f -> isfinite(f) ? .1*log(f) : 0, (-1*score_colors[t])))
     f_gt(t) = [convert(Point3f0, gt_coords[t])]
-#    scatter!(anim_axis, lift(t -> fp(t), time_node), color=lift(t -> fs(t), time_node), colormap=:grays, markersize=msize, alpha=.5)
+    #    scatter!(anim_axis, lift(t -> fp(t), time_node), color=lift(t -> fs(t), time_node), colormap=:grays, markersize=msize, alpha=.5)
+
     scatter!(particle_anim_axis, lift(t -> fp(t), time_node), color=gray_w_alpha, markersize=msize, alpha=.5)
     scatter!(particle_anim_axis, lift(t -> f_gt(t), time_node), color=:red, markersize=msize)
     scatter!(gt_preyloc_axis, lift(t -> f_gt(t), time_node), color=:red, markersize=msize) #, marker='o')
@@ -315,7 +330,11 @@ function animate_pf_results(uw_traces, gt_trace)
     gt_preyloc_axis.title = "Groundtruth 3D Position"
     particle_anim_axis.title = "Inferred 3D Position"
 #    azalt_axis.padding = (20, 20, 20, 20)
-#    translate_camera(anim_axis)
+    #    translate_camera(anim_axis)
+    if from_observer
+        translate_camera(particle_anim_axis)
+        translate_camera(gt_preyloc_axis)
+    end
     display(fig)
     for i in 1:NSTEPS
         sleep(.5)
@@ -326,13 +345,14 @@ end
 
 
 function translate_camera(anim_axis)
-    hidedecorations!(anim_axis)
+ #   hidedecorations!(anim_axis)
     hidespines!(anim_axis)
     cam = cam3d!(anim_axis.scene)
-    cam.projectiontype[] = Makie.Orthographic
+    #    cam.projectiontype[] = Makie.Orthographic
+    cam.fov[] = 45f0
+    cam.eyeposition[] = Vec3f0(0, 0, 0)
+    cam.lookat[] = Vec3f0(1, 0, 0)
     cam.upvector[] = Vec3f0(0, 0, 1)
-    cam.lookat[] = Vec3f0(50, 0, 0)
-    cam.eyeposition[] = Vec3f0(-5000, -5000, 3000)
     update_cam!(anim_axis.scene, cam)
 end
 

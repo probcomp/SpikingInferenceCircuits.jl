@@ -40,9 +40,9 @@ end
 # render_static_trajectories(unweighted_traces_at_each_step[end], tr)
 # println([get_score(t) for t in unweighted_traces_at_each_step[end]])
 # render_obs_from_particles(unweighted_traces_at_each_step[end], 10);
-animate_pf_results(final_particle_set, tr)
-render_static_trajectories(final_particle_set, tr)
-plot_full_choicemap(final_particle_set[5])
+animate_pf_results(final_particle_set, tr, true)
+render_static_trajectories(final_particle_set, tr, true)
+#plot_full_choicemap(final_particle_set[5])
 final_scores = [get_score(t) for t in final_particle_set]
 final_probs = normalize(exp.(final_scores .- logsumexp(final_scores)))
 #render_obs_from_particles(final_particle_set, 10);
