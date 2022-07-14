@@ -37,8 +37,8 @@ end
 # using a choicemap generated from every value EXCEPT the obs. then plot the obs.
 
 function render_obs_from_particles(uw_traces, particles_to_plot::Int)
-    final_step_particles = [get_choices(tr) for tr in uw_traces[end][1:particles_to_plot]]
-    true_angle_choicemaps = [choicemap() for tr in uw_traces[end][1:particles_to_plot]]
+    final_step_particles = [get_choices(tr) for tr in uw_traces[1:particles_to_plot]]
+    true_angle_choicemaps = [choicemap() for tr in uw_traces[1:particles_to_plot]]
     cmap_keys = vcat([(:steps => i => :latents => :true_θ => :val) for i in 1:NSTEPS], [(:steps => i => :latents => :true_ϕ => :val) for i in 1:NSTEPS])
     for (particle, cmap) in enumerate(true_angle_choicemaps)
         for cmk in cmap_keys
@@ -132,8 +132,8 @@ function render_static_trajectories(uw_traces, gt::Trace)
     gt_coords = []
     particle_coords = []
     score_colors = []
-    choices_per_particle = [get_choices(tr) for tr in vcat(gt, uw_traces[end])]
-    trace_scores = [get_score(tr) for tr in uw_traces[end]]
+    choices_per_particle = [get_choices(tr) for tr in vcat(gt, uw_traces)]
+    trace_scores = [get_score(tr) for tr in uw_traces]
     for i in 0:NSTEPS
         step_particle_coords = []
         for (particle_num, ch) in enumerate(choices_per_particle)
@@ -160,7 +160,7 @@ function render_static_trajectories(uw_traces, gt::Trace)
 
 
 # PC -> EACH INDEX IS THE VALUE OF EACH PARTICLE AT INDEX STEP. 
-    for p_index in 1:NPARTICLES
+    for p_index in 1:length(uw_traces)
         lines!(map(x -> convert(Point3f0, x[p_index]), particle_coords), 
                color=to_colormap(:ice, NSTEPS+1), linewidth=2)
     end
@@ -173,6 +173,34 @@ function render_static_trajectories(uw_traces, gt::Trace)
     display(fig)
     return particle_coords, gt_coords
 end    
+
+function plot_full_choicemap(tr)
+    GLMakie.activate!()
+    full_cmap = get_choices(tr)
+    all_latent_varbs = [k[1] for k in get_submaps_shallow(get_submap(full_cmap, (:init => :latents)))]
+    all_obs = [k[1] for k in get_submaps_shallow(get_submap(full_cmap, (:init => :obs)))]
+    latent_scattervals = [[full_cmap[(:steps => s => :latents => v => :val)] for s in 1:NSTEPS] for v in all_latent_varbs]
+    obs_scattervals = [[full_cmap[(:steps => s => :obs => v => :val)] for s in 1:NSTEPS] for v in all_obs]
+    for (v, scatvals) in zip(all_latent_varbs, latent_scattervals)
+        pushfirst!(scatvals, full_cmap[(:init => :latents => v => :val)])
+    end
+    for (v, scatvals) in zip(all_obs, obs_scattervals)
+        pushfirst!(scatvals, full_cmap[(:init => :obs => v => :val)])
+    end
+    fig = Figure(resolution=(3000, 1000))
+    for (varb_id , (varb, scattervals)) in enumerate(zip(vcat(all_latent_varbs, all_obs), vcat(latent_scattervals, obs_scattervals)))
+        axis = fig[1, varb_id] = Axis(fig, title=string(varb))
+        scatter!(fig[1, varb_id], collect(enumerate(scattervals)), color=1:NSTEPS, colormap=:thermal, markersize=20)
+        if varb in [:true_θ, :true_ϕ, :obs_θ, :obs_ϕ]
+            ylims!(axis, (-1.4, 1.4))
+        end
+        if varb in [:dx, :dy, :dz]
+            ylims!(axis, (Vels()[1], Vels()[end]))
+        end
+    end
+    display(fig)
+    return fig
+end
 
 function heatmap_pf_results(uw_traces, gt::Trace, nsteps)
     depth_indexer = [[:steps, i, :latents, :x, :val] for i in 1:nsteps]
@@ -239,14 +267,14 @@ function animate_pf_results(uw_traces, gt_trace)
                                viewmode=:fit, aspect=(1,1,1), perspectiveness=0.0, protrusions=0, limits=lim,
                                elevation = 1.2*pi, azimuth= .7*pi)
     azalt_axis = fig[1, 1:2] = Axis(outer_padding= 400, fig)
-    observation_matrices, azalt_particle_matrices = animate_azalt_heatmap(uw_traces[end], false)
+    observation_matrices, azalt_particle_matrices = animate_azalt_heatmap(uw_traces, false)
     # scatter takes a list of tuples. want a list of lists of tuples as an f(t) and lift a node to that.
     time_node = Node(1)
     gt_coords = []
     particle_coords = []
     score_colors = []
-    choices_per_particle = [get_choices(tr) for tr in vcat(gt_trace, uw_traces[end])]
-    trace_scores = [get_score(tr) for tr in uw_traces[end]]
+    choices_per_particle = [get_choices(tr) for tr in vcat(gt_trace, uw_traces)]
+    trace_scores = [get_score(tr) for tr in uw_traces]
     for i in 0:NSTEPS
         step_particle_coords = []
         for (particle_num, ch) in enumerate(choices_per_particle)

@@ -14,24 +14,38 @@ step_proposal_compiled = @compile_step_proposal(step_proposal, 9, 2)
 
 @load_generated_functions()
 
-NSTEPS = 14
-NPARTICLES = 20
+NSTEPS = 10
+NPARTICLES = 100
 cmap = make_deterministic_trace()
 tr, w = generate(model, (NSTEPS,), cmap)
 observations = get_dynamic_model_obs(tr)
 
-(unweighted_traces_at_each_step, _) = dynamic_model_smc(
-    model, observations,
-    ch -> (ch[:obs_ϕ => :val], ch[:obs_θ => :val]),
-    initial_proposal_compiled, step_proposal_compiled,
-    NPARTICLES, # n particles
-    ess_threshold=NPARTICLES)
+final_particle_set = []
 
-#heatmap_pf_results(unweighted_traces_at_each_step, tr, NSTEPS)
-animate_pf_results(unweighted_traces_at_each_step, tr)
-render_static_trajectories(unweighted_traces_at_each_step, tr)
-println([get_score(t) for t in unweighted_traces_at_each_step[1]])
-render_obs_from_particles(unweighted_traces_at_each_step, 10);
+for i in 1:6
+
+    (unweighted_traces_at_each_step, _) = dynamic_model_smc(
+        model, observations,
+        ch -> (ch[:obs_ϕ => :val], ch[:obs_θ => :val]),
+        initial_proposal_compiled, step_proposal_compiled,
+        NPARTICLES, # n particles
+        ess_threshold=NPARTICLES)
+    scores = [get_score(t) for t in unweighted_traces_at_each_step[end]]
+#    println(sum(normalize(exp.(scores .- logsumexp(scores)))))
+    particle_sample = Gen.categorical(normalize(exp.(scores .- logsumexp(scores))))
+    push!(final_particle_set, unweighted_traces_at_each_step[end][particle_sample])
+end
+
+# animate_pf_results(unweighted_traces_at_each_step, tr)
+# render_static_trajectories(unweighted_traces_at_each_step[end], tr)
+# println([get_score(t) for t in unweighted_traces_at_each_step[end]])
+# render_obs_from_particles(unweighted_traces_at_each_step[end], 10);
+animate_pf_results(final_particle_set, tr)
+render_static_trajectories(final_particle_set, tr)
+plot_full_choicemap(final_particle_set[5])
+final_scores = [get_score(t) for t in final_particle_set]
+final_probs = normalize(exp.(final_scores .- logsumexp(final_scores)))
+#render_obs_from_particles(final_particle_set, 10);
 
 
 # unweighted_traces_at_each_step looks like

@@ -3,7 +3,7 @@
 # Heights() = 1:10
 veldiv = 1
 ydiv = 1
-Vels() = -5:ydiv:5
+Vels() = -2:ydiv:2
 #Vels() = -1:veldiv:1
 PredatorVelScale() = 2
 PreyVelScale() = 1

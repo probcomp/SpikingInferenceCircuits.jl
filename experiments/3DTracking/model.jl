@@ -206,7 +206,3 @@ function make_deterministic_trace()
     return tr_choicemap
 end
 
-
-
-
-    
