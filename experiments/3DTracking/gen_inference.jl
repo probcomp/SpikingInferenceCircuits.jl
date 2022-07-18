@@ -15,7 +15,7 @@ step_proposal_compiled = @compile_step_proposal(step_proposal, 9, 2)
 @load_generated_functions()
 
 NSTEPS = 10
-NPARTICLES = 100
+NPARTICLES = 200
 cmap = make_deterministic_trace()
 tr, w = generate(model, (NSTEPS,), cmap)
 observations = get_dynamic_model_obs(tr)
@@ -41,11 +41,15 @@ end
 # println([get_score(t) for t in unweighted_traces_at_each_step[end]])
 # render_obs_from_particles(unweighted_traces_at_each_step[end], 10);
 animate_pf_results(final_particle_set, tr, true)
+animate_pf_results(final_particle_set, tr, false)
+
+render_static_trajectories(final_particle_set, tr, false)
+
 render_static_trajectories(final_particle_set, tr, true)
-#plot_full_choicemap(final_particle_set[5])
+plot_full_choicemap(final_particle_set)
 final_scores = [get_score(t) for t in final_particle_set]
 final_probs = normalize(exp.(final_scores .- logsumexp(final_scores)))
-#render_obs_from_particles(final_particle_set, 10);
+render_obs_from_particles(final_particle_set, 6);
 
 
 # unweighted_traces_at_each_step looks like

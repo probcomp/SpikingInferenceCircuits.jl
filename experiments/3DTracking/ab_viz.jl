@@ -4,10 +4,10 @@ using CairoMakie
 function render_azalt_trajectory(tr, savestring::String)
     CairoMakie.activate!()
     gt_obs_choices = get_choices(tr)
-#    obs_θ = [gt_obs_choices[:steps => step => :obs => :obs_θ => :val] for step in 1:NSTEPS]
-#    obs_ϕ = [gt_obs_choices[:steps => step => :obs => :obs_ϕ => :val] for step in 1:NSTEPS]
-    obs_θ = [gt_obs_choices[:steps => step => :latents => :true_θ => :val] for step in 1:NSTEPS]
-    obs_ϕ = [gt_obs_choices[:steps => step => :latents => :true_ϕ => :val] for step in 1:NSTEPS]
+    obs_θ = [gt_obs_choices[:steps => step => :obs => :obs_θ => :val] for step in 1:NSTEPS]
+    obs_ϕ = [gt_obs_choices[:steps => step => :obs => :obs_ϕ => :val] for step in 1:NSTEPS]
+#    obs_θ = [gt_obs_choices[:steps => step => :latents => :true_θ => :val] for step in 1:NSTEPS]
+#    obs_ϕ = [gt_obs_choices[:steps => step => :latents => :true_ϕ => :val] for step in 1:NSTEPS]
 
     theme = Attributes(Axis = (xminorticksvisible=true, yminorticksvisible=true,
                                xminorgridvisible=true, yminorgridvisible=true))
@@ -23,7 +23,7 @@ function render_azalt_trajectory(tr, savestring::String)
     end
     #    lines!(ax, obs_θ, obs_ϕ, linestyle=:dash, linewidth=4, color=to_colormap(:thermal, length(obs_θ)))
     display(fig)
-    save(string(savestring, ".png"), fig)
+    save(string(savestring, ".pdf"), fig)
 end
 
 
@@ -127,7 +127,7 @@ function render_static_trajectories(uw_traces, gt::Trace, from_observer)
     # note perspectiveness variable is 0.0 for orthographic, 1.0 for perspective, .5 for intermediate
     preyloc_axis = Axis3(fig[2,1], 
                          viewmode=:fit, aspect=(1,1,1), perspectiveness=0.0, protrusions=0, limits=lim,
-                         elevation = 1.2*pi, azimuth= .7*pi)
+                         elevation = .5, azimuth= .5)
 
     gt_coords = []
     particle_coords = []
@@ -159,14 +159,14 @@ function render_static_trajectories(uw_traces, gt::Trace, from_observer)
         push!(particle_coords, step_particle_coords)        
     end
     #    scatter!(anim_axis, lift(t -> fp(t), time_node), color=lift(t -> fs(t), time_node), colormap=:grays, markersize=msize, alpha=.5)
-    lines!(convert(Vector{Point3f0}, gt_coords),
-           color=to_colormap(:thermal, NSTEPS+1), linewidth=2)
+#    lines!(convert(Vector{Point3f0}, gt_coords),
+       #    color=to_colormap(:thermal, NSTEPS+1), linewidth=2)
 
 
 # PC -> EACH INDEX IS THE VALUE OF EACH PARTICLE AT INDEX STEP. 
     for p_index in 1:length(uw_traces)
         lines!(map(x -> convert(Point3f0, x[p_index]), particle_coords), 
-               color=to_colormap(:ice, NSTEPS+1), linewidth=2)
+               color=to_colormap(:thermal, NSTEPS+1), linewidth=2)
     end
     # lines!(particle_anim_axis, lift(t -> fp(t), time_node), color=gray_w_alpha, markersize=msize, alpha=.5)
     # scatter!(particle_anim_axis, lift(t -> f_gt(t), time_node), color=:red, markersize=msize)

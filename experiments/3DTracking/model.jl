@@ -137,9 +137,9 @@ end
     r_max = max_distance_inside_grid(true_ϕ, true_θ)
     l = length(Rs())
     r_probvec = normalize(vcat(ones(Int64(r_max)), zeros(Int64(l-r_max))))
-#    rₜ = { :rₜ } ~ LCat(Rs())(r_probvec)
-    rₜ = { :r } ~ LCat(Rs())(truncated_discretized_gaussian(round(norm_3d(X_init, Y_init, Z_init)),
-                                                            .6, Rs()))
+    rₜ = { :rₜ } ~ LCat(Rs())(r_probvec)
+#    rₜ = { :r } ~ LCat(Rs())(truncated_discretized_gaussian(round(norm_3d(X_init, Y_init, Z_init)),
+ #                                                           .6, Rs()))
     x_prop = rₜ * cos(true_ϕ) * cos(true_θ)
     y_prop = rₜ * cos(true_ϕ) * sin(true_θ)
     z_prop = rₜ * sin(true_ϕ)
