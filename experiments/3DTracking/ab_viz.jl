@@ -174,9 +174,7 @@ function render_static_trajectories(uw_traces, gt::Trace, from_observer)
     # scatter!(gt_preyloc_axis, lift(t -> f_gt(t), time_node), color=:red, markersize=msize) #, marker='o')
     # meshscatter!(particle_anim_axis, [(1, 0, 2)],
     #              marker=fish_mesh, color=:gray, rotations=Vec3f0(1, 0, 0), markersize=.75)
-    if from_observer
-        translate_camera(preyloc_axis)
-    end
+    translate_camera(preyloc_axis, from_observer)
     display(fig)
     return particle_coords, gt_coords
 end    
@@ -344,15 +342,40 @@ function animate_pf_results(uw_traces, gt_trace, from_observer)
 end
 
 
-function translate_camera(anim_axis)
- #   hidedecorations!(anim_axis)
+function translate_camera(anim_axis, observer_pov::Bool)
+    hidedecorations!(anim_axis)
     hidespines!(anim_axis)
     cam = cam3d!(anim_axis.scene)
     #    cam.projectiontype[] = Makie.Orthographic
+    # i think a 45f0 field of view IS orthographic.
     cam.fov[] = 45f0
-    cam.eyeposition[] = Vec3f0(0, 0, 0)
-    cam.lookat[] = Vec3f0(1, 0, 0)
-    cam.upvector[] = Vec3f0(0, 0, 1)
+    if observer_pov
+        cam.eyeposition[] = Vec3f0(0, 0, 0)
+        cam.lookat[] = Vec3f0(1, 0, 0)
+        cam.upvector[] = Vec3f0(0, 0, 1)
+    else
+        cam.eyeposition[] = Vec3f0(Xs()[1]-23, Ys()[end], Zs()[end] + 10)
+        cam.lookat[] = Vec3f0(Xs()[Int(round(length(Xs()) / 2))],
+                              Ys()[Int(round(length(Ys())/2))],
+                              Zs()[Int(round(length(Zs())/2))])
+        cam.upvector[] = Vec3f0(0, 0, 1)
+        axis_vertices = [[(Xs()[end], Ys()[1], Zs()[1]), (Xs()[end], Ys()[1], Zs()[end])], 
+                         [(Xs()[end], Ys()[1], Zs()[1]), (Xs()[end], Ys()[end], Zs()[1])],
+                         [(Xs()[end], Ys()[1], Zs()[1]), (Xs()[1], Ys()[1], Zs()[1])]]
+        full_grid_vertices = [[(Xs()[end], Ys()[end], Zs()[end]), (Xs()[end], Ys()[1], Zs()[end])], 
+                              [(Xs()[end], Ys()[end], Zs()[end]), (Xs()[end], Ys()[end], Zs()[1])],
+                              [(Xs()[1], Ys()[1], Zs()[1]), (Xs()[1], Ys()[end], Zs()[1])], 
+                              [(Xs()[end], Ys()[end], Zs()[end]), (Xs()[1], Ys()[end], Zs()[end])],
+                              [(Xs()[end], Ys()[end], Zs()[1]), (Xs()[1], Ys()[end], Zs()[1])],
+                              [(Xs()[1], Ys()[end], Zs()[end]), (Xs()[1], Ys()[end], Zs()[1])]
+                              ]
+
+        GLMakie.scale!(anim_axis.scene, 1, -1, 1)
+        for gv in vcat(axis_vertices, full_grid_vertices)
+            lines!(anim_axis, gv, color="black")
+        end
+        
+    end
     update_cam!(anim_axis.scene, cam)
 end
 
