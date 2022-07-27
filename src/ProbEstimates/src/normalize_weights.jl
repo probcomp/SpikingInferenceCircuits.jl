@@ -1,5 +1,11 @@
 function product_to_single_line(trueproduct)
-    @assert !isnan(trueproduct)
+#    @assert !isnan(trueproduct)
+    if isnan(trueproduct)
+        return NaN
+    end
+    if isinf(trueproduct)
+        return Inf
+    end
     @assert !isinf(trueproduct)
     @assert trueproduct ≥ 0.
     
@@ -24,6 +30,7 @@ function normalize_weights(log_weights)
         Gen.normalize_weights(convert(Vector{Float64}, log_weights))
     else
         if any(x -> isnan(x), exp.(log_weights))
+            print("displaying LOG WEIGHTS")
             display(log_weights)
         end
 
@@ -43,16 +50,29 @@ end
 
 function autonormalize_weights(log_weights, k, speedup_factor, repeater_rate)
     rates = exp.(log_weights)
+    
 
+#    if isnan(sum(rates))
+ #       return (NaN, [NaN for _ in log_weights])
+  #  end
+    
     if sum(rates) == 0.
         return (-Inf, [-Inf for _ in log_weights])
     end
 
+    if sum(rates) == Inf || isnan(sum(rates))
+        return (NaN, [NaN for _ in log_weights])
+    end
+    
     num_accumulated = 0
     num_speedups = 0
     total_time_passed = 0
     while num_accumulated < k
         time_to_repeater = rand(Exponential(1/repeater_rate))
+        # Spikes before then gets a NaN value
+        print("sum rates")
+        print(sum(rates))
+        
         spikes_before_then = rand(Poisson(sum(rates) * time_to_repeater))
         total_this_would_accumulate_to = num_accumulated + spikes_before_then
         if total_this_would_accumulate_to < k

@@ -257,9 +257,9 @@ function animate_pf_results(uw_traces, gt_trace, from_observer)
     GLMakie.activate!()
     res = 700
     if from_observer
-        msize = 100px
+        msize = 150px
     else
-        msize = 7000
+        msize = 700
     end
     c2 = colorant"rgba(255, 0, 255, .25)"
     c1 = colorant"rgba(0, 255, 255, .25)"
@@ -329,10 +329,10 @@ function animate_pf_results(uw_traces, gt_trace, from_observer)
     particle_anim_axis.title = "Inferred 3D Position"
 #    azalt_axis.padding = (20, 20, 20, 20)
     #    translate_camera(anim_axis)
-    if from_observer
-        translate_camera(particle_anim_axis)
-        translate_camera(gt_preyloc_axis)
-    end
+ #   if from_observer
+    translate_camera(particle_anim_axis, from_observer)
+    translate_camera(gt_preyloc_axis, from_observer)
+  #  end
     display(fig)
     for i in 1:NSTEPS
         sleep(.5)
