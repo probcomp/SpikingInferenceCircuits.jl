@@ -29,7 +29,8 @@ SphericalVels() = -1.5:θstep():1.5
 θs() = -1.4:θstep():1.4
 #MinProb() = 0.01
 #MinProb() = 0.001
-MinProb() = 0
+ProbEstimates.MinProb() = .001
+MinProb() = ProbEstimates.MinProb()
 
 scale_velocity(vel, is_prey) = is_prey ? Int(round(vel / PreyVelScale())) : Int(round(vel / PredatorVelScale()))
 

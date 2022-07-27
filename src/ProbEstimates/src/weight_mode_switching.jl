@@ -20,7 +20,7 @@ end
 """
 Estimate of `p`
 """
-fwd_prob_estimate(p) =
+fwd_prob_estimate(p) = 
     if weighttype in (:noisy, :fwd)
         fwd_pe(p)
     elseif weighttype == :recip
@@ -34,7 +34,7 @@ fwd_prob_estimate(p) =
 """
 Estimate of `1/p`
 """
-recip_prob_estimate(p) =
+recip_prob_estimate(p) = 
     if weighttype in (:noisy, :recip)
         recip_pe(p)
     elseif weighttype == :fwd

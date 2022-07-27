@@ -71,6 +71,7 @@ function Gen.update(tr::CatTrace, (probs,)::Tuple, _::Tuple, cm::Gen.ChoiceMap)
             if weight_type() == :perfect
                 get_score(newtr) - get_score(tr)
             elseif weight_type() == :noisy
+       #         get_score(newtr) - get_score(tr)                
                 # Return an unbiased estimate of P(x')/P(x)
                 log(fwd_prob_estimate(newtr)) + log(recip_prob_estimate(tr)) 
             else
