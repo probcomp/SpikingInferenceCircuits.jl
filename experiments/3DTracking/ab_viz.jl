@@ -1,13 +1,17 @@
 using GLMakie
 using CairoMakie
 
-function render_azalt_trajectory(tr, savestring::String)
+function render_azalt_trajectory(tr, savestring::String; do_obs=true)
     CairoMakie.activate!()
     gt_obs_choices = get_choices(tr)
-    obs_θ = [gt_obs_choices[:steps => step => :obs => :obs_θ => :val] for step in 1:NSTEPS]
-    obs_ϕ = [gt_obs_choices[:steps => step => :obs => :obs_ϕ => :val] for step in 1:NSTEPS]
-#    obs_θ = [gt_obs_choices[:steps => step => :latents => :true_θ => :val] for step in 1:NSTEPS]
-#    obs_ϕ = [gt_obs_choices[:steps => step => :latents => :true_ϕ => :val] for step in 1:NSTEPS]
+
+    if do_obs
+        obs_θ = [gt_obs_choices[:steps => step => :obs => :obs_θ => :val] for step in 1:NSTEPS]
+        obs_ϕ = [gt_obs_choices[:steps => step => :obs => :obs_ϕ => :val] for step in 1:NSTEPS]
+    else
+        obs_θ = [gt_obs_choices[:steps => step => :latents => :true_θ => :val] for step in 1:NSTEPS]
+        obs_ϕ = [gt_obs_choices[:steps => step => :latents => :true_ϕ => :val] for step in 1:NSTEPS]
+    end
 
     theme = Attributes(Axis = (xminorticksvisible=true, yminorticksvisible=true,
                                xminorgridvisible=true, yminorgridvisible=true))
@@ -36,7 +40,7 @@ end
 # TODO -- make sure this function is correct. Write one more function to render the azalt
 # using a choicemap generated from every value EXCEPT the obs. then plot the obs.
 
-function render_obs_from_particles(uw_traces, particles_to_plot::Int)
+function render_obs_from_particles(uw_traces, particles_to_plot::Int; do_obs=false)
     final_step_particles = [get_choices(tr) for tr in uw_traces[1:particles_to_plot]]
     true_angle_choicemaps = [choicemap() for tr in uw_traces[1:particles_to_plot]]
     cmap_keys = vcat([(:steps => i => :latents => :true_θ => :val) for i in 1:NSTEPS], [(:steps => i => :latents => :true_ϕ => :val) for i in 1:NSTEPS])
@@ -47,7 +51,7 @@ function render_obs_from_particles(uw_traces, particles_to_plot::Int)
     end
     constrained_traces = [generate(model, (NSTEPS,), tcmap)[1] for tcmap in true_angle_choicemaps]
     for (particle, tr) in enumerate(constrained_traces)
-        render_azalt_trajectory(tr, string("particle", particle))
+        render_azalt_trajectory(tr, string("particle", particle); do_obs)
     end
     
     return true_angle_choicemaps

@@ -45,13 +45,13 @@ round_to_pt1(x) = round(x, digits=1)
     zₜ = { :z } ~ LCat(Zs())(unif(Zs()))
     true_r = round(norm_3d(xₜ, yₜ, zₜ))
     true_ϕ = { :true_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(
-        round_to_pt1(nm.asin(zₜ / true_r)), 0.1, ϕs()))
+        round_to_pt1(nm.asin(zₜ / true_r)), 0.2, ϕs()))
     true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(
-        round_to_pt1(nm.atan(yₜ / xₜ)), 0.1, θs()))
+        round_to_pt1(nm.atan(yₜ / xₜ)), 0.2, θs()))
     r_max = max_distance_inside_grid(true_ϕ, true_θ)
     r_probvec = normalize(
         vcat(truncated_discretized_gaussian(
-            true_r <= r_max ? true_r : r_max, .2, Rs())[1:Int(r_max)],
+            true_r <= r_max ? true_r : r_max, 2.0, Rs())[1:Int(r_max)],
              zeros(length(Rs())-Int(r_max))))
     rₜ = { :r } ~ LCat(Rs())(r_probvec)
     return (dxₜ, dyₜ, dzₜ, xₜ, yₜ, zₜ, rₜ, true_ϕ, true_θ)
@@ -59,25 +59,25 @@ end
 
 # x = back and forth
 # y = left and right
-# z = up and down (held constant in this model)
+# z = up and down
 @gen (static) function step_model(dxₜ₋₁, dyₜ₋₁, dzₜ₋₁, xₜ₋₁, yₜ₋₁, zₜ₋₁, rₜ₋₁, true_ϕₜ₋₁, true_θₜ₋₁)
-    dxₜ = { :dx } ~ LCat(Vels())(truncated_discretized_gaussian(dxₜ₋₁, 0.2, Vels()))
-    dyₜ = { :dy } ~ LCat(Vels())(truncated_discretized_gaussian(dyₜ₋₁, 0.2, Vels()))
-    dzₜ = { :dz } ~ LCat(Vels())(truncated_discretized_gaussian(dzₜ₋₁, 0.2, Vels()))
-    xₜ = { :x } ~ Cat(truncated_discretized_gaussian(xₜ₋₁ + dxₜ, .2, Xs()))
-    yₜ = { :y } ~ LCat(Ys())(truncated_discretized_gaussian(yₜ₋₁ + dyₜ, .2, Ys()))
-    zₜ = { :z } ~ LCat(Zs())(truncated_discretized_gaussian(zₜ₋₁ + dzₜ, .2, Zs()))
+    dxₜ = { :dx } ~ LCat(Vels())(truncated_discretized_gaussian(dxₜ₋₁, 2.0, Vels()))
+    dyₜ = { :dy } ~ LCat(Vels())(truncated_discretized_gaussian(dyₜ₋₁, 2.0, Vels()))
+    dzₜ = { :dz } ~ LCat(Vels())(truncated_discretized_gaussian(dzₜ₋₁, 2.0, Vels()))
+    xₜ = { :x } ~ Cat(truncated_discretized_gaussian(xₜ₋₁ + dxₜ, 2.0, Xs()))
+    yₜ = { :y } ~ LCat(Ys())(truncated_discretized_gaussian(yₜ₋₁ + dyₜ, 2.0, Ys()))
+    zₜ = { :z } ~ LCat(Zs())(truncated_discretized_gaussian(zₜ₋₁ + dzₜ, 2.0, Zs()))
     # Here: a stochastic mapping from (x, y, h) -> (r, θ, ϕ)
     # For now: just use dimension-wise discretized Gaussians.
     true_r = round(norm_3d(xₜ, yₜ, zₜ))
     true_ϕ = { :true_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(
-        round_to_pt1(nm.asin(zₜ / true_r)), .03, ϕs()))
+        round_to_pt1(nm.asin(zₜ / true_r)), 0.2, ϕs()))
     true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(
-        round_to_pt1(nm.atan(yₜ / xₜ)), .03, θs()))
+        round_to_pt1(nm.atan(yₜ / xₜ)), 0.2, θs()))
     r_max = max_distance_inside_grid(true_ϕ, true_θ)
     r_probvec = normalize(
         vcat(truncated_discretized_gaussian(
-            true_r <= r_max ? true_r : r_max, .2, Rs())[1:Int(r_max)],
+            true_r <= r_max ? true_r : r_max, 2.0, Rs())[1:Int(r_max)],
              zeros(length(Rs())-Int(r_max))))
     rₜ = { :r } ~ LCat(Rs())(r_probvec)
     return (dxₜ, dyₜ, dzₜ, xₜ, yₜ, zₜ, rₜ, true_ϕ, true_θ)
@@ -87,8 +87,8 @@ end
 @gen (static) function obs_model(dxₜ, dyₜ, dzₜ, xₜ, yₜ, zₜ, rₜ, true_ϕ, true_θ)
     # can't propose to these b/c they are the final observations we're scoring.
     # have to propose to the exact theta and phi.
-    obs_ϕ = { :obs_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(round_to_pt1(true_ϕ), 0.03, ϕs()))
-    obs_θ = { :obs_θ } ~ LCat(θs())(truncated_discretized_gaussian(round_to_pt1(true_θ), 0.03, θs()))
+    obs_ϕ = { :obs_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(round_to_pt1(true_ϕ), 0.3, ϕs()))
+    obs_θ = { :obs_θ } ~ LCat(θs())(truncated_discretized_gaussian(round_to_pt1(true_θ), 0.3, θs()))
     return (obs_ϕ, obs_θ)
 end
 
@@ -111,7 +111,10 @@ end
     true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(obs_θ, 0.05, θs()))
     true_ϕ = { :true_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(obs_ϕ, 0.05, ϕs()))
     r_max = max_distance_inside_grid(true_ϕ, true_θ)
-    true_r = round(norm_3d(xₜ₋₁ + dxₜ₋₁, yₜ₋₁ + dyₜ₋₁, zₜ₋₁ + dzₜ₋₁))
+    predicted_x = xₜ₋₁ + dxₜ₋₁
+    predicted_y = yₜ₋₁ + dyₜ₋₁
+    predicted_z = zₜ₋₁ + dzₜ₋₁
+    true_r = round(norm_3d(predicted_x, predicted_y, predicted_z))
     r_probvec = normalize(
         vcat(truncated_discretized_gaussian(
             true_r <= r_max ? true_r : r_max, .6, Rs())[1:Int(r_max)],
@@ -127,6 +130,8 @@ end
     dxₜ = { :dx } ~ LCat(Vels())(truncated_discretized_gaussian(x_prop-xₜ₋₁, .1, Vels()))
     dyₜ = { :dy } ~ LCat(Vels())(truncated_discretized_gaussian(y_prop-yₜ₋₁, .1, Vels()))
     dzₜ = { :dz } ~ LCat(Vels())(truncated_discretized_gaussian(z_prop-zₜ₋₁, .1, Vels()))
+
+    return (dxₜ, dyₜ, dzₜ, xₜ, yₜ, zₜ, rₜ, true_ϕ, true_θ)
 end
 
 @gen (static) function initial_proposal(obs_ϕ, obs_θ)
@@ -136,7 +141,7 @@ end
     r_max = max_distance_inside_grid(true_ϕ, true_θ)
     l = length(Rs())
     r_probvec = normalize(vcat(ones(Int64(r_max)), zeros(Int64(l-r_max))))
-    rₜ = { :rₜ } ~ LCat(Rs())(r_probvec)
+    rₜ = { :r } ~ LCat(Rs())(r_probvec)
 #    rₜ = { :r } ~ LCat(Rs())(truncated_discretized_gaussian(round(norm_3d(X_init, Y_init, Z_init)),
  #                                                           .6, Rs()))
     x_prop = rₜ * cos(true_ϕ) * cos(true_θ)
@@ -150,6 +155,8 @@ end
     dxₜ = { :dx } ~ LCat(Vels())(unif(Vels()))
     dyₜ = { :dy } ~ LCat(Vels())(unif(Vels()))
     dzₜ = { :dz } ~ LCat(Vels())(unif(Vels()))
+
+    return (dxₜ, dyₜ, dzₜ, xₜ, yₜ, zₜ, rₜ, true_ϕ, true_θ)
 end
 
 

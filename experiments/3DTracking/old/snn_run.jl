@@ -2,9 +2,11 @@ using SpikingInferenceCircuits
 const SIC = SpikingInferenceCircuits
 using Circuits, SpikingCircuits
 
+# TODO: CHANGEME: import real model and proposal
 include("model.jl")
 include("model_hyperparams.jl")
 
+# TODO: CHANGEME: fill in the latent variables and obs variables and the domains
 latent_domains() = (Vels(), Vels(), Vels(), Xs(), Ys(), Zs(), Rs(), ϕs(), θs())
 obs_domains() = (θs(), ϕs())
 
@@ -39,6 +41,10 @@ function extract_angle_indices(gt_tr)
     end
     return obs_list
 end
+
+
+
+
                        
 ### Log failure probability bound:
 failure_prob_bound = bound_on_overall_failure_prob(NEURAL_NSTEPS(), NVARS(), NEURAL_NPARTICLES())
@@ -55,12 +61,12 @@ smc = SMC(
 
     # TODO: CHANGEME: replace with your latent and obs names
     # Order in which to feed in variables to proposal
-    [:dx, :dy, :dz, :x, :y, :z, :r, :true_ϕ, :true_θ, :obs_ϕ, :obs_θ],
+    [:vxₜ, :vyₜ, :vzₜ, :xₜ, :yₜ, :zₜ, :rₜ, :exact_ϕ, :exact_θ, :obs_θ, :obs_ϕ],
     # order in which to feed latent variables into the step proposal
-    [:obs_ϕ, :obs_θ],       # order in which to feed observations into the proposals
+    [:obs_θ, :obs_ϕ],       # order in which to feed observations into the proposals
     
     # Order in which to recur variables:
-    [:dx, :dy, :dz, :x, :y, :z, :r, :true_ϕ, :true_θ],
+    [:vxₜ, :vyₜ, :vzₜ, :xₜ, :yₜ, :zₜ, :rₜ, :exact_ϕ, :exact_θ],
     # order in which to feed latent variables back into the step model for the next timestep
     
     NEURAL_NPARTICLES();

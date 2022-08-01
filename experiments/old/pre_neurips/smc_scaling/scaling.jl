@@ -10,7 +10,7 @@ include("../tracking/implementation_rules.jl")
 binary() = EnumeratedDomain([true, false])
 
 num_neurons(::Circuits.PrimitiveComponent{Spiking}) = 1
-num_neurons(c::Circuits.CompositeComponent) = sum(num_neurons(sc) for sc in c.subcomponents)
+num_neurons(c::Circuits.CompositeComponent) = reduce(+, num_neurons(sc) for sc in c.subcomponents; init=0)
 
 N_VARS() = 4
 @gen (static) function model(

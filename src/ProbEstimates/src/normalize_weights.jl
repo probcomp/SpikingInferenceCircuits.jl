@@ -73,8 +73,6 @@ function autonormalize_weights(log_weights, k, speedup_factor, repeater_rate)
     while num_accumulated < k
         time_to_repeater = rand(Exponential(1/repeater_rate))
         # Spikes before then gets a NaN value
-        print("sum rates")
-        print(sum(rates))
         
         spikes_before_then = rand(Poisson(sum(rates) * time_to_repeater))
         total_this_would_accumulate_to = num_accumulated + spikes_before_then
@@ -92,15 +90,48 @@ function autonormalize_weights(log_weights, k, speedup_factor, repeater_rate)
     @assert resulting_rate_min_threshold ≤ sum(rates) "total resulting auto-normalized rate: $(sum(rates)) [rates: $rates]"
     @assert maximum(rates) ≤ MaxRate() * MultAssemblySize() "max rate after auto-normalize: $(maximum(rates)) [rates: $rates]"
 
-    result = (
+#     result = (
+#         log(sum(rates)) - (num_speedups * log(speedup_factor)), # NOTE: THIS DOES NOT CURRENTLY FACTOR IN READ-OUT NOISE IN THE RESULTING RATES!
+#         log.(normalize(rates)) # we can then use a WTA to sample from the resulting rates
+#     )
+
+    exact_result = (
         log(sum(rates)) - (num_speedups * log(speedup_factor)), # NOTE: THIS DOES NOT CURRENTLY FACTOR IN READ-OUT NOISE IN THE RESULTING RATES!
         log.(normalize(rates)) # we can then use a WTA to sample from the resulting rates
     )
 
-    # this should actually not skew the distribution at all -- double check this
+#     # this should actually not skew the distribution at all -- double check this
     perfect_result = Gen.normalize_weights(convert(Vector{Float64}, log_weights))
-    @assert isapprox(result[1], perfect_result[1], atol=1e-3) "auto-normalize: $(result[1]) | Gen: $(perfect_result[1])"
-    @assert isapprox(result[2], perfect_result[2], atol=1e-3) "auto-normalize: $(result[2]) | Gen: $(perfect_result[2])"
+#     @assert isapprox(result[1], perfect_result[1], atol=1e-3) "auto-normalize: $(result[1]) | Gen: $(perfect_result[1])"
+#     @assert isapprox(result[2], perfect_result[2], atol=1e-3) "auto-normalize: $(result[2]) | Gen: $(perfect_result[2])"
 
-    return result
+#     return result
+# end
+
+
+    count_fracs = get_count_fracs(rates, AutonormalizationLatency() - total_time_passed)
+
+    result = (
+        log(sum(rates)) - (num_speedups * log(speedup_factor)),
+        # log.(normalize(rates)) # we can then use a WTA to sample from the resulting rates
+        log.(count_fracs)
+    )
+
+    @assert isapprox(result[1], perfect_result[1], atol=1e-3) "auto-normalize: $(result[1]) | Gen: $(perfect_result[1])"
+
+    overall_log_probs = result[2] .+ result[1]
+    retval = (
+        sum(overall_log_probs), overall_log_probs .- logsumexp(overall_log_probs)
+    )
+
+    # println("exact normalized rates: $(exact_result[2])")
+    # println("approximate normalized rates: $(retval[2])")
+    # println()
+
+    return retval
+end
+
+function get_count_fracs(rates, time)
+    counts = [rand(Poisson(r * time)) for r in rates]
+    return normalize(counts)
 end

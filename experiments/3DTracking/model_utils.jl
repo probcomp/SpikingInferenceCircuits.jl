@@ -94,7 +94,8 @@ end
 
 function truncate(pvec)
     if !isprobvec(pvec)
-        error("pvec = $pvec is not a probability vector")
+        @warn("pvec = $pvec is not a probability vector")
+        return normalize([1.0 for _ in pvec])
     end
     mininvec = minimum(p for p in pvec if p != 0)
     if mininvec ≥ MinProb()
