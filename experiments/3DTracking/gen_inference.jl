@@ -18,7 +18,7 @@ step_proposal_compiled = @compile_step_proposal(step_proposal, 9, 2)
 
 @load_generated_functions()
 
-NSTEPS = 10
+NSTEPS = 4
 NPARTICLES = 100
 cmap = make_deterministic_trace()
 tr, w = generate(model, (NSTEPS,), cmap)
@@ -26,34 +26,10 @@ observations = get_dynamic_model_obs(tr)
 
 final_particle_set = []
 
-for i in 1:10
+for i in 1:50
     try
         (unweighted_traces_at_each_step, _) = dynamic_model_smc(
-            model, observations,
-            ch -> (ch[:obs_ϕ => :val], ch[:obs_θ => :val]),
-            initial_proposal_compiled, step_proposal_compiled,
-            NPARTICLES, # n particles
-            ess_threshold=NPARTICLES)
-        scores = [get_score(t) for t in unweighted_traces_at_each_step[end]]
-        print(scores);
-    
-        if !any(map(isfinite, scores))
-            continue
-        end
-        particle_sample = Gen.categorical(normalize(exp.(scores .- logsumexp(scores))))
-        push!(final_particle_set, unweighted_traces_at_each_step[end][particle_sample])
-    catch
-        continue
-    end
-          
-#    println(sum(normalize(exp.(scores .- logsumexp(scores)))))
-  
-end
-
-animate_pf_results(final_particle_set, tr, true)
-animate_pf_results(final_particle_set, tr, false)
-render_static_trajectories(final_particle_set, tr, true)
-render_static_trajectories(final_particle_set, tr, false)
+            model, observations,render_static_trajectories(final_particle_set, tr, false)
 final_scores = [get_score(t) for t in final_particle_set]
 final_probs = normalize(exp.(final_scores .- logsumexp(final_scores)))
 render_obs_from_particles(final_particle_set, length(final_probs));

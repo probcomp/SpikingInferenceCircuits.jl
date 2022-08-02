@@ -2,6 +2,15 @@ using CSV
 using GLMakie
 using DataFrames
 using FileIO
+using ProbEstimates
+
+
+# for each hunt, the hunted para is in stimuli.csv.
+# wrth is an unfiltered representation of the spherical coords of the para. it's not used for making
+# huntbouts.csv. 
+
+
+
 
 include("model_hyperparams.jl")
 
@@ -30,7 +39,7 @@ function plot_3D_trajectory(p_id, n_steps)
     # ax3d = Axis3(fig[1,1],
     #              viewmode=:fit, aspect=(1,1,1), perspectiveness=0.0, protrusions=0, limits=lim)
     f_pcoord(t) = p3Dcoords[t]
- #   scatter!(ax3d, lift(x -> f_pcoord(x), time_node), color=:black, markersize=5000)
+    scatter!(ax3d, lift(x -> f_pcoord(x), time_node), color=:black, markersize=5000)
     meshscatter!(ax3d, [(0, 0, 0)], marker=fish_mesh, color=:lightgray, rotations=Vec3f0(0, 1, 0), markersize=20)
     display(fig)
     for i in 1:length(p3Dcoords)
@@ -55,7 +64,7 @@ function para_3Dtrajectory_in_modelspace(p_id, n_steps)
     f_gridcoords(t) = p3gridcoords[t]
     fig = Figure(resolution=(1000, 1000))
     time_node = Node(1)
-    lim = (Xs()[1]-10,Xs()[end], Ys()[1], Ys()[end], Zs()[1]-5, Zs()[end])
+    lim = (Xs()[1],Xs()[end], Ys()[1], Ys()[end], Zs()[1], Zs()[end])
     ax3d = Axis3(fig[1,1], limits=lim)
     scatter!(ax3d, lift(i -> f_gridcoords(i), time_node), color=:black, markersize=500)
     meshscatter!(ax3d, [(0, 0, 0)], marker=fish_mesh,
