@@ -23,9 +23,9 @@ two_timestep_proposal_dumb = @compile_2timestep_proposal(initial_proposal, step_
 
 @load_generated_functions()
 
-NSTEPS = 10
+NSTEPS = 3
 NPARTICLES = 10
-cmap = make_deterministic_trace()
+cmap = get_selected(make_deterministic_trace(), select(:init, :steps => 1, :steps => 2, :steps => 3))
 tr, w = generate(model, (NSTEPS,), cmap)
 observations = get_dynamic_model_obs(tr);
 
@@ -34,7 +34,7 @@ final_particle_set = []
 for i in 1:100
     # try
         (unweighted_traces_at_each_step, weighted_traces) = deferred_dynamic_model_smc(
-            model, observations,
+            model, (observations[1], observations[2][1:3]),
             ch -> (ch[:obs_ϕ => :val], ch[:obs_θ => :val]),
             two_timestep_proposal_dumb,
             # propose_first_two_timesteps_smart,

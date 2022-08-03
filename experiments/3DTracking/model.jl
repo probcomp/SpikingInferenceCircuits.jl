@@ -61,12 +61,12 @@ end
 # y = left and right
 # z = up and down
 @gen (static) function step_model(dxₜ₋₁, dyₜ₋₁, dzₜ₋₁, xₜ₋₁, yₜ₋₁, zₜ₋₁, rₜ₋₁, true_ϕₜ₋₁, true_θₜ₋₁)
-    dxₜ = { :dx } ~ LCat(Vels())(truncated_discretized_gaussian(dxₜ₋₁, 2.0, Vels()))
-    dyₜ = { :dy } ~ LCat(Vels())(truncated_discretized_gaussian(dyₜ₋₁, 2.0, Vels()))
-    dzₜ = { :dz } ~ LCat(Vels())(truncated_discretized_gaussian(dzₜ₋₁, 2.0, Vels()))
-    xₜ = { :x } ~ Cat(truncated_discretized_gaussian(xₜ₋₁ + dxₜ, 2.0, Xs()))
-    yₜ = { :y } ~ LCat(Ys())(truncated_discretized_gaussian(yₜ₋₁ + dyₜ, 2.0, Ys()))
-    zₜ = { :z } ~ LCat(Zs())(truncated_discretized_gaussian(zₜ₋₁ + dzₜ, 2.0, Zs()))
+    dxₜ = { :dx } ~ LCat(Vels())(truncated_discretized_gaussian(dxₜ₋₁, 1.0, Vels()))
+    dyₜ = { :dy } ~ LCat(Vels())(truncated_discretized_gaussian(dyₜ₋₁, 1.0, Vels()))
+    dzₜ = { :dz } ~ LCat(Vels())(truncated_discretized_gaussian(dzₜ₋₁, 1.0, Vels()))
+    xₜ = { :x } ~ Cat(truncated_discretized_gaussian(xₜ₋₁ + dxₜ, 1.0, Xs()))
+    yₜ = { :y } ~ LCat(Ys())(truncated_discretized_gaussian(yₜ₋₁ + dyₜ, 1.0, Ys()))
+    zₜ = { :z } ~ LCat(Zs())(truncated_discretized_gaussian(zₜ₋₁ + dzₜ, 1.0, Zs()))
     # Here: a stochastic mapping from (x, y, h) -> (r, θ, ϕ)
     # For now: just use dimension-wise discretized Gaussians.
     true_r = round(norm_3d(xₜ, yₜ, zₜ))
@@ -141,9 +141,9 @@ end
     r_max = max_distance_inside_grid(true_ϕ, true_θ)
     l = length(Rs())
     r_probvec = normalize(vcat(ones(Int64(r_max)), zeros(Int64(l-r_max))))
-    rₜ = { :r } ~ LCat(Rs())(r_probvec)
-#    rₜ = { :r } ~ LCat(Rs())(truncated_discretized_gaussian(round(norm_3d(X_init, Y_init, Z_init)),
- #                                                           .6, Rs()))
+    # rₜ = { :r } ~ LCat(Rs())(r_probvec)
+    rₜ = { :r } ~ LCat(Rs())(truncated_discretized_gaussian(round(norm_3d(X_init, Y_init, Z_init)),
+                                                           .6, Rs()))
     x_prop = rₜ * cos(true_ϕ) * cos(true_θ)
     y_prop = rₜ * cos(true_ϕ) * sin(true_θ)
     z_prop = rₜ * sin(true_ϕ)
