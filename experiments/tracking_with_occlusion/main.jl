@@ -1,6 +1,6 @@
 includet("model/model.jl")
 includet("groundtruth_rendering.jl")
-includet("visualize.jl")
+include("visualize.jl")
 include("proposals/obs_aux_proposal.jl")
 includet("proposals/prior_proposal.jl")
 includet("proposals/nearly_locally_optimal_proposal.jl")
@@ -19,18 +19,18 @@ end
 
 
 
-# ### Run inference:
-# do_inference(tr; n_particles=10) = dynamic_model_smc(
-#     model, get_returned_obs(tr),
-#     cm -> (obs_choicemap_to_vec_of_vec(cm),),
-#     initial_near_locopt_proposal, step_near_locopt_proposal, n_particles
-# );
+### Run inference: ###
+do_inference(tr; n_particles=10) = dynamic_model_smc(
+    model, get_returned_obs(tr),
+    cm -> (obs_choicemap_to_vec_of_vec(cm),),
+    initial_near_locopt_proposal, step_near_locopt_proposal, n_particles
+);
 
-# # ## Script to run inference + make visualizations
-# VelOneOffProb() = 0.1
-# gt_tr = generate_occluded_bounce_tr();
-# (unweighted_trs, weighted_trs) = do_inference(gt_tr; n_particles=30);
-# (fig, t) = make_gt_particle_viz_img_only(gt_tr, unweighted_trs); fig
+# Run inference + make visualizations
+VelOneOffProb() = 0.1
+gt_tr = generate_occluded_bounce_tr();
+(unweighted_trs, weighted_trs) = do_inference(gt_tr; n_particles=30);
+(fig, t) = make_gt_particle_viz_img_only(gt_tr, unweighted_trs); fig
 
 
 

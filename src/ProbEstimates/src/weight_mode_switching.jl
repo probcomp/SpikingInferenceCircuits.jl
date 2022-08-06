@@ -2,6 +2,7 @@ global weighttype = :noisy
 global assemblysize = DefaultAssemblySize()
 global latency      = DefaultLatency()
 global minprob      = DefaultMinProb()
+global maxrate      = DefaultMaxRate()
 global use_autonormalization = DefaultUseAutonormalization()
 
 function AssemblySize()
@@ -23,6 +24,13 @@ function MinProb()
 end
 function set_minprob!(p)
     global minprob = p
+end
+
+function MaxRate()
+    return maxrate
+end
+function set_maxrate!(r)
+    global maxrate = r
 end
 
 """

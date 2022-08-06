@@ -28,7 +28,6 @@ end
 function normalize_weights(log_weights)
     if weighttype === :perfect
 #    if true
-        print("normalizing weights")
         Gen.normalize_weights(convert(Vector{Float64}, log_weights))
         
     else

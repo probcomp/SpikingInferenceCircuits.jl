@@ -52,15 +52,15 @@ function draw_group_labels!(f, layout, ax, group_labels, colors)
 
     # ax.yticks = 1:first(endpoint_indices)[1]
     
-    rhs(pos, px_area) = Point2f((px_area.origin + px_area.widths)[1], pos[2])
+    rhs(pos, px_area) = Point2((px_area.origin + px_area.widths)[1], pos[2])
     brackets = [
         lift(ax.elements[:yaxis].tickpositions, ax.scene.px_area) do pos, p
             ydiff = pos[2][2] - pos[1][2]
             y_increase = (ydiff / 2) * 0.8
             [
-                rhs(pos[st], p) + Point2f(0, y_increase), rhs(pos[st], p) + Point2f(5, y_increase),
-                rhs(pos[st], p) + Point2f(5, y_increase), rhs(pos[nd], p) + Point2f(5, -y_increase),
-                rhs(pos[nd], p) + Point2f(5, -y_increase), rhs(pos[nd], p) + Point2f(0, -y_increase)
+                rhs(pos[st], p) + Point2(0, y_increase), rhs(pos[st], p) + Point2(5, y_increase),
+                rhs(pos[st], p) + Point2(5, y_increase), rhs(pos[nd], p) + Point2(5, -y_increase),
+                rhs(pos[nd], p) + Point2(5, -y_increase), rhs(pos[nd], p) + Point2(0, -y_increase)
             ]
         end
         for (st, nd) in endpoint_indices
@@ -150,7 +150,7 @@ function draw_line!(ax, spiketimes::Vector, ypos, height, current_time, color=RG
     @assert all(t isa Real for t in spiketimes) "a spiketimes vector (for a single y position) is not a vector of real numbers"
     y1 = ypos - height/2; y2 = ypos + height/2
     times = vcat([
-        [Point2f(t - current_time, y1), Point2f(t - current_time, y2)]
+        [Point2(t - current_time, y1), Point2(t - current_time, y2)]
         for t in spiketimes
     ]...)
 

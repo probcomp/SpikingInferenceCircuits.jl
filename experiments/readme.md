@@ -8,10 +8,22 @@ the figures for the SNMC paper.
 
 - Tutorial model (1D object tracking) : `velwalk1d/` directory
     - Script to produce tutorial figure: `velwalk1d/figure/tutorial_figure.jl`
-- Depth tracking model: `tracking_3d/` [[TODO: make note of the correct subdirectory]]
 - Recursive concept learning : `number_game/`
     - Script to run this and save a visualization of the result: `number_game/run.jl`
-- "Mental physics simulation" / image-likelihood model : `tracking_with_occlusion/` [[TODO: better understood the files in this directory]]
+- Fractional-variance scaling plot : `tracking_with_occlusion/scaling_plots/main.jl`
+- "Mental physics simulation" / "Image-likelihood tracking" / "Tracking with occlusion" inference runs : `tracking_with_occlusion/main.jl`
+- "Mental physics simulation" (etc.) qualitative proposal distribution comparison : `tracking_with_occlusion/qualitative_proposal_comparison/main.jl`
 
-[[TODO what is `tracking_with_occlusion_bitflip`?]]
-[[TODO understand + catalog the contents of the `pm_experiments` and `prob_estimate_tradeoffs` subdirectories]]
+[[
+merge TODOs:
+- 3Dtracking
+- 1dvel to GenSN-Sim
+- what is `prob_estimate_tradeoffs` ?
+- what is `pm_experiments` ?
+- what is `tracking_with_occlusion_bitflip`
+- how to make GenSN-Em spiketrain renders?
+- somehow document `setup.jl` (or general documentation)?
+
+fig TODOs:
+- understand what noise model is used in `tracking_with_occlusion/main.jl`
+]]

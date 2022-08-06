@@ -1,10 +1,14 @@
-# Users of this library who want different constants
-# should change these values via lines like `ProbEstimate.MaxRate() = custom_rate`
+# Users use the function `set_latency!(l)`, etc., to change these 5 properties from the default.
 DefaultLatency() = 50 # ms
-MaxRate() = 0.2 # KHz
-DefaultAssemblySize() = 10 # neurons
+DefaultMaxRate() = 0.1 # KHz
+DefaultAssemblySize() = 20 # neurons
 DefaultMinProb() = 0.1
 DefaultUseAutonormalization() = false
+
+# For any hyperparameter not in the above list, user can change the value
+# using lines of code like `ProbEstimates.MultAssemblySize() = new_value`.
+# (The hyperparameters with `set_...!` functions are designed this way
+# to make it possible to change the hyperparameter's value in the middle of a run.)
 
 # Do we use ``single-line compression'' multiplication, which results in low precision?
 # If not, we use ``neural-floating-point''-style multiplication.

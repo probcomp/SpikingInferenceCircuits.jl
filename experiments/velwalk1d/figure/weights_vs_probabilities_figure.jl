@@ -28,8 +28,8 @@ function draw_probability_lines!(layout, inferred_trs, weight_spiketrains, axis_
 
     lines(particle_idx) = [
         [
-            Point2f(t * time_per_step, probs[t+1][particle_idx]),
-            Point2f((t + 1) * time_per_step, probs[t+1][particle_idx])
+            Point2(t * time_per_step, probs[t+1][particle_idx]),
+            Point2((t + 1) * time_per_step, probs[t+1][particle_idx])
         ]
         for t=0:2
     ] |> Iterators.flatten |> collect

@@ -13,6 +13,7 @@ end
 @tryrm "CPTs"
 @tryrm "DynamicModels"
 @tryrm "ProbEstimates"
+@tryrm CircuitViz
 
 Pkg.add(url="https://github.com/femtomc/CircuitViz.jl")
 Pkg.add(url="git@github.com:probcomp/Circuits.jl.git")

@@ -171,7 +171,7 @@ function draw_tuning_curves!(layout)
 
     yvals = (first(Positions()) - 1):0.01:(last(Positions()) + 1)
     density(xᵈ, σ) = [exp(Gen.logpdf(normal, c, xᵈ, σ)) for c in (first(Positions()) - 1):0.01:(last(Positions()) + 1)]
-    density_points(xᵈ, σ) = [Point2f(d, i) for (i, d) in zip(yvals, density(xᵈ, σ))]
+    density_points(xᵈ, σ) = [Point2(d, i) for (i, d) in zip(yvals, density(xᵈ, σ))]
     for i in Positions()
         lines!(ax, density_points(i, Yᶜ_STD()), color=:black)
     end

@@ -11,7 +11,7 @@ includet("../proposals/nearly_locally_optimal_proposal.jl")
 
 ProbEstimates.use_perfect_weights!()
 
-using DynamicModels: nest_at, obs_choicemap, latents_choicemap
+using DynamicModels: obs_choicemap, latents_choicemap
 put_at_end_of_pair(a, rest) = a => rest
 put_at_end_of_pair(p::Pair, rest) = p.first => put_at_end_of_pair(p.second, rest)
 extend_all_with(sym::Symbol, cm::ChoiceMap) = choicemap(
@@ -68,7 +68,7 @@ Returns a matrix probs where probs[x, y] is the posterior probability that
 the new x and y position are x and y.
 """
 function exact_inference_given_prevlatents_and_occluder(image_obs_choicemap::ChoiceMap, occₜ, latentsₜ₋₁)
-    initial_tr, _ = generate(model, (0,), nest_at(:init => :latents, latentsₜ₋₁));
+    initial_tr, _ = generate(model, (0,), DynamicModels.nest_at(:init => :latents, latentsₜ₋₁));
     logweights = [-Inf for _ in positions(SquareSideLength()), _ in positions(SquareSideLength())]
     for vxₜ in Vels(), vyₜ in Vels()
         xₜ = vxₜ + latentsₜ₋₁[:xₜ => :val]
@@ -78,8 +78,8 @@ function exact_inference_given_prevlatents_and_occluder(image_obs_choicemap::Cho
         newtr, weight, _, _ = update(
             initial_tr, (1,), (UnknownChange(),),
             merge(
-                nest_at(:steps => 1 => :obs, image_obs_choicemap),
-                nest_at(:steps => 1 => :latents, extend_all_with(:val, choicemap(
+                DynamicModels.nest_at(:steps => 1 => :obs, image_obs_choicemap),
+                DynamicModels.nest_at(:steps => 1 => :latents, extend_all_with(:val, choicemap(
                     :xₜ => xₜ, :yₜ => yₜ, :vxₜ => vxₜ, :vyₜ => vyₜ, :occₜ => occₜ
                 )))
             )
@@ -94,8 +94,8 @@ function bottom_up_inference_given_occluder(image_obs_choicemap::ChoiceMap, occ�
     logweights = [-Inf for _ in positions(SquareSideLength()), _ in positions(SquareSideLength())]
     for xₜ in positions(SquareSideLength()), yₜ in positions(SquareSideLength())
         _, weight = generate(model, (0,), merge(
-            nest_at(:init => :obs, image_obs_choicemap),
-            nest_at(:init => :latents, extend_all_with(:val, choicemap(
+            DynamicModels.nest_at(:init => :obs, image_obs_choicemap),
+            DynamicModels.nest_at(:init => :latents, extend_all_with(:val, choicemap(
                 :xₜ => xₜ, :yₜ => yₜ, :vxₜ => 0, :vyₜ => 0, :occₜ => occₜ
             )))
         ))
@@ -156,7 +156,7 @@ function draw_vel_arrow!(ax, t, tr)
         color=colorant"seagreen", linewidth=4
     )
 end
-arrowshape() = PolyElement(color = :seagreen, points = Point2f[
+arrowshape() = PolyElement(color = :seagreen, points = Point2[
     (.16*x, .16*y + .2) for (x, y) in
     [(0, 1), (0, 2), (5, 2), (5, 3), (7, 1.5), (5, 0), (5, 1)]
 ])

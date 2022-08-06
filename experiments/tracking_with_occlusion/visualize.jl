@@ -57,7 +57,7 @@ occ_right(args...)    = occ_left(args...) + OccluderLength() - 0.2
 
 sq_x_center(tr, t) = latents_choicemap(tr, t)[:xₜ => :val]
 sq_y_center(tr, t) = latents_choicemap(tr, t)[:yₜ => :val]
-sq_center(tr, t) = Point2f(sq_x_center(tr, t), sq_y_center(tr, t))
+sq_center(tr, t) = Point2(sq_x_center(tr, t), sq_y_center(tr, t))
 
 function draw_obs!(ax, t, tr)
     obs = observed_imgs(tr)
@@ -211,11 +211,11 @@ function draw_gt_and_particles(tr, particles, inference_method_str)
     leg = Legend(fig[6, :],
         [
             PolyElement(color=:indianred),
-            PolyElement(color=:royalblue3, points = Point2f[(0.2, 0.2), (0.8, 0.2), (0.8, 0.8), (0.2, 0.8)]),
+            PolyElement(color=:royalblue3, points = Point2[(0.2, 0.2), (0.8, 0.2), (0.8, 0.8), (0.2, 0.8)]),
             [LineElement(color=:seagreen), MarkerElement(marker=:circle, color=:seagreen, markersize=10)],
             [
                 PolyElement(color=:gray),
-                PolyElement(color=:black, points = Point2f[(0.2, 0.2), (0.8, 0.2), (0.8, 0.8), (0.2, 0.8)])
+                PolyElement(color=:black, points = Point2[(0.2, 0.2), (0.8, 0.2), (0.8, 0.8), (0.2, 0.8)])
             ]
         ],
         ["Observed image: occluder", "Observed image: ball", "Ground-Truth", "Inferred Positions"]
@@ -245,11 +245,11 @@ function draw_gt_particles_img_only(tr, particles, inference_method_str)
     leg = Legend(fig[4, 1],
         [
             PolyElement(color=:indianred),
-            PolyElement(color=:royalblue3, points = Point2f[(0.2, 0.2), (0.8, 0.2), (0.8, 0.8), (0.2, 0.8)]),
+            PolyElement(color=:royalblue3, points = Point2[(0.2, 0.2), (0.8, 0.2), (0.8, 0.8), (0.2, 0.8)]),
             [LineElement(color=:seagreen), MarkerElement(marker=:circle, color=:seagreen, markersize=10)],
             [
                 PolyElement(color=:gray),
-                PolyElement(color=:black, points = Point2f[(0.2, 0.2), (0.8, 0.2), (0.8, 0.8), (0.2, 0.8)])
+                PolyElement(color=:black, points = Point2[(0.2, 0.2), (0.8, 0.2), (0.8, 0.8), (0.2, 0.8)])
             ]
         ],
         ["Observed image: occluder", "Observed image: ball", "Ground-Truth", "Inferred Positions"]

@@ -19,7 +19,7 @@ function set_ngf_hyperparams_for_aux!(hyperparams)
     ProbEstimates.set_assembly_size!(floor(hyperparams.neuron_budget / 11))
 end
 function set_ngf_hyperparams_for_noaux!(hyperparams)
-    # ProbEstimates.set_maxrate!(hyperparams.frequency)
+    ProbEstimates.set_maxrate!(hyperparams.frequency)
     @assert ProbEstimates.MaxRate() == hyperparams.frequency
     ProbEstimates.set_latency!(hyperparams.latency)
     ProbEstimates.set_minprob!(min(ColorFlipProb(), ProbEstimates.DefaultMinProb()))

@@ -45,13 +45,13 @@ function visualize_datapoint(gold_standard, estimate)
                 PolyElement(color=:indianred),
                 PolyElement(
                     color=:royalblue3, 
-                    points = Point2f[(0.2, 0.2), (0.8, 0.2), (0.8, 0.8), (0.2, 0.8)]
+                    points = Point2[(0.2, 0.2), (0.8, 0.2), (0.8, 0.8), (0.2, 0.8)]
                 )
             ],
             xₜ₋₁_pos_viz, xₜ₋₁_vel_viz,
             [
                 PolyElement(color=:gray),
-                PolyElement(color=:black, points = Point2f[(0.2, 0.2), (0.8, 0.2), (0.8, 0.8), (0.2, 0.8)])
+                PolyElement(color=:black, points = Point2[(0.2, 0.2), (0.8, 0.2), (0.8, 0.8), (0.2, 0.8)])
             ]
         ],
         [
