@@ -4,6 +4,7 @@ using DynamicModels
 include("model_hyperparameters.jl")
 include("modeling_utils.jl")
 
+
 abstract type PixelColor end
 struct Empty <: PixelColor; end
 struct Object <: PixelColor; end

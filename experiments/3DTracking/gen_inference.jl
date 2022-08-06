@@ -1,64 +1,67 @@
 using Base: Int64
 using DynamicModels: @DynamicModel, @compile_initial_proposal, @compile_step_proposal, get_dynamic_model_obs, dynamic_model_smc
+using ProbEstimates
+
 
 include("model.jl")
-ProbEstimates.use_perfect_weights!()
-#ProbEstimates.use_noisy_weights!()
+include("ab_viz.jl")
+
+print(MinProb())
+#ProbEstimates.use_perfect_weights!()
+ProbEstimates.use_noisy_weights!()
+ProbEstimates.set_assembly_size!(10)
+ProbEstimates.set_latency!(300)
+ProbEstimates.UseLowPrecisionMultiply() = false
+ProbEstimates.MultAssemblySize() = 200
+ProbEstimates.MaxRate() = 600 # Hz
 
 model = @DynamicModel(initial_model, step_model, obs_model, 9)
 initial_proposal_compiled = @compile_initial_proposal(initial_proposal, 2)
 step_proposal_compiled = @compile_step_proposal(step_proposal, 9, 2)
-#step_proposal_compiled = @compile_step_proposal(step_model, 9, 2)
-#initial_proposal_compiled = @compile_initial_proposal(initial_model, 2)
 
 @load_generated_functions()
 
-NSTEPS = 20
-NPARTICLES = 20
+NSTEPS = 10
+NPARTICLES = 100
+cmap = make_deterministic_trace()
+tr, w = generate(model, (NSTEPS,), cmap)
+observations = get_dynamic_model_obs(tr);
 
-tr = simulate(model, (NSTEPS,))
+final_particle_set = []
 
+for i in 1:100
+    try
+        (unweighted_traces_at_each_step, weighted_traces) = dynamic_model_smc(
+            model, observations,
+            ch -> (ch[:obs_ϕ => :val], ch[:obs_θ => :val]),
+            initial_proposal_compiled, step_proposal_compiled,
+            NPARTICLES, # n particles
+            ess_threshold=NPARTICLES);
+        scores = [get_score(t) for t in unweighted_traces_at_each_step[end]];
+    
+        if !any(map(isfinite, scores))
+            continue
+        end
+        particle_sample = Gen.categorical(normalize(exp.(scores .- logsumexp(scores))))
+        push!(final_particle_set, unweighted_traces_at_each_step[end][particle_sample])
+    catch
+        continue
+    end
+          
+#    println(sum(normalize(exp.(scores .- logsumexp(scores)))))
+  
+end
 
-x_traj = [(:steps => i => :latents => :xₜ => :val, X_init + i) for i in 1:NSTEPS]
-y_traj = [(:steps => i => :latents => :yₜ => :val, Y_init + i) for i in 1:NSTEPS]
-z_traj = [(:steps => i => :latents => :zₜ => :val, Z_init) for i in 1:NSTEPS]
-vx_traj = [(:steps => i => :latents => :vxₜ => :val, 1) for i in 1:NSTEPS]
-vy_traj = [(:steps => i => :latents => :vyₜ => :val, 1) for i in 1:NSTEPS]
-vz_traj = [(:steps => i => :latents => :vzₜ => :val, 0) for i in 1:NSTEPS]
+# animate_pf_results(final_particle_set, tr, true)
+# animate_pf_results(final_particle_set, tr, false)
+render_static_trajectories(final_particle_set, tr, true)
+render_static_trajectories(final_particle_set, tr, false)
+final_scores = [get_score(t) for t in final_particle_set]
+final_probs = normalize(exp.(final_scores .- logsumexp(final_scores)))
+render_obs_from_particles(final_particle_set, length(final_probs));
 
-# tr, w = generate(model, (NSTEPS,), choicemap(
-#     (:init => :latents => :xₜ => :val, X_init),
-#     (:init => :latents => :yₜ => :val, Y_init),
-#     (:init => :latents => :zₜ => :val, Z_init),
-#     (:init => :latents => :vxₜ => :val, 1),
-#     (:init => :latents => :vyₜ => :val, 1), 
-#     (:init => :latents => :vzₜ => :val, 0),
-#     x_traj...,
-#     y_traj...,
-#     z_traj...,
-#     vz_traj...,
-#     vx_traj...,
-#     vy_traj...
-# ))
+# plot_full_choicemap(final_particle_set)
 
-
-  # to constrain a step:
-#  (:steps => t => :latents => :x, val)
-#)
-
-observations = get_dynamic_model_obs(tr)
-
-(unweighted_traces_at_each_step, _) = dynamic_model_smc(
-    model, observations,
-    ch -> (ch[:obs_θ => :val], ch[:obs_ϕ => :val]),
-    initial_proposal_compiled, step_proposal_compiled,
-    NPARTICLES, # n particles
-    ess_threshold=NPARTICLES
-)
-
-#OK next step is figuring out which particles are moving in depth vs not
-
-heatmap_pf_results(unweighted_traces_at_each_step, tr, NSTEPS)
 
 # unweighted_traces_at_each_step looks like
 # [
@@ -70,7 +73,6 @@ heatmap_pf_results(unweighted_traces_at_each_step, tr, NSTEPS)
 
 # by a "trace for timestep T", I mean a trace which has choices
 # for every timestep up to and including T
-
 
 #tr_init = simulate(model, (0,))
 #proposed_choices, _ = propose(step_proposal, (tr_init, 0.0, 0.0))

@@ -1,5 +1,6 @@
 using GLMakie
 using Colors
+using FunctionalCollections
 
 to_color(::Empty) = colorant"white"
 to_color(::Object) = colorant"royalblue3"
@@ -62,6 +63,12 @@ function draw_obs!(ax, t, tr)
     obs = observed_imgs(tr)
     heatmap!(ax, @lift(to_color_matrix(obs[$t + 1])), colormap=map(to_color, PixelColors()))
 end
+
+
+function draw_obs!(ax, t, obs::Vector{FunctionalCollections.PersistentVector{FunctionalCollections.PersistentVector{Any}}})
+    heatmap!(ax, @lift(to_color_matrix(obs[$t + 1])), colormap=map(to_color, PixelColors()))
+end
+
 function draw_gt_sq!(ax, t, tr)
     # hollow_rect!(
     #     ax,
@@ -70,6 +77,7 @@ function draw_gt_sq!(ax, t, tr)
     # )
     scatter!(ax, lift(t -> [sq_center(tr, t)], t), color=colorant"seagreen", markersize=30)
 end
+
 function draw_gt_occ!(ax, t, tr)
     hollow_rect!(
         ax,
@@ -95,6 +103,17 @@ function draw_obs(tr)
     draw_obs!(ax, t, tr)
     return (fig, t)
 end
+
+function draw_obs(obs::Vector{FunctionalCollections.PersistentVector{FunctionalCollections.PersistentVector{Any}}})
+    fig = Figure()
+    ax = Axis(fig[1, 1], aspect=DataAspect(), title="ANN Predicted Image")
+    t = Observable(0)
+    draw_obs!(ax, t, obs)
+    return (fig, t)
+end
+
+
+
 
 ### Inference drawing ###
 function draw_sq!(ax, x, y, alpha)
@@ -148,6 +167,8 @@ plot_point!(ax, t, time_to_pt, domain;
     )
 time_to_vel(tr) = t -> (latents_choicemap(tr, t)[:vxₜ => :val], latents_choicemap(tr, t)[:vyₜ => :val])
 
+
+# particles here is unweighted_trs
 function draw_gt_and_particles(tr, particles, inference_method_str)
     fig = Figure(resolution=(800, 1500))
     t = Observable(0)

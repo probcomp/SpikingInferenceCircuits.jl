@@ -9,10 +9,14 @@ fwd_truncate(probs, inverts_continuous) = inverts_continuous ? normalize(probs) 
 recip_truncate(probs) = TruncateRecipDists() ? truncate(probs) : probs
 fwd_truncate(probs)   = TruncateFwdDists()   ? truncate(probs) : probs
 function truncate(pvec)
+
+#    return pvec
+    
     if !isprobvec(pvec)
         error("pvec = $pvec is not a probability vector")
     end
     mininvec = minimum(p for p in pvec if p != 0)
+    
     if mininvec ≥ MinProb()
         return pvec
     else

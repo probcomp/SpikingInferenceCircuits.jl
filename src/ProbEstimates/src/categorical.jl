@@ -74,6 +74,7 @@ function Gen.update(tr::CatTrace, (probs,)::Tuple, _::Tuple, cm::Gen.ChoiceMap)
             if weight_type() == :perfect
                 get_score(newtr) - get_score(tr)
             elseif weight_type() == :noisy
+       #         get_score(newtr) - get_score(tr)                
                 # Return an unbiased estimate of P(x')/P(x)
                 log(fwd_prob_estimate(newtr)) + log(recip_prob_estimate(tr)) 
             else
@@ -157,4 +158,25 @@ function recip_prob_for_continuous_inversion(tr::CatTrace)
     # println("p_xᶜ_given_x̃ᵈ = $p_xᶜ_given_x̃ᵈ ; sum_of_tuning_curves = $sum_of_tuning_curves ; sum_est = $estimate_of_sum ; est = $est")
 
     return est
+end
+
+
+Gen.has_argument_grads(::LCat) = (true,)
+Gen.accepts_output_grad(::LCat) = false
+function Gen.choice_gradients(
+    tr::CatTrace, selection::Selection=EmptySelection(), retgrad=nothing
+)
+    @assert isnothing(retgrad)
+    @assert isempty(selection)
+
+    grad = zeros(length(tr.probs))
+    grad[tr.idx] = 1/tr.probs[tr.idx]
+    return ((grad,), EmptyChoiceMap(), EmptyChoiceMap())
+end
+Gen.accumulate_param_gradients!(trace::CatTrace, retgrad=nothing) =
+    Gen.choice_gradients(trace, EmptySelection(), retgrad)[1]
+
+function Gen.accumulate_param_gradients!(trace::CatTrace, retgrad=nothing, scale_factor=1.)
+    @assert scale_factor == 1.
+    return Gen.choice_gradients(trace, EmptySelection(), retgrad)[1]
 end

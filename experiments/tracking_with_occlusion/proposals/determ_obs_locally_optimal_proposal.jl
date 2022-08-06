@@ -10,13 +10,14 @@ function get_x_pos(img)
         return only(xs)
     end
 end
+
 get_y_pos(img, ::Nothing) = nothing
 get_y_pos(img, x) = get_y_pos(img[x])
 get_y_pos(col) = only(findall([pix == Object() for pix in col]))
 get_occluder_pos(img) = first(findall([any(pix == Occluder() for pix in col) for col in img]))
 
 occluder_informed_x_prior(occ) = [occ ≤ x ≤ occ + OccluderLength() - 1 ? 1. : 0. for x in SqPos()] |> normalize
-uninformed_y_prior() = unif(SqPos())
+uninformed_y_prior() = uniform(SqPos())
 @gen (static) function _init_proposal(img)
     occluder_pos = get_occluder_pos(img)
     occₜ ~ Cat(onehot(occluder_pos, OccPos()))
@@ -41,7 +42,8 @@ vel_probs_to_x_probs(v_probs, xₜ₋₁) =
     sum(
         v_probs[vel_to_idx(v)] * onehot(xₜ₋₁ + v, SqPos())
         for v in Vels()
-    )
+            )
+
 function step_x_dist(occₜ, vxₜ₋₁, xₜ₋₁) # TODO: there's a bug!!
     # println((occₜ, xₜ₋₁, vxₜ₋₁))
     v_probs = vel_change_probs(vxₜ₋₁, xₜ₋₁)
@@ -56,6 +58,7 @@ function step_x_dist(occₜ, vxₜ₋₁, xₜ₋₁) # TODO: there's a bug!!
     end
 end
 step_y_dist(vyₜ₋₁, yₜ₋₁) = vel_change_probs(vyₜ₋₁, yₜ₋₁) |> vp -> vel_probs_to_x_probs(vp, yₜ₋₁) |> normalize
+
 function vel_step_dist(xₜ, xₜ₋₁, vxₜ₋₁)
     v_probs = vel_change_probs(vxₜ₋₁, xₜ₋₁)
     x_likelihoods = [onehot(xₜ₋₁ + v, Positions())[xₜ] for v in Vels()]
@@ -66,10 +69,10 @@ function vel_step_dist(xₜ, xₜ₋₁, vxₜ₋₁)
         return onehot(last(Vels()), Vels())
     end
 end
+
 @gen (static) function _step_proposal(occₜ₋₁, xₜ₋₁, yₜ₋₁, vxₜ₋₁, vyₜ₋₁, img)
     occluder_pos = get_occluder_pos(img)
     occₜ ~ Cat(onehot(occluder_pos, OccPos()))
-
     x_pos = get_x_pos(img)
     y_pos = get_y_pos(img, x_pos)    
     xₜ ~ Cat(
