@@ -34,10 +34,13 @@ smccircuit = SMC(
     GenFnWithInputDomains(step_latent_model, latent_domains()),
     GenFnWithInputDomains(obs_model, latent_domains()),
     GenFnWithInputDomains(_exact_init_proposal, obs_domains()),
-    GenFnWithInputDomains(_ann_step_proposal, latent_obs_domains()),
-    [:xₜ, :vₜ], [:obs], [:xₜ, :vₜ], NPARTICLES();
-    truncation_minprob=MinProb(),
-    rejuv_proposal=GenFnWithInputDomains(mh_kernel, latent_obs_domains())
+    # GenFnWithInputDomains(_ann_step_proposal, latent_obs_domains()),
+    # [:xₜ, :vₜ], [:obs], [:xₜ, :vₜ], NPARTICLES();
+    # truncation_minprob=MinProb(),
+    # rejuv_proposal=GenFnWithInputDomains(mh_kernel, latent_obs_domains())
+    GenFnWithInputDomains(_approx_step_proposal, latent_obs_domains()),
+    [:xₜ, :vₜ], [:yᵈₜ], [:xₜ, :vₜ], NPARTICLES();
+    truncation_minprob=MinProb()
 )
 println("SMC Circuit Constructed.")
 

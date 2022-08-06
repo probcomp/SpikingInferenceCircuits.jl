@@ -1,10 +1,10 @@
 using Circuits, SpikingInferenceCircuits, SpikingCircuits
 const SIC = SpikingInferenceCircuits
 
-include("model.jl")
-include("groundtruth_rendering.jl")
+include("../../model/model.jl")
+include("../../groundtruth_rendering.jl")
 
-includet("../utils/default_implementation_rules.jl")
+includet("../../../utils/default_implementation_rules.jl")
 println("Implementation rules loaded.")
 
 num_neurons(::PrimitiveComponent) = 1

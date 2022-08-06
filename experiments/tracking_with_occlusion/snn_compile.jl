@@ -3,8 +3,8 @@ const SIC = SpikingInferenceCircuits
 using Circuits, SpikingCircuits
 using DynamicModels
 
-include("model.jl")
-include("prior_proposal.jl")
+include("model/model.jl")
+include("proposals/prior_proposal.jl")
 include("groundtruth_rendering.jl")
 @load_generated_functions()
 

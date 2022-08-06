@@ -69,6 +69,7 @@ function autonormalize_weights(log_weights, k, speedup_factor, repeater_rate)
     @assert resulting_rate_min_threshold ≤ sum(rates) "total resulting auto-normalized rate: $(sum(rates)) [rates: $rates]"
     @assert maximum(rates) ≤ MaxRate() * MultAssemblySize() "max rate after auto-normalize: $(maximum(rates)) [rates: $rates]"
 
+    # TODO: read-out noise in the resulting rates
     result = (
         log(sum(rates)) - (num_speedups * log(speedup_factor)), # NOTE: THIS DOES NOT CURRENTLY FACTOR IN READ-OUT NOISE IN THE RESULTING RATES!
         log.(normalize(rates)) # we can then use a WTA to sample from the resulting rates

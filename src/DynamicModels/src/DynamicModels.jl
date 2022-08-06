@@ -61,6 +61,7 @@ obs_addr(t)          = t == 0 ? :init => :obs     : :steps => t => :obs
 latent_addr(t)       = t == 0 ? :init => :latents : :steps => t => :latents
 """
     @compile_step_proposal(step_proposal, num_latent_variables, num_obs_variables)
+    @compile_step_proposal(step_proposal, obs_proposal, num_latent_variables, num_obs_variables)
 
 Converts a step proposal for a step model into a proposal compatible with a dynamic model
 built from that step model using the `@DynamicModel` macro.
@@ -70,6 +71,14 @@ where the first `num_latent_variables` arguments are the latents from the previo
 and the remaining `num_obs_variables` arguments are the observations from the current timestep.
 `step_proposal` should trace a value at exactly the same set of addresses
 traced in the `step_model` in the model it is a proposal for.
+
+`step_proposal` proposes to the latent variables at the new timestep.
+If `obs_proposal` is provided, it proposes to any variables in the observation model which are not
+directly observed.  If `obs_proposal` is provided, it should accept as argument
+`(latent_vars_at_time_T..., obs_vars_at_time_T...)`, where `latent_vars_at_time_T`
+are the values proposed to by the `step_proposal`.
+If `obs_proposal` is provided, then `step_proposal` must return a tuple of the
+latents used by `obs_proposal`.
 """
 macro compile_step_proposal(
     step_proposal, n_latents, n_obs_inputs
@@ -86,9 +95,31 @@ macro compile_step_proposal(
         end
     end
 end
+macro compile_step_proposal(
+    step_proposal, obs_proposal, n_latents, n_obs_inputs
+)
+    prop_argnames = [Symbol("a$i") for i=1:n_latents]
+    latents_argnames = [Symbol("l$i") for i=1:n_latents]
+    obs_argnames = [Symbol("o$i") for i=1:n_obs_inputs]
+    return quote
+        @gen (static) function __proposal($(prop_argnames...), $(obs_argnames...))
+            latents = {:latents} ~ $(esc(step_proposal))($(prop_argnames...), $(obs_argnames...))
+            ($(latents_argnames...),) = latents
+            {:obs} ~ $(esc(obs_proposal))($(latents_argnames...), $(obs_argnames...))
+        end
+        @gen (static) function _step_proposal(prev_tr, $(obs_argnames...))
+            T = get_args(prev_tr)[1] + 1
+            prev_latents = prev_tr[$(latent_addr)(T - 1)]
+            ($(prop_argnames...),) = prev_latents
+            {:steps => T} ~ __proposal($(prop_argnames...), $(obs_argnames...))
+        end
+    end
+end
+
 
 """
     @compile_initial_proposal(initial_proposal, n_obs_inputs)
+    @compile_initial_proposal(initial_proposal, obs_proposal, n_latents, n_obs_inputs)
 
 Converts an initial proposal for the initial model used to construct a dynamic model
 using the `@DynamicModel` macro into a proposal compatible with the DynamicModel.
@@ -96,6 +127,13 @@ using the `@DynamicModel` macro into a proposal compatible with the DynamicModel
 `initial_proposal` should accept `n_obs_inputs` arguments (the observations
 at the initial timestep), and should trace a value at the same set of addresses
 as the initial latents model.
+
+If `obs_proposal` is provided, this is used to propose to any variables
+in the observation model which are not observed.  It accepts as arguments
+`(latent_variables_at_time_0..., obs_inputs...)`, where `latent_variables_at_time_0`
+is the `n_latents`-long return value from `initial_proposal` (carrying the latent
+variables returned by the initial proposal).  If `obs_proposal` is provided,
+then the `step_proposal` must return a tuple of the latent variables used by `obs_proposal`.
 """
 macro compile_initial_proposal(
     initial_proposal, n_obs_inputs
@@ -137,6 +175,23 @@ macro compile_rejuvenation_proposal(kernel, n_latents, n_obs)
         end
 
         rejuvenate_trace
+    end
+end
+
+macro compile_initial_proposal(
+    initial_proposal, obs_proposal, n_latents, n_obs_inputs
+)
+    latents_argnames = [Symbol("l$i") for i=1:n_latents]
+    obs_argnames = [Symbol("o$i") for i=1:n_obs_inputs]
+    return quote
+        @gen (static) function __proposal($(obs_argnames...))
+            latents = {:latents} ~ $(esc(initial_proposal))($(obs_argnames...))
+            ($(latents_argnames...),) = latents
+            {:obs} ~ $(esc(obs_proposal))($(latents_argnames...), $(obs_argnames...))
+        end
+        @gen (static) function _initial_proposal($(obs_argnames...))
+            {:init} ~ __proposal($(obs_argnames...))
+        end
     end
 end
 
@@ -201,7 +256,7 @@ function dynamic_model_smc(
     resample_rejuvenate_and_track_traces!(state)
 
     for (t, o) in enumerate(obs_cms)
-        Gen.particle_filter_step!(
+        _particle_filter_step!(
             state, (t,), (UnknownChange(),),
             nest_at(:steps => t => :obs, o),
             step_proposal,
@@ -211,6 +266,26 @@ function dynamic_model_smc(
     end
 
     return (unweighted_traces, weighted_traces)
+end
+function _particle_filter_step!(state::Gen.ParticleFilterState{U}, new_args::Tuple, argdiffs::Tuple,
+    observations::ChoiceMap, proposal::Gen.GenerativeFunction, proposal_args::Tuple) where {U}
+    num_particles = length(state.traces)
+    for i=1:num_particles
+        (prop_choices, prop_weight, _) = propose(proposal, (state.traces[i], proposal_args...))
+        constraints = merge(observations, prop_choices)
+        # println("CONSTRAINTS:")
+        # display(constraints)
+        (state.new_traces[i], up_weight, _, disc) = update(state.traces[i], new_args, argdiffs, constraints)
+        @assert isempty(disc)
+        state.log_weights[i] += up_weight - prop_weight
+    end
+
+    # swap references
+    tmp = state.traces
+    state.traces = state.new_traces
+    state.new_traces = tmp
+
+    return nothing
 end
 
 function nest_at(addr, submap::Gen.ChoiceMap)
@@ -234,5 +309,9 @@ export enumeration_filter_init, enumeration_filter_step
 
 include("particle_gibbs.jl")
 export single_step_particle_gibbs_rejuv_kernel, single_step_particle_gibbs
+
+# SMC simulations, but where the proposed values are fixed ahead-of-time by the user
+include("controlled_smc.jl")
+export predetermined_dynamic_model_smc
 
 end

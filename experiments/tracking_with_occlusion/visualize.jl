@@ -32,7 +32,7 @@ to_color_matrix(vec_of_vecs_of_pixel_color) = [
 	to_idx(vec_of_vecs_of_pixel_color[x][y])
 		for x=1:length(vec_of_vecs_of_pixel_color),
 			y=1:length(vec_of_vecs_of_pixel_color[1])	
-] |> transpose
+]
 
 observed_imgs(tr) = [
     tr[:init => :obs][1],
@@ -44,12 +44,15 @@ observed_imgs(tr) = [
 
 ### Figure making / trace drawing ###
 
-sq_left(tr, t)  = latents_choicemap(tr, t)[:xₜ => :val] - 0.4
-sq_bot(tr, t)   = latents_choicemap(tr, t)[:yₜ => :val] - 0.4
-sq_top(tr, t)   = sq_bot(tr, t)  + SquareSideLength() - 0.2
-sq_right(tr, t) = sq_left(tr, t) + SquareSideLength() - 0.2
-occ_left(tr, t)     = latents_choicemap(tr, t)[:occₜ => :val] - 0.4
-occ_right(tr, t)    = occ_left(tr, t) + OccluderLength() - 0.2
+sq_left(x) = x - 0.4
+sq_bot(y) = y - 0.4
+occ_left(occ) = occ - 0.4
+sq_left(tr, t)  = sq_left(latents_choicemap(tr, t)[:xₜ => :val])
+sq_bot(tr, t)   = sq_bot(latents_choicemap(tr, t)[:yₜ => :val])
+sq_top(args...)   = sq_bot(args...)  + SquareSideLength() - 0.2
+sq_right(args...) = sq_left(args...) + SquareSideLength() - 0.2
+occ_left(tr, t)     = occ_left(latents_choicemap(tr, t)[:occₜ => :val])
+occ_right(args...)    = occ_left(args...) + OccluderLength() - 0.2
 
 sq_x_center(tr, t) = latents_choicemap(tr, t)[:xₜ => :val]
 sq_y_center(tr, t) = latents_choicemap(tr, t)[:yₜ => :val]
@@ -94,12 +97,24 @@ function draw_obs(tr)
 end
 
 ### Inference drawing ###
-function draw_particle_sq_gt!(ax, t, tr, num_particles) # tr = observable giving trace at time $t
+function draw_sq!(ax, x, y, alpha)
     poly!(
         ax,
-        @lift(Rect(sq_left($tr, $t) + 0.1, sq_bot($tr, $t) + 0.1, SquareSideLength() - 0.4, SquareSideLength() - 0.4)),
-        color=RGBA(0, 0, 0, min(1., 2.0/num_particles))
+        @lift(Rect(sq_left($x) + 0.1, sq_left($y) + 0.1, SquareSideLength() - 0.4, SquareSideLength() - 0.4)),
+        color=RGBA(0, 0, 0, alpha)
     )
+end
+function draw_particle_sq!(ax, t, tr, num_particles) # tr = observable giving trace at time $t
+    draw_sq!(ax,
+        @lift(latents_choicemap($tr, $t)[:xₜ => :val]),
+        @lift(latents_choicemap($tr, $t)[:yₜ => :val]),
+        min(1., 2.0/num_particles)
+    )
+    # poly!(
+    #     ax,
+    #     @lift(Rect(sq_left($tr, $t) + 0.1, sq_bot($tr, $t) + 0.1, SquareSideLength() - 0.4, SquareSideLength() - 0.4)),
+    #     color=RGBA(0, 0, 0, min(1., 2.0/num_particles))
+    # )
 end
 function draw_particle_occ_gt!(ax, t, tr, num_particles)
     poly!(
@@ -108,7 +123,7 @@ function draw_particle_occ_gt!(ax, t, tr, num_particles)
         color=RGBA(0, 0, 0, min(0.95, 2.0/num_particles))
     )
 end
-function draw_particles_gt!(drawfn, ax, t, trs_indexed_by_time)
+function draw_particles!(drawfn, ax, t, trs_indexed_by_time)
     isempty(trs_indexed_by_time) && return;
     for i=1:length(trs_indexed_by_time[1])
         drawfn(ax, t, @lift(trs_indexed_by_time[$t + 1][i]), length(trs_indexed_by_time[1]))
@@ -138,7 +153,7 @@ function draw_gt_and_particles(tr, particles, inference_method_str)
     t = Observable(0)
 
     vel_ax = Axis(fig[1, 1], aspect=DataAspect(), title="Velocity")
-    draw_particles_gt!(draw_vel!, vel_ax, t, particles)
+    draw_particles!(draw_vel!, vel_ax, t, particles)
     pts = plot_point!(vel_ax, t, time_to_vel(tr), Vels(); n_backtrack=2, color=colorant"seagreen")
     xlims!(vel_ax, (first(Vels()) - 0.5, last(Vels()) + 0.5))
     ylims!(vel_ax, (first(Vels()) - 0.5, last(Vels()) + 0.5))
@@ -149,14 +164,14 @@ function draw_gt_and_particles(tr, particles, inference_method_str)
     fig[2:3, 1] = l1
     l1[1, 1] = ax2d = Axis(fig[2, 1], aspect=DataAspect(), title="2D world")
     obs = draw_obs!(ax2d, t, tr)
-    inf = draw_particles_gt!(draw_particle_sq_gt!, ax2d, t, particles)
+    inf = draw_particles!(draw_particle_sq!, ax2d, t, particles)
     gt = draw_gt_sq!(ax2d, t, tr)
     draw_gt_occ!(ax2d, t, tr)
     xlims!(ax2d, (0.5, last(Positions()) + 0.5))
 
     l1[2, 1] = ax1d = Axis(fig[3, 1], aspect=DataAspect(), title="Inferred occluder position")
     hideydecorations!(ax1d)
-    draw_particles_gt!(draw_particle_occ_gt!, ax1d, t, particles)
+    draw_particles!(draw_particle_occ_gt!, ax1d, t, particles)
     linkxaxes!(ax2d, ax1d)
 
     rowsize!(l1, 1, Relative(  (last(Positions()) - 1) / last(Positions())     ))
@@ -167,7 +182,7 @@ function draw_gt_and_particles(tr, particles, inference_method_str)
     # ax1d.tellheight = true
     # trim!(fig.layout)
 
-    hyperparam_label = Label(fig, "p_pixel_flip = $(p_flip()). OccOneOffProb = $(OccOneOffProb()).  VelOneOffProb = $(VelOneOffProb()).")
+    hyperparam_label = Label(fig, "p_pixel_flip = $(ColorFlipProb()). OccOneOffProb = $(OccOneOffProb()).  VelStd = $(VelStd()).")
     inference_label = Label(fig, inference_method_str)
     hyperparam_label.tellwidth = false; inference_label.tellwidth = false
     fig[4, :] = hyperparam_label; fig[5, :] = inference_label;
@@ -194,13 +209,13 @@ function draw_gt_particles_img_only(tr, particles, inference_method_str)
     t = Observable(0)
     ax2d = Axis(fig[1, 1], aspect=DataAspect(), title="2D world")
     obs = draw_obs!(ax2d, t, tr)
-    inf = draw_particles_gt!(draw_particle_sq_gt!, ax2d, t, particles)
+    inf = draw_particles!(draw_particle_sq!, ax2d, t, particles)
     gt = draw_gt_sq!(ax2d, t, tr)
     draw_gt_occ!(ax2d, t, tr)
     xlims!(ax2d, (0.5, last(Positions()) + 0.5))
     colsize!(fig.layout, 1, Relative(1))
 
-    hyperparam_label = Label(fig, "p_pixel_flip = $(p_flip()). OccOneOffProb = $(OccOneOffProb()).  VelOneOffProb = $(VelOneOffProb()).")
+    hyperparam_label = Label(fig, "p_pixel_flip = $(ColorFlipProb()). OccOneOffProb = $(OccOneOffProb()).  VelStd = $(VelStd()).")
     inference_label = Label(fig, inference_method_str)
     hyperparam_label.tellwidth = false; inference_label.tellwidth = false
     hyperparam_label.tellheight = true; inference_label.tellheight = true

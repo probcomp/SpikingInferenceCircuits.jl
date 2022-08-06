@@ -27,22 +27,25 @@ end
 struct LCat{T} <: Gen.GenerativeFunction{T, CatTrace}
     is_indexed::Bool
     labels::Union{Nothing, Vector{T}}
+    inverts_continuous::Bool
 end
+(LCat{T})(is_indexed::Bool, labels::Union{Nothing, Vector{T}}) where {T} = LCat{T}(is_indexed, labels, false)
+
 labels(l::LCat, pvec) = l.is_indexed ? (1:length(pvec)) : l.labels
 idx_to_label(c::LCat, idx) = c.is_indexed ? idx : c.labels[idx]
 label_to_idx(c::LCat, lab) = c.is_indexed ? lab : findfirst([l == lab for l in c.labels])
-Base.:(==)(a::LCat{T}, b::LCat{T}) where {T} = (
-        a.is_indexed && b.is_indexed || a.labels == b.labels
-    )
+Base.:(==)(a::LCat{T}, b::LCat{T}) where {T} =
+    a.inverts_continuous == b.inverts_continuous && (a.is_indexed && b.is_indexed || a.labels == b.labels)
 
 Cat = LCat{Int}(true, Int[])
+ContinuousInvertingCat = LCat{Int}(true, Int[], true)
 LCat(labels::Vector{T}) where {T} = LCat{T}(false, labels)
 LCat(labels) = LCat(collect(labels))
 
-Gen.simulate(c::LCat, (probs,)::Tuple) = CatTrace(c, probs, categorical(recip_truncate(probs)))
+Gen.simulate(c::LCat, (probs,)::Tuple) = CatTrace(c, probs, categorical(recip_truncate(probs, c.inverts_continuous)))
 function Gen.generate(c::LCat, (probs,)::Tuple, cm::Union{Gen.ChoiceMap, Gen.EmptyChoiceMap})
     if isempty(cm)
-        tr = CatTrace(c, probs, categorical(fwd_truncate(probs)))
+        tr = CatTrace(c, probs, categorical(fwd_truncate(probs, c.inverts_continuous)))
         return (
             tr,
             log(fwd_prob_estimate(tr)) + log(recip_prob_estimate(tr))
@@ -88,15 +91,70 @@ end
 ### Can something strange happen here due to being in the opposite weight mode?
 ### For instance when we use `assess` to calculate the reciprocal weight during PG
 function fwd_prob_estimate(tr::CatTrace)
-    est = fwd_prob_estimate(fwd_truncate(tr.probs)[tr.idx])
-    # @assert isnothing(tr.fwd_score)
-    tr.fwd_score = est
-    return est
+    if get_gen_fn(tr).inverts_continuous
+        @assert weight_type() in (:recip, :perfect) "Error: Attempt to get a forward P-estimate for a `Cat` used to invert a discrete->continuous distribution in the model."
+        if weight_type() == :perfect
+            return normalize(tr.probs)[tr.idx]
+        else
+            @assert weight_type() == :recip
+            return 1/recip_prob_for_continuous_inversion(tr)
+        end
+    else
+        est = fwd_prob_estimate(fwd_truncate(tr.probs)[tr.idx])
+        maybe_put_est_into_trace!(tr, est, :fwd)
+        return est
+    end
 end
 function recip_prob_estimate(tr::CatTrace)
-    est = recip_prob_estimate(recip_truncate(tr.probs)[tr.idx])
-    if isnothing(tr.recip_score)
-        tr.recip_score = est
+    if get_gen_fn(tr).inverts_continuous
+        est = recip_prob_for_continuous_inversion(tr)
+    else
+        est = recip_prob_estimate(recip_truncate(tr.probs)[tr.idx])
     end
+    maybe_put_est_into_trace!(tr, 1/est, :recip)
+    return est
+end
+
+# est should be an estimate of p -- not 1/p
+function maybe_put_est_into_trace!(tr, est, default_mode)
+    if weight_type() == :perfect
+        return
+    end
+
+    # I forget why there is a `isnothing` check in one case but not the other...is this right?
+    if weight_type() == :fwd || (weight_type() == :noisy && default_mode == :fwd)
+        tr.fwd_score = est
+    elseif weight_type() == :recip || (weight_type() == :noisy && default_mode == :recip)
+        if isnothing(tr.recip_score)
+            tr.recip_score = 1/est
+        end
+    else
+        error("The above if statements should be exhaustive. But got: default_mode = $default_mode ; weight_type() = $(weight_type())")
+    end
+end
+
+function recip_prob_for_continuous_inversion(tr::CatTrace)
+    # Let `p(xᶜ ; xᵈ)` denote the model discrete -> continuous distribution.
+
+    # The proposal probability for x̃ᵈ is `p(xᶜ ; x̃ᵈ) / ∑_{xᵈ}{p(xᶜ ; x̃ᵈ)}`.
+    # We want the overall weight output from the circuit to be an unbiased estimate of
+    # `∑_{xᵈ}{p(xᶜ ; x̃ᵈ)}`.
+
+    # Thus, we want this to output `estimate_of[ ∑_{xᵈ}{p(xᶜ ; x̃ᵈ)} ] / exactly[ p(xᶜ ; x̃ᵈ) ]`
+
+    if isapprox(sum(tr.probs), 1.0)
+        @warn "Warning: probs for continuous inversion appear to be normalized.  To get accurate score estimates, the unnormalized distribution should be used."
+    end
+
+    p_xᶜ_given_x̃ᵈ = tr.probs[tr.idx]
+    
+    sum_of_tuning_curves = sum(tr.probs)
+    num_spikes_from_assemblies = poisson(sum_of_tuning_curves * ContinuousToDiscreteScoreNumSpikes())
+    estimate_of_sum = num_spikes_from_assemblies / ContinuousToDiscreteScoreNumSpikes()
+
+    est = estimate_of_sum / p_xᶜ_given_x̃ᵈ
+
+    # println("p_xᶜ_given_x̃ᵈ = $p_xᶜ_given_x̃ᵈ ; sum_of_tuning_curves = $sum_of_tuning_curves ; sum_est = $estimate_of_sum ; est = $est")
+
     return est
 end

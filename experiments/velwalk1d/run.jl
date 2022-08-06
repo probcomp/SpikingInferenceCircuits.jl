@@ -4,11 +4,11 @@ include("model.jl")
 include("inference.jl")
 include("visualize.jl")
 ProbEstimates.DoRecipPECheck() = false
+include("utils.jl")
 
-model = @DynamicModel(initial_latent_model, step_latent_model, obs_model, 2)
-@load_generated_functions()
-
-include("run_utils.jl")
+# include("run_utils.jl")
 
 # tr, _ = generate(model, (10,));
 # make_smcexact_2d_posterior_figure(tr)
+tr, _ = generate(model, (10,));
+make_true_2d_posterior_figure(tr)

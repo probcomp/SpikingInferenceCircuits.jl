@@ -29,7 +29,5 @@ function make_plt(cpt_sizes, our_sizes)
     return f
 end
 
-# Neuron counts from running `scaling_data.jl`:
-CPTSizes = [9, 168, 39386]
-OurSizes = [14.0, 80.0, 231.0, 480.0, 825.0, 1296.0]
+include("saved_scaling_data.jl")
 make_plt(CPTSizes, OurSizes)

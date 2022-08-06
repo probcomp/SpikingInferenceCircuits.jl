@@ -1,4 +1,4 @@
-includet("../../SpiketrainViz.jl")
+includet("../../experiments/utils/spiketrain_utils/SpiketrainViz.jl")
 using .SpiketrainViz
 
 function spiketrain_dict(event_vector)

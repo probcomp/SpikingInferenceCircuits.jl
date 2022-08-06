@@ -15,12 +15,12 @@ function generate_tr(obs, xs, vs, nsteps=(min(length(obs), length(xs), length(vs
     tr, _ = generate(model, (nsteps,), choicemap(
         (:init => :latents => :xₜ => :val, x0),
         (:init => :latents => :vₜ => :val, v0),
-        (:init => :obs => :obs => :val, o0),
+        (:init => :obs => :yᵈₜ => :val, o0),
         Iterators.flatten(
             (
                 (:steps => t => :latents => :xₜ => :val, x),
                 (:steps => t => :latents => :vₜ => :val, v),
-                (:steps => t => :obs => :obs => :val, o)
+                (:steps => t => :obs => :yᵈₜ => :val, o)
             )
             for (t, (o, x, v)) in enumerate(rest)
         )...

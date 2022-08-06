@@ -43,10 +43,15 @@ function get_spiketrain_figure(
     return f
 end
 
-function draw_group_labels!(f, ax, group_labels, colors)
-    colsize!(f.layout, 1, Relative(0.7))
+draw_group_labels!(f, ax, group_labels, colors) = draw_group_labels!(f, f.layout, ax, group_labels, colors)
+function draw_group_labels!(f, layout, ax, group_labels, colors)
+    colsize!(layout, 1, Relative(0.7))
     endpoint_indices = get_group_endpoint_indices(group_labels)
+    println("ENDPOINT INDICES:")
+    display(endpoint_indices)
 
+    # ax.yticks = 1:first(endpoint_indices)[1]
+    
     rhs(pos, px_area) = Point2f0((px_area.origin + px_area.widths)[1], pos[2])
     brackets = [
         lift(ax.elements[:yaxis].tickpositions, ax.scene.px_area) do pos, p
@@ -94,10 +99,12 @@ function get_group_endpoint_indices(group_labels)
     return [(idx - st + 1, idx - nd + 1) for (st, nd) in idxpairs]
 end
 
-function draw_lines!(ax, lines, labels, colors, time, xmin, xmax)
+function draw_lines!(ax, lines, labels, colors, time, xmin, xmax; hide_y_decorations=true)
     lines, labels, colors = map(reverse, (lines, labels, colors))
 
-    hideydecorations!(ax, ticklabels=false)
+    if hide_y_decorations
+        hideydecorations!(ax, ticklabels=false)
+    end
     if isempty(lines) 
         @warn "Lines was empty; not drawing anything."
         return nothing;
@@ -116,8 +123,11 @@ function draw_lines!(ax, lines, labels, colors, time, xmin, xmax)
 
     xlims!(ax, compute_xlims(lines, xmin, xmax))
     ylims!(ax, (first(ypositions) - 1, last(ypositions) + 1))
-    ax.yticks = (ypositions[1:length(labels)], labels)
-    ax.yticklabelcolor[] = colors
+
+    if !isempty(labels)
+        ax.yticks = (ypositions[1:length(labels)], labels)
+        ax.yticklabelcolor[] = colors
+    end
 
     return nothing
 end

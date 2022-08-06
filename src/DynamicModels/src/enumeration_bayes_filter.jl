@@ -14,6 +14,9 @@ end
 # for the deterministic variables.
 function get_weights_retvals_detvals(model, args, iterator_over_constraints, detaddrs)
     trs_weights = [generate(model, args, c) for c in iterator_over_constraints]
+    # for (tr, c) in zip(trs, iterator_over_constraints)
+    #     @assert get_choices(tr)[:vₜ => :val] == c[:vₜ => :val]
+    # end
     weights = [w for (_, w) in trs_weights]
     retvals = [get_retval(tr) for (tr, _) in trs_weights]
     detvals = [
@@ -26,8 +29,19 @@ end
 
 # Could use `get_weights_retvals_detvals` for this. I kept this fn separate since I figure it may be
 # more performant this way since we never extract the detvals.
-function get_weights_retvals(model, args, iterator_over_constraints)
+function get_weights_retvals(model, args, iterator_over_constraints; check=false)
     trs_weights = [generate(model, args, c) for c in iterator_over_constraints]
+    if check
+        for ((tr, _), c) in zip(trs_weights, iterator_over_constraints)
+            if get_choices(tr) != c
+                @error("get_choices(tr) != c")
+                println("trchoices:")
+                display(get_choices(tr))
+                println("c:")
+                display(c)
+            end
+        end
+    end
     weights = [w for (_, w) in trs_weights]
     retvals = [get_retval(tr) for (tr, _) in trs_weights]
 
@@ -48,6 +62,7 @@ function enumeration_filter_step(
     num_determ_addrs=0
 ) where {T}
     (b, c, assmt_choicemaps) = unpack_assmts(latent_addr_to_domain, num_determ_addrs)
+    println("yᶜₜ = $(obs_choicemap[:yᶜₜ => :val])")
 
     # convert the values of the deterministic addresses into the indices in the array for those variables
     to_idxs(vals) = (v - first(dom) + 1 for (v, dom) in zip(vals, values(latent_addr_to_domain)))
@@ -74,7 +89,27 @@ function enumeration_filter_step(
         end
     end
 
-    obs_weights = [isnothing(latent_ret) ? -Inf : generate(obs_model, latent_ret, obs_choicemap)[2] for latent_ret in retvals]
+    obs_weights = [
+        if isnothing(latent_ret)
+            -Inf
+        else
+            (tr, wt) = Gen.generate(obs_model, latent_ret, DynamicChoiceMap(obs_choicemap))
+            # (tr, wt) = generate(obs_model, latent_ret, get_choices(tr1))
+            # if get_choices(tr) != obs_choicemap
+            #     @error("get_choices(tr) != obs_choicemap")
+            #     println("trchoices:")
+            #     display(get_choices(tr))
+            #     println("obs_choicemap:")
+            #     display(obs_choicemap)
+            #     println("obs model: $obs_model ; latent_ret: $latent_ret")
+            #     println("tr1 choices:")
+            #     display(get_choices(tr1))
+            #     error()
+            # end
+            wt
+        end
+        for latent_ret in retvals
+    ]
 
     return (step_weights + obs_weights, retvals)
 end
