@@ -28,7 +28,8 @@ MultOutDenominator() = TimerExpectedT() * MultAssemblySize() * MaxRate() / min(1
 # Hyperparameters for Neural-Floating-Point style multiplication
 AutonormalizeCountThreshold() = 2
 AutonormalizeSpeedupFactor() = 2
-AutonormalizeRepeaterRate() = 5 * MaxRate()
+AutonormalizeRepeaterAssemblysize() = 5
+AutonormalizeRepeaterRate() = AutonormalizeRepeaterAssemblysize() * MaxRate()
 WeightAutonormalizationParams() = (AutonormalizeCountThreshold(), AutonormalizeSpeedupFactor(), AutonormalizeRepeaterRate())
 
 LatencyForContinuousToDiscreteScore() = Latency() / 2

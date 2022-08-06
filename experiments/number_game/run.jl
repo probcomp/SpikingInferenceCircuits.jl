@@ -1,10 +1,13 @@
 using Gen, ProbEstimates, DynamicModels
 
+ProbEstimates.use_noisy_weights!()
 ProbEstimates.MinProb() = 1/25
-ProbEstimates.Latency() = 50.
-ProbEstimates.AssemblySize() = 200
-ProbEstimates.MaxRate() = 1.0
-ProbEstimates.set_autonormalization!(true)
+ProbEstimates.Latency() = 100.
+ProbEstimates.AssemblySize() = 1000
+ProbEstimates.MaxRate() = 0.1
+ProbEstimates.MultAssemblySize() = 500
+ProbEstimates.AutonormalizeRepeaterAssemblysize() = 10
+ProbEstimates.UseLowPrecisionMultiply() = false
 
 use_ngf() = true
 if use_ngf()
@@ -88,7 +91,9 @@ function do_smc_inference_on_nums_and_save_fig(
         end_weighted_traces; title, resolution, fontsize
     )
     
-    save(filename_for_smc_run(nums, n_particles, n_pgibbs_particles, n_rejuv_sweeps), f)
+    filename = filename_for_smc_run(nums, n_particles, n_pgibbs_particles, n_rejuv_sweeps)
+    println("saving at $filename")
+    save(filename, f)
 end
 
 ### Spiketrain figures:
@@ -198,7 +203,7 @@ late_nums = [30, 33, 24, 21, 36, 31, 39]
 # specs = [
 #     (nums, 100, 2, 2) for nums in numss
 # ]
-specs = [(late_nums, 10, 2, 2)]
+specs = [(late_nums, 20, 2, 1)]
 do_smc_runs(specs)
 
 # specs = [
@@ -208,7 +213,7 @@ do_smc_runs(specs)
 # titles = ["Inferred P[number in set ; observed numbers]", "Inferred P[number in set ; observed numbers]"]
 # do_smc_runs(specs; titles)
 
-# do_enumeration_save_fig(late_nums; title="Exact P[number in set ; observed numbers]", fontsize=20)
+do_enumeration_save_fig(late_nums; title="Exact P[number in set ; observed numbers]", fontsize=20)
 
 # specs = Iterators.flatten(
 #     (
