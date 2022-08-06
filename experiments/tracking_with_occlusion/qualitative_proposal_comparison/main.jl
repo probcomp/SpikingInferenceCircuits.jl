@@ -156,7 +156,7 @@ function draw_vel_arrow!(ax, t, tr)
         color=colorant"seagreen", linewidth=4
     )
 end
-arrowshape() = PolyElement(color = :seagreen, points = Point2f0[
+arrowshape() = PolyElement(color = :seagreen, points = Point2f[
     (.16*x, .16*y + .2) for (x, y) in
     [(0, 1), (0, 2), (5, 2), (5, 3), (7, 1.5), (5, 0), (5, 1)]
 ])

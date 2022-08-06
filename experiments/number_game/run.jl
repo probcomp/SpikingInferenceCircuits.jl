@@ -58,20 +58,20 @@ $(ProbEstimates.UseLowPrecisionMultiply() ? "Resampling via low-precision single
 ### Run + make figures
 filename_for_smc_run(nums, n_particles, n_pgibbs_particles, n_rejuv_sweeps) = reduce(*, ["$(n)_" for n in nums]) * "__$(n_particles)smc_$(n_pgibbs_particles)pg_$(n_rejuv_sweeps)rejuv" * ".png"
 filename_for_enumeration_run(nums) = reduce(*, ["$(n)_" for n in nums]) * "__enumeration" * ".png"
-obs_choicemap(nums) = choicemap(
+nums_to_obs_cm(nums) = choicemap(
     (:init => :obs => :number => :number => :val, nums[1]),
     (
         (:steps => t => :obs => :number => :number => :val, num)
         for (t, num) in enumerate(nums[2:end])
     )...
 )
-trace_with_nums(nums) = generate(model, (length(nums) - 1,), obs_choicemap(nums))[1]
+trace_with_nums(nums) = generate(model, (length(nums) - 1,), nums_to_obs_cm(nums))[1]
 
 function do_enumeration_save_fig(nums;
     title="P[number in set | maxdepth=$(MAXDEPTH())] : Enumeration Results\n.\n.\n.\n.",
     fontsize
 )
-    membership_probs = get_number_membership_probs(obs_choicemap(nums), length(nums) - 1)
+    membership_probs = get_number_membership_probs(nums_to_obs_cm(nums), length(nums) - 1)
     f = visualize(nums, membership_probs; title, fontsize)
     save(filename_for_enumeration_run(nums), f)
 end

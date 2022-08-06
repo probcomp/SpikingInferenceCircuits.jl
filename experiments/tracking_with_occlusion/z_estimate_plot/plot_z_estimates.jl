@@ -24,7 +24,7 @@ function scatter_z_ests!(ax, gold_standard_z_ests, ests, min_est=nothing, max_es
     # Now get the non-inf gold standard estimates for which -inf estimates occurred, and plot them.
     inf_est_gold_vals = [v for v in gold_standard_with_repeats[findall(x -> isinf(x) || isnan(x), ests_flat)] if !(isinf(v) || isnan(v))]
     inf_scatter = scatter!(ax,
-        [Point2f0(x, original_min_y) for x in inf_est_gold_vals];
+        [Point2f(x, original_min_y) for x in inf_est_gold_vals];
         marker=:x,
         color=:crimson
     )
@@ -44,7 +44,7 @@ function plot_z_estimate_comparison(gold_standard_z_ests, z_estimates, labels)
         push!(plots, scatter_z_ests!(ax, gold_standard_z_ests, ests))
     end
     m = minimum(v for v in gold_standard_z_ests if !isinf(v)); M = maximum(gold_standard_z_ests)
-    yx = lines!(ax, [Point2f0(m, m), Point2f0(M, M)])
+    yx = lines!(ax, [Point2f(m, m), Point2f(M, M)])
     Legend(f[1, 2], [plots..., yx], [labels..., "y=x (0-variance z-estimate)"])
     return f
 end
@@ -68,7 +68,7 @@ function plot_z_estimate_comparison_grid(gold_standard_z_ests, z_estimates, labe
         (y, x) = Tuple(idx)
         ax = Axis(f[y, x], xlabel="Gold-Standard Log(P[yₜ | xₜ₋₁]) Estimate", ylabel="Log(P[yₜ | xₜ₋₁]) Estimate", title=label)
         scatter_z_ests!(ax, gold_standard_z_ests, ests, min_est, max_est)
-        yx = lines!(ax, [Point2f0(m, m), Point2f0(M, M)])
+        yx = lines!(ax, [Point2f(m, m), Point2f(M, M)])
     end
     ysize = size(labels)[1]
     Legend(f[ysize + 1, :], [yx], ["y=x (Perfect Log(P[yₜ | xₜ₋₁]) Estimate)"])
@@ -108,7 +108,7 @@ function plot_z_estimate_comparison_grid_v2(
         (y, x) = Tuple(idx)
         ax = axs[y, x]
         (_, inf_val_plot) = scatter_z_ests!(ax, gold_standard_z_ests, ests, min_est, max_est)
-        yx = lines!(ax, [Point2f0(m, m), Point2f0(M, M)]; color=:black)
+        yx = lines!(ax, [Point2f(m, m), Point2f(M, M)]; color=:black)
     end
 
     for (x, xlabel) in enumerate(xlabels)

@@ -171,7 +171,7 @@ function draw_tuning_curves!(layout)
 
     yvals = (first(Positions()) - 1):0.01:(last(Positions()) + 1)
     density(xᵈ, σ) = [exp(Gen.logpdf(normal, c, xᵈ, σ)) for c in (first(Positions()) - 1):0.01:(last(Positions()) + 1)]
-    density_points(xᵈ, σ) = [Point2f0(d, i) for (i, d) in zip(yvals, density(xᵈ, σ))]
+    density_points(xᵈ, σ) = [Point2f(d, i) for (i, d) in zip(yvals, density(xᵈ, σ))]
     for i in Positions()
         lines!(ax, density_points(i, Yᶜ_STD()), color=:black)
     end
@@ -239,13 +239,13 @@ function make_figure_2(gt_tr, inferred_trs; time_per_step=200, start_caption_let
     (f, (post_ax, tc_ax))
 end
 
-# gt_tr = generate(model_contobs, (10,), choicemap(
-#     (:init => :latents => :xₜ => :val, 1),
-#     (:init => :latents => :vₜ => :val, 1),
-#     (:steps => 1 => :latents => :vₜ => :val, 1),
-#     (:steps => 2 => :latents => :vₜ => :val, 1)
-# ))[1];
-# inferred_trs = smc_contobs(gt_tr, 10, exact_init_proposal_contobs, approx_step_proposal_contobs;
-#     ess_threshold = -Inf # no resampling
-# )[2];
+gt_tr = generate(model_contobs, (10,), choicemap(
+    (:init => :latents => :xₜ => :val, 1),
+    (:init => :latents => :vₜ => :val, 1),
+    (:steps => 1 => :latents => :vₜ => :val, 1),
+    (:steps => 2 => :latents => :vₜ => :val, 1)
+))[1];
+inferred_trs = smc_contobs(gt_tr, 10, exact_init_proposal_contobs, approx_step_proposal_contobs;
+    ess_threshold = -Inf # no resampling
+)[2];
 (f, (post_ax, tc_ax)) = make_figure_2(gt_tr, inferred_trs); f

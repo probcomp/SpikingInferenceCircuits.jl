@@ -305,8 +305,8 @@ function draw_obs_particles_2steps!(layout, tr, inferred_trs)
             pos = latents_choicemap(particle, t)[:xₜ => :val]
 
             c = n_particles/2
-            scatter!(velax, [Point2f0(t + (i - c)/50, vel)]; color, markersize=12)
-            push!(particles, scatter!(posax, [Point2f0(t + (i - c)/50, pos)]; color, markersize=12))
+            scatter!(velax, [Point2f(t + (i - c)/50, vel)]; color, markersize=12)
+            push!(particles, scatter!(posax, [Point2f(t + (i - c)/50, pos)]; color, markersize=12))
         end
     end
 
@@ -340,7 +340,7 @@ function draw_tuning_curves!(layout, gt_tr, inferred_trs)
     ax.yticks=Positions()
     yvals = (first(Positions()) - 1):0.01:(last(Positions()) + 1)
     density(xᵈ, σ) = [exp(Gen.logpdf(normal, c, xᵈ, σ)) for c in (first(Positions()) - 1):0.01:(last(Positions()) + 1)]
-    density_points(xᵈ, σ) = [Point2f0(d + 1, i) for (i, d) in zip(yvals, density(xᵈ, σ))]
+    density_points(xᵈ, σ) = [Point2f(d + 1, i) for (i, d) in zip(yvals, density(xᵈ, σ))]
 
     maxval = -Inf
     trueval = gt_tr[:steps => 2 => :obs => :yᶜₜ => :val]
@@ -356,9 +356,9 @@ function draw_tuning_curves!(layout, gt_tr, inferred_trs)
     ax.topspinevisible = false
     ax.rightspinevisible=false
 
-    scatter!(ax, [Point2f0(0, trueval)], color=:seagreen, markersize=12, marker='■')
+    scatter!(ax, [Point2f(0, trueval)], color=:seagreen, markersize=12, marker='■')
     for (i, ((tr, _), color)) in enumerate(Iterators.reverse(zip(inferred_trs[3], [:red, :blue, [:black for _=3:length(inferred_trs[3])]...])))
-        scatter!(ax, [Point2f0((i + 1)/5, tr[:steps => 2 => :latents => :yᵈₜ => :val])]; color, markersize=12)
+        scatter!(ax, [Point2f((i + 1)/5, tr[:steps => 2 => :latents => :yᵈₜ => :val])]; color, markersize=12)
     end
     return ax
 end

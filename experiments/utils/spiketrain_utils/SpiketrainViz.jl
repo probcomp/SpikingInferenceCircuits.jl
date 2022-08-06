@@ -76,7 +76,7 @@ function draw_single_spiketrain!(ax, spiketimes, ypos, height, current_time, col
     @assert all(t isa Real for t in spiketimes) "a spiketimes vector (for a single y position) is not a vector of real numbers"
     y1 = ypos - height/2; y2 = ypos + height/2
     times = vcat([
-        [Point2f0(t - current_time, y1), Point2f0(t - current_time, y2)]
+        [Point2f(t - current_time, y1), Point2f(t - current_time, y2)]
         for t in spiketimes
     ]...)
 
