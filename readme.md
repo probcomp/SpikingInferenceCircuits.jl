@@ -9,6 +9,9 @@ the `Spiking` target.
 This library uses the [Circuits library](https://github.com/probcomp/Circuits.jl) for circuit representation & compilation,
 and the [Spiking circuits library](https://github.com/probcomp/SpikingCircuits.jl) for primitive spiking components and the SNN simulator.
 
+## Setup
+See `setup.md`.
+
 ## Current goals
 Our current goals include compiling a subset of [Gen](gen.dev) probabilistic programs into spiking neural
 networks in forward-sampling mode, implementing importance sampling using Gen target & proposal distributions,

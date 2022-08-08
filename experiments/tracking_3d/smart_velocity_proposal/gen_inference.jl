@@ -61,7 +61,7 @@ length(final_particle_set)
 
 # animate_pf_results(final_particle_set, tr, true)
 # animate_pf_results(final_particle_set, tr, false)
-render_static_trajectories(final_particle_set, tr, true)
+# render_static_trajectories(final_particle_set, tr, true)
 render_static_trajectories(final_particle_set, tr, false)
 # final_scores = [get_score(t) for t in final_particle_set]
 # final_probs = normalize(exp.(final_scores .- logsumexp(final_scores)))

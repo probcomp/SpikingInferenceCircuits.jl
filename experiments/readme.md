@@ -13,17 +13,15 @@ the figures for the SNMC paper.
 - Fractional-variance scaling plot : `tracking_with_occlusion/scaling_plots/main.jl`
 - "Mental physics simulation" / "Image-likelihood tracking" / "Tracking with occlusion" inference runs : `tracking_with_occlusion/main.jl`
 - "Mental physics simulation" (etc.) qualitative proposal distribution comparison : `tracking_with_occlusion/qualitative_proposal_comparison/main.jl`
+- 3D Tracking from 2D retinal coordinates : `tracking_3d/smart_velocity_proposal/gen_inference.jl`
 
 [[
-merge TODOs:
-- 3Dtracking
+Some remaining TODOs:
 - 1dvel to GenSN-Sim
 - what is `prob_estimate_tradeoffs` ?
 - what is `pm_experiments` ?
 - what is `tracking_with_occlusion_bitflip`
 - how to make GenSN-Em spiketrain renders?
 - somehow document `setup.jl` (or general documentation)?
-
-fig TODOs:
 - understand what noise model is used in `tracking_with_occlusion/main.jl`
 ]]
