@@ -51,12 +51,9 @@ function normalize_weights(log_weights)
 end
 
 function autonormalize_weights(log_weights, k, speedup_factor, repeater_rate)
+    # We could start with `rates = exp.(log_weights) × constant`.
+    # But for simplicity we'll take `constant = 1`.
     rates = exp.(log_weights)
-    
-
-#    if isnan(sum(rates))
- #       return (NaN, [NaN for _ in log_weights])
-  #  end
     
     if sum(rates) == 0.
         return (-Inf, [-Inf for _ in log_weights])
@@ -100,27 +97,27 @@ function autonormalize_weights(log_weights, k, speedup_factor, repeater_rate)
     )
 
 #     # this should actually not skew the distribution at all -- double check this
-    perfect_result = Gen.normalize_weights(convert(Vector{Float64}, log_weights))
+      perfect_result = Gen.normalize_weights(convert(Vector{Float64}, log_weights))
 #     @assert isapprox(result[1], perfect_result[1], atol=1e-3) "auto-normalize: $(result[1]) | Gen: $(perfect_result[1])"
 #     @assert isapprox(result[2], perfect_result[2], atol=1e-3) "auto-normalize: $(result[2]) | Gen: $(perfect_result[2])"
 
 #     return result
 # end
 
-
     count_fracs = get_count_fracs(rates, AutonormalizationLatency() - total_time_passed)
 
     result = (
-        log(sum(rates)) - (num_speedups * log(speedup_factor)),
+        log(sum(rates)) - (num_speedups * log(speedup_factor)), # should equal logsumexp(log_weights)
         # log.(normalize(rates)) # we can then use a WTA to sample from the resulting rates
-        log.(count_fracs)
+        log.(count_fracs) # [log(fraction of spikes from assembly i after auto-normalization) for i=1:N]
     )
 
     @assert isapprox(result[1], perfect_result[1], atol=1e-3) "auto-normalize: $(result[1]) | Gen: $(perfect_result[1])"
 
-    overall_log_probs = result[2] .+ result[1]
+    overall_log_probs = result[2] .+ result[1] # approximations of log importance weights
     retval = (
-        sum(overall_log_probs), overall_log_probs .- logsumexp(overall_log_probs)
+        logsumexp(overall_log_probs),
+        overall_log_probs .- logsumexp(overall_log_probs)
     )
 
     # println("exact normalized rates: $(exact_result[2])")
