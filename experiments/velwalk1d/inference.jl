@@ -117,7 +117,8 @@ function v_t_dist(obs_prev_diff, vₜ₋₁)
         for vₜ in Vels()
     ]
     unnormalized_probs = unnormalized_prior_probs .* unnormalized_obs_probs
-    return normalize(unnormalized_probs)
+    val = normalize(unnormalized_probs)
+    return isprobvec(val) ? val : unif(Vels())
 end
 kl(pv1, pv2) = sum(
     p1 * log(p1/p2) for (p1, p2) in zip(pv1, pv2)

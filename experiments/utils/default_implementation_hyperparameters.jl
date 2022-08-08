@@ -1,11 +1,11 @@
 using Distributions: Erlang, Poisson, cdf
-ExpectedLatency()    = 5
-SampleAssemblySize() = 100
-ScoreAssemblySize()  = 100
-MaxNeuronRate()      = 0.2 # KHz
+ExpectedLatency()    = 25.
+SampleAssemblySize() = 40
+ScoreAssemblySize()  = 40
+MaxNeuronRate()      = 0.1 # KHz
 MinProb()            = 0.1
 
-INTER_OBS_INTERVAL() = 300. # ms
+INTER_OBS_INTERVAL() = 600. # ms
 
 SAMPLE_ONRATE() = SampleAssemblySize() * MaxNeuronRate()
 SCORE_ONRATE()  = ScoreAssemblySize()  * MaxNeuronRate()
@@ -15,7 +15,7 @@ PEstDenom() = ExpectedLatency() * SCORE_ONRATE() |> Int
 RecipPEstDenom() = ExpectedLatency() *  SAMPLE_ONRATE() * MinProb() |> Int
 MultOutDenom() = 200 # count denominator for the output of a multiplier
 
-ΔT() = 40 # ms  -- memory time for scoring unit (also used by many other units)
+ΔT() = 80 # ms  -- memory time for scoring unit (also used by many other units)
 
 MinProb() = 0.1
 ΔT_SAMPLE() = ΔT() * 2
@@ -31,7 +31,7 @@ GATE_RATES() = (GATE_OFFRATE(), GATE_ONRATE())
 M() = 1000 # number of spikes to override off/on gate
 
 # Note: the below parameters are not set very carefully; there may be more sensible settings
-ΔT_THETA() = 4. * ΔT()
+ΔT_THETA() = 4 * ΔT()
 THETA_RATE() = SAMPLE_ONRATE()
 MULT_EXPECTED_OUT_TIME() = ΔT()/2
 MULT_OUT_TIME_BOUND() = 2 * MULT_EXPECTED_OUT_TIME()

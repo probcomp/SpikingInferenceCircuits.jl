@@ -8,14 +8,16 @@ println("Implementation rules loaded.")
 
 includet("model.jl")
 # includet("pm_model.jl")
-includet("ann_proposal.jl")
+# includet("ann_proposal.jl")
+# includet("proposals_discrete.jl")
 includet("inference.jl")
 @load_generated_functions()
 
 latent_domains()     = (xₜ=Positions(), vₜ=Vels())
 obs_domains()         = (obs=Positions(),)
 
-latent_obs_domains() = (latent_domains()..., obs_domains()...)
+latent_obs_domains()=(xₜ=Positions(), vₜ=Vels(), obs=Positions())
+# latent_obs_domains() = (latent_domains()..., obs_domains()...)
 NLATENTS() = length(latent_domains())
 NOBS()     = length(obs_domains())
 NVARS()    = NLATENTS() + NOBS()
@@ -39,7 +41,7 @@ smccircuit = SMC(
     # truncation_minprob=MinProb(),
     # rejuv_proposal=GenFnWithInputDomains(mh_kernel, latent_obs_domains())
     GenFnWithInputDomains(_approx_step_proposal, latent_obs_domains()),
-    [:xₜ, :vₜ], [:yᵈₜ], [:xₜ, :vₜ], NPARTICLES();
+    [:xₜ, :vₜ], [:obs], [:xₜ, :vₜ], NPARTICLES();
     truncation_minprob=MinProb()
 )
 println("SMC Circuit Constructed.")
