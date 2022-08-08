@@ -1,5 +1,6 @@
 using Gen, ProbEstimates, DynamicModels
 
+ProbEstimates.use_noisy_weights!()
 ProbEstimates.MinProb() = 1/100
 ProbEstimates.Latency() = 100.
 ProbEstimates.AssemblySize() = 1000
@@ -7,6 +8,7 @@ ProbEstimates.MaxRate() = 0.1
 ProbEstimates.MultAssemblySize() = 500
 ProbEstimates.AutonormalizeRepeaterAssemblysize() = 10
 ProbEstimates.UseLowPrecisionMultiply() = false
+# ProbEstimates.use_perfect_weights!()
 
 use_ngf() = true
 if use_ngf()
@@ -16,7 +18,7 @@ else
 end
 
 include("model.jl")
-include("inference.jl")
+include("inference_old.jl")
 include("enumeration.jl")
 includet("visualize.jl")
 
@@ -25,11 +27,11 @@ vals(tr) = [tr[:init => :obs][1], (tr[:steps => t => :obs][1] for t=1:get_args(t
 
 ### Inference util functions: ###
 
-function resimulate_branch_cycle_ntimes(n_pgibbs_particles::Integer, n_cycles::Integer; proposal=repropose_tree_branch_data_driven) #repropose_tree_branch_data_driven) #resample_tree_branch)
+function resimulate_branch_cycle_ntimes(n_pgibbs_particles::Integer, n_cycles::Integer)
     if n_cycles == 0
         tr -> tr
     elseif n_cycles == 1
-        return tr -> rejuvenate_branch_cycle(tr, n_pgibbs_particles; proposal)
+        return tr -> resimulate_branch_cycle(tr, n_pgibbs_particles)
     else
         return tr -> resimulate_branch_cycle_ntimes(n_pgibbs_particles, n_cycles - 1)(resimulate_branch_cycle(tr, n_pgibbs_particles))
     end
@@ -47,7 +49,7 @@ do_smc_inference(groundtruth_tr::Gen.Trace, nparticles, n_pgibbs_particles, ncyc
 
 get_title(nums, n_smc_particles, n_pg_particles, n_rejuv_sweeps_per_iter) = """
 P[# in set | $nums] | maxdepth=$(MAXDEPTH())
-Resample-Move w/ Branch Re-Proposal PGibbs Rejuvenation.
+Resample-Move w/ Branch Resimulation PGibbs Rejuvenation.
 $n_smc_particles SMC Particles. $n_pg_particles PG particles.  $n_rejuv_sweeps_per_iter rejuvenation sweeps per timestep.
 $(ngf_str())
 """
@@ -60,20 +62,20 @@ $(ProbEstimates.UseLowPrecisionMultiply() ? "Resampling via low-precision single
 ### Run + make figures
 filename_for_smc_run(nums, n_particles, n_pgibbs_particles, n_rejuv_sweeps) = reduce(*, ["$(n)_" for n in nums]) * "__$(n_particles)smc_$(n_pgibbs_particles)pg_$(n_rejuv_sweeps)rejuv" * ".png"
 filename_for_enumeration_run(nums) = reduce(*, ["$(n)_" for n in nums]) * "__enumeration" * ".png"
-nums_to_obs_cm(nums) = choicemap(
+obs_choicemap(nums) = choicemap(
     (:init => :obs => :number => :number => :val, nums[1]),
     (
         (:steps => t => :obs => :number => :number => :val, num)
         for (t, num) in enumerate(nums[2:end])
     )...
 )
-trace_with_nums(nums) = generate(model, (length(nums) - 1,), nums_to_obs_cm(nums))[1]
+trace_with_nums(nums) = generate(model, (length(nums) - 1,), obs_choicemap(nums))[1]
 
 function do_enumeration_save_fig(nums;
     title="P[number in set | maxdepth=$(MAXDEPTH())] : Enumeration Results\n.\n.\n.\n.",
     fontsize
 )
-    membership_probs = get_number_membership_probs(nums_to_obs_cm(nums), length(nums) - 1)
+    membership_probs = get_number_membership_probs(obs_choicemap(nums), length(nums) - 1)
     f = visualize(nums, membership_probs; title, fontsize)
     save(filename_for_enumeration_run(nums), f)
 end
@@ -212,7 +214,7 @@ do_smc_runs(specs)
 # titles = ["Inferred P[number in set ; observed numbers]", "Inferred P[number in set ; observed numbers]"]
 # do_smc_runs(specs; titles)
 
-do_enumeration_save_fig(late_nums; title="Exact P[number in set ; observed numbers]", fontsize=20)
+# do_enumeration_save_fig(late_nums; title="Exact P[number in set ; observed numbers]", fontsize=20)
 
 # specs = Iterators.flatten(
 #     (
