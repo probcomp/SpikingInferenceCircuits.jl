@@ -1,0 +1,70 @@
+using DynamicModels
+include("model.jl")
+include("groundtruth_rendering.jl")
+include("prior_proposal.jl")
+include("visualize.jl")
+include("locally_optimal_proposal.jl")
+
+ProbEstimates.use_perfect_weights!()
+model = @DynamicModel(init_latent_model, step_latent_model, obs_model, 5)
+@load_generated_functions()
+
+lvs = [:xₜ, :yₜ, :vxₜ, :vyₜ, :occₜ]
+lv_hps = [positions(SquareSideLength()), positions(SquareSideLength()),
+          Vels(), Vels(), positions(OccluderLength())]
+digitize(f) = f == Occluder() ? [0, 0, 1] : f == Empty() ? [0, 1, 0] : [1, 0, 0]
+get_state_values(cmap) = [cmap[lv => :val] for lv in lvs]
+lv_to_onehot_array(data_array) = vcat([onehot(d, hp) for (d, hp) in zip(data_array, lv_hps)]...)
+
+function extract_image_array(cmap)
+    img_array = []
+    for row in 1:ImageSideLength()
+        for col in 1:ImageSideLength()
+            pix = digitize(cmap[:img_inner => row => col => :pixel_color => :val])
+            img_array = vcat(img_array, pix)
+        end
+    end
+    return img_array
+end
+
+
+function generate_samples(num_trajectories::Int64, num_steps::Int64)
+    training_data_raw = []
+    for traj in 1:num_trajectories
+        tr = simulate(model, (num_steps,))
+        for step in 1:num_steps
+            prevstate = get_state_values(latents_choicemap(tr, step-1))
+            obs_image = extract_image_array(obs_choicemap(tr, step))
+            currstate = get_state_values(latents_choicemap(tr, step))
+            push!(training_data_raw, (prevstate, obs_image, currstate))
+        end
+    end
+    training_data_digitized = [(lv_to_onehot_array(d[1]), d[2],
+                                lv_to_onehot_array(d[3])) for d in training_data_raw]
+    return training_data_raw, training_data_digitized
+end
+
+function plot_state_vs_prevstate(tdr)
+    fig = Figure(resolution=(1000,500))
+    axes = [Axis(fig[1,i]) for i in 1:length(lvs)]
+    # index a color map here for different variables
+    for lv in lvs
+        data_ind = findfirst(f -> f == lv, lvs)
+        plot_data = [(d[1][data_ind], d[3][data_ind]) for d in tdr]
+        scatter!(axes[data_ind], plot_data)
+        axes[data_ind].xlabel = string(lv)
+    end
+    display(fig)
+end
+
+
+function train_NN(td)
+end
+
+    
+    
+            
+   
+
+
+

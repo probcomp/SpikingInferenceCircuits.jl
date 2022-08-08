@@ -1,9 +1,12 @@
 using Gen, ProbEstimates, DynamicModels
 
+ProbEstimates.use_noisy_weights!()
 ProbEstimates.MinProb() = 1/25
-ProbEstimates.Latency() = 50.
-ProbEstimates.AssemblySize() = 200
-ProbEstimates.MaxRate() = 1.0
+ProbEstimates.Latency() = 100.
+ProbEstimates.AssemblySize() = 1000
+ProbEstimates.MaxRate() = 0.1
+ProbEstimates.MultAssemblySize() = 500
+ProbEstimates.AutonormalizeRepeaterAssemblysize() = 10
 ProbEstimates.UseLowPrecisionMultiply() = false
 
 use_ngf() = true
@@ -58,20 +61,20 @@ $(ProbEstimates.UseLowPrecisionMultiply() ? "Resampling via low-precision single
 ### Run + make figures
 filename_for_smc_run(nums, n_particles, n_pgibbs_particles, n_rejuv_sweeps) = reduce(*, ["$(n)_" for n in nums]) * "__$(n_particles)smc_$(n_pgibbs_particles)pg_$(n_rejuv_sweeps)rejuv" * ".png"
 filename_for_enumeration_run(nums) = reduce(*, ["$(n)_" for n in nums]) * "__enumeration" * ".png"
-obs_choicemap(nums) = choicemap(
+nums_to_obs_cm(nums) = choicemap(
     (:init => :obs => :number => :number => :val, nums[1]),
     (
         (:steps => t => :obs => :number => :number => :val, num)
         for (t, num) in enumerate(nums[2:end])
     )...
 )
-trace_with_nums(nums) = generate(model, (length(nums) - 1,), obs_choicemap(nums))[1]
+trace_with_nums(nums) = generate(model, (length(nums) - 1,), nums_to_obs_cm(nums))[1]
 
 function do_enumeration_save_fig(nums;
     title="P[number in set | maxdepth=$(MAXDEPTH())] : Enumeration Results\n.\n.\n.\n.",
     fontsize
 )
-    membership_probs = get_number_membership_probs(obs_choicemap(nums), length(nums) - 1)
+    membership_probs = get_number_membership_probs(nums_to_obs_cm(nums), length(nums) - 1)
     f = visualize(nums, membership_probs; title, fontsize)
     save(filename_for_enumeration_run(nums), f)
 end
@@ -88,7 +91,9 @@ function do_smc_inference_on_nums_and_save_fig(
         end_weighted_traces; title, resolution, fontsize
     )
     
-    save(filename_for_smc_run(nums, n_particles, n_pgibbs_particles, n_rejuv_sweeps), f)
+    filename = filename_for_smc_run(nums, n_particles, n_pgibbs_particles, n_rejuv_sweeps)
+    println("saving at $filename")
+    save(filename, f)
 end
 
 ### Spiketrain figures:
@@ -198,7 +203,7 @@ late_nums = [30, 33, 24, 21, 36, 31, 39]
 # specs = [
 #     (nums, 100, 2, 2) for nums in numss
 # ]
-specs = [(late_nums, 10, 2, 2)]
+specs = [(late_nums, 20, 2, 1)]
 do_smc_runs(specs)
 
 # specs = [
@@ -208,7 +213,7 @@ do_smc_runs(specs)
 # titles = ["Inferred P[number in set ; observed numbers]", "Inferred P[number in set ; observed numbers]"]
 # do_smc_runs(specs; titles)
 
-# do_enumeration_save_fig(late_nums; title="Exact P[number in set ; observed numbers]", fontsize=20)
+do_enumeration_save_fig(late_nums; title="Exact P[number in set ; observed numbers]", fontsize=20)
 
 # specs = Iterators.flatten(
 #     (

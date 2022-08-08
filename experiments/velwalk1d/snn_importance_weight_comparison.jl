@@ -57,7 +57,7 @@ function prev_smc_state_and_obs(events, t, particle)
     args = [n.second for n in evt_names if n.first == :args]
     v_indexed = only([n.second for n in args if n.first == :vₜ₋₁])
     x = only([n.second for n in args if n.first == :xₜ₋₁])
-    obs = only([n.second.second for n in evt_names if n.first == :obs])
+    obs = only([n.second.second for n in evt_names if n.first == :yᵈₜ])
     return (x, vel_to_val(v_indexed), obs)
 end
 prev_smc_states_and_obs(events) =
@@ -84,7 +84,7 @@ logweight_for_transition((prevx, prevv, obs), (xₜ, vₜ)) = ProbEstimates.with
     latents_ch = choicemap((:xₜ => :val, xₜ), (:vₜ => :val, vₜ))
     propscore, _ = assess(_approx_step_proposal, (prevx, prevv, obs), latents_ch)
     assess_latents_score, _ = assess(step_latent_model, (prevx, prevv), latents_ch)
-    assess_obs_score, _ = assess(obs_model, (xₜ, yₜ), choicemap((:obs => :val, obs)))
+    assess_obs_score, _ = assess(obs_model, (xₜ, yₜ), choicemap((:yᵈₜ => :val, obs)))
     assess_score = assess_latents_score + assess_obs_score
     assess_score - propscore
 end

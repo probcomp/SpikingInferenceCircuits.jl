@@ -1,6 +1,9 @@
 global weighttype = :noisy
 global assemblysize = DefaultAssemblySize()
 global latency      = DefaultLatency()
+global minprob      = DefaultMinProb()
+global maxrate      = DefaultMaxRate()
+global use_autonormalization = DefaultUseAutonormalization()
 
 function AssemblySize()
     return assemblysize
@@ -16,10 +19,24 @@ function set_latency!(l)
     global latency = l
 end
 
+function MinProb()
+    return minprob
+end
+function set_minprob!(p)
+    global minprob = p
+end
+
+function MaxRate()
+    return maxrate
+end
+function set_maxrate!(r)
+    global maxrate = r
+end
+
 """
 Estimate of `p`
 """
-fwd_prob_estimate(p) =
+fwd_prob_estimate(p) = 
     if weighttype in (:noisy, :fwd)
         fwd_pe(p)
     elseif weighttype == :recip
@@ -33,7 +50,7 @@ fwd_prob_estimate(p) =
 """
 Estimate of `1/p`
 """
-recip_prob_estimate(p) =
+recip_prob_estimate(p) = 
     if weighttype in (:noisy, :recip)
         recip_pe(p)
     elseif weighttype == :fwd
@@ -54,7 +71,7 @@ function recip_pe(p)
     else
         if DoRecipPECheck()
             @assert p ≥ MinProb() * (1 - 1e-6)
-            @assert K_recip() > zero(K_recip())
+            @assert K_recip() > one(K_recip()) "K_recip = $(K_recip()) but we need K_recip ≥ 2 to get unbiased estimates."
         end
         try
             rand(NegativeBinomial(K_recip(), p))/K_recip() + 1
@@ -65,6 +82,7 @@ function recip_pe(p)
 end
 
 function use_noisy_weights!()
+    println("switching to noisy weights")
     global weighttype = :noisy
 end
 function use_only_fwd_weights!()
@@ -96,4 +114,9 @@ function with_weight_type(f, typ::Symbol)
     return v
 end
 
-use_noisy_weights!()
+function set_autonormalization!(use_autonorm)
+    global use_autonormalization = use_autonorm
+end
+function is_using_autonormalization()
+    return use_autonormalization
+end

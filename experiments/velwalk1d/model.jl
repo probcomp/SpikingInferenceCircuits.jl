@@ -6,11 +6,11 @@ ProbEstimates.use_perfect_weights!()
 # Include some utilities for defining discrete probability distributions
 include("../utils/modeling_utils.jl")
 Positions() = 1:20
-Vels() = -3:3
+Vels() = -2:2
 Bools() = [true, false]
-VelStepStd() = 1.0
-ObsStd() = 2.0
-SwitchProb() = 0.15
+VelStepStd() = 0.5
+ObsStd() = 1.0
+SwitchProb() = 0.0
 
 @gen (static) function initial_latent_model()
     xₜ ~ Cat(unif(Positions()))
@@ -26,6 +26,9 @@ end
     return (xₜ, vₜ)
 end
 @gen (static) function obs_model(xₜ, vₜ)
-    obs ~ Cat(discretized_gaussian(xₜ, ObsStd(), Positions()))
-    return (obs,)
+    yᵈₜ ~ Cat(discretized_gaussian(xₜ, ObsStd(), Positions()))
+    return (yᵈₜ,)
 end
+
+model = @DynamicModel(initial_latent_model, step_latent_model, obs_model, 2)
+@load_generated_functions()

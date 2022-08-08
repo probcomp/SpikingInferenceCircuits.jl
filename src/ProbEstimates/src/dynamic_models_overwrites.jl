@@ -58,3 +58,11 @@ DynamicModels.check_weights_equal_if_perfect_weights(w1, w2) =
     if weight_type() == :perfect
         @assert isapprox(w1, w2, atol=1e-6) "$w1 | $w2"
     end
+
+function DynamicModels.with_proposal_weighttype(f)
+    if ProbEstimates.weight_type() == :noisy
+        return ProbEstimates.with_weight_type(:recip, f)
+    else
+        return f()
+    end
+end
