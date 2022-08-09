@@ -127,7 +127,7 @@ function draw_particle_sq!(ax, t, tr, num_particles) # tr = observable giving tr
     draw_sq!(ax,
         @lift(latents_choicemap($tr, $t)[:xₜ => :val]),
         @lift(latents_choicemap($tr, $t)[:yₜ => :val]),
-        min(1., 2.0/num_particles)
+        min(1., 1.0/num_particles)
     )
     # poly!(
     #     ax,

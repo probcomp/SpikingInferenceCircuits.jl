@@ -33,7 +33,7 @@ end
 @gen (static) function fill_in_flips(is_correct)
     {:pixel_color} ~ _fill_in_flips(is_correct)
 end
-function is_flipped_vec_of_vecs(determ_img, img)
+function is_correct_vec_of_vecs(determ_img, img)
     # display(determ_img)
     # display(img)
     grid = [
@@ -50,5 +50,5 @@ function is_flipped_vec_of_vecs(determ_img, img)
 end
 @gen (static) function obs_aux_proposal(occₜ, xₜ, yₜ, vxₜ, vyₜ, img)
     determ_img = img_determ_with_colors(occₜ, xₜ, yₜ)
-    img_inner ~ Map(Map(fill_in_flips))(is_flipped_vec_of_vecs(determ_img, img))
+    img_inner ~ Map(Map(fill_in_flips))(is_correct_vec_of_vecs(determ_img, img))
 end

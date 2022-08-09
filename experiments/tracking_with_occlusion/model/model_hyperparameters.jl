@@ -2,7 +2,7 @@ ImageSideLength() = 10
 OccluderLength() = 3
 SquareSideLength() = 1
 Vels() = -2:2
-MinProb() = 0.1
+MinProb() = 0.01
 p_flip() = 0.0
 
 OccOneOffProb() = 0.3

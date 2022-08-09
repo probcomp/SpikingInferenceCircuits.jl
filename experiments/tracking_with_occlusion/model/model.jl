@@ -28,12 +28,22 @@ bern_probs(p) = [p, 1-p]
 end
 
 uniform_from_other_colors(color) = normalize([c == color ? 0. : 1. for c in PixelColors()])
-@gen (static) function maybe_flip_color(color)
+colorprobvec(expected_color) = [c == expected_color ? 1 - ColorFlipProb() : 1/2 * ColorFlipProb() for c in PixelColors()]
+@gen function maybe_flip_color(expected_color, x, y)
     flip1 ~ BoolCat(bern_probs(flip1_prob()))
     flip2 ~ BoolCat(bern_probs(flip2_prob(flip1)))
     color ~ LCat(PixelColors())(
-        flip1 && flip2 ? uniform_from_other_colors(color) : onehot(color, PixelColors())
+        # colorprobvec(expected_color)
+        flip1 && flip2 ? uniform_from_other_colors(expected_color) : onehot(expected_color, PixelColors())
     )
+
+    if color != expected_color
+        @assert flip1 && flip2
+    end
+    if color == expected_color
+        @assert !flip1 || !flip2 "color = $color ; expected_color = $expected_color; flip1 = $flip1 ; flip2 = $flip2; (x, y) = $((x, y))"
+    end
+
     return color
 end
 
@@ -41,7 +51,7 @@ end
     is_occluded = occ ≤ x ≤ occ + OccluderLength() - 1
     in_sq ~ is_in_square(sqx, sqy, x, y)
     color = is_occluded ? Occluder() : in_sq ? Object() : Empty()
-    pixel_color ~ maybe_flip_color(color)
+    pixel_color ~ maybe_flip_color(color, x, y)
     return pixel_color
 end
 
