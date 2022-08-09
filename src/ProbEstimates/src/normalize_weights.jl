@@ -81,6 +81,10 @@ function autonormalize_weights(log_weights, k, speedup_factor, repeater_rate)
             num_accumulated = k
         end
     end
+
+    # Can use this to log how long autonormalization takes:
+    # println("TIME PASSED FOR AUTONORM: $total_time_passed ms")
+    
     @assert total_time_passed < AutonormalizationLatency() "Time passed for renormalization: $total_time_passed"
     resulting_rate_min_threshold = AutonormalizationMinResultingRate()
     @assert resulting_rate_min_threshold ≤ sum(rates) "total resulting auto-normalized rate: $(sum(rates)) [rates: $rates]"
