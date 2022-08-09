@@ -3,8 +3,10 @@ using DynamicModels: @DynamicModel, @compile_initial_proposal, @compile_step_pro
 import DynamicModels
 using ProbEstimates
 
-includet("../model.jl")
-includet("../ab_viz.jl")
+
+# the noise in all model values has been increased -- there is tons of variation now. 
+include("../model.jl")
+include("../ab_viz.jl")
 include("deferred_inference.jl")
 
 println("MinProb() = $(MinProb())")

@@ -21,7 +21,7 @@ step_proposal_compiled = @compile_step_proposal(step_proposal, 9, 2)
 
 @load_generated_functions()
 
-NSTEPS = 10
+NSTEPS = 4
 NPARTICLES = 100
 cmap = make_deterministic_trace()
 tr, w = generate(model, (NSTEPS,), cmap)
@@ -29,7 +29,7 @@ observations = get_dynamic_model_obs(tr);
 
 final_particle_set = []
 
-for i in 1:100
+for i in 1:10
     try
         (unweighted_traces_at_each_step, weighted_traces) = dynamic_model_smc(
             model, observations,
@@ -58,7 +58,7 @@ render_static_trajectories(final_particle_set, tr, true)
 render_static_trajectories(final_particle_set, tr, false)
 final_scores = [get_score(t) for t in final_particle_set]
 final_probs = normalize(exp.(final_scores .- logsumexp(final_scores)))
-render_obs_from_particles(final_particle_set, length(final_probs));
+render_obs_from_particles(final_particle_set, length(final_probs), do_obs=true)
 
 # plot_full_choicemap(final_particle_set)
 

@@ -43,7 +43,12 @@ end
 function render_obs_from_particles(uw_traces, particles_to_plot::Int; do_obs=false)
     final_step_particles = [get_choices(tr) for tr in uw_traces[1:particles_to_plot]]
     true_angle_choicemaps = [choicemap() for tr in uw_traces[1:particles_to_plot]]
-    cmap_keys = vcat([(:steps => i => :latents => :true_θ => :val) for i in 1:NSTEPS], [(:steps => i => :latents => :true_ϕ => :val) for i in 1:NSTEPS])
+    if do_obs
+        cmap_keys = vcat([(:steps => i => :obs => :obs_θ => :val) for i in 1:NSTEPS], [(:steps => i => :obs => :obs_ϕ => :val) for i in 1:NSTEPS])
+    else
+        cmap_keys = vcat([(:steps => i => :latents => :true_θ => :val) for i in 1:NSTEPS], [(:steps => i => :latents => :true_ϕ => :val) for i in 1:NSTEPS])
+    end
+    
     for (particle, cmap) in enumerate(true_angle_choicemaps)
         for cmk in cmap_keys
             cmap[cmk] = final_step_particles[particle][cmk]
@@ -53,7 +58,6 @@ function render_obs_from_particles(uw_traces, particles_to_plot::Int; do_obs=fal
     for (particle, tr) in enumerate(constrained_traces)
         render_azalt_trajectory(tr, string("particle", particle); do_obs)
     end
-    
     return true_angle_choicemaps
 end
 
