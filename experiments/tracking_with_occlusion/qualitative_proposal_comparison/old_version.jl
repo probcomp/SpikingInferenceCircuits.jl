@@ -31,6 +31,34 @@ categorical_from_matrix(matrix) =
     Tuple(keys(matrix)[categorical(reshape(matrix, length(matrix)))])
 
 #=
+Generate a trace where
+1. at timestep 0, at (2, 5) with vel (2, 0); occ at 5
+2. at timestep 1, at (4, 5) with vel (2, 0); occ at 5
+3. at timestep 2, at (6, 5) with vel (2, 0); occ at 5 (so now it's behind the occluder)
+
+Inference will be done over timestep 2.
+=#
+gt_tr, _ = generate(model, (2,), choicemap(
+    (:init => :latents => :occₜ => :val, 5),
+    (:init => :latents => :xₜ => :val, 2),
+    (:init => :latents => :yₜ => :val, 5),
+    (:init => :latents => :vxₜ => :val, 2),
+    (:init => :latents => :vyₜ => :val, 0),
+    
+    (:steps => 1 => :latents => :occₜ => :val, 5),
+    (:steps => 1 => :latents => :xₜ => :val, 4),
+    (:steps => 1 => :latents => :yₜ => :val, 5),
+    (:steps => 1 => :latents => :vxₜ => :val, 2),
+    (:steps => 1 => :latents => :vyₜ => :val, 0),
+
+    (:steps => 2 => :latents => :occₜ => :val, 5),
+    (:steps => 2 => :latents => :xₜ => :val, 6),
+    (:steps => 2 => :latents => :yₜ => :val, 5),
+    (:steps => 2 => :latents => :vxₜ => :val, 2),
+    (:steps => 2 => :latents => :vyₜ => :val, 0),
+))
+
+#=
 Exact Bayesian inference, with occluder position fixed.
 Enumerate every possible velocity setting for this step (which should deterministically restrict position).
 For each one take the probability.  Get a 2D probability matrix for where the object is.
@@ -62,26 +90,6 @@ function exact_inference_given_prevlatents_and_occluder(image_obs_choicemap::Cho
     return exp.(logweights .- logsumexp(logweights))
 end
 
-function model_down_inference_given_prevlatents(occₜ, latentsₜ₋₁)
-    initial_tr, _ = generate(model, (0,), DynamicModels.nest_at(:init => :latents, latentsₜ₋₁));
-    logweights = [-Inf for _ in positions(SquareSideLength()), _ in positions(SquareSideLength())]
-    for vxₜ in Vels(), vyₜ in Vels()
-        xₜ = vxₜ + latentsₜ₋₁[:xₜ => :val]
-        yₜ = vyₜ + latentsₜ₋₁[:yₜ => :val]
-        @assert xₜ in Set(positions(SquareSideLength()))
-        @assert yₜ in Set(positions(SquareSideLength()))
-        newtr, weight, _, _ = update(
-            initial_tr, (1,), (UnknownChange(),),
-            DynamicModels.nest_at(:steps => 1 => :latents, extend_all_with(:val, choicemap(
-                :xₜ => xₜ, :yₜ => yₜ, :vxₜ => vxₜ, :vyₜ => vyₜ, :occₜ => occₜ
-            )))
-        );
-        @assert logweights[xₜ, yₜ] == -Inf
-        logweights[xₜ, yₜ] = weight
-    end
-    return exp.(logweights .- logsumexp(logweights))
-end
-
 function bottom_up_inference_given_occluder(image_obs_choicemap::ChoiceMap, occₜ)
     logweights = [-Inf for _ in positions(SquareSideLength()), _ in positions(SquareSideLength())]
     for xₜ in positions(SquareSideLength()), yₜ in positions(SquareSideLength())
@@ -96,6 +104,31 @@ function bottom_up_inference_given_occluder(image_obs_choicemap::ChoiceMap, occ�
     end
     return exp.(logweights .- logsumexp(logweights))
 end
+
+exact_inference_results = exact_inference_given_prevlatents_and_occluder(
+    obs_choicemap(gt_tr, 2), latents_choicemap(gt_tr, 2)[:occₜ => :val], latents_choicemap(gt_tr, 1)
+)
+bottom_up_inference_results = bottom_up_inference_given_occluder(
+    obs_choicemap(gt_tr, 2), latents_choicemap(gt_tr, 2)[:occₜ => :val]
+)
+
+#=
+Other proposals:
+Set N = 10.
+(1) Collect N samples from the locally-optimal proposal.  (That is, sample from the exact Bayesian infernece above.)
+(2) Collect N samples from the bottom-up proposal.
+=#
+N = 10
+locally_optimal_samples = [categorical_from_matrix(exact_inference_results) for _=1:N]
+bottom_up_samples = [categorical_from_matrix(bottom_up_inference_results) for _=1:N]
+
+samples_to_matrix(samples) = normalize([
+    sum(s == (x, y) ? 1 : 0 for s in samples)
+    for x in positions(SquareSideLength()), y in positions(SquareSideLength())
+])
+
+locally_optimal_matrix = samples_to_matrix(locally_optimal_samples)
+bottom_up_matrix = samples_to_matrix(bottom_up_samples)
 
 #=
 Plotting.
@@ -162,84 +195,9 @@ function plot_obs_particle_dists(gt_tr, t, titles, matrices)
     return f
 end
 
-### Make the plot ###
-
-#=
-Generate a trace where
-1. at timestep 0, at (2, 5) with vel (2, 0); occ at 5
-2. at timestep 1, at (4, 5) with vel (2, 0); occ at 5
-3. at timestep 2, at (6, 5) with vel (2, 0); occ at 5 (so now it's behind the occluder)
-
-Inference will be done over timestep 2.
-=#
-ColorFlipProb() = 0.
-gt_tr, _ = generate(model, (2,), choicemap(
-    (:init => :latents => :occₜ => :val, 5),
-    (:init => :latents => :xₜ => :val, 2),
-    (:init => :latents => :yₜ => :val, 5),
-    (:init => :latents => :vxₜ => :val, 2),
-    (:init => :latents => :vyₜ => :val, 0),
-    
-    (:steps => 1 => :latents => :occₜ => :val, 5),
-    (:steps => 1 => :latents => :xₜ => :val, 4),
-    (:steps => 1 => :latents => :yₜ => :val, 5),
-    (:steps => 1 => :latents => :vxₜ => :val, 2),
-    (:steps => 1 => :latents => :vyₜ => :val, 0),
-
-    (:steps => 2 => :latents => :occₜ => :val, 5),
-    (:steps => 2 => :latents => :xₜ => :val, 6),
-    (:steps => 2 => :latents => :yₜ => :val, 5),
-    (:steps => 2 => :latents => :vxₜ => :val, 2),
-    (:steps => 2 => :latents => :vyₜ => :val, 0),
-))
-
-
-exact_inference_results = exact_inference_given_prevlatents_and_occluder(
-    obs_choicemap(gt_tr, 2), latents_choicemap(gt_tr, 2)[:occₜ => :val], latents_choicemap(gt_tr, 1)
-)
-bottom_up_distribution = bottom_up_inference_given_occluder(
-    obs_choicemap(gt_tr, 2), latents_choicemap(gt_tr, 2)[:occₜ => :val]
-)
-top_down_distribution = model_down_inference_given_prevlatents(latents_choicemap(gt_tr, 2)[:occₜ => :val], latents_choicemap(gt_tr, 1))
-hybrid_distribution = 1/2 * bottom_up_distribution + 1/2 * top_down_distribution
-
-#=
-Other proposals:
-Set N = 10.
-(1) Collect N samples from the locally-optimal proposal.  (That is, sample from the exact Bayesian infernece above.)
-(2) Collect N samples from the bottom-up proposal.
-=#
-N = 10
-locally_optimal_samples = [categorical_from_matrix(exact_inference_results) for _=1:N]
-bottom_up_samples = [categorical_from_matrix(bottom_up_distribution) for _=1:N]
-top_down_samples = [categorical_from_matrix(top_down_distribution) for _=1:N]
-hybrid_samples = [categorical_from_matrix(hybrid_distribution) for _=1:N]
-
-normalized_importance_weights = normalize([exact_inference_results[x, y]/bottom_up_distribution[x, y] for (x, y) in bottom_up_samples])
-resampled_indices = [categorical(normalized_importance_weights) for _=1:N]
-resampled_bottom_up_samples = [bottom_up_samples[i] for i in resampled_indices]
-
-normalized_td_importance_weights = normalize([exact_inference_results[x, y]/top_down_distribution[x, y] for (x, y) in top_down_samples])
-resampled_td_indices = [categorical(normalized_td_importance_weights) for _=1:N]
-resampled_top_down_samples = [top_down_samples[i] for i in resampled_td_indices]
-
-normalized_h_importance_weights = normalize([exact_inference_results[x, y]/hybrid_distribution[x, y] for (x, y) in hybrid_samples])
-resampled_h_indices = [categorical(normalized_h_importance_weights) for _=1:N]
-resampled_hybrid_samples = [hybrid_samples[i] for i in resampled_h_indices]
-
-samples_to_matrix(samples) = normalize([
-    sum(s == (x, y) ? 1 : 0 for s in samples)
-    for x in positions(SquareSideLength()), y in positions(SquareSideLength())
-])
-
-locally_optimal_matrix = samples_to_matrix(locally_optimal_samples)
-bottom_up_matrix = samples_to_matrix(bottom_up_samples)
-resampled_bottom_up_matrix = samples_to_matrix(resampled_bottom_up_samples)
-resampled_top_down_matrix = samples_to_matrix(resampled_top_down_samples)
-resampled_hybrid_matrix = samples_to_matrix(resampled_hybrid_samples)
+# f = plot_obs_with_particle_dist(gt_tr, 2, bottom_up_matrix)
 
 f = plot_obs_particle_dists(gt_tr, 2,
-    ["Exact Posterior", "Data-Driven Proposal Distribution", "$N-Particle Data-Driven Proposal + Model-Based Scoring", "$N-Particle Hybrid Proposal + Model-Based Scoring"],
-    [exact_inference_results, bottom_up_distribution, resampled_bottom_up_matrix, resampled_top_down_matrix]
-    # , bottom_up_matrix]
+    ["Exact Posterior", "$N Particles from Locally Exact Proposal", "$N Particles from Bottom-Up Proposal"],
+    [exact_inference_results, locally_optimal_matrix, bottom_up_matrix]
 )
