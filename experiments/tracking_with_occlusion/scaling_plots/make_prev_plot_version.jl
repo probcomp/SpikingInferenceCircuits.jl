@@ -10,14 +10,42 @@ set_theme!(font="Arial", palette = (color = [:red, :black],), linewidth=4, marke
 
 ColorFlipProb() = 0.001
 default_hyperparams() = (
-           latency        = 25,   # ms
-           frequency      = 0.1, # spikes per ms
+           latency        = 10,   # ms
+           frequency      = 0.2, # spikes per ms
            neuron_budget = 500
        )
 
+function space_scaling_plot!(f, pltpos, legpos; cpt_sizes=CPTSizes, our_sizes=OurSizes)
+    ax = Axis(
+        pltpos;
+        xlabel="Number of Pixels",
+        ylabel="Number of Neurons\nin Scoring Circuit",
+        title="Scoring Circuit Size vs Image Size"
+    )
+    ours_empirical = scatter!(ax, map(x -> x^2, keys(our_sizes)), our_sizes, color=:black)
+    cpt_empirical = scatter!(ax, map(x -> x^2, keys(cpt_sizes)), cpt_sizes, color=:red)#, marker=:cross, markersize=20)
+
+    lin_factor = last(our_sizes) / (length(our_sizes)^2)
+    ours_analytic = lines!(ax, 1:36, x -> lin_factor*x, color=:black)
+    cpt_analytic = lines!(ax, 1:10, x -> 3^x, color=:red)
+
+    leg = Legend(legpos,
+        [cpt_empirical, ours_empirical, cpt_analytic, ours_analytic],
+        [
+            "Probabilistic Population Coding",
+            "Ours",
+            "O(3^V)",
+            "O(V)"
+        ]
+    )
+    leg.tellheight=true
+
+    (ax, leg)
+end
+
 function singlepix_variance_scaling_plot!(plotpos; ps=0.0001:0.00001:0.05, hyperparams=default_hyperparams())
-    k_aux = get_k(hyperparams; use_aux=true)
-    k_noaux = get_k(hyperparams; use_aux=false)
+    k_aux = get_k(default_hyperparams(); use_aux=true)
+    k_noaux = get_k(default_hyperparams(); use_aux=false)
     ax = Axis(plotpos,
         xlabel="Probability of Pixel Error",
         ylabel="Fractional Variance",
@@ -26,7 +54,6 @@ function singlepix_variance_scaling_plot!(plotpos; ps=0.0001:0.00001:0.05, hyper
     )
     noaux = lines!(ax, (ps), ([analytic_direct_fracvar(p, k_aux) for p in ps]))
     withaux = lines!(ax, (ps), ([analytic_prod_fracvar(sqrt(p), k_noaux) for p in ps]))
-    ax.xreversed=true
     return (ax, noaux, withaux)
 end
 function singlepix_latency_scaling_plot!(plotpos; probs=0.0001:0.00001:0.05, fracvar=0.5, hyperparams=default_hyperparams())
@@ -42,7 +69,7 @@ function singlepix_latency_scaling_plot!(plotpos; probs=0.0001:0.00001:0.05, fra
     noaux = lines!(ax, (probs), noaux_latencies)
     withaux = lines!(ax, (probs), withaux_latencies)
     # ylims!(ax, (0, 400))
-    ax.xreversed=true
+
     return (ax, noaux, withaux)
 end
 function image_variance_scaling_plot!(plotpos; p_pix_flip=ColorFlipProb(), sidewidth=10, n_flips_range=1:10, hyperparams=default_hyperparams())
@@ -70,14 +97,15 @@ function auxvar_legend!(pos, (noaux, withaux))
 end
 
 function make_figure()
-    f = Figure(;resolution=(1500, 600))
+    f = Figure(;resolution=(2000, 600))
+    space_scaling_plot!(f, f[1, 1], f[2, 1])
 
-    singlepix_variance_scaling_plot!(f[1, 1])
-    singlepix_latency_scaling_plot!(f[1, 2])
-    (_, noaux, withaux) = image_variance_scaling_plot!(f[1, 3])
-    auxvar_legend!(f[2, :], (noaux, withaux))
+    singlepix_variance_scaling_plot!(f[1, 2])
+    singlepix_latency_scaling_plot!(f[1, 3])
+    (_, noaux, withaux) = image_variance_scaling_plot!(f[1, 4])
+    auxvar_legend!(f[2, 1:4], (noaux, withaux))
 
-    for (i, l) in zip(1:3, map(x -> "($x)", ["a", "b", "c"]))
+    for (i, l) in zip(1:4, map(x -> "($x)", ["a", "b", "c", "d"]))
         Label(f.layout[1, i, BottomLeft()], l,
             textsize = 26,
             padding = (0, 0, 0, 25)

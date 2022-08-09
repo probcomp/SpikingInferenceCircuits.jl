@@ -2,10 +2,8 @@ includet("../proposals/obs_aux_proposal.jl")
 ###
 function set_ngf_hyperparams_for_aux!(hyperparams)
     ProbEstimates.set_latency!(hyperparams.latency)
-    # ProbEstimates.set_maxrate!(hyperparams.frequency)
-    @assert ProbEstimates.MaxRate() == hyperparams.frequency
+    ProbEstimates.set_maxrate!(hyperparams.frequency)
     ProbEstimates.set_minprob!(min(√(ColorFlipProb()), ProbEstimates.DefaultMinProb()))
-
     #=
     We need to distribute the neurons between
     1. Model - flip1 - 2 assemblies
@@ -17,16 +15,26 @@ function set_ngf_hyperparams_for_aux!(hyperparams)
     Total: 11 assemblies
     =#
     ProbEstimates.set_assembly_size!(floor(hyperparams.neuron_budget / 11))
+
+    @assert ProbEstimates.MaxRate() == hyperparams.frequency
+    @assert ProbEstimates.Latency() == hyperparams.latency
+    @assert ProbEstimates.MinProb() == min(√(ColorFlipProb()), ProbEstimates.DefaultMinProb())
+    @assert ProbEstimates.AssemblySize() == floor(hyperparams.neuron_budget / 11)
 end
 function set_ngf_hyperparams_for_noaux!(hyperparams)
     ProbEstimates.set_maxrate!(hyperparams.frequency)
-    @assert ProbEstimates.MaxRate() == hyperparams.frequency
     ProbEstimates.set_latency!(hyperparams.latency)
     ProbEstimates.set_minprob!(min(ColorFlipProb(), ProbEstimates.DefaultMinProb()))
+    
     #=
     We just need to have neurons for `color`, which uses 3 assemblies.
     =#
     ProbEstimates.set_assembly_size!(floor(hyperparams.neuron_budget / 3))
+
+    @assert ProbEstimates.MaxRate() == hyperparams.frequency
+    @assert ProbEstimates.Latency() == hyperparams.latency
+    @assert ProbEstimates.MinProb() == min(min(ColorFlipProb(), ProbEstimates.DefaultMinProb()))
+    @assert ProbEstimates.AssemblySize() == floor(hyperparams.neuron_budget / 3)
 end
 
 function get_k(hyperparams; use_aux)
