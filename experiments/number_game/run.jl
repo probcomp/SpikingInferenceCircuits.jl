@@ -25,13 +25,13 @@ vals(tr) = [tr[:init => :obs][1], (tr[:steps => t => :obs][1] for t=1:get_args(t
 
 ### Inference util functions: ###
 
-function resimulate_branch_cycle_ntimes(n_pgibbs_particles::Integer, n_cycles::Integer; proposal=repropose_tree_branch_data_driven) #repropose_tree_branch_data_driven) #resample_tree_branch)
+function regenerate_branch_cycle_ntimes(n_pgibbs_particles::Integer, n_cycles::Integer; proposal=repropose_tree_branch_data_driven) #repropose_tree_branch_data_driven) #resample_tree_branch)
     if n_cycles == 0
         tr -> tr
     elseif n_cycles == 1
         return tr -> rejuvenate_branch_cycle(tr, n_pgibbs_particles; proposal)
     else
-        return tr -> resimulate_branch_cycle_ntimes(n_pgibbs_particles, n_cycles - 1)(resimulate_branch_cycle(tr, n_pgibbs_particles))
+        return tr -> regenerate_branch_cycle_ntimes(n_pgibbs_particles, n_cycles - 1)(rejuvenate_branch_cycle(tr, n_pgibbs_particles))
     end
 end
 
@@ -40,7 +40,7 @@ do_smc_inference(groundtruth_tr::Gen.Trace, nparticles, n_pgibbs_particles, ncyc
         get_dynamic_model_obs(groundtruth_tr),
         cm -> (cm[:number => :number => :val],),
         initial_proposal, step_proposal, nparticles;
-        rejuvenate=resimulate_branch_cycle_ntimes(n_pgibbs_particles, ncycles_per_step)
+        rejuvenate=regenerate_branch_cycle_ntimes(n_pgibbs_particles, ncycles_per_step)
     );
 
 ### Labeling util functions: ###
@@ -124,41 +124,6 @@ function n2s(tr)
     return get_num_possibilities(n2vec, n2)
 end
 
-function make_spiketrain_fig(tr, neurons_to_show_indices=1:3; kwargs...)
-    nest_all_at = :init => :latents => :tree
-
-    ProbEstimates.Spiketrains.SpiketrainViz.CairoMakie.activate!()
-    assess_sampling_tree = Dict(
-        :is_terminal => [],
-        (:terminal => :typ) => [],
-        (:terminal => :n1) => [(:terminal => :typ)],
-        (:terminal => :n2) => [(:terminal => :typ), (:terminal => :n1)]
-    )
-    propose_sampling_tree = assess_sampling_tree
-    propose_addr_topological_order = [:is_terminal, :terminal => :typ, :terminal => :n1, :terminal => :n2]
-    
-    addr_to_name = Dict(
-        :is_terminal => :is_term,
-        (:terminal => :typ) => :typ,
-        (:terminal => :n1) => :param1,
-        (:terminal => :n2) => :param2,
-    )
-
-    doms = [
-        [true, false],
-        [:prime, :multiple_of, :interval],
-        n1s(tr), n2s(tr)
-    ]
-    return ProbEstimates.Spiketrains.draw_spiketrain_group_fig(
-        ProbEstimates.Spiketrains.value_neuron_scores_groups(
-            propose_addr_topological_order, doms, neurons_to_show_indices,
-            addr_to_name=(a -> addr_to_name[a])
-        ), 
-        tr, (propose_sampling_tree, assess_sampling_tree, propose_addr_topological_order);
-        nest_all_at, kwargs...
-    )
-end
-
 ### Code to do a bunch of runs:
 # specs = list of `(nums, n_particles, n_pgibbs_particles, n_rejuvenation_sweeps_per_timestep)`
 function do_smc_runs(specs; titles=[nothing for spec in specs], resolution=(200, 400), fontsize=20)
@@ -226,14 +191,50 @@ do_enumeration_save_fig(late_nums; title="Exact P[number in set ; observed numbe
 # do_enumeration_save_fig(late_nums)
 
 ### Spiketrain Figure:
-# (unweighted_trs, weighted_trs) = do_smc_inference(trace_with_nums(late_nums), 50, 2, 1);
-# get_f(i) = make_spiketrain_fig(first(unweighted_trs)[i]; resolution=(600, 600 * 3/4), figure_title="Dynamically Weighted Spike Code from Inference")
-# function get_fig()
-#     for i=1:100
-#         try
-#             return get_f(i)
-#         catch e
-#         end
-#     end
-# end
-# ProbEstimates.Spiketrains.SpiketrainViz.save("concept_learning.png", get_fig())
+
+function make_spiketrain_fig(tr, neurons_to_show_indices=1:10; kwargs...)
+    nest_all_at = :init => :latents => :tree
+
+    ProbEstimates.Spiketrains.SpiketrainViz.CairoMakie.activate!()
+    assess_sampling_tree = Dict(
+        :is_terminal => [],
+        (:terminal => :typ) => [],
+        (:terminal => :n1) => [(:terminal => :typ)],
+        (:terminal => :n2) => [(:terminal => :typ), (:terminal => :n1)]
+    )
+    propose_sampling_tree = assess_sampling_tree
+    propose_addr_topological_order = [:is_terminal, :terminal => :typ, :terminal => :n1, :terminal => :n2]
+    
+    addr_to_name = Dict(
+        :is_terminal => :is_term,
+        (:terminal => :typ) => :typ,
+        (:terminal => :n1) => :param1,
+        (:terminal => :n2) => :param2,
+    )
+
+    doms = [
+        [true, false],
+        [:prime, :multiple_of, :interval],
+        n1s(tr), n2s(tr)
+    ]
+    return ProbEstimates.Spiketrains.draw_spiketrain_group_fig(
+        ProbEstimates.Spiketrains.value_neuron_scores_groups_noind(
+            propose_addr_topological_order, doms, neurons_to_show_indices,
+            addr_to_name=(a -> addr_to_name[a])
+        ), 
+        tr, (propose_sampling_tree, assess_sampling_tree, propose_addr_topological_order);
+        nest_all_at, kwargs...
+    )
+end
+
+(unweighted_trs, weighted_trs) = do_smc_inference(trace_with_nums(late_nums), 50, 2, 2);
+get_f(i) = make_spiketrain_fig(first(unweighted_trs)[i]; resolution=(600, 600 * 3/4), figure_title="Dynamically Weighted Spike Code from Inference")
+function get_fig()
+    for i=1:100
+        try
+            return get_f(i)
+        catch e
+        end
+    end
+end
+ProbEstimates.Spiketrains.SpiketrainViz.save("concept_learning.png", get_fig())

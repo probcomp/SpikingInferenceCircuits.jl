@@ -6,7 +6,7 @@ includet("proposals/prior_proposal.jl")
 includet("proposals/nearly_locally_optimal_proposal.jl")
 includet("run_utils.jl")
 
-ProbEstimates.MinProb() = 0.01
+ProbEstimates.MinProb() = 0.1
 ProbEstimates.UseLowPrecisionMultiply() = false
 ProbEstimates.Latency() = 100
 ProbEstimates.AssemblySize() = 100
@@ -70,11 +70,11 @@ gt_tr = generate_occluded_bounce_tr();
 # tobs[] = 6
 # save("obs.png", obsfig)
 
-# # Spiketrain figure:
-# f = make_spiketrain_fig(
-#     last(unweighted_trs)[1], 1:3; nest_all_at=(:steps => 1 => :latents),
-#     resolution=(600, 450), figure_title="Dynamically Weighted Spike Code from Inference"
-# )
+# Spiketrain figure:
+f = make_spiketrain_fig_mps(
+    last(unweighted_trs)[1], 1:10; nest_all_at=(:steps => 1 => :latents),
+    resolution=(600, 450), figure_title="Dynamically Weighted Spike Code from Inference"
+)
 
 # Draw observations:
 # tr, _= generate(model, (2,), choicemap(

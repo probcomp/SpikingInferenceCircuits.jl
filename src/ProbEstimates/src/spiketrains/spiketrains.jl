@@ -37,7 +37,8 @@ function draw_spiketrain_group_fig(groupspecs, tr,
     )
     labels = show_lhs_labels ? get_labels(groupspecs) : ["" for _ in lines]
     group_labels = get_group_labels(groupspecs, tr; nest_all_at)
-    return SpiketrainViz.draw_spiketrain_figure(lines; labels, group_labels, xmin=0, resolution, kwargs...)
+    colors = SpiketrainViz.get_colors(groupspecs)
+    return SpiketrainViz.draw_spiketrain_figure(lines; labels, group_labels, xmin=0, resolution, colors, kwargs...)
 end
 
 ### Exports

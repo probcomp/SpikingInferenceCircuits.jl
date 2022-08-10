@@ -43,7 +43,7 @@ function surround3(ch, a, dom)
         return v:(v+2)
     end
 end
-latent_domains_for_viz(ch)     = (
+latent_domains_for_viz_mps(ch)     = (
     occₜ = surround3(ch, :occₜ, positions(OccluderLength())),
     xₜ   = surround3(ch, :xₜ, positions(SquareSideLength())),
     yₜ   = surround3(ch, :yₜ, positions(SquareSideLength())),
@@ -51,7 +51,7 @@ latent_domains_for_viz(ch)     = (
     vyₜ  = surround3(ch, :vyₜ, Vels())
 )
 
-function make_spiketrain_fig(tr, neurons_to_show_indices=1:3; nest_all_at, kwargs...)
+function make_spiketrain_fig_mps(tr, neurons_to_show_indices=1:3; nest_all_at, kwargs...)
     ProbEstimates.Spiketrains.SpiketrainViz.CairoMakie.activate!()
     propose_sampling_tree = Dict(
         :occₜ => [], :xₜ => [:occₜ], :yₜ => [],
@@ -64,9 +64,9 @@ function make_spiketrain_fig(tr, neurons_to_show_indices=1:3; nest_all_at, kwarg
     )
     propose_addr_topological_order = [:occₜ, :xₜ, :yₜ, :vxₜ, :vyₜ]
     
-    doms = latent_domains_for_viz(get_submap(get_choices(tr), nest_all_at))
+    doms = latent_domains_for_viz_mps(get_submap(get_choices(tr), nest_all_at))
     return ProbEstimates.Spiketrains.draw_spiketrain_group_fig(
-        ProbEstimates.Spiketrains.value_neuron_scores_groups(keys(doms), values(doms), neurons_to_show_indices), tr,
+        ProbEstimates.Spiketrains.value_neuron_scores_groups_noind(keys(doms), values(doms), neurons_to_show_indices), tr,
         (propose_sampling_tree, assess_sampling_tree, propose_addr_topological_order);
         nest_all_at, kwargs...
     )

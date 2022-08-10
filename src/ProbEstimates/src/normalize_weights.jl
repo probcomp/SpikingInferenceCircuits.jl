@@ -124,6 +124,8 @@ function autonormalize_weights(log_weights, k, speedup_factor, repeater_rate)
         overall_log_probs .- logsumexp(overall_log_probs)
     )
 
+    @assert sum(exp.(retval[2])) ≈ 1.0 "normalized weights from autonormalize function = $(retval[2])"
+
     # println("exact normalized rates: $(exact_result[2])")
     # println("approximate normalized rates: $(retval[2])")
     # println()

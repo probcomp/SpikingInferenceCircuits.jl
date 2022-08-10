@@ -1,7 +1,18 @@
 module SpiketrainViz
 using CairoMakie, Colors
+import ..Spiketrains
 
 export draw_spiketrain_figure, get_spiketrain_figure
+
+get_color(::Spiketrains.VarValLine) = VAR_VAL_COLOR()
+get_color(spec::Spiketrains.ScoreLine) = spec.do_recip_score ? RECIP_SCORE_COLOR() : FWD_SCORE_COLOR()
+get_colors(groups::Vector{Spiketrains.LabeledLineGroup}) =
+    get_colors(reduce(vcat, g.line_specs for g in groups))
+get_colors(lines) = map(get_color, lines)
+
+RECIP_SCORE_COLOR() = colorant"navy"
+FWD_SCORE_COLOR() = colorant"red"
+VAR_VAL_COLOR() = colorant"green"
 
 """
     draw_spiketrain_figure(
@@ -47,8 +58,6 @@ draw_group_labels!(f, ax, group_labels, colors) = draw_group_labels!(f, f.layout
 function draw_group_labels!(f, layout, ax, group_labels, colors)
     colsize!(layout, 1, Relative(0.7))
     endpoint_indices = get_group_endpoint_indices(group_labels)
-    println("ENDPOINT INDICES:")
-    display(endpoint_indices)
 
     # ax.yticks = 1:first(endpoint_indices)[1]
     
@@ -146,16 +155,23 @@ function compute_xlims(trains, xmin, xmax)
 end
 
 # Spiketrain line
-function draw_line!(ax, spiketimes::Vector, ypos, height, current_time, color=RGB(0, 0, 0))
+function draw_line!(ax, spiketimes::Vector, ypos, height, current_time, color=RGB(0, 0, 0); minheight=10, drawpoints=true)
     @assert all(t isa Real for t in spiketimes) "a spiketimes vector (for a single y position) is not a vector of real numbers"
-    y1 = ypos - height/2; y2 = ypos + height/2
-    times = vcat([
-        [Point2(t - current_time, y1), Point2(t - current_time, y2)]
-        for t in spiketimes
-    ]...)
+    
+    if drawpoints
+        times = [Point2(t - current_time, ypos) for t in spiketimes]
+        scatter!(ax, times; color, markersize=2)
+    else
+        height = max(minheight, height)
+        y1 = ypos - height/2; y2 = ypos + height/2
+        times = vcat([
+            [Point2(t - current_time, y1), Point2(t - current_time, y2)]
+            for t in spiketimes
+        ]...)
 
-    if !isempty(times)
-        linesegments!(ax, times; color)
+        if !isempty(times)
+            linesegments!(ax, times; color)
+        end
     end
 end
 

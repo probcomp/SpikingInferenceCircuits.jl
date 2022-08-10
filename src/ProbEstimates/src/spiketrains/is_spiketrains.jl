@@ -49,7 +49,7 @@ function sample_is_spiketimes_for_trace(
     assess_sampling_tree,
     propose_addr_topological_order,
     to_ready_spike_dist;
-    vars_disc_to_cont,
+    vars_disc_to_cont=Dict(),
     nest_all_at=nothing, wta_memory=Latency()
 )
     valtimes = sampled_value_times(inter_sample_time_dist, propose_sampling_tree, propose_addr_topological_order)
@@ -62,7 +62,7 @@ function sample_is_spiketimes_for_trace(
             
     return ISSpiketrains(valtimes, val_trains, recip_times, fwd_times)
 end
-sample_is_spiketimes_for_trace(tr, propose_sampling_tree, assess_sampling_tree, propose_addr_topological_order; nest_all_at=nothing, vars_disc_to_cont) =
+sample_is_spiketimes_for_trace(tr, propose_sampling_tree, assess_sampling_tree, propose_addr_topological_order; nest_all_at=nothing, vars_disc_to_cont=Dict()) =
     sample_is_spiketimes_for_trace(
         tr, DefaultInterSampleTimeDist(), propose_sampling_tree,
         assess_sampling_tree, propose_addr_topological_order, DefaultToReadySpikeDist();
@@ -233,5 +233,5 @@ function to_int(v)
 end
 
 ### Some default distributions for spiketrain production ###
-DefaultInterSampleTimeDist() = Exponential(1 / MaxRate())
+DefaultInterSampleTimeDist() = Exponential(1 / (MaxRate() * AssemblySize()))
 DefaultToReadySpikeDist() = Exponential(1 / MaxRate())
