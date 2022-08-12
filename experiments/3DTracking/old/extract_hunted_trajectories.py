@@ -1,6 +1,9 @@
 import numpy as np
 import pandas as pd
 from astropy.convolution import Gaussian1DKernel, convolve
+import csv
+import hdfdict
+import os
 
 preycap_dir = "/Users/nightcrawler/Dropbox/PreyCap_Paper/PreyCapProjectData/"
 gkern = Gaussian1DKernel(2)
@@ -23,19 +26,37 @@ def find_hunted_prey(fish_id, conditions):
                            'az': np.around(convolve(r[:, 6], gkern, preserve_nan=True), decimals=6), 
                            'alt': np.around(convolve(r[:, 7], gkern, preserve_nan=True), decimals=6), 
                            'dist': np.around(convolve(r[:, 4], gkern, preserve_nan=True), decimals=6),
-                           'Hunt ID': hid}
+                           'Hunt ID': [hid for r in r[:,0]]}
                           for r, hid in zip(prey_rec_per_hunt, unique_hunts)]
  
     for hi, uh in enumerate(unique_hunts):
         az_coords_at_bout = np.around(bouts_per_hunt[bouts_per_hunt["Hunt ID"] == uh]["Para Az"], decimals=6)
         az_coords_60Hz = prey_dict_per_hunt[hi]['az']
         bout_inds = [np.where(az_coords_60Hz == az)[0] for az in az_coords_at_bout]
-        prey_dict_per_hunt[hi] = {**prey_dict_per_hunt[hi], **{"BoutInds": bout_inds}}
-        
-    
+        bout_inds_dig = [0 if i not in bout_inds else 1 for i in range(len(az_coords_60Hz))]
+        prey_dict_per_hunt[hi] = {**prey_dict_per_hunt[hi], **{"BoutInds": bout_inds_dig}}
+    return bouts_per_hunt, prey_rec_per_hunt, prey_dict_per_hunt        
     # got everything. now have to find the bouts. 
 
-    return bouts_per_hunt, prey_rec_per_hunt, prey_dict_per_hunt
+
+bph, prey_rec, prey_dict = find_hunted_prey("090518_5", [1, 2])
+
+
+def save_to_hdf5(mydict):
+    savepath = "/Users/nightcrawler/SpikingInferenceCircuits.jl/experiments/3DTracking/old/prey_coords.h5"
+    try:
+        hdfdict.dump(mydict, savepath)
+    except RuntimeError:
+        os.remove(savepath)
+        return save_to_hdf5(mydict)
+
+    
+    
+
+
+
+# Write a test function here to see how similar the very last delta az call is to the delta az calculated
+# by immobilizing the fish's head vector. Just see in general what the best div is. 
 
 
 

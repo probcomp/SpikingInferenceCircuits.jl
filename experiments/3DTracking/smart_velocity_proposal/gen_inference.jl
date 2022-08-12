@@ -4,6 +4,10 @@ import DynamicModels
 using ProbEstimates
 
 
+# TODO -- there are some assumptions in the depth calculations that the range of Rs starts at 1. this isn't a
+# foregone conclusion if you change X. Fix this. 
+
+
 # the noise in all model values has been increased -- there is tons of variation now. 
 include("../model.jl")
 include("../ab_viz.jl")
@@ -12,11 +16,11 @@ include("deferred_inference.jl")
 println("MinProb() = $(MinProb())")
 # ProbEstimates.use_perfect_weights!()
 ProbEstimates.use_noisy_weights!()
-ProbEstimates.set_assembly_size!(30)
-ProbEstimates.set_latency!(300)
+ProbEstimates.set_assembly_size!(450)
+ProbEstimates.set_latency!(20)
 ProbEstimates.UseLowPrecisionMultiply() = false
 ProbEstimates.MultAssemblySize() = 200
-ProbEstimates.MaxRate() = 100 # Hz
+ProbEstimates.MaxRate() = 0.1
 
 model = @DynamicModel(initial_model, step_model, obs_model, 9)
 initial_proposal_compiled = @compile_initial_proposal(initial_proposal, 2)
@@ -38,13 +42,12 @@ for i in 1:100
         (unweighted_traces_at_each_step, weighted_traces) = deferred_dynamic_model_smc(
             model, observations,
             ch -> (ch[:obs_ϕ => :val], ch[:obs_θ => :val]),
-            two_timestep_proposal_dumb,
-            # propose_first_two_timesteps_smart,
+       #     two_timestep_proposal_dumb,
+            propose_first_two_timesteps_smart,
             step_proposal_compiled,
             NPARTICLES, # n particles
             ess_threshold=NPARTICLES
         );
-
         weights = map(x -> x[2], weighted_traces[end])
         particles = map(x -> x[1], weighted_traces[end])
         pvec = normalize(exp.(weights .- logsumexp(weights)))

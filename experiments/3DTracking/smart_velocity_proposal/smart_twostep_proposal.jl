@@ -33,6 +33,7 @@ end
     r_max₁ = max_distance_inside_grid(true_ϕ₁, true_θ₁)
     l₁ = length(Rs())
     # propose the distance value, incorporating how likely the model is move each distance from the position at time 0
+    # 
     r_probvec₁ = normalize(
         vcat(ones(Int64(r_max₁)), zeros(Int64(l₁-r_max₁))) .* distance_velocity_prior(x₀, y₀, z₀)
     )

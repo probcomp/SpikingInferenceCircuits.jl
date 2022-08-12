@@ -3,13 +3,19 @@
 # Heights() = 1:10
 veldiv = 1
 ydiv = 1
+zdiv = ydiv
 Vels() = -2:ydiv:2
 #Vels() = -1:veldiv:1
 PredatorVelScale() = 2
 PreyVelScale() = 1
+y_lb = -10
+y_ub = 10
+z_lb = -10
+z_ub = 10
+fish_origin = (0, 0, 0)
 Xs() = 1:20
-Ys() = -10:ydiv:10
-Zs() = -10:ydiv:10
+Ys() = y_lb:ydiv:y_ub
+Zs() = z_lb:zdiv:z_ub
 X_init = 10
 Y_init = -5
 Z_init = 3
@@ -18,6 +24,7 @@ Rs() = Int64(floor(sqrt(Xs()[1]^2))):Int64(ceil(norm_3d(Xs()[end], Ys()[end], Zs
 θstep() = 0.1
 #SphericalVels() = -1.6:θstep():1.6
 SphericalVels() = -1.5:θstep():1.5
+tanksize = 1888 
 
 #SphericalVels() = -.5:.1:.5
 
