@@ -40,15 +40,16 @@ value_neuron_scores_group_noind(args...; kwargs...) = value_neuron_scores_group(
 
 function value_neuron_scores_weight_autonorm_groups(
     addrs, var_domains, particle_indices_to_show_vals_scores,
-    particle_indices_to_show_weights, neurons_to_show_indices=1:5, kwargs...
+    particle_indices_to_show_weights, neurons_to_show_indices=1:5;
+    mult_neurons_to_show_indices = 1:min(neurons_to_show_indices[end], ProbEstimates.MultAssemblySize()),
+    autonorm_neurons_to_show_indices = 1:min(neurons_to_show_indices[end], ProbEstimates.AutonormalizeRepeaterAssemblysize()),
+    kwargs...
 )
     val_score_groups = collect(Iterators.flatten([
         value_neuron_scores_groups(addrs, var_domains, neurons_to_show_indices; particle_idx=idx, show_particle_idx=true, kwargs...)
         for idx in particle_indices_to_show_vals_scores
     ]))
 
-    mult_neurons_to_show_indices = 1:min(neurons_to_show_indices[end], ProbEstimates.MultAssemblySize())
-    autonorm_neurons_to_show_indices = 1:min(neurons_to_show_indices[end], ProbEstimates.AutonormalizeRepeaterAssemblysize())
     weight_groups = [
         LabeledMultiParticleLineGroup(
             FixedText("Particle $part_idx normalized weight"),

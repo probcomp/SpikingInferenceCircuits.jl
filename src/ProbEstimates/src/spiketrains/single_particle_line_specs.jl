@@ -52,7 +52,14 @@ get_ch(tr, nest_at) = isnothing(nest_at) ? get_choices(tr) : get_submap(get_choi
 get_label(::SingleParticleText) = ""
 
 get_fwd_score(ch, addr) = ch[nest(addr, :fwd_score)]
-get_recip_score(ch, addr) = ch[nest(addr, :recip_score)]
+get_recip_score(ch, addr) =
+    try
+        ch[nest(addr, :recip_score)]
+    catch e
+        println("Failed to get recip score; nesting addr = $addr ; ch = ")
+        display(ch)
+        throw(e)
+    end
 
 ### Spiketrain line specs ###
 """

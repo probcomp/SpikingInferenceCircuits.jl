@@ -81,7 +81,8 @@ weighted_traces = first(weighted_traces_vec)
 logweights_at_each_time = [[logweight for (trace, logweight) in weighted_traces_at_time] for weighted_traces_at_time in weighted_traces ]
 traces_at_each_time = [[trace for (trace, logweight) in weighted_traces_at_time] for weighted_traces_at_time in weighted_traces ]
 f = make_spiketrain_fig(
-    traces_at_each_time[2:4], logweights_at_each_time[2:4], 1:100; figure_title="Spikes from SMC Neurons for 3D Tracking"
+    traces_at_each_time[2:4], logweights_at_each_time[2:4], 1:100;
+    figure_title="Spikes from SMC Neurons for 3D Tracking"
 )
 
 

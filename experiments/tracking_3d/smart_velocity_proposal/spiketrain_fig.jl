@@ -19,7 +19,7 @@ end
 latent_domains() = (#=vxₜ=Vels(), vyₜ=Vels(), vzₜ=Vels(), =# x=Xs(), y=Ys(), z=Zs(), r=Rs(), true_ϕ=ϕs(), true_θ=θs())
 
 function latent_domains_for_viz(trs_at_time)
-    nesting_addrs = [ProbEstimates.Spiketrains.default_t_to_nesting_address(tp1 - 1) for tp1=1:length(trs_at_time)]
+    # nesting_addrs = [ProbEstimates.Spiketrains.default_t_to_nesting_address(tp1 - 1) for tp1=1:length(trs_at_time)]
     # Note that here we are hardcoding that we're only putting in the values for trace 1.
     # This seems like something that might change.
     # all_vals = Dict(

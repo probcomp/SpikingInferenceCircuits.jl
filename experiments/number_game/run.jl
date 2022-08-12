@@ -7,6 +7,7 @@ ProbEstimates.MaxRate() = 0.1
 ProbEstimates.MultAssemblySize() = 500
 ProbEstimates.AutonormalizeRepeaterAssemblysize() = 10
 ProbEstimates.UseLowPrecisionMultiply() = false
+ProbEstimates.AutonormalizeCountThreshold() = 5
 
 use_ngf() = true
 if use_ngf()
@@ -192,7 +193,7 @@ do_enumeration_save_fig(late_nums; title="Exact P[number in set ; observed numbe
 
 ### Spiketrain Figure:
 
-function make_spiketrain_fig(tr, neurons_to_show_indices=1:10; kwargs...)
+function make_spiketrain_fig_numgame(trs, logweights, neurons_to_show_indices=1:10; kwargs...)
     nest_all_at = :init => :latents => :tree
 
     ProbEstimates.Spiketrains.SpiketrainViz.CairoMakie.activate!()
@@ -215,26 +216,53 @@ function make_spiketrain_fig(tr, neurons_to_show_indices=1:10; kwargs...)
     doms = [
         [true, false],
         [:prime, :multiple_of, :interval],
-        n1s(tr), n2s(tr)
+        1:100, 1:100
     ]
-    return ProbEstimates.Spiketrains.draw_spiketrain_group_fig(
-        ProbEstimates.Spiketrains.value_neuron_scores_groups_noind(
-            propose_addr_topological_order, doms, neurons_to_show_indices,
-            addr_to_name=(a -> addr_to_name[a])
-        ), 
-        tr, (propose_sampling_tree, assess_sampling_tree, propose_addr_topological_order);
-        nest_all_at, kwargs...
+
+    max_weight_idx_at_each_time = [
+        findmax(arr)[2] for arr in logweights
+    ]
+    println("indices = $max_weight_idx_at_each_time")
+
+    function time_to_nesting_addr(t)
+        # t == 0 ? (:init => :latents => :tree) : (:steps => t => :latents => :tree)
+        return :init => :latents => :tree # PGibbs ALWAYS operates on the initial timestep's choices
+    end
+    return ProbEstimates.Spiketrains.draw_multiparticle_multistep_spiketrain_group_fig(
+        ProbEstimates.Spiketrains.value_neuron_scores_weight_autonorm_groups(
+            propose_addr_topological_order, doms, max_weight_idx_at_each_time[1], max_weight_idx_at_each_time,
+            neurons_to_show_indices, addr_to_name=(a -> addr_to_name[a]),
+            mult_neurons_to_show_indices=1:50
+        ),
+        trs, logweights,
+        (propose_sampling_tree, assess_sampling_tree, propose_addr_topological_order);
+        timestep_length_to_latency_ratio=8/3,
+        figure_title="Spikes from PGibbs Neurons for Concept Learning",
+        time_to_nesting_addr,
+        kwargs...
     )
+    # return ProbEstimates.Spiketrains.draw_spiketrain_group_fig(
+    #     ProbEstimates.Spiketrains.value_neuron_scores_groups_noind(
+    #         propose_addr_topological_order, doms, neurons_to_show_indices,
+    #         addr_to_name=(a -> addr_to_name1[a])
+    #     ), 
+    #     tr, (propose_sampling_tree, assess_sampling_tree, propose_addr_topological_order);
+    #     nest_all_at, kwargs...
+    # )
 end
 
-(unweighted_trs, weighted_trs) = do_smc_inference(trace_with_nums(late_nums), 50, 2, 2);
-get_f(i) = make_spiketrain_fig(first(unweighted_trs)[i]; resolution=(600, 600 * 3/4), figure_title="Dynamically Weighted Spike Code from Inference")
-function get_fig()
-    for i=1:100
-        try
-            return get_f(i)
-        catch e
-        end
-    end
-end
-ProbEstimates.Spiketrains.SpiketrainViz.save("concept_learning.png", get_fig())
+# Do with 1 rejuvenation sweep.  TODO: extend spiketrain-making code so it supports doing multiple rejuvenation sweeps
+# (unweighted_trs, weighted_trs) = do_smc_inference(trace_with_nums(late_nums), 50, 2, 1);
+logweights_at_each_time = [[logweight for (trace, logweight) in weighted_traces_at_time] for weighted_traces_at_time in weighted_trs ]
+traces_at_each_time = [[trace for (trace, logweight) in weighted_traces_at_time] for weighted_traces_at_time in weighted_trs ]
+get_f() = make_spiketrain_fig_numgame(traces_at_each_time[2:4], logweights_at_each_time[2:4], 1:20)
+get_f()
+# function get_fig()
+#     for i=1:100
+#         try
+#             return get_f(i)
+#         catch e
+#         end
+#     end
+# end
+# ProbEstimates.Spiketrains.SpiketrainViz.save("concept_learning.png", get_fig())
