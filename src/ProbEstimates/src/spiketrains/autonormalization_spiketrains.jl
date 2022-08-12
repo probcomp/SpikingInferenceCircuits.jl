@@ -15,6 +15,12 @@ function get_time_when_scores_all_ready(is_spiketrain_data)
         for datum in is_spiketrain_data
     )
 
+    datum = is_spiketrain_data[2]
+    println("FWD READY TIMES: ")
+    display([dense_val_train.ready_time for dense_val_train in values(datum.fwd_trains)])
+    println("RECIP READY TIMES: ")
+    display([dense_val_train.ready_time for dense_val_train in values(datum.recip_trains)])
+
     maximum([time for time in all_ready_times if !isinf(time)])
 end
 
@@ -135,6 +141,8 @@ function produce_autonormalization_spiketrains(
         println()
     end
 
+    println("n autonorm spikes: $(length(normalization_spiketimes))")
+
     return AutonormalizationData(
         normalization_spiketimes,
         particle_spiketimes
@@ -169,11 +177,12 @@ function get_autonormalization_data(
     n_spikes_to_accumulate_before_ending_autonormalization=AutonormalizeCountThreshold(),
     speedup_factor=AutonormalizeSpeedupFactor(),
     autonormalization_repeater_rate=AutonormalizeRepeaterRate(),
-    total_weight_readout_time=Latency(),
+    total_weight_readout_time=Latency()/5,
     expected_log_weight_updates,
     num_autonormalization_spikes
 )
     autonorm_starttime = get_time_when_scores_all_ready(is_spiketrain_data)
+    println("autonorm starttime = $autonorm_starttime")
     if isinf(autonorm_starttime) # this means the scores don't all end up being ready in time
 
     end

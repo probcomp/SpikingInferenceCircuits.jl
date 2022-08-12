@@ -176,7 +176,7 @@ function get_spiketrains_for_one_timestep_figure(
         current_logweights = map(x -> x[2], inferred_trs[t_plus_1])
         log_weight_updates = current_logweights .- previous_logweights
 
-        lines = ProbEstimates.Spiketrains.get_lines_for_particles(
+        lines = ProbEstimates.Spiketrains.get_lines_for_multiparticle_specs(
             all_specs,
             [tr for (tr, wt) in particles], # traces
             log_weight_updates, # log_weight_updates which should be computed
@@ -204,7 +204,7 @@ function get_spiketrains_for_one_timestep_figure(
     # previous_normalized_logweights = previous_logweights .- logsumexp(previous_logweights)
     # current_logweights = map(x -> x[2], inferred_trs[T + 1])
     # log_weight_updates = current_logweights .- previous_logweights
-    # lines = ProbEstimates.Spiketrains.get_lines_for_particles(
+    # lines = ProbEstimates.Spiketrains.get_lines_for_multiparticle_specs(
     #     all_specs,
     #     [tr for (tr, wt) in last(inferred_trs)], # traces
     #     log_weight_updates, # log_weight_updates which should be computed
@@ -223,7 +223,7 @@ function get_spiketrains_for_one_timestep_figure(
     # display(lines[41:end])
     # println()
 
-    # lines = ProbEstimates.Spiketrains.get_lines_for_particles(
+    # lines = ProbEstimates.Spiketrains.get_lines_for_multiparticle_specs(
     #     [ProbEstimates.Spiketrains.ParticleLineSpec(1, linespec) for linespec in obsval_specs],
     #     [tr for (tr, wt) in last(inferred_trs)], # traces
     #     log_weight_updates, # log_weight_updates which should be computed

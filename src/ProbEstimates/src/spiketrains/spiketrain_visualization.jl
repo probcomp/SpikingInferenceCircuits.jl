@@ -6,13 +6,18 @@ export draw_spiketrain_figure, get_spiketrain_figure
 
 get_color(::Spiketrains.VarValLine) = VAR_VAL_COLOR()
 get_color(spec::Spiketrains.ScoreLine) = spec.do_recip_score ? RECIP_SCORE_COLOR() : FWD_SCORE_COLOR()
-get_colors(groups::Vector{Spiketrains.LabeledLineGroup}) =
+get_color(::Spiketrains.NormalizedWeight) = PARTICLE_WEIGHT_COLOR()
+get_color(::Spiketrains.LogNormalization) = AUTONORM_COLOR()
+get_color(s::Spiketrains.SubsidiarySingleParticleLineSpec) = get_color(s.spec)
+get_colors(groups::Vector{<:Union{Spiketrains.LabeledSingleParticleLineGroup, Spiketrains.LabeledMultiParticleLineGroup}}) =
     get_colors(reduce(vcat, g.line_specs for g in groups))
 get_colors(lines) = map(get_color, lines)
 
 RECIP_SCORE_COLOR() = colorant"navy"
 FWD_SCORE_COLOR() = colorant"red"
 VAR_VAL_COLOR() = colorant"green"
+PARTICLE_WEIGHT_COLOR() = colorant"orange"
+AUTONORM_COLOR() = colorant"violet"
 
 """
     draw_spiketrain_figure(
@@ -49,7 +54,7 @@ function get_spiketrain_figure(
     ax = f[1, 1] = Axis(f; title = figure_title, xlabel)
 
     draw_lines!(ax, lines, labels, colors, time, xmin, xmax)
-    draw_group_labels!(f, ax, group_labels, colors)
+    # draw_group_labels!(f, ax, group_labels, colors)
 
     return f
 end

@@ -1,33 +1,53 @@
 ### "Library" of specs for some standard visualization types ###
 
-value_neuron_scores_group(a, var_domain, neurons_to_show_indices=1:5; name=a) = [
-    LabeledLineGroup(SampledValue(a, name), [VarValLine(a, v) for v in var_domain]),
-    LabeledLineGroup(RecipScoreText(a, name), [
-        [RecipScoreLine(a, NeuronInCountAssembly(i)) for i in neurons_to_show_indices]...,
-        RecipScoreLine(a, IndLine())
-    ]),
-    LabeledLineGroup(FwdScoreText(a, name), [
-        [FwdScoreLine(a, NeuronInCountAssembly(i)) for i in neurons_to_show_indices]...,
-        FwdScoreLine(a, IndLine())
-    ]),
-]
-value_neuron_scores_groups(addrs, var_domains, neurons_to_show_indices=1:5; addr_to_name=identity) =
-    (Iterators.flatten(
-        value_neuron_scores_group(a, d, neurons_to_show_indices; name=addr_to_name(a))
-        for (a, d) in zip(addrs, var_domains)
-    ) |> collect) :: Vector{LabeledLineGroup}
+function value_neuron_scores_group(a, var_domain, neurons_to_show_indices=1:5;
+    name=a,
+    show_score_indicators=false,
+    particle_idx=nothing,
+    show_particle_idx=false
+)
+    LabeledLineGroup = (
+        if isnothing(particle_idx)
+            LabeledSingleParticleLineGroup
+        else
+            (labelspec, linespecs) -> LabeledMultiParticleLineGroup(
+                SingleParticleTextWrapper(particle_idx, labelspec, show_particle_idx),
+                [SubsidiarySingleParticleLineSpec(particle_idx, spec) for spec in linespecs]
+            )
+        end
+    )
 
-value_neuron_scores_group_noind(a, var_domain, neurons_to_show_indices=1:5; name=a) = [
-    LabeledLineGroup(SampledValue(a, name), [VarValLine(a, v) for v in var_domain]),
-    LabeledLineGroup(RecipScoreText(a, name), [
-        [RecipScoreLine(a, NeuronInCountAssembly(i)) for i in neurons_to_show_indices]...,
-    ]),
-    LabeledLineGroup(FwdScoreText(a, name), [
-        [FwdScoreLine(a, NeuronInCountAssembly(i)) for i in neurons_to_show_indices]...,
-    ]),
-]
-value_neuron_scores_groups_noind(addrs, var_domains, neurons_to_show_indices=1:5; addr_to_name=identity) =
+    return [
+        LabeledLineGroup(SampledValue(a, name), [VarValLine(a, v) for v in var_domain]),
+        LabeledLineGroup(RecipScoreText(a, name), [
+            [RecipScoreLine(a, NeuronInCountAssembly(i)) for i in neurons_to_show_indices]...,
+            (show_score_indicators ? [RecipScoreLine(a, IndLine())] : [])...
+        ]),
+        LabeledLineGroup(FwdScoreText(a, name), [
+            [FwdScoreLine(a, NeuronInCountAssembly(i)) for i in neurons_to_show_indices]...,
+            (show_score_indicators ? [FwdScoreLine(a, IndLine())] : [])...
+        ]),
+    ]
+end
+
+value_neuron_scores_groups(addrs, var_domains, neurons_to_show_indices=1:5; addr_to_name=identity, kwargs...) =
     (Iterators.flatten(
-        value_neuron_scores_group_noind(a, d, neurons_to_show_indices; name=addr_to_name(a))
+        value_neuron_scores_group(a, d, neurons_to_show_indices; name=addr_to_name(a), kwargs...)
         for (a, d) in zip(addrs, var_domains)
-    ) |> collect) :: Vector{LabeledLineGroup}
+    ) |> collect)
+
+value_neuron_scores_group_noind(args...; kwargs...) = value_neuron_scores_group(args...; show_score_indicators=false, kwargs...)
+
+function value_neuron_scores_weight_autonorm_groups(
+    addrs, var_domains, particle_indices_to_show_vals_scores,
+    particle_indices_to_show_weights, neurons_to_show_indices=1:5, kwargs...
+)
+    val_score_groups = collect(Iterators.flatten([
+        value_neuron_scores_groups(addrs, var_domains, neurons_to_show_indices; particle_idx=idx, kwargs...)
+        for idx in particle_indices_to_show_vals_scores
+    ]))
+    weight_group = LabeledMultiParticleLineGroup(FixedText("Particle weights"), [NormalizedWeight(idx) for idx in particle_indices_to_show_weights])
+    autonorm_group = LabeledMultiParticleLineGroup(FixedText("- log z"), [LogNormalization()])
+
+    return vcat(val_score_groups, [weight_group, autonorm_group])
+end

@@ -220,7 +220,7 @@ function get_pos_vel_value_spiketrains(time_per_step, inferred_trs;
         previous_normalized_logweights = previous_logweights .- logsumexp(previous_logweights)
         log_weight_updates = current_logweights .- previous_logweights
 
-        lines_at_this_time = ProbEstimates.Spiketrains.get_lines_for_particles(
+        lines_at_this_time = ProbEstimates.Spiketrains.get_lines_for_multiparticle_specs(
             all_specs,
             traces, # traces
             log_weight_updates, # log_weight_updates which should be computed
@@ -310,7 +310,7 @@ function get_obs_pos_vel_value_spiketrains(time_per_step, inferred_trs;
         previous_normalized_logweights = previous_logweights .- logsumexp(previous_logweights)
         log_weight_updates = current_logweights .- previous_logweights
 
-        lines_at_this_time = ProbEstimates.Spiketrains.get_lines_for_particles(
+        lines_at_this_time = ProbEstimates.Spiketrains.get_lines_for_multiparticle_specs(
             all_specs,
             traces, # traces
             log_weight_updates, # log_weight_updates which should be computed

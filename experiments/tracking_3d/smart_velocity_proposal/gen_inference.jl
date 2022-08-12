@@ -11,8 +11,8 @@ ProbEstimates.MinProb() = 0.01
 println("MinProb() = $(MinProb())")
 # ProbEstimates.use_perfect_weights!()
 ProbEstimates.use_noisy_weights!()
-ProbEstimates.AssemblySize() = (330)
-ProbEstimates.Latency() = (100)
+ProbEstimates.AssemblySize() = 1000
+ProbEstimates.Latency() = 30
 ProbEstimates.UseLowPrecisionMultiply() = false
 ProbEstimates.MultAssemblySize() = 200
 ProbEstimates.MaxRate() = 0.1 # KHz
@@ -24,18 +24,19 @@ two_timestep_proposal_dumb = @compile_2timestep_proposal(initial_proposal, step_
 
 @load_generated_functions()
 
-NSTEPS = 3
-NPARTICLES = 10
-cmap = get_selected(make_deterministic_trace(), select(:init, :steps => 1, :steps => 2, :steps => 3))
+NSTEPS = 4
+NPARTICLES = 100
+cmap = get_selected(make_deterministic_trace(), select(:init, :steps => 1, :steps => 2, :steps => 3, :steps => 4))
 tr, w = generate(model, (NSTEPS,), cmap)
 observations = get_dynamic_model_obs(tr);
 
 final_particle_set = []
 unweighted_traces_at_each_step_vector = []
-for i in 1:100
+weighted_traces_vec = []
+for i in 1:5
     # try
         (unweighted_traces_at_each_step, weighted_traces) = deferred_dynamic_model_smc(
-            model, (observations[1], observations[2][1:3]),
+            model, (observations[1], observations[2][1:NSTEPS]),
             ch -> (ch[:obs_ϕ => :val], ch[:obs_θ => :val]),
             two_timestep_proposal_dumb,
             # propose_first_two_timesteps_smart,
@@ -52,7 +53,8 @@ for i in 1:100
         else
             sample = Gen.categorical(pvec)
             push!(final_particle_set, particles[sample])
-            push!(unweighted_traces_at_each_step_vector, unweighted_traces_at_each_step)
+
+            push!(weighted_traces_vec, weighted_traces)
         end
 
     # catch
@@ -71,66 +73,13 @@ length(final_particle_set)
 
 
 ### Spiketrain visualization ###
+includet("spiketrain_fig.jl")
 
-function surround3(ch, a, dom)
-    v = try
-        ch[a => :val]
-    catch e
-        println("ch = ")
-        display(ch)
-        println("a = $a ; dom = $dom")
-        throw(e)
-    end
-    if v-1 in dom && v+1 in dom
-        return (v-1):v+1
-    elseif v-1 in dom && v-2 in dom
-        return (v-2):v
-    else
-        return v:(v+2)
-    end
-end
-
-latent_domains() = (#=vxₜ=Vels(), vyₜ=Vels(), vzₜ=Vels(), =# x=Xs(), y=Ys(), z=Zs(), r=Rs(), true_ϕ=ϕs(), true_θ=θs())
-latent_domains_for_viz(ch) = Dict(
-        name => surround3(ch, name, dom) for (name, dom) in pairs(latent_domains())
-    )
-
-function make_spiketrain_fig(tr, neurons_to_show_indices=1:3; nest_all_at, kwargs...)
-    ProbEstimates.Spiketrains.SpiketrainViz.CairoMakie.activate!()
-    assess_sampling_tree = Dict(
-        # :vxₜ => [], :vyₜ => [], :vzₜ => [],
-        # :xₜ => [:vxₜ], :yₜ => [:vyₜ], :zₜ => [:vzₜ],
-        :x => [], :y => [], :z => [],
-        :true_ϕ => [:x, :y, :z],
-        :true_θ => [:x, :y, :z],
-        :r => [:x, :y, :z, :true_θ, :true_ϕ]
-    )
-
-    _propose_sampling_tree = [
-        :true_θ => [], :true_ϕ => [],
-        :r => [:true_θ, :true_ϕ],
-        :x => [:true_θ, :true_ϕ, :r],
-        :y => [:true_θ, :true_ϕ, :r],
-        :z => [:true_θ, :true_ϕ, :r],
-        # :vxₜ => [:true_θ, :true_ϕ, :rₜ],
-        # :vyₜ => [:true_θ, :true_ϕ, :rₜ],
-        # :vzₜ => [:true_θ, :true_ϕ, :rₜ],
-    ]
-
-    propose_addr_topological_order = [p.first for p in _propose_sampling_tree]
-    propose_sampling_tree = Dict(_propose_sampling_tree...)
-    
-    doms = latent_domains_for_viz(get_submap(get_choices(tr), nest_all_at))
-    return ProbEstimates.Spiketrains.draw_spiketrain_group_fig(
-        ProbEstimates.Spiketrains.value_neuron_scores_groups_noind(keys(doms), values(doms), neurons_to_show_indices), tr,
-        (propose_sampling_tree, assess_sampling_tree, propose_addr_topological_order);
-        nest_all_at, kwargs...
-    )
-end
-
+weighted_traces = first(weighted_traces_vec)
+logweights_at_each_time = [[logweight for (trace, logweight) in weighted_traces_at_time] for weighted_traces_at_time in weighted_traces ]
+traces_at_each_time = [[trace for (trace, logweight) in weighted_traces_at_time] for weighted_traces_at_time in weighted_traces ]
 f = make_spiketrain_fig(
-    last(unweighted_traces_at_each_step_vector[1])[2], 1:10; nest_all_at=(:steps => 1 => :latents),
-    resolution=(600, 450), figure_title="Dynamically Weighted Spike Code from Inference"
+    traces_at_each_time[2:4], logweights_at_each_time[2:4], 1:100; resolution=(1280, 1600)
 )
 
 

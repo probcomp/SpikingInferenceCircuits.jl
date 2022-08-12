@@ -234,4 +234,4 @@ end
 
 ### Some default distributions for spiketrain production ###
 DefaultInterSampleTimeDist() = Exponential(1 / (MaxRate() * AssemblySize()))
-DefaultToReadySpikeDist() = Exponential(1 / MaxRate())
+DefaultToReadySpikeDist() = Exponential(1 / (AssemblySize() * MaxRate()))

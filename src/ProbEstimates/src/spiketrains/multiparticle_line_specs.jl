@@ -9,7 +9,7 @@ abstract type MultiParticleLineSpec end
 """
 Line spec for importance sampling in one of the subsidiary particles.
 """
-struct ParticleLineSpec <: MultiParticleLineSpec
+struct SubsidiarySingleParticleLineSpec <: MultiParticleLineSpec
     particle_idx::Int
     spec::LineSpec
 end
@@ -36,7 +36,7 @@ is a vector of values, one per particle, to multiply each particle weight by dur
 auto-normalization.  (E.g. this can be used to pass through the weight from the previous
 timestep of SMC.)
 """
-function get_lines_for_particles(
+function get_lines_for_multiparticle_specs(
     specs, # ::Vector{MultiParticleLineSpec}
     trs,
     expected_log_weight_updates, # this should be the log of the weight-update factors computed here
@@ -47,7 +47,7 @@ function get_lines_for_particles(
     vars_disc_to_cont=Dict()
 )
     needs_autonormalization = any(spec isa Union{LogNormalization, NormalizedWeight} for spec in specs)
-    needs_is = needs_autonormalization || any(spec isa ParticleLineSpec && spec.spec isa SpiketrainSpec for spec in specs)
+    needs_is = needs_autonormalization || any(spec isa SubsidiarySingleParticleLineSpec && spec.spec isa SpiketrainSpec for spec in specs)
 
     is_spiketrain_data = 
         if needs_is
@@ -76,9 +76,32 @@ function get_lines_for_particles(
         for spec in specs
     ]
 end
-get_line_in_multiparticle_spec(spec::ParticleLineSpec, trs, is_spiketrain_data, _, nest_all_at) =
+get_line_in_multiparticle_spec(spec::SubsidiarySingleParticleLineSpec, trs, is_spiketrain_data, _, nest_all_at) =
     get_line(spec.spec, trs[spec.particle_idx], is_spiketrain_data[spec.particle_idx]; nest_all_at)
 get_line_in_multiparticle_spec(::LogNormalization, _, _, autonormalization_data, _) =
     autonormalization_data.log_normalization_line
 get_line_in_multiparticle_spec(spec::NormalizedWeight, _, _, autonormalization_data, _) =
     autonormalization_data.normalized_weight_lines[spec.particle_idx]
+
+### Text for multi-particle line specs
+abstract type MultiParticleText <: MultiParticleLineSpec end
+struct SingleParticleTextWrapper <: MultiParticleText
+    particle_idx::Int
+    single_particle_text::SingleParticleText
+    show_particle_idx::Bool
+end
+function get_line_in_multiparticle_spec(spec::MultiParticleText, trs, is_spiketrain_data, _, nest_all_at)
+    text = get_line(spec.single_particle_text, trs[spec.particle_idx], is_spiketrain_data[spec.particle_idx]; nest_all_at)
+    if spec.show_particle_idx
+        return "Particle $(spec.particle_idx) : " * text
+    else
+        return text
+    end
+end
+
+struct FixedText <: MultiParticleText
+    text::String
+end
+get_line_in_multiparticle_spec(t::FixedText, args...) = t.text
+
+## TODO: handle MultiParticle text for auto-normalization and importance weight lines!!!
