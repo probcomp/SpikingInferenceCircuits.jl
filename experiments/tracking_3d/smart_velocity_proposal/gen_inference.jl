@@ -14,7 +14,9 @@ ProbEstimates.use_noisy_weights!()
 ProbEstimates.AssemblySize() = 1000
 ProbEstimates.Latency() = 30
 ProbEstimates.UseLowPrecisionMultiply() = false
-ProbEstimates.MultAssemblySize() = 200
+ProbEstimates.MultAssemblySize() = 300
+ProbEstimates.AutonormalizeRepeaterAssemblysize() = 50
+ProbEstimates.AutonormalizeCountThreshold() = 5
 ProbEstimates.MaxRate() = 0.1 # KHz
 
 model = @DynamicModel(initial_model, step_model, obs_model, 9)
@@ -25,7 +27,7 @@ two_timestep_proposal_dumb = @compile_2timestep_proposal(initial_proposal, step_
 @load_generated_functions()
 
 NSTEPS = 4
-NPARTICLES = 100
+NPARTICLES = 10
 cmap = get_selected(make_deterministic_trace(), select(:init, :steps => 1, :steps => 2, :steps => 3, :steps => 4))
 tr, w = generate(model, (NSTEPS,), cmap)
 observations = get_dynamic_model_obs(tr);
@@ -79,7 +81,7 @@ weighted_traces = first(weighted_traces_vec)
 logweights_at_each_time = [[logweight for (trace, logweight) in weighted_traces_at_time] for weighted_traces_at_time in weighted_traces ]
 traces_at_each_time = [[trace for (trace, logweight) in weighted_traces_at_time] for weighted_traces_at_time in weighted_traces ]
 f = make_spiketrain_fig(
-    traces_at_each_time[2:4], logweights_at_each_time[2:4], 1:100; resolution=(1280, 1600)
+    traces_at_each_time[2:4], logweights_at_each_time[2:4], 1:100; figure_title="Spikes from SMC Neurons for 3D Tracking"
 )
 
 

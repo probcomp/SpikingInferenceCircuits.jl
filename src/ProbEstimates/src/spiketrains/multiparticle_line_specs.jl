@@ -17,13 +17,16 @@ end
 """
 Spec for the spiketrain for the line normalizing the weights.
 """
-struct LogNormalization <: MultiParticleLineSpec end
+struct LogNormalization <: MultiParticleLineSpec
+    line_to_show::Union{CountAssembly, NeuronInCountAssembly}
+end
 
 """
 Spec for the spiketrain for the normalized weight for a particle.
 """
 struct NormalizedWeight <: MultiParticleLineSpec
     particle_idx::Int
+    line_to_show::Union{CountAssembly, NeuronInCountAssembly}
 end
 
 """
@@ -78,10 +81,19 @@ function get_lines_for_multiparticle_specs(
 end
 get_line_in_multiparticle_spec(spec::SubsidiarySingleParticleLineSpec, trs, is_spiketrain_data, _, nest_all_at) =
     get_line(spec.spec, trs[spec.particle_idx], is_spiketrain_data[spec.particle_idx]; nest_all_at)
-get_line_in_multiparticle_spec(::LogNormalization, _, _, autonormalization_data, _) =
-    autonormalization_data.log_normalization_line
+
+function _get_neuron_or_assembly(vec_of_neuron_spiketrains, line_to_show)
+    if line_to_show isa NeuronInCountAssembly
+        vec_of_neuron_spiketrains[line_to_show.idx]
+    else
+        @assert line_to_show isa CountAssembly
+        sort(reduce(vcat, vec_of_neuron_spiketrains))
+    end
+end
+get_line_in_multiparticle_spec(s::LogNormalization, _, _, autonormalization_data, _) =
+    _get_neuron_or_assembly(autonormalization_data.log_normalization_lines, s.line_to_show)
 get_line_in_multiparticle_spec(spec::NormalizedWeight, _, _, autonormalization_data, _) =
-    autonormalization_data.normalized_weight_lines[spec.particle_idx]
+    _get_neuron_or_assembly(autonormalization_data.normalized_weight_lines[spec.particle_idx], spec.line_to_show)
 
 ### Text for multi-particle line specs
 abstract type MultiParticleText <: MultiParticleLineSpec end

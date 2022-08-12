@@ -53,8 +53,7 @@ function draw_multiparticle_multistep_spiketrain_group_fig(groupspecs, trs, log_
             groupspecs, trs_at_step, 
             logweights_at_step,
             (prop_sample_tree, assess_sample_tree, prop_addr_top_order);
-            nest_all_at=time_to_nesting_addr(t_plus_1 - 1),
-            kwargs...
+            nest_all_at=time_to_nesting_addr(t_plus_1 - 1)
         )
         if isempty(lines)
             lines = copy(lines_now)
@@ -70,7 +69,9 @@ function draw_multiparticle_multistep_spiketrain_group_fig(groupspecs, trs, log_
     
     # TODO: group labels compatible with multi-timestep
     # for now, placeholder:
-    group_labels = [("", length(g.line_specs)) for g in groupspecs]
+    # group_labels = [(repr(g.label_spec), length(g.line_specs)) for g in groupspecs]
+
+    group_labels = get_static_group_labels_for_multiparticle_spec_groups(groupspecs)
 
     colors = SpiketrainViz.get_colors(groupspecs)
     return SpiketrainViz.draw_spiketrain_figure(lines; group_labels, xmin=0, resolution, colors, kwargs...)

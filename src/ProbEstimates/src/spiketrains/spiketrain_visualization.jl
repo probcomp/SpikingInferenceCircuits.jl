@@ -13,11 +13,13 @@ get_colors(groups::Vector{<:Union{Spiketrains.LabeledSingleParticleLineGroup, Sp
     get_colors(reduce(vcat, g.line_specs for g in groups))
 get_colors(lines) = map(get_color, lines)
 
-RECIP_SCORE_COLOR() = colorant"navy"
-FWD_SCORE_COLOR() = colorant"red"
+rgbhex(r, g, b) = RGB(r/256, g/256, b/256)
+
+RECIP_SCORE_COLOR() = colorant"navy" # rgbhex(107, 47, 85) # rgbhex(229, 181, 211) # 
+FWD_SCORE_COLOR() = colorant"red" # rgbhex(48, 133, 133) # RGB(194/256, 230/256, 230/256) # colorant"red"
 VAR_VAL_COLOR() = colorant"green"
-PARTICLE_WEIGHT_COLOR() = colorant"orange"
-AUTONORM_COLOR() = colorant"violet"
+PARTICLE_WEIGHT_COLOR() = colorant"coral"
+AUTONORM_COLOR() = colorant"indigo" #  colorant"violet"
 
 """
     draw_spiketrain_figure(
@@ -54,7 +56,8 @@ function get_spiketrain_figure(
     ax = f[1, 1] = Axis(f; title = figure_title, xlabel)
 
     draw_lines!(ax, lines, labels, colors, time, xmin, xmax)
-    # draw_group_labels!(f, ax, group_labels, colors)
+    draw_group_labels!(f, ax, group_labels, colors)
+    ax.yticklabelsvisible=false
 
     return f
 end
@@ -64,7 +67,20 @@ function draw_group_labels!(f, layout, ax, group_labels, colors)
     colsize!(layout, 1, Relative(0.7))
     endpoint_indices = get_group_endpoint_indices(group_labels)
 
-    # ax.yticks = 1:first(endpoint_indices)[1]
+    bot = 1
+    group_colors = []
+    for (_, len) in group_labels
+        colors_in_range = Set(colors[bot:(bot + len - 1)])
+        if length(colors_in_range) != 1
+            println("colors_in_range = $colors_in_range")
+            push!(group_colors, colorant"black")
+        else
+            push!(group_colors, only(colors_in_range))
+        end
+        bot += len
+    end
+
+    ax.yticks = 1:first(endpoint_indices)[1]
     
     rhs(pos, px_area) = Point2((px_area.origin + px_area.widths)[1], pos[2])
     brackets = [
@@ -79,8 +95,8 @@ function draw_group_labels!(f, layout, ax, group_labels, colors)
         end
         for (st, nd) in endpoint_indices
     ]
-    for bracketpoints in brackets
-        linesegments!(f.scene, bracketpoints)
+    for (color, bracketpoints) in zip(group_colors, brackets)
+        linesegments!(f.scene, bracketpoints; color)
     end
 
     textpositions = [
@@ -92,8 +108,8 @@ function draw_group_labels!(f, layout, ax, group_labels, colors)
         end
         for (st, nd) in endpoint_indices
     ]
-    for ((label, _), pos) in zip(group_labels, textpositions)
-        text!(f.scene, label, position=pos, align=(:left, :center), textsize=15)
+    for ((label, _), pos, color) in zip(group_labels, textpositions, group_colors)
+        text!(f.scene, label; position=pos, align=(:left, :center), textsize=15, color)
     end
 end
 
@@ -165,7 +181,7 @@ function draw_line!(ax, spiketimes::Vector, ypos, height, current_time, color=RG
     
     if drawpoints
         times = [Point2(t - current_time, ypos) for t in spiketimes]
-        scatter!(ax, times; color, markersize=2)
+        scatter!(ax, times; color, markersize=3)
     else
         height = max(minheight, height)
         y1 = ypos - height/2; y2 = ypos + height/2

@@ -2,8 +2,34 @@ using ProbEstimates: AutonormalizeCountThreshold, AutonormalizeSpeedupFactor, Au
 using Distributions
 
 struct AutonormalizationData
-    log_normalization_line::Vector{Float64}
-    normalized_weight_lines::Vector{Vector{Float64}}
+    log_normalization_lines::Vector{Vector{Float64}} # [neuron_index][spike_index] = time of this spike
+    normalized_weight_lines::Vector{Vector{Vector{Float64}}} # [particle_idx][neuron_idx][spike_index] = time of this spike
+end
+# This constructor takes in lines of spikes for whole assemblies (rather than neurons within assemblies)
+# and splits them among the assemblies
+function split_to_neurons_and_get_autonorm_data(
+    log_normalization_spikes::Vector, normalized_weights::Vector{<:Vector};
+    autonorm_assembly_size=ProbEstimates.AutonormalizeRepeaterAssemblysize(),
+    mult_assembly_size=ProbEstimates.MultAssemblySize()
+)
+    log_normalization_lines = [[] for _=1:autonorm_assembly_size]
+    normalized_weight_lines = [[[] for _=1:mult_assembly_size] for _ in normalized_weights]
+    for spiketime in log_normalization_spikes
+        push!(log_normalization_lines[rand(DiscreteUniform(1, autonorm_assembly_size))], spiketime)
+    end
+    for i in eachindex(normalized_weight_lines)
+        spikes = normalized_weights[i]
+        for spike in spikes
+            push!(normalized_weight_lines[i][rand(DiscreteUniform(1, mult_assembly_size))], spike)
+        end
+    end
+    # println("NORMALIZED WEIGHT LINES:")
+    # display(normalized_weight_lines)
+    # println("input normalized weights:")
+    # display(reduce(vcat, normalized_weights))
+    return AutonormalizationData(
+        log_normalization_lines, normalized_weight_lines
+    )
 end
 
 function get_time_when_scores_all_ready(is_spiketrain_data)
@@ -16,10 +42,10 @@ function get_time_when_scores_all_ready(is_spiketrain_data)
     )
 
     datum = is_spiketrain_data[2]
-    println("FWD READY TIMES: ")
-    display([dense_val_train.ready_time for dense_val_train in values(datum.fwd_trains)])
-    println("RECIP READY TIMES: ")
-    display([dense_val_train.ready_time for dense_val_train in values(datum.recip_trains)])
+    # println("FWD READY TIMES: ")
+    # display([dense_val_train.ready_time for dense_val_train in values(datum.fwd_trains)])
+    # println("RECIP READY TIMES: ")
+    # display([dense_val_train.ready_time for dense_val_train in values(datum.recip_trains)])
 
     maximum([time for time in all_ready_times if !isinf(time)])
 end
@@ -120,6 +146,11 @@ function produce_autonormalization_spiketrains(
             error("n_iters_in_loop = $n_iters_in_loop ;; num_accumulated_spikes = $num_accumulated_spikes ;; length(normalization_spiketimes) = $(length(normalization_spiketimes)) ;; num_autonormalization_spikes = $num_autonormalization_spikes ;; not_done_accumulating() = $(not_done_accumulating())")
         end
     end
+    for rate in rates
+        if rate > ProbEstimates.MaxRate() * ProbEstimates.MultAssemblySize()
+            @warn "In spiketrain Autonorm simulation, ended up with a rate = $rate > $(ProbEstimates.MaxRate() * ProbEstimates.MultAssemblySize())"
+        end
+    end
 
     time_left_in_simulation = total_simulation_time - (current_time - starttime)
 
@@ -135,15 +166,16 @@ function produce_autonormalization_spiketrains(
     if all(isempty(p) for p in particle_spiketimes)
         println("---GOT EMPTY SPIKETIMES---")
         println("unnormalized_log_values: $unnormalized_log_values ; rates at end = $rates")
+        println("time_left_in_simulation = $time_left_in_simulation")
         display(particle_spiketimes)
         display(normalization_spiketimes)
         println()
         println()
     end
 
-    println("n autonorm spikes: $(length(normalization_spiketimes))")
+    # println("n autonorm spikes: $(length(normalization_spiketimes))")
 
-    return AutonormalizationData(
+    return split_to_neurons_and_get_autonorm_data(
         normalization_spiketimes,
         particle_spiketimes
     )
@@ -182,7 +214,7 @@ function get_autonormalization_data(
     num_autonormalization_spikes
 )
     autonorm_starttime = get_time_when_scores_all_ready(is_spiketrain_data)
-    println("autonorm starttime = $autonorm_starttime")
+    # println("autonorm starttime = $autonorm_starttime")
     if isinf(autonorm_starttime) # this means the scores don't all end up being ready in time
 
     end

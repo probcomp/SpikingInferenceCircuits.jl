@@ -18,6 +18,7 @@ module Spiketrains
 using Distributions: Exponential, DiscreteUniform
 using ProbEstimates: MaxRate, AssemblySize, Latency, K_fwd, K_recip, with_weight_type
 using ProbEstimates: ContinuousToDiscreteScoreNumSpikes, LatencyForContinuousToDiscreteScore
+import ProbEstimates
 using Gen
 
 nest(::Nothing, b) = b
