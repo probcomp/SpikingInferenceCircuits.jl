@@ -38,17 +38,20 @@ def find_hunted_prey(fish_id, conditions):
     return bouts_per_hunt, prey_rec_per_hunt, prey_dict_per_hunt        
     # got everything. now have to find the bouts. 
 
-
-bph, prey_rec, prey_dict = find_hunted_prey("090518_5", [1, 2])
-
-
 def save_to_hdf5(mydict):
     savepath = "/Users/nightcrawler/SpikingInferenceCircuits.jl/experiments/3DTracking/old/prey_coords.h5"
     try:
         hdfdict.dump(mydict, savepath)
     except RuntimeError:
+        print("overwriting old coordfile")
         os.remove(savepath)
         return save_to_hdf5(mydict)
+
+if __name__ == '__main__':
+    p_rec = 5
+    bph, prey_rec, prey_dict = find_hunted_prey("090518_5", [1, 2])
+    save_to_hdf5(prey_dict[p_rec])
+
 
     
     
