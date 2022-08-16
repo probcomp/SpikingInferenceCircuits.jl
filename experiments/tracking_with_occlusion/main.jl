@@ -10,7 +10,9 @@ ProbEstimates.MinProb() = 0.1
 ProbEstimates.UseLowPrecisionMultiply() = false
 ProbEstimates.Latency() = 100
 ProbEstimates.AssemblySize() = 100
-ProbEstimates.MultAssemblySize() = 1000
+ProbEstimates.MultAssemblySize() = 200
+ProbEstimates.AutonormalizeRepeaterAssemblysize() = 50
+ProbEstimates.AutonormalizeCountThreshold() = 5
 use_ngf() = true
 if use_ngf()
     ProbEstimates.use_noisy_weights!()
@@ -32,7 +34,7 @@ do_inference(tr; n_particles=10) = dynamic_model_smc(
 VelOneOffProb() = 0.1
 gt_tr = generate_occluded_bounce_tr();
 (unweighted_trs, weighted_trs) = do_inference(gt_tr; n_particles=30);
-(fig, t) = make_gt_particle_viz_img_only(gt_tr, unweighted_trs); fig
+# (fig, t) = make_gt_particle_viz_img_only(gt_tr, unweighted_trs); fig
 
 # Some code from debugging:
 # l = latents_choicemap(gt_tr, 3);
@@ -71,9 +73,10 @@ gt_tr = generate_occluded_bounce_tr();
 # save("obs.png", obsfig)
 
 # Spiketrain figure:
+logweights_at_each_time = [[logweight for (trace, logweight) in weighted_traces_at_time] for weighted_traces_at_time in weighted_trs ]
+traces_at_each_time = [[trace for (trace, logweight) in weighted_traces_at_time] for weighted_traces_at_time in weighted_trs ]
 f = make_spiketrain_fig_mps(
-    last(unweighted_trs)[1], 1:10; nest_all_at=(:steps => 1 => :latents),
-    resolution=(600, 450), figure_title="Dynamically Weighted Spike Code from Inference"
+    traces_at_each_time[2:4], logweights_at_each_time[2:4], 1:20; nest_all_at=(:steps => 1 => :latents)
 )
 
 # Draw observations:

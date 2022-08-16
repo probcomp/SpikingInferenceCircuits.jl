@@ -33,25 +33,50 @@ function make_gt_particle_viz_img_only(gt_tr, unweighted_inferred_trs)
 end
 
 ### Spiketrain visualization:
-function surround3(ch, a, dom)
-    v = ch[a => :val]
-    if v-1 in dom && v+1 in dom
-        return (v-1):v+1
-    elseif v-1 in dom && v-2 in dom
-        return (v-2):v
-    else
-        return v:(v+2)
-    end
-end
-latent_domains_for_viz_mps(ch)     = (
-    occₜ = surround3(ch, :occₜ, positions(OccluderLength())),
-    xₜ   = surround3(ch, :xₜ, positions(SquareSideLength())),
-    yₜ   = surround3(ch, :yₜ, positions(SquareSideLength())),
-    vxₜ  = surround3(ch, :vxₜ, Vels()),
-    vyₜ  = surround3(ch, :vyₜ, Vels())
-)
+# function surround3(ch, a, dom)
+#     v = ch[a => :val]
+#     if v-1 in dom && v+1 in dom
+#         return (v-1):v+1
+#     elseif v-1 in dom && v-2 in dom
+#         return (v-2):v
+#     else
+#         return v:(v+2)
+#     end
+# end
 
-function make_spiketrain_fig_mps(tr, neurons_to_show_indices=1:3; nest_all_at, kwargs...)
+# latent_domains_for_viz_mps(ch)     = (
+#     occₜ = surround3(ch, :occₜ, positions(OccluderLength())),
+#     xₜ   = surround3(ch, :xₜ, positions(SquareSideLength())),
+#     yₜ   = surround3(ch, :yₜ, positions(SquareSideLength())),
+#     vxₜ  = surround3(ch, :vxₜ, Vels()),
+#     vyₜ  = surround3(ch, :vyₜ, Vels())
+# )
+
+latent_domains_mps() = (
+    occₜ=positions(OccluderLength()),
+    xₜ   = positions(SquareSideLength()),
+    yₜ   = positions(SquareSideLength()),
+    vxₜ  = Vels(),
+    vyₜ  = Vels()
+)
+function latent_domains_for_viz_mps(trs_at_time)
+    nesting_addrs = [ProbEstimates.Spiketrains.default_t_to_nesting_address(tp1 - 1) for tp1=1:length(trs_at_time)]
+    # Note that here we are hardcoding that we're only putting in the values for trace 1.
+    # This seems like something that might change.
+    # all_vals = Dict(
+    #     name => [get_submap(get_choices(trs[1]), nesting_addr)[name => :val] for (trs, nesting_addr) in zip(trs_at_time, nesting_addrs)]
+    #     for name in keys(latent_domains())
+    # )
+
+    all_vals = Dict(
+        name => dom for (name, dom) in pairs(latent_domains_mps())
+    )
+
+    # TODO could add lines for additional values that don't appear in these traces -- e.g. using the `surround3` method above -- if we want
+    return all_vals
+end
+
+function make_spiketrain_fig_mps(trs_at_each_time, logweights_at_each_time, neurons_to_show_indices=1:10; nest_all_at, kwargs...)
     ProbEstimates.Spiketrains.SpiketrainViz.CairoMakie.activate!()
     propose_sampling_tree = Dict(
         :occₜ => [], :xₜ => [:occₜ], :yₜ => [],
@@ -64,12 +89,28 @@ function make_spiketrain_fig_mps(tr, neurons_to_show_indices=1:3; nest_all_at, k
     )
     propose_addr_topological_order = [:occₜ, :xₜ, :yₜ, :vxₜ, :vyₜ]
     
-    doms = latent_domains_for_viz_mps(get_submap(get_choices(tr), nest_all_at))
-    return ProbEstimates.Spiketrains.draw_spiketrain_group_fig(
-        ProbEstimates.Spiketrains.value_neuron_scores_groups_noind(keys(doms), values(doms), neurons_to_show_indices), tr,
+    doms = latent_domains_for_viz_mps(trs_at_each_time)
+
+    max_weight_idx_at_each_time = [
+        findmax(arr)[2] for arr in logweights_at_each_time
+    ]
+
+    return ProbEstimates.Spiketrains.draw_multiparticle_multistep_spiketrain_group_fig(
+        ProbEstimates.Spiketrains.value_neuron_scores_weight_autonorm_groups(
+            keys(doms), values(doms), max_weight_idx_at_each_time[1], sort(unique(max_weight_idx_at_each_time)), neurons_to_show_indices
+        ),
+        trs_at_each_time, logweights_at_each_time,
         (propose_sampling_tree, assess_sampling_tree, propose_addr_topological_order);
-        nest_all_at, kwargs...
+        timestep_length_to_latency_ratio=5/3,
+        figure_title="Spikes from SMC Neurons for Mental Physics Simulation",
+        kwargs...
     )
+
+    # return ProbEstimates.Spiketrains.draw_spiketrain_group_fig(
+    #     ProbEstimates.Spiketrains.value_neuron_scores_groups_noind(keys(doms), values(doms), neurons_to_show_indices), tr,
+    #     (propose_sampling_tree, assess_sampling_tree, propose_addr_topological_order);
+    #     nest_all_at, kwargs...
+    # )
 end
 
 ### Generate a particular trace:
