@@ -41,6 +41,7 @@ function draw_multiparticle_multistep_spiketrain_group_fig(groupspecs, trs, log_
     resolution=(1280, 720), time_to_nesting_addr=default_t_to_nesting_address,
     # Default: ~1.1 for weight readout, .1 for autonormalization excitatory spikes, 1 for weight readout
     timestep_length_to_latency_ratio=2.5,
+    return_metadata=false,
     kwargs...
 )
 
@@ -74,5 +75,11 @@ function draw_multiparticle_multistep_spiketrain_group_fig(groupspecs, trs, log_
     group_labels = get_static_group_labels_for_multiparticle_spec_groups(groupspecs)
 
     colors = SpiketrainViz.get_colors(groupspecs)
-    return SpiketrainViz.draw_spiketrain_figure(lines; group_labels, xmin=0, resolution, colors, kwargs...)
+    viz = SpiketrainViz.draw_spiketrain_figure(lines; group_labels, xmin=0, resolution, colors, kwargs...)
+
+    if return_metadata
+        return (viz, (lines, group_labels, colors))
+    else
+        return viz
+    end
 end
