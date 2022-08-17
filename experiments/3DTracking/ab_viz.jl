@@ -130,11 +130,11 @@ function render_static_trajectories(uw_traces, gt::Trace, from_observer)
     render_azalt_trajectory(gt, "traj")
     GLMakie.activate!()
     res = 700
-    fig = Figure(resolution=(2*res, 2*res), figure_padding=50)
+    fig = Figure(resolution=(2*res, 2*res), figure_padding=0)
     lim = (Xs()[1], Xs()[end], Ys()[1], Ys()[end], Zs()[1], Zs()[end])
     # note perspectiveness variable is 0.0 for orthographic, 1.0 for perspective, .5 for intermediate
-    preyloc_axis = Axis3(fig[2,1], 
-                         viewmode=:fit, aspect=(1,1,1), perspectiveness=0.0, protrusions=0, limits=lim,
+    preyloc_axis = Axis3(fig[1,1], 
+                         viewmode=:fitzoom, aspect=(1,1,1), perspectiveness=0, protrusions=0, limits=lim,
                          elevation = .5, azimuth= .5)
 
     gt_coords = []
@@ -174,7 +174,7 @@ function render_static_trajectories(uw_traces, gt::Trace, from_observer)
 # PC -> EACH INDEX IS THE VALUE OF EACH PARTICLE AT INDEX STEP. 
     for p_index in 1:length(uw_traces)
         lines!(map(x -> convert(Point3f0, x[p_index]), particle_coords), 
-               color=to_colormap(:thermal, NSTEPS+1), linewidth=2)
+               color=to_colormap(:thermal, NSTEPS+1), linewidth=2, overdraw=true)
     end
     # lines!(particle_anim_axis, lift(t -> fp(t), time_node), color=gray_w_alpha, markersize=msize, alpha=.5)
     # scatter!(particle_anim_axis, lift(t -> f_gt(t), time_node), color=:red, markersize=msize)
@@ -357,12 +357,16 @@ function translate_camera(anim_axis, observer_pov::Bool)
     #    cam.projectiontype[] = Makie.Orthographic
     # i think a 45f0 field of view IS orthographic.
     cam.fov[] = 45f0
+    # there is far and near clipping. if stuff is disappearing change this value. 
     if observer_pov
+#        cam.far[] = 20                
         cam.eyeposition[] = Vec3f0(0, 0, 0)
         cam.lookat[] = Vec3f0(1, 0, 0)
         cam.upvector[] = Vec3f0(0, 0, 1)
+
     else
-        cam.eyeposition[] = Vec3f0(Xs()[1]-23, Ys()[end], Zs()[end] + 10)
+        cam.far[] = 200        
+        cam.eyeposition[] = Vec3f0(Xs()[1]-46, Ys()[end] / 2, Zs()[end] + 20)
         cam.lookat[] = Vec3f0(Xs()[Int(round(length(Xs()) / 2))],
                               Ys()[Int(round(length(Ys())/2))],
                               Zs()[Int(round(length(Zs())/2))])
@@ -380,7 +384,9 @@ function translate_camera(anim_axis, observer_pov::Bool)
 
         GLMakie.scale!(anim_axis.scene, 1, -1, 1)
         for gv in vcat(axis_vertices, full_grid_vertices)
-            lines!(anim_axis, gv, color="black")
+            lines!(anim_axis, gv, color="black", overdraw=true, linewidth=2)
+            #linesegments!(anim_axis, gv, color="black")
+            continue
         end
         
     end

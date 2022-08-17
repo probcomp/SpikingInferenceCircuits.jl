@@ -2,9 +2,9 @@ using Base: Int64
 using DynamicModels: @DynamicModel, @compile_initial_proposal, @compile_step_proposal, get_dynamic_model_obs, dynamic_model_smc
 using ProbEstimates
 
-
 include("model.jl")
 include("ab_viz.jl")
+include("./old/gather_para_trajectories.jl")
 
 print(MinProb())
 #ProbEstimates.use_perfect_weights!()
@@ -21,44 +21,68 @@ step_proposal_compiled = @compile_step_proposal(step_proposal, 9, 2)
 
 @load_generated_functions()
 
-NSTEPS = 4
+step_time = 48
+div_time = 1 / (step_time / 1000)
+#cmap = make_deterministic_trace()
+cmap, norm_xyz  = make_trace_from_realprey(20.833)
+GLMakie.activate!()
+para_3Dtrajectory_in_modelspace(norm_xyz...)
+X_init, Y_init, Z_init = norm_xyz[1][1], norm_xyz[2][1], norm_xyz[3][1]
+
+NSTEPS = floor(Int64, length(norm_xyz[1]))
 NPARTICLES = 100
-cmap = make_deterministic_trace()
-tr, w = generate(model, (NSTEPS,), cmap)
-observations = get_dynamic_model_obs(tr);
 
-final_particle_set = []
 
-for i in 1:10
-    try
-        (unweighted_traces_at_each_step, weighted_traces) = dynamic_model_smc(
-            model, observations,
-            ch -> (ch[:obs_ϕ => :val], ch[:obs_θ => :val]),
-            initial_proposal_compiled, step_proposal_compiled,
-            NPARTICLES, # n particles
-            ess_threshold=NPARTICLES);
-        scores = [get_score(t) for t in unweighted_traces_at_each_step[end]];
-    
-        if !any(map(isfinite, scores))
+println("Run Inference? (y/n):  ")
+n = readline()
+if n == "y"
+
+
+    tr, w = generate(model, (NSTEPS,), cmap)
+    observations = get_dynamic_model_obs(tr);
+
+    final_particle_set = []
+
+
+    for i in 1:40
+        try
+            (unweighted_traces_at_each_step, weighted_traces) = dynamic_model_smc(
+                model, observations,
+                ch -> (ch[:obs_ϕ => :val], ch[:obs_θ => :val]),
+                initial_proposal_compiled, step_proposal_compiled,
+                NPARTICLES, # n particles
+                ess_threshold=NPARTICLES);
+            scores = [get_score(t) for t in unweighted_traces_at_each_step[end]];
+
+            if !any(map(isfinite, scores))
+                continue
+            end
+            particle_sample = Gen.categorical(normalize(exp.(scores .- logsumexp(scores))))
+            push!(final_particle_set, unweighted_traces_at_each_step[end][particle_sample])
+        catch
             continue
         end
-        particle_sample = Gen.categorical(normalize(exp.(scores .- logsumexp(scores))))
-        push!(final_particle_set, unweighted_traces_at_each_step[end][particle_sample])
-    catch
-        continue
+
+    #    println(sum(normalize(exp.(scores .- logsumexp(scores)))))
+
     end
-          
-#    println(sum(normalize(exp.(scores .- logsumexp(scores)))))
-  
+
+    animate_pf_results(final_particle_set, tr, true)
+    animate_pf_results(final_particle_set, tr, false)
+    render_static_trajectories(final_particle_set, tr, true)
+    # use k and i to zoom in and out
+    render_static_trajectories(final_particle_set, tr, false)
+    final_scores = [get_score(t) for t in final_particle_set]
+    final_probs = normalize(exp.(final_scores .- logsumexp(final_scores)))
+    render_obs_from_particles(final_particle_set, 10, do_obs=true)
+
 end
 
-# animate_pf_results(final_particle_set, tr, true)
-# animate_pf_results(final_particle_set, tr, false)
-render_static_trajectories(final_particle_set, tr, true)
-render_static_trajectories(final_particle_set, tr, false)
-final_scores = [get_score(t) for t in final_particle_set]
-final_probs = normalize(exp.(final_scores .- logsumexp(final_scores)))
-render_obs_from_particles(final_particle_set, length(final_probs), do_obs=true)
+    
+
+
+
+
 
 # plot_full_choicemap(final_particle_set)
 
