@@ -30,8 +30,9 @@ cutoff = 10
 #the tank is
 # 1888 pixels which covers 2cm. so 94.4 pixels per millimeter. or .0106 mm per pix. 
 
-# also add exact bout length.
-
+# To Do: 
+# add exact bout length.
+# gather prey coordinates per paramecia in the para3D datasets. 
 
 
 function normalize_wrth_coordinates(sampling_rate)
@@ -120,7 +121,7 @@ function make_trace_from_realprey(sampling_rate)
                              dx_traj_choice..., dy_traj_choice..., dz_traj_choice...,
                              true_θ_choice..., true_ϕ_choice..., 
                              r_choice..., obsϕ_choice..., obsθ_choice...)
-    return tr_choicemap
+    return tr_choicemap, [x_traj, y_traj, z_traj]
 end
 
 # NEXT STEPS:
@@ -208,8 +209,8 @@ function plot_horizontal_trajectory(p_id, start_ind=0, end_ind=1)
 end
 
 
-n = normalize_wrth_coordinates(62)
-para_3Dtrajectory_in_modelspace(n[1], n[2], n[3])
+#n = normalize_wrth_coordinates(62)
+#para_3Dtrajectory_in_modelspace(n[1], n[2], n[3])
 
 
 

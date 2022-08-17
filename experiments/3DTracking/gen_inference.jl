@@ -15,11 +15,6 @@ ProbEstimates.UseLowPrecisionMultiply() = false
 ProbEstimates.MultAssemblySize() = 200
 ProbEstimates.MaxRate() = 600 # Hz
 
-model = @DynamicModel(initial_model, step_model, obs_model, 9)
-initial_proposal_compiled = @compile_initial_proposal(initial_proposal, 2)
-step_proposal_compiled = @compile_step_proposal(step_proposal, 9, 2)
-
-@load_generated_functions()
 
 step_time = 48
 div_time = 1 / (step_time / 1000)
@@ -28,9 +23,19 @@ cmap, norm_xyz  = make_trace_from_realprey(20.833)
 GLMakie.activate!()
 para_3Dtrajectory_in_modelspace(norm_xyz...)
 X_init, Y_init, Z_init = norm_xyz[1][1], norm_xyz[2][1], norm_xyz[3][1]
+X2, Y2, Z2 = norm_xyz[1][2], norm_xyz[2][2], norm_xyz[3][2]
 
 NSTEPS = floor(Int64, length(norm_xyz[1]))
 NPARTICLES = 100
+
+
+
+model = @DynamicModel(initial_model, step_model, obs_model, 9)
+initial_proposal_compiled = @compile_initial_proposal(initial_proposal, 2)
+step_proposal_compiled = @compile_step_proposal(step_proposal, 9, 2)
+
+@load_generated_functions()
+
 
 
 println("Run Inference? (y/n):  ")

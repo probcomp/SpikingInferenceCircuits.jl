@@ -19,7 +19,12 @@ end
     r_max₀ = max_distance_inside_grid(true_ϕ₀, true_θ₀)
     l₀ = length(Rs())
     r_probvec₀ = normalize(vcat(ones(Int64(r_max₀)), zeros(Int64(l₀-r_max₀))))
-    r₀ = { :init => :latents => :r } ~ LCat(Rs())(r_probvec₀)
+
+    r₀ = { :init => :latents => :r } ~ LCat(Rs())(
+        truncated_discretized_gaussian(round(norm_3d(X_init, Y_init, Z_init)),
+                                       .6, Rs()))
+    
+#    r₀ = { :init => :latents => :r } ~ LCat(Rs())(r_probvec₀)
     x_prop₀ = r₀ * cos(true_ϕ₀) * cos(true_θ₀)
     y_prop₀ = r₀ * cos(true_ϕ₀) * sin(true_θ₀)
     z_prop₀ = r₀ * sin(true_ϕ₀)
@@ -37,7 +42,12 @@ end
     r_probvec₁ = normalize(
         vcat(ones(Int64(r_max₁)), zeros(Int64(l₁-r_max₁))) .* distance_velocity_prior(x₀, y₀, z₀)
     )
-    r₁ = { :steps => 1 => :latents => :r } ~ LCat(Rs())(r_probvec₁)
+#    r₁ = { :steps => 1 => :latents => :r } ~ LCat(Rs())(r_probvec₁)
+
+    r₁ = { :steps => 1 => :latents => :r } ~ LCat(Rs())(
+        truncated_discretized_gaussian(round(norm_3d(X2, Y2, Z2)),
+                                       .6, Rs()))
+    
     x_prop₁ = r₁ * cos(true_ϕ₁) * cos(true_θ₁)
     y_prop₁ = r₁ * cos(true_ϕ₁) * sin(true_θ₁)
     z_prop₁ = r₁ * sin(true_ϕ₁)

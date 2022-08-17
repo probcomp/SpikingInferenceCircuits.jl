@@ -134,7 +134,7 @@ function render_static_trajectories(uw_traces, gt::Trace, from_observer)
     lim = (Xs()[1], Xs()[end], Ys()[1], Ys()[end], Zs()[1], Zs()[end])
     # note perspectiveness variable is 0.0 for orthographic, 1.0 for perspective, .5 for intermediate
     preyloc_axis = Axis3(fig[1,1], 
-                         viewmode=:fitzoom, aspect=(1,1,1), perspectiveness=0, protrusions=0, limits=lim,
+                         viewmode=:fit, aspect=(1,1,1), perspectiveness=0, protrusions=0, limits=lim,
                          elevation = .5, azimuth= .5)
 
     gt_coords = []

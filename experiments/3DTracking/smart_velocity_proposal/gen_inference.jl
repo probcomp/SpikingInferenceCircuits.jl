@@ -12,6 +12,8 @@ using ProbEstimates
 include("../model.jl")
 include("../ab_viz.jl")
 include("deferred_inference.jl")
+include("smart_twostep_proposal.jl")
+include("../old/gather_para_trajectories.jl")
 
 println("MinProb() = $(MinProb())")
 # ProbEstimates.use_perfect_weights!()
@@ -22,6 +24,21 @@ ProbEstimates.UseLowPrecisionMultiply() = false
 ProbEstimates.MultAssemblySize() = 200
 ProbEstimates.MaxRate() = 0.1
 
+
+step_time = 48
+div_time = 1 / (step_time / 1000)
+#cmap = make_deterministic_trace()
+cmap, norm_xyz  = make_trace_from_realprey(20.833)
+#GLMakie.activate!()
+#para_3Dtrajectory_in_modelspace(norm_xyz...)
+X_init, Y_init, Z_init = norm_xyz[1][1], norm_xyz[2][1], norm_xyz[3][1]
+X2, Y2, Z2 = norm_xyz[1][2], norm_xyz[2][2], norm_xyz[3][2]
+
+#NSTEPS = floor(Int64, length(norm_xyz[1]))
+NSTEPS = 5
+NPARTICLES = 100
+
+
 model = @DynamicModel(initial_model, step_model, obs_model, 9)
 initial_proposal_compiled = @compile_initial_proposal(initial_proposal, 2)
 step_proposal_compiled = @compile_step_proposal(step_proposal, 9, 2)
@@ -29,9 +46,10 @@ two_timestep_proposal_dumb = @compile_2timestep_proposal(initial_proposal, step_
 
 @load_generated_functions()
 
-NSTEPS = 10
-NPARTICLES = 10
-cmap = make_deterministic_trace()
+# NSTEPS = 10
+# NPARTICLES = 10
+# cmap = make_deterministic_trace()
+
 tr, w = generate(model, (NSTEPS,), cmap)
 observations = get_dynamic_model_obs(tr);
 
@@ -70,7 +88,7 @@ render_static_trajectories(final_particle_set, tr, true)
 render_static_trajectories(final_particle_set, tr, false)
 # final_scores = [get_score(t) for t in final_particle_set]
 # final_probs = normalize(exp.(final_scores .- logsumexp(final_scores)))
-render_obs_from_particles(final_particle_set, 100; do_obs=false);
+render_obs_from_particles(final_particle_set, 10; do_obs=false);
 
 # plot_full_choicemap(final_particle_set)
 
