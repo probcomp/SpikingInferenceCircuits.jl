@@ -35,7 +35,7 @@ X_init, Y_init, Z_init = norm_xyz[1][1], norm_xyz[2][1], norm_xyz[3][1]
 X2, Y2, Z2 = norm_xyz[1][2], norm_xyz[2][2], norm_xyz[3][2]
 
 #NSTEPS = floor(Int64, length(norm_xyz[1]))
-NSTEPS = 5
+NSTEPS = 10
 NPARTICLES = 100
 
 
@@ -60,8 +60,8 @@ for i in 1:100
         (unweighted_traces_at_each_step, weighted_traces) = deferred_dynamic_model_smc(
             model, observations,
             ch -> (ch[:obs_ϕ => :val], ch[:obs_θ => :val]),
-       #     two_timestep_proposal_dumb,
-            propose_first_two_timesteps_smart,
+            two_timestep_proposal_dumb,
+       #     propose_first_two_timesteps_smart,
             step_proposal_compiled,
             NPARTICLES, # n particles
             ess_threshold=NPARTICLES
@@ -85,7 +85,7 @@ length(final_particle_set)
 # animate_pf_results(final_particle_set, tr, true)
 # animate_pf_results(final_particle_set, tr, false)
 render_static_trajectories(final_particle_set, tr, true)
-render_static_trajectories(final_particle_set, tr, false)
+pcoords, gtcoords = render_static_trajectories(final_particle_set, tr, false)
 # final_scores = [get_score(t) for t in final_particle_set]
 # final_probs = normalize(exp.(final_scores .- logsumexp(final_scores)))
 render_obs_from_particles(final_particle_set, 10; do_obs=false);

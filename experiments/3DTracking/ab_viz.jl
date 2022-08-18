@@ -141,6 +141,9 @@ function render_static_trajectories(uw_traces, gt::Trace, from_observer)
     particle_coords = []
     score_colors = []
     choices_per_particle = [get_choices(tr) for tr in vcat(gt, uw_traces)]
+    thermal_colormap = to_colormap(:thermal, NSTEPS+1)
+    alpha_val = .1f0
+    thermal_colormap_w_alpha = [RGBA(c.r, c.g, c.b, alpha_val) for c in thermal_colormap]    
     trace_scores = [get_score(tr) for tr in uw_traces]
     for i in 0:NSTEPS
         step_particle_coords = []
@@ -167,14 +170,14 @@ function render_static_trajectories(uw_traces, gt::Trace, from_observer)
         push!(particle_coords, step_particle_coords)        
     end
     #    scatter!(anim_axis, lift(t -> fp(t), time_node), color=lift(t -> fs(t), time_node), colormap=:grays, markersize=msize, alpha=.5)
-#    lines!(convert(Vector{Point3f0}, gt_coords),
-       #    color=to_colormap(:thermal, NSTEPS+1), linewidth=2)
+    lines!(convert(Vector{Point3f0}, gt_coords),
+           color=to_colormap(:ice, NSTEPS+1), linewidth=2)
 
 
 # PC -> EACH INDEX IS THE VALUE OF EACH PARTICLE AT INDEX STEP. 
     for p_index in 1:length(uw_traces)
         lines!(map(x -> convert(Point3f0, x[p_index]), particle_coords), 
-               color=to_colormap(:thermal, NSTEPS+1), linewidth=2, overdraw=true)
+               color=thermal_colormap_w_alpha, linewidth=2, overdraw=true)
     end
     # lines!(particle_anim_axis, lift(t -> fp(t), time_node), color=gray_w_alpha, markersize=msize, alpha=.5)
     # scatter!(particle_anim_axis, lift(t -> f_gt(t), time_node), color=:red, markersize=msize)
@@ -271,7 +274,7 @@ function animate_pf_results(uw_traces, gt_trace, from_observer)
     end
     c2 = colorant"rgba(255, 0, 255, .25)"
     c1 = colorant"rgba(0, 255, 255, .25)"
-    gray_w_alpha = colorant"rgba(60, 60, 60, .2)"
+    gray_w_alpha = colorant"rgba(60, 60, 60, .1)"
     cmap = range(c1, stop=c2, length=10)
 #    fish_mesh = FileIO.load("zebrafish.obj")
     fig = Figure(resolution=(2*res, 2*res), figure_padding=50)
