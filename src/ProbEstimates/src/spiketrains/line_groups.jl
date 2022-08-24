@@ -36,17 +36,17 @@ get_lines_for_multiparticle_spec_groups(groups, args...; kwargs...) =
 get_group_labels_for_multiparticle_spec_groups(groups::Vector{LabeledMultiParticleLineGroup}, trs; nest_all_at) =
     [(get_line_in_multiparticle_spec(g.label_spec, trs, [nothing for _ in trs]; nest_all_at), length(g.line_specs)) for g in groups]
 
-get_static_group_labels_for_multiparticle_spec_groups(groups::Vector{LabeledMultiParticleLineGroup}) =
-    [(get_static_multi_textline(group.label_spec), length(group.line_specs)) for group in groups]
-get_static_multi_textline(t::FixedText) = t.text
-function get_static_multi_textline(t::SingleParticleTextWrapper)
-    text = get_textline_sing_static(t.single_particle_text)
+get_static_group_labels_for_multiparticle_spec_groups(groups::Vector{LabeledMultiParticleLineGroup}; kwargs...) =
+    [(get_static_multi_textline(group.label_spec; kwargs...), length(group.line_specs)) for group in groups]
+get_static_multi_textline(t::FixedText; kwargs...) = t.text
+function get_static_multi_textline(t::SingleParticleTextWrapper; kwargs...)
+    text = get_textline_sing_static(t.single_particle_text; kwargs...)
     if t.show_particle_idx
-        return "Particle $(t.particle_idx) : " * text
+        return "P$(t.particle_idx): " * text
     else
         return text
     end
 end
-get_textline_sing_static(s::FwdScoreText) = "P[$(s.addr)]"
-get_textline_sing_static(s::RecipScoreText) = "1/Q[$(s.addr)]"
-get_textline_sing_static(s::SampledValue) = "$(s.addr)"
+get_textline_sing_static(s::FwdScoreText; addr_to_name=identity) = "P[$(addr_to_name(s.addr))]"
+get_textline_sing_static(s::RecipScoreText; addr_to_name=identity) = "1/Q[$(addr_to_name(s.addr))]"
+get_textline_sing_static(s::SampledValue; addr_to_name=identity) = "$(addr_to_name(s.addr))"

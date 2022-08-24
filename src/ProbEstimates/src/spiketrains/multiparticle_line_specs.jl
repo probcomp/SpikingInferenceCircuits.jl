@@ -105,7 +105,7 @@ end
 function get_line_in_multiparticle_spec(spec::MultiParticleText, trs, is_spiketrain_data, _, nest_all_at)
     text = get_line(spec.single_particle_text, trs[spec.particle_idx], is_spiketrain_data[spec.particle_idx]; nest_all_at)
     if spec.show_particle_idx
-        return "Particle $(spec.particle_idx) : " * text
+        return "P$(spec.particle_idx): " * text
     else
         return text
     end

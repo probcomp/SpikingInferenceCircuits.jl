@@ -207,16 +207,24 @@ function make_spiketrain_fig_numgame(trs, logweights, neurons_to_show_indices=1:
     propose_addr_topological_order = [:is_terminal, :terminal => :typ, :terminal => :n1, :terminal => :n2]
     
     addr_to_name = Dict(
-        :is_terminal => :is_term,
-        (:terminal => :typ) => :typ,
-        (:terminal => :n1) => :param1,
-        (:terminal => :n2) => :param2,
+        :is_terminal => :s,
+        (:terminal => :typ) => :τ,
+        (:terminal => :n1) => :n1,
+        (:terminal => :n2) => :n2,
+    )
+
+    addr_to_domain = Dict(
+        :is_terminal => [true, false],
+        (:terminal => :typ) => [:prime, :multiple_of, :interval],
+        (:terminal => :n1) => [i for i=1:100 if 1 ≤ i ≤ 10 || i % 5 == 0],
+        (:terminal => :n2) => 1:100,
+
     )
 
     doms = [
         [true, false],
         [:prime, :multiple_of, :interval],
-        1:100, 1:100
+        [i for i=1:100 if 2 ≤ i ≤ 10 || i % 5 == 0], 1:100
     ]
 
     max_weight_idx_at_each_time = [
@@ -228,17 +236,45 @@ function make_spiketrain_fig_numgame(trs, logweights, neurons_to_show_indices=1:
         # t == 0 ? (:init => :latents => :tree) : (:steps => t => :latents => :tree)
         return :init => :latents => :tree # PGibbs ALWAYS operates on the initial timestep's choices
     end
+
+    variables_vals_to_show_p_dists_for = [
+        (:is_terminal, [true, false]),
+        [:terminal => :typ, [:prime, :multiple_of, :interval]]
+    ]
+    variables_vals_to_show_q_dists_for = [
+        (:is_terminal, [true, false]),
+        [:terminal => :typ, [:prime, :multiple_of, :interval]]
+    ]
+    function val_to_label(val)
+        if val === true
+            "T"
+        elseif val === false
+            "F"
+        elseif val === :prime
+            ":p"
+        elseif val === :multiple_of
+            ":m"
+        elseif val === :interval
+            ":i"
+        else
+            error("unexpected value $val")
+        end
+    end
+
     return ProbEstimates.Spiketrains.draw_multiparticle_multistep_spiketrain_group_fig(
-        ProbEstimates.Spiketrains.value_neuron_scores_weight_autonorm_groups(
+        ProbEstimates.Spiketrains.value_neuron_scores_dists_weight_autonorm_groups(
             propose_addr_topological_order, doms, max_weight_idx_at_each_time[1], max_weight_idx_at_each_time,
-            neurons_to_show_indices, addr_to_name=(a -> addr_to_name[a]),
+            variables_vals_to_show_p_dists_for, variables_vals_to_show_p_dists_for,
+            neurons_to_show_indices; addr_to_name=(a -> addr_to_name[a]), val_to_label,
             mult_neurons_to_show_indices=1:50
         ),
         trs, logweights,
-        (propose_sampling_tree, assess_sampling_tree, propose_addr_topological_order);
+        (propose_sampling_tree, assess_sampling_tree, propose_addr_topological_order, addr_to_domain);
         timestep_length_to_latency_ratio=8/3,
         figure_title="Spikes from PGibbs Neurons for Concept Learning",
         time_to_nesting_addr,
+        resolution=(600, 600),
+        addr_to_name=(a -> addr_to_name[a]),
         kwargs...
     )
     # return ProbEstimates.Spiketrains.draw_spiketrain_group_fig(
@@ -252,11 +288,15 @@ function make_spiketrain_fig_numgame(trs, logweights, neurons_to_show_indices=1:
 end
 
 # Do with 1 rejuvenation sweep.  TODO: extend spiketrain-making code so it supports doing multiple rejuvenation sweeps
-# (unweighted_trs, weighted_trs) = do_smc_inference(trace_with_nums(late_nums), 50, 2, 1);
+(unweighted_trs, weighted_trs) = do_smc_inference(trace_with_nums(late_nums), 50, 2, 1);
 logweights_at_each_time = [[logweight for (trace, logweight) in weighted_traces_at_time] for weighted_traces_at_time in weighted_trs ]
 traces_at_each_time = [[trace for (trace, logweight) in weighted_traces_at_time] for weighted_traces_at_time in weighted_trs ]
 get_f() = make_spiketrain_fig_numgame(traces_at_each_time[2:4], logweights_at_each_time[2:4], 1:20)
-get_f()
+f = get_f()
+
+
+
+
 # function get_fig()
 #     for i=1:100
 #         try

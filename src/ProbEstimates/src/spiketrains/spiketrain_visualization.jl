@@ -9,17 +9,25 @@ get_color(spec::Spiketrains.ScoreLine) = spec.do_recip_score ? RECIP_SCORE_COLOR
 get_color(::Spiketrains.NormalizedWeight) = PARTICLE_WEIGHT_COLOR()
 get_color(::Spiketrains.LogNormalization) = AUTONORM_COLOR()
 get_color(s::Spiketrains.SubsidiarySingleParticleLineSpec) = get_color(s.spec)
+get_color(s::Spiketrains.DistLine) = s.is_p ? P_DIST_COLOR() : Q_DIST_COLOR()
 get_colors(groups::Vector{<:Union{Spiketrains.LabeledSingleParticleLineGroup, Spiketrains.LabeledMultiParticleLineGroup}}) =
     get_colors(reduce(vcat, g.line_specs for g in groups))
 get_colors(lines) = map(get_color, lines)
 
 rgbhex(r, g, b) = RGB(r/256, g/256, b/256)
 
-RECIP_SCORE_COLOR() = colorant"navy" # rgbhex(107, 47, 85) # rgbhex(229, 181, 211) # 
-FWD_SCORE_COLOR() = colorant"red" # rgbhex(48, 133, 133) # RGB(194/256, 230/256, 230/256) # colorant"red"
-VAR_VAL_COLOR() = colorant"green"
-PARTICLE_WEIGHT_COLOR() = colorant"coral"
-AUTONORM_COLOR() = colorant"indigo" #  colorant"violet"
+# RECIP_SCORE_COLOR() = colorant"navy" # rgbhex(107, 47, 85) # rgbhex(229, 181, 211) # 
+# FWD_SCORE_COLOR() = colorant"red" # rgbhex(48, 133, 133) # RGB(194/256, 230/256, 230/256) # colorant"red"
+# VAR_VAL_COLOR() = colorant"green"
+# PARTICLE_WEIGHT_COLOR() = colorant"coral"
+# AUTONORM_COLOR() = colorant"indigo" #  colorant"violet"
+RECIP_SCORE_COLOR() = colorant"black"
+FWD_SCORE_COLOR() = colorant"black"
+VAR_VAL_COLOR() = colorant"black"
+PARTICLE_WEIGHT_COLOR() = colorant"black"
+AUTONORM_COLOR() = colorant"black"
+P_DIST_COLOR() = colorant"black"
+Q_DIST_COLOR() = colorant"black"
 
 """
     draw_spiketrain_figure(
@@ -41,6 +49,13 @@ function draw_spiketrain_figure(args...; kwargs...)
     return f
 end
 
+#=
+group_labels[i] describes the labels for the `i`th level of grouping.
+group_labels[i] = (labels_and_lengths, offset_from_axis)
+`offset_from_axis` is the number of points to the right of the axis to draw this label.
+`labels_and_lengths` is an iterator over pairs `(label, length)` giving the label for a group
+and the number of primitive lines in the group.
+=#
 function get_spiketrain_figure(
     lines; # Vector of either a String to display, or a Vector{Float64} of spiketimes for a spiketrain line
     labels=String[], # Vector of labels for the first `length(labels)` lines
@@ -56,15 +71,18 @@ function get_spiketrain_figure(
     ax = f[1, 1] = Axis(f; title = figure_title, xlabel)
 
     draw_lines!(ax, lines, labels, colors, time, xmin, xmax)
-    draw_group_labels!(f, ax, group_labels, colors)
+    for (labels_and_lengths, offset_from_axis) in group_labels
+        draw_group_labels!(f, ax, labels_and_lengths, offset_from_axis, colors)
+    end
     ax.yticklabelsvisible=false
 
     return f
 end
 
-draw_group_labels!(f, ax, group_labels, colors) = draw_group_labels!(f, f.layout, ax, group_labels, colors)
-function draw_group_labels!(f, layout, ax, group_labels, colors)
-    colsize!(layout, 1, Relative(0.7))
+draw_group_labels!(f, ax, group_labels, offset_from_axis, colors) = draw_group_labels!(f, f.layout, ax, group_labels, offset_from_axis, colors)
+function draw_group_labels!(f, layout, ax, group_labels, offset_from_axis, colors)
+    colsize!(layout, 1, Relative(0.68))
+    println("group_labels = $group_labels")
     endpoint_indices = get_group_endpoint_indices(group_labels)
 
     bot = 1
@@ -88,9 +106,9 @@ function draw_group_labels!(f, layout, ax, group_labels, colors)
             ydiff = pos[2][2] - pos[1][2]
             y_increase = (ydiff / 2) * 0.8
             [
-                rhs(pos[st], p) + Point2(0, y_increase), rhs(pos[st], p) + Point2(5, y_increase),
-                rhs(pos[st], p) + Point2(5, y_increase), rhs(pos[nd], p) + Point2(5, -y_increase),
-                rhs(pos[nd], p) + Point2(5, -y_increase), rhs(pos[nd], p) + Point2(0, -y_increase)
+                rhs(pos[st], p) + Point2(offset_from_axis, y_increase), rhs(pos[st], p) + Point2(offset_from_axis + 5, y_increase),
+                rhs(pos[st], p) + Point2(offset_from_axis + 5, y_increase), rhs(pos[nd], p) + Point2(offset_from_axis + 5, -y_increase),
+                rhs(pos[nd], p) + Point2(offset_from_axis + 5, -y_increase), rhs(pos[nd], p) + Point2(offset_from_axis, -y_increase)
             ]
         end
         for (st, nd) in endpoint_indices
@@ -102,7 +120,7 @@ function draw_group_labels!(f, layout, ax, group_labels, colors)
     textpositions = [
         lift(ax.elements[:yaxis].tickpositions, ax.scene.px_area) do pos, p
             (
-                (p.origin + p.widths)[1] + 20,
+                (p.origin + p.widths)[1] + 10 + offset_from_axis,
                 (pos[st][2] + pos[nd][2]) / 2
             )
         end
@@ -148,7 +166,7 @@ function draw_lines!(ax, lines, labels, colors, time, xmin, xmax; hide_y_decorat
     @assert length(lines) == length(colors)
 
     for (line, pos, color) in zip(lines, ypositions, colors)
-        draw_line!(ax, line, pos, trainheight, time, color)
+        draw_line!(ax, line, pos, trainheight, time, color; n_lines=length(lines))
     end
 
     xlims!(ax, compute_xlims(lines, xmin, xmax))
@@ -176,12 +194,15 @@ function compute_xlims(trains, xmin, xmax)
 end
 
 # Spiketrain line
-function draw_line!(ax, spiketimes::Vector, ypos, height, current_time, color=RGB(0, 0, 0); minheight=10, drawpoints=true)
+function draw_line!(ax, spiketimes::Vector, ypos, height, current_time, color=RGB(0, 0, 0);
+    drawpoints=false, n_lines=nothing,
+    minheight= isnothing(n_lines) ? 2 : n_lines/200
+)
     @assert all(t isa Real for t in spiketimes) "a spiketimes vector (for a single y position) is not a vector of real numbers"
     
     if drawpoints
-        times = [Point2(t - current_time, ypos) for t in spiketimes]
-        scatter!(ax, times; color, markersize=3)
+        times = Point2[Point2(t - current_time, ypos) for t in spiketimes]
+        scatter!(ax, times; color, markersize=2)
     else
         height = max(minheight, height)
         y1 = ypos - height/2; y2 = ypos + height/2
@@ -191,13 +212,13 @@ function draw_line!(ax, spiketimes::Vector, ypos, height, current_time, color=RG
         ]...)
 
         if !isempty(times)
-            linesegments!(ax, times; color)
+            linesegments!(ax, times; color, linewidth=1)
         end
     end
 end
 
 # Text line
-draw_line!(ax, text::String, ypos, height, current_time, color=RGB(0, 0, 0)) =
+draw_line!(ax, text::String, ypos, height, current_time, color=RGB(0, 0, 0); n_lines=nothing) =
     text!(ax, text; position = (height, ypos), align = (:left, :center), color, textsize = 16*height)
 
 end

@@ -83,7 +83,7 @@ traces_at_each_time = [[trace for (trace, logweight) in weighted_traces_at_time]
 f, (times, group_labels, colors) = make_spiketrain_fig(
     traces_at_each_time[2:4], logweights_at_each_time[2:4], 1:100;
     figure_title="Spikes from SMC Neurons for 3D Tracking",
-    resolution=(800, 600), return_metadata=true
+    resolution=(600, 600), return_metadata=true
 ); f
 
 

@@ -36,15 +36,18 @@ default_t_to_nesting_address(t) =
     end
 
 # Now `trs`, `log_trace_weights` are indexed by `[time][particle_index]`.
-function draw_multiparticle_multistep_spiketrain_group_fig(groupspecs, trs, log_trace_weights,
-    (prop_sample_tree, assess_sample_tree, prop_addr_top_order);
+function draw_multiparticle_multistep_spiketrain_group_fig(
+    (groupspecs, layer_labels_and_group_lengths), trs, log_trace_weights,
+    (prop_sample_tree, assess_sample_tree, prop_addr_top_order, addr_to_domain);
     resolution=(1280, 720), time_to_nesting_addr=default_t_to_nesting_address,
     # Default: ~1.1 for weight readout, .1 for autonormalization excitatory spikes, 1 for weight readout
     timestep_length_to_latency_ratio=2.5,
     return_metadata=false,
+    show_cortex_layer_groups=true,
+    first_label_length=118,
+    addr_to_name=identity,
     kwargs...
 )
-
     ## Get lines over multiple timesteps
     ms_per_timestep = timestep_length_to_latency_ratio * Latency()
     lines = []
@@ -53,7 +56,7 @@ function draw_multiparticle_multistep_spiketrain_group_fig(groupspecs, trs, log_
         lines_now = get_lines_for_multiparticle_spec_groups(
             groupspecs, trs_at_step, 
             logweights_at_step,
-            (prop_sample_tree, assess_sample_tree, prop_addr_top_order);
+            (prop_sample_tree, assess_sample_tree, prop_addr_top_order, addr_to_domain);
             nest_all_at=time_to_nesting_addr(t_plus_1 - 1)
         )
         if isempty(lines)
@@ -72,7 +75,23 @@ function draw_multiparticle_multistep_spiketrain_group_fig(groupspecs, trs, log_
     # for now, placeholder:
     # group_labels = [(repr(g.label_spec), length(g.line_specs)) for g in groupspecs]
 
-    group_labels = get_static_group_labels_for_multiparticle_spec_groups(groupspecs)
+    group_labels_and_lengths = get_static_group_labels_for_multiparticle_spec_groups(groupspecs; addr_to_name)
+    ctr = 1
+    layer_label_and_full_lengths = []
+    for (label, len) in layer_labels_and_group_lengths
+        push!(layer_label_and_full_lengths, (label, sum(l for (_, l) in group_labels_and_lengths[ctr:ctr + len - 1])))
+        ctr += len
+    end
+    
+
+    if show_cortex_layer_groups
+        group_labels = [
+            (group_labels_and_lengths, 0),
+            (layer_label_and_full_lengths, first_label_length)
+        ]
+    else
+        group_labels = [(group_labels_and_lengths, 0)]
+    end
 
     colors = SpiketrainViz.get_colors(groupspecs)
     viz = SpiketrainViz.draw_spiketrain_figure(lines; group_labels, xmin=0, resolution, colors, kwargs...)

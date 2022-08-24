@@ -24,6 +24,7 @@ using Gen
 nest(::Nothing, b) = b
 nest(a, b) = a => b
 nest(a::Pair, b) = a.first => nest(a.second, b)
+nest_add_val(a::Pair, b) = nest(nest(a, b), :val)
 
 abstract type LineSpec end
 

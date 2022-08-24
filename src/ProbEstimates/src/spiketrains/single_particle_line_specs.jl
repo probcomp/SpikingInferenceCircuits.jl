@@ -121,3 +121,19 @@ function get_label(spec::ScoreLine)
         return "$val_label count - neuron $(spec.line_to_show.idx)"
     end
 end
+
+###
+struct DistLine <: SpiketrainSpec
+    is_p::Bool
+    addr
+    value
+    line_to_show::SpikelineInScore
+end
+PDistLine(args...) = DistLine(true, args...)
+QDistLine(args...) = DistLine(false, args...)
+function get_line(spec::DistLine, tr, trains; nest_all_at)
+    neuron_times = (spec.is_p ? trains.p_dist_trains : trains.q_dist_trains)[spec.addr][spec.value]
+    return get_dist_line(spec.line_to_show, neuron_times)
+end
+get_dist_line(::CountAssembly, neuron_times) = sort(reduce(vcat, neuron_times))
+get_dist_line(n::NeuronInCountAssembly, neuron_times) = neuron_times[n.idx]

@@ -44,7 +44,7 @@ max_interval_size() = 35
 n2_pvec(typ, n1) =
     if typ == :prime || typ == :multiple_of
         # in either case, n2 is irrelevant
-        onehot(1, 1:100)
+        onehot(2, 1:100)
     elseif typ == :interval
         # sample n2 from among those numbers greater than n1
         normalize([n1 < i ≤ n1 + max_interval_size() && (i - n1) % 4 == 0 ? 1. : 0. for i=1:100])
