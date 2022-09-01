@@ -16,8 +16,8 @@ end
 @tryrm CircuitViz
 
 Pkg.add(url="https://github.com/femtomc/CircuitViz.jl")
-Pkg.add(url="git@github.com:probcomp/Circuits.jl.git")
-Pkg.add(url="git@github.com:probcomp/SpikingCircuits.jl.git")
+Pkg.add(url="https://github.com/probcomp/Circuits.jl.git")
+Pkg.add(url="https://github.com/probcomp/SpikingCircuits.jl.git")
 
 Pkg.develop(path="src/ProbEstimates")
 Pkg.develop(path="src/CPTs")

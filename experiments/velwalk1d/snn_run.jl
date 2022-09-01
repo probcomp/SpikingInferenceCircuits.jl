@@ -23,9 +23,9 @@ NOBS()     = length(obs_domains())
 NVARS()    = NLATENTS() + NOBS()
 
 ### Run-specific hyperparams:
-NSTEPS() = 2
+NSTEPS() = 10
 RUNTIME() = INTER_OBS_INTERVAL() * (NSTEPS() - 0.1)
-NPARTICLES() = 2
+NPARTICLES() = 10
 
 failure_prob_bound = bound_on_overall_failure_prob(NSTEPS(), NVARS(), NPARTICLES())
 println("Hyperparameters set so the probability the circuit fails due to an issue we check for is less than $failure_prob_bound.")

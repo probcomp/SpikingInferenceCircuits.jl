@@ -1,7 +1,7 @@
 using Distributions: Erlang, Poisson, cdf
 ExpectedLatency()    = 25.
-SampleAssemblySize() = 40
-ScoreAssemblySize()  = 40
+SampleAssemblySize() = 400
+ScoreAssemblySize()  = 400
 MaxNeuronRate()      = 0.1 # KHz
 MinProb()            = 0.1
 
