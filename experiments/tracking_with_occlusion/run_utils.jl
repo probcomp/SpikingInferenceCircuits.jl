@@ -8,13 +8,20 @@ function get_returned_obs(gt_tr)
     return (filtercm(firstcm), map(filtercm, restcms))
 end
 
-obs_choicemap_to_vec_of_vec(ch) = [
-    [
-        ch[:img_inner => x => y => :pixel_color => :color => :val]
-        for y=1:ImageSideLength()
-    ]
-    for x=1:ImageSideLength()
-]
+function obs_choicemap_to_vec_of_vec(ch)
+    try
+        [
+            [
+                ch[:img_inner => x => y => :pixel_color => :color => :val]
+                for y=1:ImageSideLength()
+            ]
+            for x=1:ImageSideLength()
+        ]
+    catch e
+        display(ch)
+        throw(e)
+    end
+end
 
 ### Inference visualization:
 function make_gt_particle_viz(gt_tr, unweighted_inferred_trs)
@@ -33,16 +40,16 @@ function make_gt_particle_viz_img_only(gt_tr, unweighted_inferred_trs)
 end
 
 ### Spiketrain visualization:
-# function surround3(ch, a, dom)
-#     v = ch[a => :val]
-#     if v-1 in dom && v+1 in dom
-#         return (v-1):v+1
-#     elseif v-1 in dom && v-2 in dom
-#         return (v-2):v
-#     else
-#         return v:(v+2)
-#     end
-# end
+function surround3(ch, a, dom)
+    v = ch[ProbEstimates.Spiketrains.nest(a, :val)]
+    if v-1 in dom && v+1 in dom
+        return (v-1):v+1
+    elseif v-1 in dom && v-2 in dom
+        return (v-2):v
+    else
+        return v:(v+2)
+    end
+end
 
 # latent_domains_for_viz_mps(ch)     = (
 #     occₜ = surround3(ch, :occₜ, positions(OccluderLength())),
@@ -95,14 +102,42 @@ function make_spiketrain_fig_mps(trs_at_each_time, logweights_at_each_time, neur
         findmax(arr)[2] for arr in logweights_at_each_time
     ]
 
+    addr_to_domain = Dict(
+        :occₜ => positions(OccluderLength()),
+        :xₜ => positions(SquareSideLength()), :yₜ => positions(SquareSideLength()),
+        :vxₜ => Vels(), :vyₜ => Vels()
+    )
+    variables_vals_to_show_p_dists_for = [
+        (:vxₜ => surround3(get_choices(trs_at_each_time[1][max_weight_idx_at_each_time[1]]), :steps => 1 => :latents => :vxₜ, Vels()))
+    ]
+    variables_vals_to_show_q_dists_for = [
+        (:vxₜ => surround3(get_choices(trs_at_each_time[1][max_weight_idx_at_each_time[1]]), :steps => 1 => :latents => :vxₜ, Vels()))
+    ]
+
+    addr_to_name(x) =
+        if x == :vxₜ
+            :ẋ
+        elseif x == :vyₜ
+            :ẏ
+        elseif x == :xₜ
+            :x
+        elseif x == :yₜ
+            :y
+        else
+            @assert x == :occₜ
+            :occ
+        end
+
     return ProbEstimates.Spiketrains.draw_multiparticle_multistep_spiketrain_group_fig(
-        ProbEstimates.Spiketrains.value_neuron_scores_weight_autonorm_groups(
-            keys(doms), values(doms), max_weight_idx_at_each_time[1], sort(unique(max_weight_idx_at_each_time)), neurons_to_show_indices
+        ProbEstimates.Spiketrains.value_neuron_scores_dists_weight_autonorm_groups(
+            keys(doms), values(doms), max_weight_idx_at_each_time[1], sort(unique(max_weight_idx_at_each_time)),
+            variables_vals_to_show_p_dists_for, variables_vals_to_show_q_dists_for,
+            neurons_to_show_indices; addr_to_name
         ),
         trs_at_each_time, logweights_at_each_time,
-        (propose_sampling_tree, assess_sampling_tree, propose_addr_topological_order);
+        (propose_sampling_tree, assess_sampling_tree, propose_addr_topological_order, addr_to_domain);
         timestep_length_to_latency_ratio=5/3,
-        figure_title="Spikes from SMC Neurons for Mental Physics Simulation",
+        figure_title="Spikes from SMC Neurons for Mental Simulation", addr_to_name,
         kwargs...
     )
 

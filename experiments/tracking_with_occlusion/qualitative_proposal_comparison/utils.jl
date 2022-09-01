@@ -174,7 +174,7 @@ function plot_obs_with_particle_dist(tr, t, probability_matrix; title="")
     return f
 end
 function plot_obs_particle_dists(gt_tr, t, titles, matrices)
-    f = Figure(; resolution=(2000, 600))
+    f = Figure(; resolution=(2000, 450))
     make_legend = nothing
     for (i, (title, matrix)) in enumerate(zip(titles, matrices))
         ml = plot_obs_with_particle_dist!(f[1, i], gt_tr, t, matrix; title)
@@ -241,14 +241,14 @@ function plot_quant_comparison!(ax, gt_tr)
     top_down_distribution = get_top_down_distribution(gt_tr)
     hybrid_distribution = get_hybrid_distribution(gt_tr)
 
-    ns = 1:100
+    ns = 1:20
     specs = [
         ("Exact posterior", get_raw_sample, exact_inference_results, :black, :solid),
         ("Data-Driven Proposal Distribution", get_raw_sample, bottom_up_distribution, :blue, :dash),
         ("Model-Driven Proposal Distribution", get_raw_sample, top_down_distribution, :green, :dash),
-        ("Data-Driven Proposal + Model-Based Scoring", get_is_sample, bottom_up_distribution, :blue, :solid),
-        ("Model-Driven Proposal Distribution + Model-Based Scoring", get_is_sample, top_down_distribution, :green, :solid),
-        ("Hybrid Proposal + Model-Based Scoring", get_is_sample, hybrid_distribution, :red, :solid),
+        ("Data-Driven Proposal\n+ Model-Based Scoring", get_is_sample, bottom_up_distribution, :blue, :solid),
+        ("Model-Driven Proposal Distribution\n+ Model-Based Scoring", get_is_sample, top_down_distribution, :green, :solid),
+        ("Hybrid Proposal\n+ Model-Based Scoring", get_is_sample, hybrid_distribution, :red, :solid),
     ]
     plots = []
     labels = []
@@ -275,7 +275,7 @@ end
 
 function make_plot(gt_tr)
     f = Figure()
-    ax = Axis(f[1, 1], ylabel="E[P(xₜ | xₜ₋₁, yₜ)] of generated sample", xlabel="Number of particles used for inference"; textsize=20)
+    ax = Axis(f[1, 1], ylabel="E[P(xₜ | xₜ₋₁, yₜ)] of generated sample", xlabel="Number of particles used for inference"; textsize=26)
     plot_quant_comparison!(ax, gt_tr)
     f
 end
@@ -283,31 +283,31 @@ end
 function make_plot_with_visual(gt_tr)
     f = Figure()
     plot_scenario!(f[1, 1], gt_tr)
-    quant_ax = Axis(f[2, 1], ylabel="E[P(xₜ | xₜ₋₁, yₜ)] of generated sample", xlabel="Number of particles used for inference", textsize=20)
+    quant_ax = Axis(f[2, 1], ylabel="E[P(xₜ | xₜ₋₁, yₜ)] of generated sample", xlabel="Number of particles used for inference", textsize=26)
     plot_quant_comparison!(quant_ax, gt_tr)
     f
 end
 
 function make_plots_with_visuals(title_tr_pairs)
-    f = Figure(; resolution=(100 + 400 * length(title_tr_pairs), 800))
+    f = Figure(; resolution=(2000, 600))#(100 + 400 * length(title_tr_pairs), 800))
     plots, labels = nothing, nothing
     trips = []
     for (i, (title, gt_tr)) in enumerate(title_tr_pairs)
         plot_scenario!(f[1, i], gt_tr; title, do_predicted_vel=true)
-        quant_ax = Axis(f[2, i], ylabel="E[P(xₜ | xₜ₋₁, yₜ)] of generated sample", xlabel="Number of particles used for inference", textsize=20)
+        quant_ax = Axis(f[2, i], ylabel="E[P(xₜ | xₜ₋₁, yₜ)] of generated sample", xlabel="Number of particles used for inference", textsize=26)
         plots, labels, trips_ = plot_quant_comparison!(quant_ax, gt_tr)
         push!(trips, trips_)
     end
 
-    leg_layout = f[3, :] = GridLayout()
-    leg_layout[1, 1] = l1 = Legend(leg_layout[1, 1], map(x -> x[1], plots), convert(Vector{String}, labels))
-    leg_layout[1, 2] = l2 = l = Legend(leg_layout[1, 2],
+    leg_layout = f[:, length(title_tr_pairs) + 1] = GridLayout()
+    leg_layout[1, 1] = l2 = Legend(leg_layout[1, 2],
         [arrowshape()],
         ["MAP Motion Prediction"]
     )
+    leg_layout[2, 1] = l1 = Legend(leg_layout[1, 1], map(x -> x[1], plots), convert(Vector{String}, labels))
     l1.tellheight = true; l2.tellheight = true
 
     leg_layout.tellheight=true
-    rowsize!(f.layout, 1, Relative(0.3))
+    rowsize!(f.layout, 1, Relative(0.4))
     (f, trips)
 end

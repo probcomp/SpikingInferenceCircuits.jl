@@ -33,7 +33,7 @@ do_inference(tr; n_particles=10) = dynamic_model_smc(
 # Run inference + make visualizations
 VelOneOffProb() = 0.1
 gt_tr = generate_occluded_bounce_tr();
-(unweighted_trs, weighted_trs) = do_inference(gt_tr; n_particles=30);
+(unweighted_trs, weighted_trs) = do_inference(gt_tr; n_particles=10);
 # (fig, t) = make_gt_particle_viz_img_only(gt_tr, unweighted_trs); fig
 
 # Some code from debugging:
@@ -76,7 +76,9 @@ gt_tr = generate_occluded_bounce_tr();
 logweights_at_each_time = [[logweight for (trace, logweight) in weighted_traces_at_time] for weighted_traces_at_time in weighted_trs ]
 traces_at_each_time = [[trace for (trace, logweight) in weighted_traces_at_time] for weighted_traces_at_time in weighted_trs ]
 f = make_spiketrain_fig_mps(
-    traces_at_each_time[2:4], logweights_at_each_time[2:4], 1:20; nest_all_at=(:steps => 1 => :latents)
+    traces_at_each_time[2:4], logweights_at_each_time[2:4], 1:20;
+    nest_all_at=(:steps => 1 => :latents),
+    resolution=(600, 600)
 )
 
 # Draw observations:

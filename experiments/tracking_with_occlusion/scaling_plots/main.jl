@@ -1,5 +1,5 @@
 using Distributions
-using GLMakie
+using CairoMakie
 
 include("space_scaling/saved_scaling_data.jl")
 include("variance_scaling/fracvars.jl")
@@ -70,17 +70,18 @@ function auxvar_legend!(pos, (noaux, withaux))
 end
 
 function make_figure()
-    f = Figure(;resolution=(1500, 600))
+    f = Figure(;resolution=(2000, 450))
 
     singlepix_variance_scaling_plot!(f[1, 1])
     singlepix_latency_scaling_plot!(f[1, 2])
     (_, noaux, withaux) = image_variance_scaling_plot!(f[1, 3])
-    auxvar_legend!(f[2, :], (noaux, withaux))
+    l = auxvar_legend!(f[1, 4], (noaux, withaux))
+    l.tellheight=false
 
     for (i, l) in zip(1:3, map(x -> "($x)", ["a", "b", "c"]))
         Label(f.layout[1, i, BottomLeft()], l,
             textsize = 26,
-            padding = (0, 0, 0, 25)
+            # padding = (0, 0, 0, 25)
         )
     end
 

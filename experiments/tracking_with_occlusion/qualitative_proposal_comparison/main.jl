@@ -150,7 +150,7 @@ function plot_obs_with_particle_dist(tr, t, probability_matrix; title="")
     return f
 end
 function plot_obs_particle_dists(gt_tr, t, titles, matrices)
-    f = Figure(; resolution=(2000, 600))
+    f = Figure(; resolution=(2000, 400))
     make_legend = nothing
     for (i, (title, matrix)) in enumerate(zip(titles, matrices))
         ml = plot_obs_with_particle_dist!(f[1, i], gt_tr, t, matrix; title)
@@ -158,7 +158,8 @@ function plot_obs_particle_dists(gt_tr, t, titles, matrices)
             make_legend = ml
         end
     end
-    make_legend(f[2, :])
+    l = make_legend(f[1, end+1])
+    l.tellheight=false
     return f
 end
 
@@ -239,7 +240,7 @@ resampled_top_down_matrix = samples_to_matrix(resampled_top_down_samples)
 resampled_hybrid_matrix = samples_to_matrix(resampled_hybrid_samples)
 
 f = plot_obs_particle_dists(gt_tr, 2,
-    ["Exact Posterior", "Data-Driven Proposal Distribution", "$N-Particle Data-Driven Proposal + Model-Based Scoring", "$N-Particle Hybrid Proposal + Model-Based Scoring"],
+    ["Exact Posterior", "Data-Driven\nProposal Distribution", "$N-Particle Data-Driven Proposal\n+ Model-Based Scoring", "$N-Particle Hybrid Proposal\n+ Model-Based Scoring"],
     [exact_inference_results, bottom_up_distribution, resampled_bottom_up_matrix, resampled_top_down_matrix]
     # , bottom_up_matrix]
 )
