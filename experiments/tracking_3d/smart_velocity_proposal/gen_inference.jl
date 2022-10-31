@@ -7,6 +7,7 @@ includet("../model.jl")
 includet("../ab_viz.jl")
 include("deferred_inference.jl")
 
+### Set hyperparameters ###
 ProbEstimates.MinProb() = 0.01
 println("MinProb() = $(MinProb())")
 # ProbEstimates.use_perfect_weights!()
@@ -32,6 +33,8 @@ cmap = get_selected(make_deterministic_trace(), select(:init, :steps => 1, :step
 tr, w = generate(model, (NSTEPS,), cmap)
 observations = get_dynamic_model_obs(tr);
 
+### Run inference, and record the resulting traces.
+### Do this multiple times in case some runs come back with -Inf weights.
 final_particle_set = []
 unweighted_traces_at_each_step_vector = []
 weighted_traces_vec = []
@@ -75,11 +78,15 @@ length(final_particle_set)
 
 
 ### Spiketrain visualization ###
-includet("spiketrain_fig.jl")
+includet("spiketrain_fig.jl") ### File with code for this specific spiketrain visualization
 
+### Get the particle weights and traces at each timestep
 weighted_traces = first(weighted_traces_vec)
 logweights_at_each_time = [[logweight for (trace, logweight) in weighted_traces_at_time] for weighted_traces_at_time in weighted_traces ]
 traces_at_each_time = [[trace for (trace, logweight) in weighted_traces_at_time] for weighted_traces_at_time in weighted_traces ]
+
+### Make the Makie figure with the animation.
+### `t` controls which window of time is shown on screen.
 (f, t), (times, group_labels, colors) = make_anim_spiketrain_fig(
     traces_at_each_time[3:7], logweights_at_each_time[3:7], 1:100;
     figure_title="Spikes from SMC Neurons for 3D Tracking",
@@ -88,7 +95,8 @@ traces_at_each_time = [[trace for (trace, logweight) in weighted_traces_at_time]
 ); t[] = 45; GLMakie.activate!(); f
 
 
-record(f, "spiketrain.gif", 0:100;
+### Animate time passing.
+record(f, "spiketrain2.gif", 0:100;
         framerate = 10) do tval
     t[] = tval
 end
