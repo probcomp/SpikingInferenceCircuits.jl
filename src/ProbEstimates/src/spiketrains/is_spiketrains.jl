@@ -59,7 +59,7 @@ function sample_is_spiketimes_for_trace(
     val_trains = value_trains(valtimes, tr, MaxRate(), K_recip(), wta_memory; nest_all_at)
     recip_times, all_q_times = recip_spiketimes(valtimes, propose_addr_topological_order, [addr_to_domain[a] for a in propose_addr_topological_order], tr, AssemblySize(), MaxRate(), K_recip(), to_ready_spike_dist; nest_all_at, vars_disc_to_cont)
     fwd_times, all_p_times  = fwd_spiketimes(
-        fwd_score_ready_times(valtimes, assess_sampling_tree),
+        fwd_score_ready_times(valtimes, assess_sampling_tree, inter_sample_time_dist),
         keys(assess_sampling_tree), [addr_to_domain[a] for a in keys(assess_sampling_tree)], tr, AssemblySize(), MaxRate(), K_fwd(), to_ready_spike_dist; nest_all_at, vars_disc_to_cont
     )
             
@@ -72,9 +72,14 @@ sample_is_spiketimes_for_trace(tr, propose_sampling_tree, assess_sampling_tree, 
         nest_all_at, vars_disc_to_cont
     )
 
-fwd_score_ready_times(propose_ready_times, assess_sampling_tree) = Dict(
+fwd_score_ready_times(propose_ready_times, assess_sampling_tree, inter_sample_time_dist) = Dict(
     # We can score an address once it's value has been proposed, and all it's parents' values have been proposed
-    addr => reduce(max, (get(propose_ready_times, a, 0.) for a in assess_sampling_tree[addr]); init=get(propose_ready_times, addr, 0.))
+    addr => (reduce(max,
+        vcat(
+            [get(propose_ready_times, addr, 0.)],
+            [get(propose_ready_times, a, 0.) for a in assess_sampling_tree[addr]]
+        ); init=get(propose_ready_times, addr, 0.)
+    ) + rand(inter_sample_time_dist))
     for addr in keys(assess_sampling_tree)
 )
 
@@ -352,5 +357,5 @@ function to_int(v)
 end
 
 ### Some default distributions for spiketrain production ###
-DefaultInterSampleTimeDist() = Exponential(1 / (MaxRate() * AssemblySize()))
+DefaultInterSampleTimeDist() = Exponential(1 / (MaxRate() * 4.5))
 DefaultToReadySpikeDist() = Exponential(1 / (AssemblySize() * MaxRate()))

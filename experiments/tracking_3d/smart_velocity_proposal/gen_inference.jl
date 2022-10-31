@@ -26,7 +26,7 @@ two_timestep_proposal_dumb = @compile_2timestep_proposal(initial_proposal, step_
 
 @load_generated_functions()
 
-NSTEPS = 4
+NSTEPS = 8
 NPARTICLES = 10
 cmap = get_selected(make_deterministic_trace(), select(:init, :steps => 1, :steps => 2, :steps => 3, :steps => 4))
 tr, w = generate(model, (NSTEPS,), cmap)
@@ -80,13 +80,18 @@ includet("spiketrain_fig.jl")
 weighted_traces = first(weighted_traces_vec)
 logweights_at_each_time = [[logweight for (trace, logweight) in weighted_traces_at_time] for weighted_traces_at_time in weighted_traces ]
 traces_at_each_time = [[trace for (trace, logweight) in weighted_traces_at_time] for weighted_traces_at_time in weighted_traces ]
-f, (times, group_labels, colors) = make_spiketrain_fig(
-    traces_at_each_time[2:4], logweights_at_each_time[2:4], 1:100;
+(f, t), (times, group_labels, colors) = make_anim_spiketrain_fig(
+    traces_at_each_time[3:7], logweights_at_each_time[3:7], 1:100;
     figure_title="Spikes from SMC Neurons for 3D Tracking",
-    resolution=(600, 600), return_metadata=true
-); f
+    resolution=(750, 600), return_metadata=true,
+    first_label_length=170
+); t[] = 45; GLMakie.activate!(); f
 
 
+record(f, "spiketrain.gif", 0:100;
+        framerate = 10) do tval
+    t[] = tval
+end
 
 
 

@@ -94,7 +94,7 @@ function draw_multiparticle_multistep_spiketrain_group_fig(
     end
 
     colors = SpiketrainViz.get_colors(groupspecs)
-    viz = SpiketrainViz.draw_spiketrain_figure(lines; group_labels, xmin=0, resolution, colors, kwargs...)
+    viz = SpiketrainViz.draw_spiketrain_figure_animated(lines; group_labels, xmin=0, resolution, colors, kwargs...)
 
     if return_metadata
         return (viz, (lines, group_labels, colors))

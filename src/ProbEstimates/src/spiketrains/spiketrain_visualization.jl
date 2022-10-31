@@ -2,7 +2,7 @@ module SpiketrainViz
 using CairoMakie, Colors
 import ..Spiketrains
 
-export draw_spiketrain_figure, get_spiketrain_figure
+export draw_spiketrain_figure, get_spiketrain_figure, draw_spiketrain_figure_animated
 
 get_color(::Spiketrains.VarValLine) = VAR_VAL_COLOR()
 get_color(spec::Spiketrains.ScoreLine) = spec.do_recip_score ? RECIP_SCORE_COLOR() : FWD_SCORE_COLOR()
@@ -48,6 +48,13 @@ function draw_spiketrain_figure(args...; kwargs...)
 
     return f
 end
+function draw_spiketrain_figure_animated(args...; kwargs...)
+    t = Observable(0.)
+    f = get_spiketrain_figure(args...; kwargs..., time=t)
+    display(f)
+
+    return (f, t)
+end
 
 #=
 group_labels[i] describes the labels for the `i`th level of grouping.
@@ -81,7 +88,7 @@ end
 
 draw_group_labels!(f, ax, group_labels, offset_from_axis, colors) = draw_group_labels!(f, f.layout, ax, group_labels, offset_from_axis, colors)
 function draw_group_labels!(f, layout, ax, group_labels, offset_from_axis, colors)
-    colsize!(layout, 1, Relative(0.68))
+    colsize!(layout, 1, Relative(0.6))
     println("group_labels = $group_labels")
     endpoint_indices = get_group_endpoint_indices(group_labels)
 
@@ -148,6 +155,10 @@ function get_group_endpoint_indices(group_labels)
 end
 
 function draw_lines!(ax, lines, labels, colors, time, xmin, xmax; hide_y_decorations=true)
+    if !(time isa Observable)
+        time = Observable(time)
+    end
+
     lines, labels, colors = map(reverse, (lines, labels, colors))
 
     if hide_y_decorations
@@ -169,7 +180,10 @@ function draw_lines!(ax, lines, labels, colors, time, xmin, xmax; hide_y_decorat
         draw_line!(ax, line, pos, trainheight, time, color; n_lines=length(lines))
     end
 
-    xlims!(ax, compute_xlims(lines, xmin, xmax))
+    xlims!(ax, (time[], time[] + 50))
+    onany(time) do t # update the limits at the given times
+        xlims!(ax, (t[], t[] + 50))
+    end
     ylims!(ax, (first(ypositions) - 1, last(ypositions) + 1))
 
     if !isempty(labels)
@@ -200,14 +214,24 @@ function draw_line!(ax, spiketimes::Vector, ypos, height, current_time, color=RG
 )
     @assert all(t isa Real for t in spiketimes) "a spiketimes vector (for a single y position) is not a vector of real numbers"
     
+    if !(current_time isa Observable)
+        current_time = Observable(current_time)
+    end
+
     if drawpoints
-        times = Point2[Point2(t - current_time, ypos) for t in spiketimes]
+        # times = @lift(Point2[Point2(t - $current_time, ypos) for t in spiketimes])
+        times = Point2[Point2(t, ypos) for t in spiketimes]
         scatter!(ax, times; color, markersize=2)
     else
         height = max(minheight, height)
-        y1 = ypos - height/2; y2 = ypos + height/2
+        y1 = ypos - height/2
+        y2 = ypos + height/2
+        # times = @lift(vcat([
+        #     [Point2(t - $current_time, y1), Point2(t - $current_time, y2)]
+        #     for t in spiketimes
+        # ]...))
         times = vcat([
-            [Point2(t - current_time, y1), Point2(t - current_time, y2)]
+            [Point2(t, y1), Point2(t, y2)]
             for t in spiketimes
         ]...)
 
