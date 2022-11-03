@@ -223,7 +223,7 @@ function draw_line!(ax, spiketimes::Vector, ypos, height, current_time, color=RG
         times = Point2[Point2(t, ypos) for t in spiketimes]
         scatter!(ax, times; color, markersize=2)
     else
-        height = max(minheight, height)
+        height = max(minheight, height)*2
         y1 = ypos - height/2
         y2 = ypos + height/2
         # times = @lift(vcat([
@@ -236,7 +236,7 @@ function draw_line!(ax, spiketimes::Vector, ypos, height, current_time, color=RG
         ]...)
 
         if !isempty(times)
-            linesegments!(ax, times; color, linewidth=1)
+            linesegments!(ax, times; color, linewidth=2)
         end
     end
 end

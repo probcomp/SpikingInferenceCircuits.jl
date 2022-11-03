@@ -125,5 +125,97 @@ function make_anim_spiketrain_fig(trs_at_each_time, logweights_at_each_time, neu
     )
 end
 
+
+function make_anim_spiketrain_fig_and_get_all_L4(trs_at_each_time, logweights_at_each_time, neurons_to_show_indices=1:10; kwargs...)
+    n_particles = length(first(trs_at_each_time))
+
+    ProbEstimates.Spiketrains.SpiketrainViz.CairoMakie.activate!()
+
+    # Hard-code the dependency graph for the `P` and `Q` step generative functions.
+    # (We could recover this with static compilation, but I haven't implemented that.)
+    assess_sampling_tree = Dict(
+        # :dx => [], :vyₜ => [], :vzₜ => [],
+        # :xₜ => [:dx], :yₜ => [:vyₜ], :zₜ => [:vzₜ],
+        :dx => [],
+        :x => [:dx], :y => [], :z => [],
+        :true_ϕ => [:x, :y, :z],
+        :true_θ => [:x, :y, :z],
+        :r => [:x, :y, :z, :true_θ, :true_ϕ]
+        # :obs_θ => [:true_θ]
+    )
+    _propose_sampling_tree = [
+        :true_θ => [], :true_ϕ => [],
+        :r => [:true_θ, :true_ϕ],
+        :x => [:true_θ, :true_ϕ, :r],
+        :y => [:true_θ, :true_ϕ, :r],
+        :z => [:true_θ, :true_ϕ, :r],
+        :dx => [:x],
+        # :vyₜ => [:true_θ, :true_ϕ, :rₜ],
+        # :vzₜ => [:true_θ, :true_ϕ, :rₜ],
+    ]
+
+    propose_addr_topological_order = [p.first for p in _propose_sampling_tree]
+    propose_sampling_tree = Dict(_propose_sampling_tree...)
+
+    doms = latent_domains_for_viz(trs_at_each_time)
+
+    # We use this to decide what particle to show spikes from.
+    max_weight_idx_at_each_time = [
+        findmax(arr)[2] for arr in logweights_at_each_time
+    ]
+
+    addr_to_domain = Dict(
+        :true_θ => θs(), :true_ϕ => ϕs(), :r => Rs(), :x => Xs(), :y => Ys(), :z => Zs(),
+        :dx => Vels(), :obs_θ => θs()
+    )
+
+    # We're going to show the P and Q distribution assemblies for these variables,
+    # in this order. First element of tuple is a Bool; `true`<> P ; `false`<>Q.
+    dists_to_show = [
+        (false, :true_θ),
+        # (true, :obs_θ),
+        (false, :r),
+        (false, :x),
+        (true, :r),
+        (false, :dx),
+        (true, :true_θ),
+        (true, :x),
+        (true, :dx)
+    ]
+    # We not only need to know what variables to show the sampler neurons for,
+    # but what values to show the sampler neurons for.
+    dists_vals_to_show = [
+        (is_p, addr,
+            get_value(get_choices(trs_at_each_time[1][max_weight_idx_at_each_time[1]]), :steps => 1 => :latents => addr)
+        )
+        for (is_p, addr) in dists_to_show
+    ]
+
+    full_specs = [
+        ProbEstimates.Spiketrains.LabeledMultiParticleLineGroup(
+            ProbEstimates.Spiketrains.FixedText("$(is_p ? "P" : "Q")[addr]"),
+            [ProbEstimates.Spiketrains.SubsidiarySingleParticleLineSpec(max_weight_idx_at_each_time[1], ProbEstimates.Spiketrains.DistLine(is_p, addr, v, ProbEstimates.Spiketrains.CountAssembly())) for v in addr_to_domain[addr]]
+        )
+        for (is_p, addr) in dists_to_show
+    ]
+
+    ### Generate the figure.
+    (groups_to_show, meta_labels_to_show) = ProbEstimates.Spiketrains.multiparticle_scores_groups(
+        keys(doms), values(doms),
+        max_weight_idx_at_each_time[1],
+        sort(unique(max_weight_idx_at_each_time)),
+        dists_vals_to_show,
+        neurons_to_show_indices
+    )
+    return ProbEstimates.Spiketrains.draw_multiparticle_multistep_spiketrain_group_fig_plus_extras(
+        (vcat(full_specs, groups_to_show), meta_labels_to_show, length(full_specs)),
+        trs_at_each_time, logweights_at_each_time,
+        (propose_sampling_tree, assess_sampling_tree, propose_addr_topological_order, addr_to_domain);
+        timestep_length_to_latency_ratio=5/3,
+        figure_title="Spikes from SMC Neurons for 3D Tracking",
+        kwargs...
+    )
+end
+
 ### Function for making a different spiketrain visualization.
 include("spiketrain_fig_static.jl")

@@ -87,16 +87,35 @@ traces_at_each_time = [[trace for (trace, logweight) in weighted_traces_at_time]
 
 ### Make the Makie figure with the animation.
 ### `t` controls which window of time is shown on screen.
-(f, t), (times, group_labels, colors) = make_anim_spiketrain_fig(
+((f, t), (times, group_labels, colors, n_hidden_lines)) = make_anim_spiketrain_fig_and_get_all_L4(
     traces_at_each_time[3:7], logweights_at_each_time[3:7], 1:100;
     figure_title="Spikes from SMC Neurons for 3D Tracking",
-    resolution=(750, 600), return_metadata=true,
+    resolution=(750, 1000), return_metadata=true,
     first_label_length=170
 ); t[] = 45; GLMakie.activate!(); f
 
 
+all_times = sort(collect(Iterators.flatten(times[1:n_hidden_lines])))
+count_in_window(t, w) = count(x -> t - w ≤ x ≤ t, all_times)
+xs = 20:0.05:150
+ax = Axis(f[2, 1], title="L4 activity (20ms average)")
+hideydecorations!(ax)
+hidexdecorations!(ax)
+lines!(ax, xs, map(x -> count_in_window(x, 20), xs), color=:black)
+onany(t) do t # update the limits at the given times
+    xlims!(ax, (t[], t[] + 50))
+end
+t[] = 0
+rowsize!(f.layout, 2, Relative(.3))
+f
+
+#=
+times[i] = the ith spike line in the figure (top to bottom)
+group_labels[1][j] = (label, the number of lines in the jth group top to bottom)
+=#
+
 ### Animate time passing.
-record(f, "spiketrain2.gif", 0:100;
+record(f, "spiketrain_withwave.gif", 0:100;
         framerate = 10) do tval
     t[] = tval
 end

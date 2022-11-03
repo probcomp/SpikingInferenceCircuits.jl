@@ -244,7 +244,7 @@ function value_neuron_scores_dists_weight_autonorm_groups(
     )
 end
 
-function multiparticle_scores_groups(
+function multiparticle_scores_groups( # TODO: rename to sampler_groups
     addrs, var_domains, particle_indices_to_show_vals_scores,
     particle_indices_to_show_weights,
     variables_vals_to_show_dists_for, neurons_to_show_indices=1:5;
@@ -253,14 +253,6 @@ function multiparticle_scores_groups(
     addr_to_name=identity, val_to_label=identity,
     kwargs...
 )
-    # println("addr_to_name = $addr_to_name")
-    # score_groups = collect(Iterators.flatten(
-    #     scores_groups(addrs, var_domains, neurons_to_show_indices; particle_idx=idx, show_particle_idx=true, flatten=false, addr_to_name, kwargs...)
-    #     for idx in particle_indices_to_show_vals_scores
-    # ))
-    # @assert all(length(x) == 2 for x in score_groups)
-    # q_groups = map(x -> x[1], score_groups)
-    # p_groups = map(x -> x[2], score_groups)
 
     dist_groups = collect(Iterators.flatten(
         get_dist_groups(addrs, variables_vals_to_show_dists_for, neurons_to_show_indices;
@@ -269,7 +261,11 @@ function multiparticle_scores_groups(
         for idx in particle_indices_to_show_vals_scores
     ))
 
-    # score_groups = collect(Iterators.flatten(zip(q_groups, p_groups)))
+    # LabeledLineGroup(
+    #     [
+    #         DistLineSpec(true, :true_θ, -0.4, NeuronInAssembly(4))
+    #     ]
+    # )
 
     return (
         # score_groups,

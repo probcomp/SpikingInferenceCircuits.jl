@@ -101,7 +101,13 @@ function fwd_prob_estimate(tr::CatTrace)
             return 1/recip_prob_for_continuous_inversion(tr)
         end
     else
-        est = fwd_prob_estimate(fwd_truncate(tr.probs)[tr.idx])
+        est = try
+            fwd_prob_estimate(fwd_truncate(tr.probs)[tr.idx])
+        catch e
+            println(get_gen_fn(tr))
+            println("probs: $(tr.probs)")
+            throw(e)
+        end
         maybe_put_est_into_trace!(tr, est, :fwd)
         return est
     end
