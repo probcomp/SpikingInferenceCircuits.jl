@@ -1,6 +1,6 @@
 include("shared.jl")
 
-function draw_weight_spiketrains!(layout, inferred_trs; time_per_step=200, num_autonormalization_spikes_for_each_timestep)
+function draw_weight_spiketrains!(layout, inferred_trs; time_per_step=100, num_autonormalization_spikes_for_each_timestep)
     n_particles = length(first(inferred_trs))
     example_tr_at_end = inferred_trs[end][1][1]
     T = get_args(example_tr_at_end)[1]
@@ -15,10 +15,10 @@ function draw_weight_spiketrains!(layout, inferred_trs; time_per_step=200, num_a
         normalized_weight_lines, normalization_line
     )
 end
-function draw_probability_lines!(layout, inferred_trs, weight_spiketrains, axis_to_link_to; time_per_step=200)
+function draw_probability_lines!(layout, inferred_trs, weight_spiketrains, axis_to_link_to; time_per_step=100)
     ax = Axis(layout[1, 1], xlabel="Time (ms)", ylabel="Particle Probability")
     linkxaxes!(axis_to_link_to, ax)
-    ylims!(ax, (0., 1.))
+    ylims!(ax, (-0.1, 1.1))
 
     # weight(t, particle_idx) = exp(inferred_trs[t + 1][particle_idx][2])
     # use spiketrains for weights, so that we include the noise from readout after auto-normalization
@@ -37,10 +37,11 @@ function draw_probability_lines!(layout, inferred_trs, weight_spiketrains, axis_
     lines!(ax, lines(1); color=:blue)
     lines!(ax, lines(2); color=:red)
     for i=3:length(inferred_trs)
+        # barplot!(ax, )
         lines!(ax, lines(i); color=:black)
     end
 end
-function draw_weight_spiketrains_and_lines!(layout, inferred_trs; time_per_step=200, num_autonormalization_spikes_for_each_timestep)
+function draw_weight_spiketrains_and_lines!(layout, inferred_trs; time_per_step=100, num_autonormalization_spikes_for_each_timestep)
     spiketrain_layout = layout[1, 1] = GridLayout()
     weight_line_layout = layout[2, 1] = GridLayout()
 
@@ -58,7 +59,6 @@ function make_figure(tr, inferred_trs, num_autonormalization_spikes_for_each_tim
     subcaption_align = :center
     Label(f.layout[1, 1, Bottom()], "(a) Observed transition & Particle Values", textsize=17, padding=(0, 0, 5, 15), halign=subcaption_align)
     Label(f.layout[2, 1, Bottom()], "(b) Particle weight spiketrains & normalized probability values", textsize=17, padding=(0, 0, 5, 50), halign=subcaption_align)
-    
 
     draw_weight_spiketrains_and_lines!(l2, inferred_trs; num_autonormalization_spikes_for_each_timestep)
     draw_obs_particles!(l1, tr, inferred_trs)
@@ -76,9 +76,9 @@ tr = generate(model, (2,), choicemap(
     (:steps => 2 => :latents => :xₜ => :val, 5),
     (:steps => 2 => :latents => :vₜ => :val, 0),
 
-    (:init => :obs => :yᵈₜ => :val, 4),
-    (:steps => 1 => :obs => :yᵈₜ => :val, 5),
-    (:steps => 2 => :obs => :yᵈₜ => :val, 5),
+    (:init => :obs => :val, 4),
+    (:steps => 1 => :obs => :val, 5),
+    (:steps => 2 => :obs => :val, 5),
 ))[1]
 
 inferred_trs = predetermined_smc(tr, 3, exact_init_proposal, approx_step_proposal,
@@ -103,7 +103,7 @@ inferred_trs = predetermined_smc(tr, 3, exact_init_proposal, approx_step_proposa
     );
     ess_threshold=-Inf # no resampling
 )[2];
-nspikes = [1,1,1];
+nspikes = [3, 3, 3];
 
 f = make_figure(tr, inferred_trs, nspikes)
 

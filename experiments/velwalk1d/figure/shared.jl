@@ -11,9 +11,11 @@ SwitchProb() = 0.0
 include("../inference.jl")
 include("../visualize.jl")
 ProbEstimates.DoRecipPECheck() = false
+ProbEstimates.set_latency!(50)
+ProbEstimates.set_assembly_size!(40)
 include("../utils.jl")
 ProbEstimates.use_noisy_weights!()
-ProbEstimates.AutonormalizeRepeaterRate() = 0.25
+ProbEstimates.AutonormalizeRepeaterRate() = 1.0
 ProbEstimates.AutonormalizeSpeedupFactor() = 1.5
 
 function to_obs_nest_addr(p::Pair)
@@ -176,22 +178,23 @@ function get_pos_vel_value_spiketrains(time_per_step, inferred_trs;
     n_particles = length(first(inferred_trs))
     propose_sampling_tree = Dict(:vₜ => [], :xₜ => [:vₜ])
     assess_sampling_tree = Dict(:vₜ => [], :xₜ => [:vₜ])
-    propose_topological_order = [:xₜ, :vₜ]
-    spiketrain_data_args = (propose_sampling_tree, assess_sampling_tree, propose_topological_order)
+    propose_topological_order = [:vₜ, :xₜ]
+    addr_to_domain = Dict(:xₜ => Positions(), :vₜ => Vels())
+    spiketrain_data_args = (propose_sampling_tree, assess_sampling_tree, propose_topological_order, addr_to_domain)
 
     ### line specs
     posval_specs = [ProbEstimates.Spiketrains.VarValLine(:xₜ, pos) for pos in Positions()]
     varval_specs = [ProbEstimates.Spiketrains.VarValLine(:vₜ, v) for v in Vels()]
 
-    normalized_weight_specs = [ProbEstimates.Spiketrains.NormalizedWeight(i) for i=1:n_particles]
-    normalization_line_spec = ProbEstimates.Spiketrains.LogNormalization()
+    normalized_weight_specs = [ProbEstimates.Spiketrains.NormalizedWeight(i, ProbEstimates.Spiketrains.CountAssembly()) for i=1:n_particles]
+    normalization_line_spec = ProbEstimates.Spiketrains.LogNormalization(ProbEstimates.Spiketrains.CountAssembly())
 
     pos_particle_linespecs = [
-        ProbEstimates.Spiketrains.ParticleLineSpec(particle_idx, linespec)
+        ProbEstimates.Spiketrains.SubsidiarySingleParticleLineSpec(particle_idx, linespec)
         for linespec in posval_specs for particle_idx=1:n_particles
     ]
     vel_particle_linespecs = [
-        ProbEstimates.Spiketrains.ParticleLineSpec(particle_idx, linespec)
+        ProbEstimates.Spiketrains.SubsidiarySingleParticleLineSpec(particle_idx, linespec)
         for linespec in varval_specs for particle_idx=1:n_particles
     ]
 
@@ -220,6 +223,17 @@ function get_pos_vel_value_spiketrains(time_per_step, inferred_trs;
         previous_normalized_logweights = previous_logweights .- logsumexp(previous_logweights)
         log_weight_updates = current_logweights .- previous_logweights
 
+        #=
+    specs, # ::Vector{MultiParticleLineSpec}
+    trs,
+    expected_log_weight_updates, # this should be the log of the weight-update factors computed here
+    spiketrain_data_args;
+    nest_all_at=nothing,
+    other_factors_to_multiply_in=[1. for _ in trs],
+    num_autonormalization_spikes=nothing,
+    vars_disc_to_cont=Dict()
+
+        =#
         lines_at_this_time = ProbEstimates.Spiketrains.get_lines_for_multiparticle_specs(
             all_specs,
             traces, # traces
@@ -252,15 +266,15 @@ function get_obs_pos_vel_value_spiketrains(time_per_step, inferred_trs;
     propose_sampling_tree = Dict(:yᵈₜ => [],  :vₜ => [:yᵈₜ], :xₜ => [:vₜ])
     assess_sampling_tree = Dict(:vₜ => [], :xₜ => [:vₜ], :yᵈₜ => [:xₜ])
     propose_topological_order = [:yᵈₜ, :vₜ, :xₜ]
-    spiketrain_data_args = (propose_sampling_tree, assess_sampling_tree, propose_topological_order)
-
+    addr_to_domain = Dict(:xₜ => Positions(), :vₜ => Velocities())
+    spiketrain_data_args = (propose_sampling_tree, assess_sampling_tree, propose_topological_order, addr_to_domain)
     ### line specs
     obsval_specs = [ProbEstimates.Spiketrains.VarValLine(:yᵈₜ, pos) for pos in Positions()]
     posval_specs = [ProbEstimates.Spiketrains.VarValLine(:xₜ, pos) for pos in Positions()]
     varval_specs = [ProbEstimates.Spiketrains.VarValLine(:vₜ, v) for v in Vels()]
 
-    normalized_weight_specs = [ProbEstimates.Spiketrains.NormalizedWeight(i) for i=1:n_particles]
-    normalization_line_spec = ProbEstimates.Spiketrains.LogNormalization()
+    normalized_weight_specs = [ProbEstimates.Spiketrains.NormalizedWeight(i, ProbEstimates.Spiketrains.CountAssembly()) for i=1:n_particles]
+    normalization_line_spec = ProbEstimates.Spiketrains.LogNormalization(ProbEstimates.Spiketrains.CountAssembly())
 
     obs_particle_linespecs = [
         ProbEstimates.Spiketrains.ParticleLineSpec(particle_idx, linespec)

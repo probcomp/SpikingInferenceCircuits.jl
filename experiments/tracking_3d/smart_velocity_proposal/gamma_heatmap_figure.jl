@@ -108,7 +108,7 @@ function augment_figure_with_wave!(f, times)
     hidexdecorations!(ax)
     lines!(ax, xs, map(x -> count_in_window(x, 10), xs), color=:black, linewidth=6)
     onany(t) do t # update the limits at the given times
-        xlims!(ax, (t[], t[] + 25))
+        xlims!(ax, (t[], t[] + 75))
     end
     t[] = 0
     rowsize!(f.layout, 2, Relative(.3))
@@ -138,7 +138,7 @@ function augment_figure_with_heatmap!(f, hidden_line_specs, times)
         for x in xs, y=1:length(labels)
     ], colormap=:greys)
     onany(t) do t # update the limits at the given times
-        xlims!(ax, (t[], t[] + 25))
+        xlims!(ax, (t[], t[] + 75))
     end
     t[] = 0
     rowsize!(f.layout, 2, Relative(.3))

@@ -3,7 +3,7 @@
 function predetermined_smc(tr, n_particles, initprop, stepprop, prop_cms; ess_threshold=Inf)
     obss = get_dynamic_model_obs(tr)
     (unweighted_inferences, weighted_inferences) = DynamicModels.predetermined_dynamic_model_smc(
-        get_gen_fn(tr), obss, cm -> (cm[:yᵈₜ => :val],),
+        get_gen_fn(tr), obss, cm -> (cm[:obs => :val],),
         initprop, stepprop, n_particles, prop_cms; ess_threshold
     )
     return (unweighted_inferences, weighted_inferences)
@@ -21,7 +21,7 @@ end
 function smc(tr, n_particles, initprop, stepprop; ess_threshold=Inf)
     obss = get_dynamic_model_obs(tr)
     (unweighted_inferences, weighted_inferences) = dynamic_model_smc(
-        get_gen_fn(tr), obss, cm -> (cm[:yᵈₜ => :val],),
+        get_gen_fn(tr), obss, cm -> (cm[:obs => :val],),
         initprop, stepprop, n_particles; ess_threshold
     )
     return (unweighted_inferences, weighted_inferences)
@@ -63,27 +63,27 @@ function init_posterior(obs)
     orig_typ = ProbEstimates.weight_type()
     ProbEstimates.use_perfect_weights!()
     logprobs, _ = enumeration_filter_init(initial_latent_model, obs_model,
-        choicemap((:yᵈₜ => :val, obs)),
+        choicemap((:obs => :val, obs)),
         Dict(
             (:xₜ => :val) => Positions(),
             (:vₜ => :val) => [0] # vel shouldn't matter, so keep constant to speed this up
         ) 
     )
     ProbEstimates.reset_weights_to!(orig_typ)
-    return sum(exp.(logprobs), dims=2) |> normalize |> to_vect
+    return sum(exp.(logprobs), dims=1) |> normalize |> to_vect
 end
 function vel_step_posterior(xₜ₋₁, vₜ₋₁, obs)
     orig_typ = ProbEstimates.weight_type()
     ProbEstimates.use_perfect_weights!()
     logprobs, _ = enumeration_filter_step(
         step_latent_model, obs_model,
-        choicemap((:yᵈₜ => :val, obs)),
+        choicemap((:obs => :val, obs)),
         Dict((:xₜ => :val) => Positions(), (:vₜ => :val) => Vels()),
         [0.], [(xₜ₋₁, vₜ₋₁)]
         )
     ProbEstimates.reset_weights_to!(orig_typ)
     # return the probs for the different velocity values
-    return sum(exp.(logprobs), dims=1) |> normalize |> to_vect
+    return sum(exp.(logprobs), dims=2) |> normalize |> to_vect
 end
 @gen (static) function _exact_init_proposal(obs)
     xₜ ~ Cat(init_posterior(obs))
@@ -134,14 +134,14 @@ smc_approx_proposal(tr, n_particles) = smc(tr, n_particles, exact_init_proposal,
 
 ### Gibbs Rejuvenation ###
 @gen (static) function rejuv_proposal_init(tr)
-    {:init => :latents} ~ _exact_init_proposal(obs_choicemap(tr, 0)[:yᵈₜ => :val])
+    {:init => :latents} ~ _exact_init_proposal(obs_choicemap(tr, 0)[:obs => :val])
 end
 @gen (static) function rejuv_proposal_step(tr)
     t = get_args(tr)[1]
     {:steps => t => :latents} ~ _exact_step_proposal(
         latents_choicemap(tr, t - 1)[:xₜ => :val],
         latents_choicemap(tr, t - 1)[:vₜ => :val],
-        obs_choicemap(tr, t)[:yᵈₜ => :val]
+        obs_choicemap(tr, t)[:obs => :val]
     )
 end
 @load_generated_functions()
@@ -182,7 +182,7 @@ function prior_smc_exact_rejuv(tr, n_particles; is_gibbs=true)
     
     obss = get_dynamic_model_obs(tr)
     (unweighted_inferences, weighted_inferences) = dynamic_model_smc(
-    get_gen_fn(tr), obss, cm -> (cm[:yᵈₜ => :val],),
+    get_gen_fn(tr), obss, cm -> (cm[:obs => :val],),
     prior_init_proposal, prior_step_proposal, n_particles;
     rejuvenate
     )
