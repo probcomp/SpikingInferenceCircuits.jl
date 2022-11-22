@@ -8,7 +8,7 @@ using ProbEstimates
 include("../model_hyperparams.jl")
 include("../model.jl")
 
-preycap_record = h5open("prey_coords.h5", "r")
+preycap_record = h5open("/Users/nightcrawler/SpikingInferenceCircuits.jl/experiments/3DTracking/old/prey_coords.h5", "r")
 cutoff = 10
 
 # we are now conceiving steps as perceptual steps in the interbout that occur after the fish has completed his previous bout

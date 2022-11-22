@@ -60,8 +60,8 @@ for i in 1:100
         (unweighted_traces_at_each_step, weighted_traces) = deferred_dynamic_model_smc(
             model, observations,
             ch -> (ch[:obs_ϕ => :val], ch[:obs_θ => :val]),
-            two_timestep_proposal_dumb,
-       #     propose_first_two_timesteps_smart,
+       #     two_timestep_proposal_dumb,
+            propose_first_two_timesteps_smart,
             step_proposal_compiled,
             NPARTICLES, # n particles
             ess_threshold=NPARTICLES
@@ -81,9 +81,9 @@ for i in 1:100
     # end
 end
 length(final_particle_set)
-
-# animate_pf_results(final_particle_set, tr, true)
-# animate_pf_results(final_particle_set, tr, false)
+GLMakie.activate!()
+animate_pf_results(final_particle_set, tr, true)
+animate_pf_results(final_particle_set, tr, false)
 render_static_trajectories(final_particle_set, tr, true)
 pcoords, gtcoords = render_static_trajectories(final_particle_set, tr, false)
 # final_scores = [get_score(t) for t in final_particle_set]

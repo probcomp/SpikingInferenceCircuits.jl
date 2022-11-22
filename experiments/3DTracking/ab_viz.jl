@@ -48,6 +48,7 @@ function render_obs_from_particles(uw_traces, particles_to_plot::Int; do_obs=fal
     else
         cmap_keys = vcat([(:steps => i => :latents => :true_θ => :val) for i in 1:NSTEPS], [(:steps => i => :latents => :true_ϕ => :val) for i in 1:NSTEPS])
     end
+
     
     for (particle, cmap) in enumerate(true_angle_choicemaps)
         for cmk in cmap_keys
@@ -170,8 +171,8 @@ function render_static_trajectories(uw_traces, gt::Trace, from_observer)
         push!(particle_coords, step_particle_coords)        
     end
     #    scatter!(anim_axis, lift(t -> fp(t), time_node), color=lift(t -> fs(t), time_node), colormap=:grays, markersize=msize, alpha=.5)
-    lines!(convert(Vector{Point3f0}, gt_coords),
-           color=to_colormap(:ice, NSTEPS+1), linewidth=2)
+#    lines!(convert(Vector{Point3f0}, gt_coords),
+ #          color=to_colormap(:ice, NSTEPS+1), linewidth=2)
 
 
 # PC -> EACH INDEX IS THE VALUE OF EACH PARTICLE AT INDEX STEP. 
@@ -187,6 +188,8 @@ function render_static_trajectories(uw_traces, gt::Trace, from_observer)
     #              marker=fish_mesh, color=:gray, rotations=Vec3f0(1, 0, 0), markersize=.75)
     translate_camera(preyloc_axis, from_observer)
     display(fig)
+    CairoMakie.activate!()
+    save("inferred_trajectories.pdf", fig)
     return particle_coords, gt_coords
 end    
 
@@ -369,7 +372,7 @@ function translate_camera(anim_axis, observer_pov::Bool)
 
     else
         cam.far[] = 200        
-        cam.eyeposition[] = Vec3f0(Xs()[1]-46, Ys()[end] / 2, Zs()[end] + 20)
+        cam.eyeposition[] = Vec3f0(Xs()[1]-46, Ys()[1], Zs()[end] + 20)
         cam.lookat[] = Vec3f0(Xs()[Int(round(length(Xs()) / 2))],
                               Ys()[Int(round(length(Ys())/2))],
                               Zs()[Int(round(length(Zs())/2))])

@@ -106,32 +106,31 @@ end
 
 
 @gen (static) function step_proposal(dxₜ₋₁, dyₜ₋₁, dzₜ₋₁, xₜ₋₁, yₜ₋₁, zₜ₋₁,
-                                     rₜ₋₁, true_ϕ, true_θ, obs_ϕ, obs_θ) # θ and ϕ are noisy
+                                     rₜ₋₁, true_ϕ, true_θ, obs_ϕ, obs_θ)
+    # θ and ϕ are noisy observations. first sample true angles. 
     # instead of sampling (x, y, h) then computing r (as we do in the model)
-    # in the proposal we sample (r, x, y) and then compute h
+    # in the proposal we sample r based on prev_XYZ and prev_dXYZ. 
     true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(obs_θ, 0.05, θs()))
     true_ϕ = { :true_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(obs_ϕ, 0.05, ϕs()))
     r_max = max_distance_inside_grid(true_ϕ, true_θ)
-    predicted_x = xₜ₋₁ + dxₜ₋₁
-    predicted_y = yₜ₋₁ + dyₜ₋₁
-    predicted_z = zₜ₋₁ + dzₜ₋₁
-    true_r = round(norm_3d(predicted_x, predicted_y, predicted_z))
+    euler_x = xₜ₋₁ + dxₜ₋₁
+    euler_y = yₜ₋₁ + dyₜ₋₁
+    euler_z = zₜ₋₁ + dzₜ₋₁
+    true_r = round(norm_3d(euler_x, euler_y, euler_z))
     r_probvec = normalize(
         vcat(truncated_discretized_gaussian(
             true_r <= r_max ? true_r : r_max, .6, Rs())[1:Int(r_max)],
              zeros(length(Rs())-Int(r_max))))
     rₜ = { :r } ~ LCat(Rs())(r_probvec)
-    x_prop = rₜ * cos(true_ϕ) * cos(true_θ)
-    y_prop = rₜ * cos(true_ϕ) * sin(true_θ)
-    z_prop = rₜ * sin(true_ϕ)
-    xₜ = { :x } ~ LCat(Xs())(truncated_discretized_gaussian(x_prop, .1, Xs()))
-    yₜ = { :y } ~ LCat(Ys())(truncated_discretized_gaussian(y_prop, .1, Ys()))
-    zₜ = { :z } ~ LCat(Zs())(truncated_discretized_gaussian(z_prop, .1, Zs()))
-    # any choice of v here will be consistent with the model b/c its one or two off in the model.
-    dxₜ = { :dx } ~ LCat(Vels())(truncated_discretized_gaussian(x_prop-xₜ₋₁, .1, Vels()))
-    dyₜ = { :dy } ~ LCat(Vels())(truncated_discretized_gaussian(y_prop-yₜ₋₁, .1, Vels()))
-    dzₜ = { :dz } ~ LCat(Vels())(truncated_discretized_gaussian(z_prop-zₜ₋₁, .1, Vels()))
-
+    x_mean = rₜ * cos(true_ϕ) * cos(true_θ)
+    y_mean = rₜ * cos(true_ϕ) * sin(true_θ)
+    z_mean = rₜ * sin(true_ϕ)
+    xₜ = { :x } ~ LCat(Xs())(truncated_discretized_gaussian(x_mean, .1, Xs()))
+    yₜ = { :y } ~ LCat(Ys())(truncated_discretized_gaussian(y_mean, .1, Ys()))
+    zₜ = { :z } ~ LCat(Zs())(truncated_discretized_gaussian(z_mean, .1, Zs()))
+    dxₜ = { :dx } ~ LCat(Vels())(truncated_discretized_gaussian(xₜ-xₜ₋₁, .1, Vels()))
+    dyₜ = { :dy } ~ LCat(Vels())(truncated_discretized_gaussian(yₜ-yₜ₋₁, .1, Vels()))
+    dzₜ = { :dz } ~ LCat(Vels())(truncated_discretized_gaussian(zₜ-zₜ₋₁, .1, Vels()))
     return (dxₜ, dyₜ, dzₜ, xₜ, yₜ, zₜ, rₜ, true_ϕ, true_θ)
 end
 
@@ -145,14 +144,14 @@ end
     rₜ = { :r } ~ LCat(Rs())(r_probvec)
  #   rₜ = { :r } ~ LCat(Rs())(truncated_discretized_gaussian(round(norm_3d(X_init, Y_init, Z_init)),
   #                                                          .6, Rs()))
-    x_prop = rₜ * cos(true_ϕ) * cos(true_θ)
-    y_prop = rₜ * cos(true_ϕ) * sin(true_θ)
-    z_prop = rₜ * sin(true_ϕ)
+    x_mean = rₜ * cos(true_ϕ) * cos(true_θ)
+    y_mean = rₜ * cos(true_ϕ) * sin(true_θ)
+    z_mean = rₜ * sin(true_ϕ)
     # size in absolute terms is obtained by the az alt divs being discrete 
     # and az alt not having fixed xyz transforms when distant.
-    xₜ = { :x } ~ LCat(Xs())(truncated_discretized_gaussian(round(x_prop), .2, Xs()))
-    yₜ = { :y } ~ LCat(Ys())(truncated_discretized_gaussian(round(y_prop), .2, Ys()))
-    zₜ = { :z } ~ LCat(Zs())(truncated_discretized_gaussian(round(z_prop), .2, Zs()))
+    xₜ = { :x } ~ LCat(Xs())(truncated_discretized_gaussian(round(x_mean), .2, Xs()))
+    yₜ = { :y } ~ LCat(Ys())(truncated_discretized_gaussian(round(y_mean), .2, Ys()))
+    zₜ = { :z } ~ LCat(Zs())(truncated_discretized_gaussian(round(z_mean), .2, Zs()))
     dxₜ = { :dx } ~ LCat(Vels())(unif(Vels()))
     dyₜ = { :dy } ~ LCat(Vels())(unif(Vels()))
     dzₜ = { :dz } ~ LCat(Vels())(unif(Vels()))

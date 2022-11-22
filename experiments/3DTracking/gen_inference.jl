@@ -42,12 +42,9 @@ println("Run Inference? (y/n):  ")
 n = readline()
 if n == "y"
 
-
     tr, w = generate(model, (NSTEPS,), cmap)
     observations = get_dynamic_model_obs(tr);
-
     final_particle_set = []
-
 
     for i in 1:40
         try
