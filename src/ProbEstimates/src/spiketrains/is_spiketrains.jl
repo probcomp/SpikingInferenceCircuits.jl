@@ -233,19 +233,24 @@ function get_nonselected_spiketimes(tr, addr, values, num_spikes, ready_times, c
     # Spiketimes for the non-selected assemblies
     ### CORRECTNESS TODO: if this is a recip score, the non-selected assembly times should be fixed
     ### by the given `score_neuron_times` array, not generated randomly.
+        
     all_spiketimes = Dict()
     selected_value = get_choices(tr)[nest_add_val(nest_all_at, addr)]
     ordered_values = collect(values)
     n_spikes_for_others = num_spikes_from_assembly - num_spikes_for_selected
-    probs = [
-        with_weight_type(:perfect,
-            () -> exp(Gen.project(
-                Gen.update(tr, choicemap((nest_add_val(nest_all_at, addr), val)))[1],
-                Gen.select(nest_add_val(nest_all_at, addr))
-            )
-        )
-        ) for val in ordered_values
-    ]
+    probs = if recip
+                tr[nest(nest(nest_all_at, addr), :proposal_probs)]
+            else
+                [
+                    with_weight_type(:perfect,
+                        () -> exp(Gen.project(
+                            Gen.update(tr, choicemap((nest_add_val(nest_all_at, addr), val)))[1],
+                            Gen.select(nest_add_val(nest_all_at, addr))
+                        )
+                    )
+                    ) for val in ordered_values
+                ]
+            end
     selected_idx = 
         try
             only(findall(ordered_values .== selected_value))

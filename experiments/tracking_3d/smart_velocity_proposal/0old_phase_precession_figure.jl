@@ -5,6 +5,8 @@ using ProbEstimates
 
 unzip(list) = ([x for (x, y) in list], [y for (x, y) in list])
 
+
+
 includet("../model.jl")
 includet("../ab_viz.jl")
 include("deferred_inference.jl")
@@ -31,9 +33,9 @@ two_timestep_proposal_dumb = @compile_2timestep_proposal(initial_proposal, step_
 
 @load_generated_functions()
 
-NSTEPS = 8
-NPARTICLES = 10
-cmap = get_selected(make_deterministic_trace(), select(:init, :steps => 1, :steps => 2, :steps => 3, :steps => 4))
+NSTEPS = 14
+NPARTICLES = 3
+cmap = get_selected(make_deterministic_trace(), select(:init, (:steps => i for i=1:NSTEPS)...))
 tr, w = generate(model, (NSTEPS,), cmap)
 observations = get_dynamic_model_obs(tr);
 
@@ -91,19 +93,19 @@ traces_at_each_time = [[trace for (trace, logweight) in weighted_traces_at_time]
 
 ### Make the Makie figure with the animation.
 ### `t` controls which window of time is shown on screen.
-(((f, t), (times, group_labels, colors, n_hidden_lines)), hidden_line_specs) = make_anim_spiketrain_fig_and_get_all_L4(
-    traces_at_each_time[3:7], logweights_at_each_time[3:7], 1:100;
+((_, (times, group_labels, colors, n_hidden_lines)), hidden_line_specs) = get_all_L4_with_all_coords(
+    traces_at_each_time[2:end], logweights_at_each_time[2:end], 1:100;
     figure_title="Spikes from SMC Neurons for 3D Tracking",
     resolution=(750, 1000), return_metadata=true,
     first_label_length=170
-); t[] = 45; GLMakie.activate!(); f
+); # We aren't going to use this Makie figure.  We're gonna make a new one.
 
 function augment_figure_with_wave!(f, times)
     all_times = sort(collect(Iterators.flatten(times[1:n_hidden_lines])))
     count_in_window(t, w) = count(x -> t - w ≤ x ≤ t, all_times)
 
     xs = 10:0.05:150
-    ax = Axis(f[3, 1], title="Overall L4 activity (10ms average)")
+    ax = Axis(f[2, 1], title="Overall L4 activity (10ms average)")
     hideydecorations!(ax)
     hidexdecorations!(ax)
     lines!(ax, xs, map(x -> count_in_window(x, 10), xs), color=:black, linewidth=6)
@@ -114,86 +116,69 @@ function augment_figure_with_wave!(f, times)
     rowsize!(f.layout, 2, Relative(.3))
     f
 end
-function augment_figure_with_heatmap!(f, hidden_line_specs, times)
+
+get_xy(r, ϕ, θ) = (r * cos(ϕ) * cos(θ), r * cos(ϕ) * sin(θ))
+get_xy(r, θ) = get_xy(r, 0, θ)
+domain(vname) = get(Dict("x" => Xs(), "y" => Ys(), "true_θ" => θs(), "r" => Rs()), String(vname), nothing)
+vname_to_label(vname) = 
+    if vname == "θ"
+        "P[true_θ]"
+    else
+        "P[$vname]"
+    end
+Γ_period = 25
+@dist uniform_from_list(list) = list[uniform_discrete(1, length(list))]
+
+function get_clusters(list, threshold=1.)
+    intervals = [list[i+1] - list[i] for i=1:(length(list)-1)]
+    indices_of_real_gaps = vcat(findall(intervals .> threshold), [length(intervals)])
+    cluster_start_points = [1, (idx + 1 for idx in indices_of_real_gaps)...]
+    return [
+        list[i:g] for (i, g) in zip(cluster_start_points, indices_of_real_gaps)
+    ]
+end
+
+function augment_figure_with_scatter!(f, hidden_line_specs, times, y1=-0.4, y2=0.4)
+    ax = Axis(f[1, 1])
+
     labels = [group.label_spec.text for group in hidden_line_specs]
     lengths = [length(group.line_specs) for group in hidden_line_specs]
     starting_indices = cumsum([1, lengths...])
-    all_times_in_group(group_idx) = 
-        let st = starting_indices[group_idx],
-            range = st:(st+lengths[group_idx])
-            sort(collect(Iterators.flatten(times[range])))
-    end
-    count_in_window(t, w, group_idx) = count(x -> t - w ≤ x ≤ t, all_times_in_group(group_idx))
-    
-    total_count(group_idx) = length(all_times_in_group(group_idx))
-    fraction_in_window(t, w, group_idx) = count_in_window(t, w, group_idx) / total_count(group_idx)
+    var_idx(vname) = findfirst(labels .== vname_to_label(vname))::Int
+    val_idx(vname, val) = try findfirst(domain(vname) .== val)::Int; catch e; println("$vname, $val"); throw(e); end;
+    times_for_var(vname, val) = times[starting_indices[var_idx(vname)] + val_idx(vname, val)]
 
-    xs = 10:.1:150
-    ax = Axis(f[2, 1], title="Local L4 activity (10ms average, rescaled locally)")
-    ax.yreversed = true
-    hideydecorations!(ax)
-    hidexdecorations!(ax)
-    heatmap!(ax, xs, 1:length(labels), [
-        fraction_in_window(x, 10, y)
-        for x in xs, y=1:length(labels)
-    ], colormap=:greys)
-    onany(t) do t # update the limits at the given times
-        xlims!(ax, (t[], t[] + 25))
+    true_positions = [observations[2][i][:obs_θ => :val] for i=1:NSTEPS]
+    spiketimes_at_timestep(tstep, y) = let clusters = get_clusters(times_for_var("true_θ", y))
+        tstep > length(clusters) ? [] : clusters[tstep]
     end
-    t[] = 0
-    rowsize!(f.layout, 2, Relative(.3))
+    #[ t for t in times_for_var("true_θ", y) if Γ_period * (tstep - 1) ≤ t ≤ Γ_period * tstep ]
+    Γ_phase_deg(t) = 360 * (t / Γ_period - floor(t / Γ_period))
+    spike_phases_at_timestep(tstep, y) = collect(sort(map(Γ_phase_deg, spiketimes_at_timestep(tstep, y))))
+    pos_phase_pairs(tstep, y) = [ (true_positions[tstep], deg) for deg in spike_phases_at_timestep(tstep, y) ]
+    all_pos_phase_pairs(y) = vcat((pos_phase_pairs(tstep, y) for tstep in 1:NSTEPS)...)
+    subsample_100(vals) = vals #[uniform_from_list(vals) for _=1:100]
+    scatter!(ax, map(Point2, all_pos_phase_pairs(y1)|>subsample_100), color=RGBA(colorant"red", 0.3))
+    # scatter!(ax, map(Point2, all_pos_phase_pairs(y2)|>subsample_100), color=RGBA(colorant"blue", 0.3))
+    scatter!(ax, map(((y, deg),) -> Point2(y, deg + 360), all_pos_phase_pairs(y1)|>subsample_100), color=RGBA(colorant"red", 0.3))
+    # scatter!(ax, map(((y, deg),) -> Point2(y, deg + 360), all_pos_phase_pairs(y2)|>subsample_100), color=RGBA(colorant"blue", 0.3))
 
-    ProbEstimates.Spiketrains.SpiketrainViz.draw_group_labels!(f, ax, [(l, 1) for l in reverse(labels)], 0, [:black for _ in labels])
+    ylims!(ax, (0, 720))
+    ax.yticks = [0, 360, 720]
+    ax.xlabel = "observed θ value"
+    ax.ylabel = "phase relative to Γ at which spikes occurred in P[true_θ = $y1 | inferred xyz]"
 
     f
 end
-augment_figure_with_heatmap!(f, hidden_line_specs, times)
-augment_figure_with_wave!(f, times)
 
-f
-
-#=
-times[i] = the ith spike line in the figure (top to bottom)
-group_labels[1][j] = (label, the number of lines in the jth group top to bottom)
-=#
-
-### Animate time passing.
-record(f, "spiketrain_gamma_heatmap_10msavg_3.gif", 10:0.5:90;
-        framerate = 10) do tval
-    t[] = tval
-end
+# augment_figure_with_wave!(f, times)
+f = Figure()
+augment_figure_with_scatter!(f, hidden_line_specs, times, -0.4, 0.2)
 
 
+# (f, t) = get_spatial_map_figure(times, hidden_line_specs; W=10); t[] = 10; f
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# plot_full_choicemap(final_particle_set)
-
-
-# unweighted_traces_at_each_step looks like
-# [
-    # [particle1trace, particle2trace, ...] # for timestep 1
-    # [particle1trace, particle2trace, ...] # for timestep 2
-    # [particle1trace, particle2trace, ...] # for timestep 3
-# ]
-# where the traces are the traces we have after resampling
-
-# by a "trace for timestep T", I mean a trace which has choices
-# for every timestep up to and including T
-
-#tr_init = simulate(model, (0,))
-#proposed_choices, _ = propose(step_proposal, (tr_init, 0.0, 0.0))
-#[propose(step_proposal, (tr_init, 0.0, 0.0))[1][:steps => 1 => :latents => :moving_in_depthₜ] for i in 1:200]
-
+# record(f, "spatial_map.gif", 10:90;
+#         framerate = 10) do tval
+#     t[] = tval
+# end

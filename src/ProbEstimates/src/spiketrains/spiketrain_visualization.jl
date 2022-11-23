@@ -11,7 +11,7 @@ get_color(::Spiketrains.LogNormalization) = AUTONORM_COLOR()
 get_color(s::Spiketrains.SubsidiarySingleParticleLineSpec) = get_color(s.spec)
 get_color(s::Spiketrains.DistLine) = s.is_p ? P_DIST_COLOR() : Q_DIST_COLOR()
 get_colors(groups::Vector{<:Union{Spiketrains.LabeledSingleParticleLineGroup, Spiketrains.LabeledMultiParticleLineGroup}}) =
-    get_colors(reduce(vcat, g.line_specs for g in groups))
+    isempty(groups) ? [] : get_colors(reduce(vcat, g.line_specs for g in groups))
 get_colors(lines) = map(get_color, lines)
 
 rgbhex(r, g, b) = RGB(r/256, g/256, b/256)
@@ -72,12 +72,13 @@ function get_spiketrain_figure(
     figure_title="Spiketrain",
     time=0.,
     xmin=0., xmax=nothing, # min and max displayed x value
+    axissize=25,
     xlabel="Time (ms)"
 )
     f = Figure(;resolution)
     ax = f[1, 1] = Axis(f; title = figure_title, xlabel)
 
-    draw_lines!(ax, lines, labels, colors, time, xmin, xmax)
+    draw_lines!(ax, lines, labels, colors, time, xmin, xmax, axissize)
     for (labels_and_lengths, offset_from_axis) in group_labels
         draw_group_labels!(f, ax, labels_and_lengths, offset_from_axis, colors)
     end
@@ -154,7 +155,7 @@ function get_group_endpoint_indices(group_labels)
     return [(idx - st + 1, idx - nd + 1) for (st, nd) in idxpairs]
 end
 
-function draw_lines!(ax, lines, labels, colors, time, xmin, xmax; hide_y_decorations=true)
+function draw_lines!(ax, lines, labels, colors, time, xmin, xmax, axissize; hide_y_decorations=true)
     if !(time isa Observable)
         time = Observable(time)
     end
@@ -180,9 +181,9 @@ function draw_lines!(ax, lines, labels, colors, time, xmin, xmax; hide_y_decorat
         draw_line!(ax, line, pos, trainheight, time, color; n_lines=length(lines))
     end
 
-    xlims!(ax, (time[], time[] + 50))
+    xlims!(ax, (time[], time[] + axissize))
     onany(time) do t # update the limits at the given times
-        xlims!(ax, (t[], t[] + 50))
+        xlims!(ax, (t[], t[] + axissize))
     end
     ylims!(ax, (first(ypositions) - 1, last(ypositions) + 1))
 

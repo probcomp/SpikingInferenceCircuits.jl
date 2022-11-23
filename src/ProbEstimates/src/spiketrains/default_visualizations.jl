@@ -164,9 +164,12 @@ function draw_multiparticle_multistep_spiketrain_group_fig_plus_extras(
     end
 
 
-    colors = SpiketrainViz.get_colors(visible_group_specs)
-    viz = SpiketrainViz.draw_spiketrain_figure_animated(visible_lines; group_labels=visible_group_labels, xmin=0, resolution, colors, kwargs...)
-
+    if !isempty(visible_group_specs)
+        colors = SpiketrainViz.get_colors(visible_group_specs)
+        viz = SpiketrainViz.draw_spiketrain_figure_animated(visible_lines; group_labels=visible_group_labels, xmin=0, resolution, colors, kwargs...)
+    else
+       colors, viz = nothing, nothing
+    end
     if return_metadata
         return (viz, (lines, visible_group_labels, colors, length(lines) - length(visible_lines)))
     else
