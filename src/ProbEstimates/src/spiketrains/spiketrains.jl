@@ -52,6 +52,8 @@ include("spiketrain_visualization.jl")
 # specs in `library.jl`)
 include("default_visualizations.jl")
 
+include("resampling_spiketrains.jl")
+
 ### Exports
 export SingleParticleLineSpec, get_line, get_lines, get_label, get_labels
 export SampledValue, FwdScoreText, RecipScoreText

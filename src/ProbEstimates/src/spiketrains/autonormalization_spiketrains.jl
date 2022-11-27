@@ -41,12 +41,6 @@ function get_time_when_scores_all_ready(is_spiketrain_data)
         for datum in is_spiketrain_data
     )
 
-    datum = is_spiketrain_data[2]
-    # println("FWD READY TIMES: ")
-    # display([dense_val_train.ready_time for dense_val_train in values(datum.fwd_trains)])
-    # println("RECIP READY TIMES: ")
-    # display([dense_val_train.ready_time for dense_val_train in values(datum.recip_trains)])
-
     maximum([time for time in all_ready_times if !isinf(time)])
 end
 

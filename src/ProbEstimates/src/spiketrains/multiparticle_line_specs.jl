@@ -87,7 +87,7 @@ function _get_neuron_or_assembly(vec_of_neuron_spiketrains, line_to_show)
         vec_of_neuron_spiketrains[line_to_show.idx]
     else
         @assert line_to_show isa CountAssembly
-        sort(reduce(vcat, vec_of_neuron_spiketrains))
+        sort(reduce(vcat, vec_of_neuron_spiketrains, init=[]))
     end
 end
 get_line_in_multiparticle_spec(s::LogNormalization, _, _, autonormalization_data, _) =

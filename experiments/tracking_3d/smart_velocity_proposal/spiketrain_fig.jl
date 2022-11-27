@@ -418,3 +418,45 @@ end
 
 ### Function for making a different spiketrain visualization.
 include("spiketrain_fig_static.jl")
+
+function get_trees_etc(trs_at_each_time, logweights_at_each_time)
+    # Hard-code the dependency graph for the `P` and `Q` step generative functions.
+    # (We could recover this with static compilation, but I haven't implemented that.)
+    assess_sampling_tree = Dict(
+        # :dx => [], :vyₜ => [], :vzₜ => [],
+        # :xₜ => [:dx], :yₜ => [:vyₜ], :zₜ => [:vzₜ],
+        :dx => [],
+        :x => [:dx], :y => [], :z => [],
+        :true_ϕ => [:x, :y, :z],
+        :true_θ => [:x, :y, :z],
+        :r => [:x, :y, :z, :true_θ, :true_ϕ]
+        # :obs_θ => [:true_θ]
+    )
+    _propose_sampling_tree = [
+        :true_θ => [], :true_ϕ => [],
+        :r => [:true_θ, :true_ϕ],
+        :x => [:true_θ, :true_ϕ, :r],
+        :y => [:true_θ, :true_ϕ, :r],
+        :z => [:true_θ, :true_ϕ, :r],
+        :dx => [:x],
+        # :vyₜ => [:true_θ, :true_ϕ, :rₜ],
+        # :vzₜ => [:true_θ, :true_ϕ, :rₜ],
+    ]
+
+    propose_addr_topological_order = [p.first for p in _propose_sampling_tree]
+    propose_sampling_tree = Dict(_propose_sampling_tree...)
+
+    doms = latent_domains_for_viz(trs_at_each_time)
+
+    # We use this to decide what particle to show spikes from.
+    max_weight_idx_at_each_time = [
+        findmax(arr)[2] for arr in logweights_at_each_time
+    ]
+
+    addr_to_domain = Dict(
+        :true_θ => θs(), :true_ϕ => ϕs(), :r => Rs(), :x => Xs(), :y => Ys(), :z => Zs(),
+        :dx => Vels(), :obs_θ => θs()
+    )
+
+    return (propose_sampling_tree, assess_sampling_tree, propose_addr_topological_order, addr_to_domain);
+end
