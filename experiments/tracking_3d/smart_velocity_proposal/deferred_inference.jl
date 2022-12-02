@@ -26,15 +26,20 @@ function deferred_dynamic_model_smc(
     proposal_first_2_steps, step_proposal,
     n_particles;
     ess_threshold=Inf,
-    rejuvenate=identity
+    rejuvenate=identity,
+    get_resampling_indices=false
 )
     unweighted_traces = []
     weighted_traces = []
+    resampling_indices = []
 
     function resample_rejuvenate_and_track_traces!(state)
         push!(weighted_traces, collect(zip(state.traces, state.log_weights)))
 
-        maybe_resample!(state, ess_threshold=ess_threshold)
+        did_resample = maybe_resample!(state, ess_threshold=ess_threshold)
+        if did_resample && get_resampling_indices
+            push!(resampling_indices, copy(state.parents))
+        end
 
         for i=1:n_particles
             state.traces[i] = rejuvenate(state.traces[i])
@@ -67,5 +72,9 @@ function deferred_dynamic_model_smc(
         resample_rejuvenate_and_track_traces!(state)
     end
 
-    return (unweighted_traces, weighted_traces)
+    if get_resampling_indices
+        return (unweighted_traces, weighted_traces, resampling_indices)
+    else
+        return (unweighted_traces, weighted_traces)
+    end
 end

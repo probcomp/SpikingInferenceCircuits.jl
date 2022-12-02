@@ -91,109 +91,78 @@ traces_at_each_time = [[trace for (trace, logweight) in weighted_traces_at_time]
 
 ### Make the Makie figure with the animation.
 ### `t` controls which window of time is shown on screen.
-(((f, t), (times, group_labels, colors, n_hidden_lines)), hidden_line_specs) = make_anim_spiketrain_fig_and_get_all_L4(
+(((f, t), (times, group_labels, colors, n_hidden_lines)), hidden_line_specs) = make_anim_spiketrain_fig_and_get_all_L4_with_all_coords(
     traces_at_each_time[3:7], logweights_at_each_time[3:7], 1:100;
     figure_title="Spikes from SMC Neurons for 3D Tracking",
     resolution=(750, 1000), return_metadata=true,
     first_label_length=170
-); t[] = 45; GLMakie.activate!(); f
+); # We aren't going to use this Makie figure.  We're gonna make a new one.
 
-function augment_figure_with_wave!(f, times)
-    all_times = sort(collect(Iterators.flatten(times[1:n_hidden_lines])))
-    count_in_window(t, w) = count(x -> t - w ≤ x ≤ t, all_times)
-
-    xs = 10:0.05:150
-    ax = Axis(f[3, 1], title="Overall L4 activity (10ms average)")
-    hideydecorations!(ax)
-    hidexdecorations!(ax)
-    lines!(ax, xs, map(x -> count_in_window(x, 10), xs), color=:black, linewidth=6)
-    onany(t) do t # update the limits at the given times
-        xlims!(ax, (t[], t[] + 25))
+get_xy(r, ϕ, θ) = (r * cos(ϕ) * cos(θ), r * cos(ϕ) * sin(θ))
+get_xy(r, θ) = get_xy(r, 0, θ)
+domain(vname) = get(Dict("x" => Xs(), "y" => Ys(), "θ" => θs(), "r" => Rs()), String(vname), nothing)
+vname_to_label(vname) = 
+    if vname == "θ"
+        "Q[true_θ]"
+    else
+        "Q[$vname]"
     end
-    t[] = 0
-    rowsize!(f.layout, 2, Relative(.3))
-    f
-end
-function augment_figure_with_heatmap!(f, hidden_line_specs, times)
+function get_spatial_map_figure(times, hidden_line_specs; W=10)
+    f = Figure(resolution=(500, 1000))
+    t = Observable(0)
+    aloax = Axis(f[1, 1], title="Activity in L4 XYZ Samplers (2D projection)")
+    aloax.xgridvisible = false; aloax.ygridvisible = false;
+    egoax = Axis(f[2, 1], title="Activity in L4 Rϕθ Samplers (2D projection)")
+
+    # returns a number in [0, 1]
+    all_times = sort(collect(Iterators.flatten(times[1:n_hidden_lines])))
     labels = [group.label_spec.text for group in hidden_line_specs]
+
     lengths = [length(group.line_specs) for group in hidden_line_specs]
     starting_indices = cumsum([1, lengths...])
-    all_times_in_group(group_idx) = 
-        let st = starting_indices[group_idx],
-            range = st:(st+lengths[group_idx])
-            sort(collect(Iterators.flatten(times[range])))
+    var_idx(vname) = findfirst(labels .== vname_to_label(vname))::Int
+    val_idx(vname, val) = try findfirst(domain(vname) .== val)::Int; catch e; println("$vname, $val"); throw(e); end;
+    times_for_var(vname, val) = times[starting_indices[var_idx(vname)] + val_idx(vname, val)]
+    count_in_window(vname, val, t, w) = count(x -> t - w ≤ x ≤ t, times_for_var(vname, val))
+    get_var_activity(vname, val, t, w) = min(length(domain(vname)) * 10 * count_in_window(vname, val, t, w) / length(all_times), 1.)
+
+    for x in Xs()
+        lines!(aloax,
+            [Point2(x, minimum(Ys())), Point2(x, maximum(Ys()))],
+            color=@lift(colormap("reds")[Int(floor(99 * get_var_activity("x", x, $t, W))) + 1])
+        )
     end
-    count_in_window(t, w, group_idx) = count(x -> t - w ≤ x ≤ t, all_times_in_group(group_idx))
-    
-    total_count(group_idx) = length(all_times_in_group(group_idx))
-    fraction_in_window(t, w, group_idx) = count_in_window(t, w, group_idx) / total_count(group_idx)
-
-    xs = 10:.1:150
-    ax = Axis(f[2, 1], title="Local L4 activity (10ms average, rescaled locally)")
-    ax.yreversed = true
-    hideydecorations!(ax)
-    hidexdecorations!(ax)
-    heatmap!(ax, xs, 1:length(labels), [
-        fraction_in_window(x, 10, y)
-        for x in xs, y=1:length(labels)
-    ], colormap=:greys)
-    onany(t) do t # update the limits at the given times
-        xlims!(ax, (t[], t[] + 25))
+    for y in Ys()
+        lines!(aloax,
+            [Point2(minimum(Xs()), y), Point2(maximum(Xs()), y)],
+            color=@lift(colormap("reds")[Int(floor(99 * get_var_activity("y", y, $t, W))) + 1])
+        )
     end
-    t[] = 0
-    rowsize!(f.layout, 2, Relative(.3))
 
-    ProbEstimates.Spiketrains.SpiketrainViz.draw_group_labels!(f, ax, [(l, 1) for l in reverse(labels)], 0, [:black for _ in labels])
+    for r in Rs()
+        lines!(egoax,
+            [Point2(get_xy(r, θ)) for θ in θs()],
+            color=@lift(colormap("reds")[Int(floor(99 * get_var_activity("r", r, $t, W))) + 1])
+        )
+    end
+    for θ in θs()
+        lines!(egoax,
+            [Point2(get_xy(0, θ)), Point2(get_xy(maximum(Rs()), θ))],
+            color=@lift(colormap("reds")[Int(floor(99 * get_var_activity("θ", θ, $t, W))) + 1])
+        )
+    end
 
-    f
+    xlims!(egoax, (minimum(Xs()), maximum(Xs())))
+    ylims!(egoax, (minimum(Ys()), maximum(Ys())))
+    xlims!(aloax, (minimum(Xs()), maximum(Xs())))
+    ylims!(aloax, (minimum(Ys()), maximum(Ys())))
+
+    return (f, t)
 end
-augment_figure_with_heatmap!(f, hidden_line_specs, times)
-augment_figure_with_wave!(f, times)
 
-f
+(f, t) = get_spatial_map_figure(times, hidden_line_specs; W=10); t[] = 10; f
 
-#=
-times[i] = the ith spike line in the figure (top to bottom)
-group_labels[1][j] = (label, the number of lines in the jth group top to bottom)
-=#
-
-### Animate time passing.
-record(f, "spiketrain_gamma_heatmap_10msavg_3.gif", 10:0.5:90;
+record(f, "spatial_map.gif", 10:90;
         framerate = 10) do tval
     t[] = tval
 end
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# plot_full_choicemap(final_particle_set)
-
-
-# unweighted_traces_at_each_step looks like
-# [
-    # [particle1trace, particle2trace, ...] # for timestep 1
-    # [particle1trace, particle2trace, ...] # for timestep 2
-    # [particle1trace, particle2trace, ...] # for timestep 3
-# ]
-# where the traces are the traces we have after resampling
-
-# by a "trace for timestep T", I mean a trace which has choices
-# for every timestep up to and including T
-
-#tr_init = simulate(model, (0,))
-#proposed_choices, _ = propose(step_proposal, (tr_init, 0.0, 0.0))
-#[propose(step_proposal, (tr_init, 0.0, 0.0))[1][:steps => 1 => :latents => :moving_in_depthₜ] for i in 1:200]
-

@@ -29,14 +29,15 @@ include("model_hyperparams.jl")
 
 neg_to_inf(x) = x <= 0 ? Inf : x
 norm_3d(x, y, z) = sqrt(x^2 + y^2 + z^2)
-round_to_pt1(x) = round(x, digits=1)
+
+round_to_domain(x, dom) = dom[argmin([(x-y)^2 for y in dom])]
 
 # x, y, zₜ are the current positions at time t.
 # vx vy and vz are the velocities that move the animal from xt-1 to xt
 # in the first step, these have no impact b/c the initial position is drawn. 
 # helpful to think of v here as VThatLeadtoXYZInit
 
-@gen (static) function initial_model()
+@gen function initial_model()
     dxₜ = { :dx } ~ LCat(Vels())(unif(Vels()))
     dyₜ = { :dy } ~ LCat(Vels())(unif(Vels()))
     dzₜ = { :dz } ~ LCat(Vels())(unif(Vels()))
@@ -45,14 +46,16 @@ round_to_pt1(x) = round(x, digits=1)
     zₜ = { :z } ~ LCat(Zs())(unif(Zs()))
     true_r = round(norm_3d(xₜ, yₜ, zₜ))
     true_ϕ = { :true_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(
-        round_to_pt1(nm.asin(zₜ / true_r)), 0.2, ϕs()))
+        round_to_domain(nm.asin(zₜ / true_r), ϕs()), 0.2, ϕs()))
     true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(
-        round_to_pt1(nm.atan(yₜ / xₜ)), 0.2, θs()))
+        round_to_domain(nm.atan(yₜ / xₜ), θs()), 0.2, θs()))
     r_max = max_distance_inside_grid(true_ϕ, true_θ)
     r_probvec = normalize(
-        vcat(truncated_discretized_gaussian(
-            true_r <= r_max ? true_r : r_max, 2.0, Rs())[1:Int(r_max)],
-             zeros(length(Rs())-Int(r_max))))
+        [
+            v ≤ r_max ? p : 0 for (v, p) in
+            zip(Rs(), truncated_discretized_gaussian(true_r <= r_max ? true_r : r_max, 2.0, Rs()))
+        ]
+    )
     rₜ = { :r } ~ LCat(Rs())(r_probvec)
     return (dxₜ, dyₜ, dzₜ, xₜ, yₜ, zₜ, rₜ, true_ϕ, true_θ)
 end
@@ -60,7 +63,7 @@ end
 # x = back and forth
 # y = left and right
 # z = up and down
-@gen (static) function step_model(dxₜ₋₁, dyₜ₋₁, dzₜ₋₁, xₜ₋₁, yₜ₋₁, zₜ₋₁, rₜ₋₁, true_ϕₜ₋₁, true_θₜ₋₁)
+@gen function step_model(dxₜ₋₁, dyₜ₋₁, dzₜ₋₁, xₜ₋₁, yₜ₋₁, zₜ₋₁, rₜ₋₁, true_ϕₜ₋₁, true_θₜ₋₁)
     dxₜ = { :dx } ~ LCat(Vels())(truncated_discretized_gaussian(dxₜ₋₁, 1.0, Vels()))
     dyₜ = { :dy } ~ LCat(Vels())(truncated_discretized_gaussian(dyₜ₋₁, 1.0, Vels()))
     dzₜ = { :dz } ~ LCat(Vels())(truncated_discretized_gaussian(dzₜ₋₁, 1.0, Vels()))
@@ -69,11 +72,11 @@ end
     zₜ = { :z } ~ LCat(Zs())(truncated_discretized_gaussian(zₜ₋₁ + dzₜ, 1.0, Zs()))
     # Here: a stochastic mapping from (x, y, h) -> (r, θ, ϕ)
     # For now: just use dimension-wise discretized Gaussians.
-    true_r = round(norm_3d(xₜ, yₜ, zₜ))
+    true_r = round_to_domain(norm_3d(xₜ, yₜ, zₜ), Rs())
     true_ϕ = { :true_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(
-        round_to_pt1(nm.asin(zₜ / true_r)), 0.2, ϕs()))
+        round_to_domain(nm.asin(zₜ / true_r), ϕs()), 0.2, ϕs()))
     true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(
-        round_to_pt1(nm.atan(yₜ / xₜ)), 0.2, θs()))
+        round_to_domain(nm.atan(yₜ / xₜ), θs()), 0.2, θs()))
     r_max = max_distance_inside_grid(true_ϕ, true_θ)
     r_probvec = normalize(
         vcat(truncated_discretized_gaussian(
@@ -84,11 +87,11 @@ end
 end
 
 
-@gen (static) function obs_model(dxₜ, dyₜ, dzₜ, xₜ, yₜ, zₜ, rₜ, true_ϕ, true_θ)
+@gen function obs_model(dxₜ, dyₜ, dzₜ, xₜ, yₜ, zₜ, rₜ, true_ϕ, true_θ)
     # can't propose to these b/c they are the final observations we're scoring.
     # have to propose to the exact theta and phi.
-    obs_ϕ = { :obs_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(round_to_pt1(true_ϕ), 0.3, ϕs()))
-    obs_θ = { :obs_θ } ~ LCat(θs())(truncated_discretized_gaussian(round_to_pt1(true_θ), 0.3, θs()))
+    obs_ϕ = { :obs_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(round_to_domain(true_ϕ, ϕs()), 0.3, ϕs()))
+    obs_θ = { :obs_θ } ~ LCat(θs())(truncated_discretized_gaussian(round_to_domain(true_θ, θs()), 0.3, θs()))
     return (obs_ϕ, obs_θ)
 end
 
@@ -104,18 +107,17 @@ end
 # six independent runs of SMC. take one particle at the end. then get 6 uncorrelated particles.# one particle is the resampled independent sample from the posterior. 
 
 
-@gen function step_proposal(dxₜ₋₁, dyₜ₋₁, dzₜ₋₁, xₜ₋₁, yₜ₋₁, zₜ₋₁,
+@gen (static) function step_proposal(dxₜ₋₁, dyₜ₋₁, dzₜ₋₁, xₜ₋₁, yₜ₋₁, zₜ₋₁,
                                      rₜ₋₁, true_ϕ, true_θ, obs_ϕ, obs_θ) # θ and ϕ are noisy
     # instead of sampling (x, y, h) then computing r (as we do in the model)
     # in the proposal we sample (r, x, y) and then compute h
     true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(obs_θ, 0.05, θs()))
-    # println("the probability that true_θ = -0.4 is $(truncated_discretized_gaussian(obs_θ, 0.05, θs())[findfirst([v==-0.4 for v in θs()])])")
     true_ϕ = { :true_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(obs_ϕ, 0.05, ϕs()))
     r_max = max_distance_inside_grid(true_ϕ, true_θ)
     predicted_x = xₜ₋₁ + dxₜ₋₁
     predicted_y = yₜ₋₁ + dyₜ₋₁
     predicted_z = zₜ₋₁ + dzₜ₋₁
-    true_r = round(norm_3d(predicted_x, predicted_y, predicted_z))
+    true_r = round_to_domain(norm_3d(predicted_x, predicted_y, predicted_z), Rs())
     r_probvec = normalize(
         vcat(truncated_discretized_gaussian(
             true_r <= r_max ? true_r : r_max, .6, Rs())[1:Int(r_max)],
@@ -143,16 +145,16 @@ end
     l = length(Rs())
     r_probvec = normalize(vcat(ones(Int64(r_max)), zeros(Int64(l-r_max))))
     # rₜ = { :r } ~ LCat(Rs())(r_probvec)
-    rₜ = { :r } ~ LCat(Rs())(truncated_discretized_gaussian(round(norm_3d(X_init, Y_init, Z_init)),
+    rₜ = { :r } ~ LCat(Rs())(truncated_discretized_gaussian(round_to_domain(norm_3d(X_init, Y_init, Z_init), Rs()),
                                                            .6, Rs()))
     x_prop = rₜ * cos(true_ϕ) * cos(true_θ)
     y_prop = rₜ * cos(true_ϕ) * sin(true_θ)
     z_prop = rₜ * sin(true_ϕ)
     # size in absolute terms is obtained by the az alt divs being discrete 
     # and az alt not having fixed xyz transforms when distant.
-    xₜ = { :x } ~ LCat(Xs())(truncated_discretized_gaussian(round(x_prop), .2, Xs()))
-    yₜ = { :y } ~ LCat(Ys())(truncated_discretized_gaussian(round(y_prop), .2, Ys()))
-    zₜ = { :z } ~ LCat(Zs())(truncated_discretized_gaussian(round(z_prop), .2, Zs()))
+    xₜ = { :x } ~ LCat(Xs())(truncated_discretized_gaussian(round_to_domain(x_prop, Xs()), .2, Xs()))
+    yₜ = { :y } ~ LCat(Ys())(truncated_discretized_gaussian(round_to_domain(y_prop, Ys()), .2, Ys()))
+    zₜ = { :z } ~ LCat(Zs())(truncated_discretized_gaussian(round_to_domain(z_prop, Zs()), .2, Zs()))
     dxₜ = { :dx } ~ LCat(Vels())(unif(Vels()))
     dyₜ = { :dy } ~ LCat(Vels())(unif(Vels()))
     dzₜ = { :dz } ~ LCat(Vels())(unif(Vels()))
@@ -173,9 +175,9 @@ function max_distance_inside_grid(ϕ, θ)
 end
 
 
-function make_deterministic_trace()
+function make_deterministic_trace(v=1)
     x_traj = vcat([X_init], [X_init for i in 1:NSTEPS])
-    y_traj = vcat([Y_init], [Y_init + i for i in 1:NSTEPS])
+    y_traj = vcat([Y_init], [Y_init + v*i for i in 1:NSTEPS])
     z_traj = vcat([Z_init], [Z_init for i in 1:NSTEPS])
 # has to start at X Y Z INIT. First d is the diff between Xinit and x_traj[1]
     dx_traj = diff(x_traj)
@@ -188,10 +190,10 @@ function make_deterministic_trace()
     dy_traj_choice = [(:steps => i => :latents => :dy => :val, dy) for (i, dy) in enumerate(dy_traj)]
     dz_traj_choice = [(:steps => i => :latents => :dz => :val, dz) for (i, dz) in enumerate(dz_traj)]
     # Think deeply about the right answer here for true_r and rt-1. 
-    true_r = [round(norm_3d(x, y, z)) for (x, y, z) in zip(x_traj, y_traj, z_traj)]
-    true_ϕ = [round_to_pt1(nm.asin(z / r)) for (z, r) in zip(z_traj, true_r)]
+    true_r = [round_to_domain(norm_3d(x, y, z), Rs()) for (x, y, z) in zip(x_traj, y_traj, z_traj)]
+    true_ϕ = [round_to_domain(nm.asin(z / r), ϕs()) for (z, r) in zip(z_traj, true_r)]
     true_ϕ_choice = [(:steps => i => :latents => :true_ϕ => :val, ϕ) for (i, ϕ) in enumerate(true_ϕ[2:end])]    
-    true_θ = [round_to_pt1(nm.atan(y / x)) for (x, y) in zip(x_traj, y_traj)] 
+    true_θ = [round_to_domain(nm.atan(y / x), θs()) for (x, y) in zip(x_traj, y_traj)] 
     true_θ_choice = [(:steps => i => :latents => :true_θ => :val, θ) for (i, θ) in enumerate(true_θ[2:end])]
 
     r_choice = [(:steps => i => :latents => :r => :val, r) for (i, r) in enumerate(true_r[2:end])]
