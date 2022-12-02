@@ -43,8 +43,6 @@ include("pseudomarginal_dist.jl")
 
 export LCat, Cat, ContinuousInvertingCat, PseudoMarginalizedDist
 
-include("compilation_compatibility.jl")
-
 include("normalize_weights.jl")
 
 # overwrite methods in DynamicModels so that inference uses the noise model

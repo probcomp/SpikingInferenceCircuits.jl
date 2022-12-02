@@ -28,4 +28,6 @@ include("circuits/inference/smc.jl")
 export ISParticle
 export SMCStep, RecurrentSMCStep, SMC
 
+include("compilation_compatibility.jl")
+
 end

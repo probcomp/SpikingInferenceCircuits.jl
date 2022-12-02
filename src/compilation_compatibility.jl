@@ -1,4 +1,8 @@
-using DiscreteIRTransforms, SpikingInferenceCircuits
+#=
+This file provides support for circuit compilation of circuits from
+the `ProbEstimates` module.
+=#
+using DiscreteIRTransforms
 
 DiscreteIRTransforms.is_cpts(::LCat) = false
 
@@ -61,5 +65,5 @@ with_constant_inputs_at_indices(d::PseudoMarginalizedDist{R}, idx_val_pairs) whe
         d.args_for_compilation
     )
 
-SpikingInferenceCircuits.gen_fn_circuit(d::PseudoMarginalizedDist, arg_domains, op) =
-    SpikingInferenceCircuits.pmdist_to_gen_fn_circuit(d, arg_domains, op)
+gen_fn_circuit(d::PseudoMarginalizedDist, arg_domains, op) =
+    pmdist_to_gen_fn_circuit(d, arg_domains, op)

@@ -4,7 +4,6 @@ authors = ["George Matheos <georgematheos@gmail.com>"]
 version = "0.1.0"
 
 [deps]
-ANNDistributions = "3a3d2a55-e1fd-4b08-9be6-dd5b39fef32b"
 BSON = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
 Bijections = "e2ed5e7c-b2de-5872-ae92-c73ca462fb04"
 CPTs = "b537e094-b773-4c3d-913e-03cd2b143e52"
