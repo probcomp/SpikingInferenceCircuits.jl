@@ -15,24 +15,23 @@ using ProbEstimates
 include("../model_gridded.jl")
 include("../ab_viz.jl")
 include("deferred_inference.jl")
-include("smart_twostep_proposal.jl")
-include("../old/gather_para_trajectories.jl")
+include("smart_twostep_proposal_gridded.jl")
+include("../old/gather_para_trajectories_gridded.jl")
 
 println("MinProb() = $(MinProb())")
 # ProbEstimates.use_perfect_weights!()
 ProbEstimates.use_noisy_weights!()
-ProbEstimates.set_assembly_size!(1000)
+ProbEstimates.set_assembly_size!(1000000)
 ProbEstimates.set_latency!(20)
 ProbEstimates.UseLowPrecisionMultiply() = false
 ProbEstimates.MultAssemblySize() = 200
 ProbEstimates.MaxRate() = 0.1
 
-
 step_time = 48
 div_time = 1 / (step_time / 1000)
 #cmap = make_deterministic_trace()
 cmap, norm_xyz  = make_trace_from_realprey(20.833)
-#GLMakie.activate!()
+GLMakie.activate!()
 #para_3Dtrajectory_in_modelspace(norm_xyz...)
 X_init, Y_init, Z_init = norm_xyz[1][1], norm_xyz[2][1], norm_xyz[3][1]
 X2, Y2, Z2 = norm_xyz[1][2], norm_xyz[2][2], norm_xyz[3][2]
@@ -41,7 +40,6 @@ X2, Y2, Z2 = norm_xyz[1][2], norm_xyz[2][2], norm_xyz[3][2]
 NSTEPS = 10
 NPARTICLES = 100
 
-
 model = @DynamicModel(initial_model, step_model, obs_model, 8)
 initial_proposal_compiled = @compile_initial_proposal(initial_proposal, 2)
 step_proposal_compiled = @compile_step_proposal(step_proposal, 8, 2)
@@ -49,16 +47,14 @@ two_timestep_proposal_dumb = @compile_2timestep_proposal(initial_proposal, step_
 
 @load_generated_functions()
 
-# NSTEPS = 10
-# NPARTICLES = 10
 # cmap = make_deterministic_trace()
-
+tr, w = generate(model, (NSTEPS,))
 tr, w = generate(model, (NSTEPS,), cmap)
 observations = get_dynamic_model_obs(tr);
 
 final_particle_set = []
 
-for i in 1:100
+for i in 1:10
     # try
         (unweighted_traces_at_each_step, weighted_traces) = deferred_dynamic_model_smc(
             model, observations,
@@ -73,6 +69,7 @@ for i in 1:100
         particles = map(x -> x[1], weighted_traces[end])
         pvec = normalize(exp.(weights .- logsumexp(weights)))
         if !isprobvec(pvec)
+            println(pvec)
             continue
         else
             sample = Gen.categorical(pvec)
@@ -85,10 +82,10 @@ for i in 1:100
 end
 length(final_particle_set)
 GLMakie.activate!()
-animate_pf_results(final_particle_set, tr, true)
-animate_pf_results(final_particle_set, tr, false)
-render_static_trajectories(final_particle_set, tr, true)
-pcoords, gtcoords = render_static_trajectories(final_particle_set, tr, false)
+animate_pf_results(final_particle_set, tr, true, true)
+animate_pf_results(final_particle_set, tr, false, true)
+render_static_trajectories(final_particle_set, tr, true, true)
+pcoords, gtcoords = render_static_trajectories(final_particle_set, tr, false, true)
 # final_scores = [get_score(t) for t in final_particle_set]
 # final_probs = normalize(exp.(final_scores .- logsumexp(final_scores)))
 render_obs_from_particles(final_particle_set, 10; do_obs=false);

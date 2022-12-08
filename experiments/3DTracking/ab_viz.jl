@@ -48,8 +48,6 @@ function render_obs_from_particles(uw_traces, particles_to_plot::Int; do_obs=fal
     else
         cmap_keys = vcat([(:steps => i => :latents => :true_θ => :val) for i in 1:NSTEPS], [(:steps => i => :latents => :true_ϕ => :val) for i in 1:NSTEPS])
     end
-
-    
     for (particle, cmap) in enumerate(true_angle_choicemaps)
         for cmk in cmap_keys
             cmap[cmk] = final_step_particles[particle][cmk]
@@ -127,7 +125,7 @@ end
 
 # you have to make a grid that contains az alt positions over time coded as a heat value, with white as nothing. 
 
-function render_static_trajectories(uw_traces, gt::Trace, from_observer)
+function render_static_trajectories(uw_traces, gt::Trace, from_observer::Bool, yz_gridded::Bool)
     render_azalt_trajectory(gt, "traj")
     GLMakie.activate!()
     res = 700
@@ -151,12 +149,20 @@ function render_static_trajectories(uw_traces, gt::Trace, from_observer)
         for (particle_num, ch) in enumerate(choices_per_particle)
             if i == 0
                 x = extract_submap_value(ch, [:init, :latents, :x, :val])
-                y = extract_submap_value(ch, [:init, :latents, :y, :val])
-                z = extract_submap_value(ch, [:init, :latents, :z, :val])
+                if yz_gridded
+                    y, z = extract_submap_value(ch, [:init, :latents, :yz, :val])
+                else
+                    y = extract_submap_value(ch, [:init, :latents, :y, :val])
+                    z = extract_submap_value(ch, [:init, :latents, :z, :val])
+                end
             else
                 x = extract_submap_value(ch, [:steps, i, :latents, :x, :val])
-                y = extract_submap_value(ch, [:steps, i, :latents, :y, :val])
-                z = extract_submap_value(ch, [:steps, i, :latents, :z, :val])
+                if yz_gridded
+                    y, z = extract_submap_value(ch, [:steps, i, :latents, :yz, :val])
+                else
+                    y = extract_submap_value(ch, [:steps, i, :latents, :y, :val])
+                    z = extract_submap_value(ch, [:steps, i, :latents, :z, :val])
+                end
             end
             if from_observer
                 y = -y
@@ -191,7 +197,8 @@ function render_static_trajectories(uw_traces, gt::Trace, from_observer)
     CairoMakie.activate!()
     save("inferred_trajectories.pdf", fig)
     return particle_coords, gt_coords
-end    
+end
+
 
 function plot_full_choicemap(tr)
     GLMakie.activate!()
@@ -267,7 +274,7 @@ end
 # each particle's xyz coordinate is plotted and the score of the particle is reflected in the color.
 # also have the ground truth plotted in a different color.
 
-function animate_pf_results(uw_traces, gt_trace, from_observer)
+function animate_pf_results(uw_traces, gt_trace, from_observer::Bool, yz_gridded::Bool)
     GLMakie.activate!()
     res = 700
     if from_observer
@@ -303,12 +310,20 @@ function animate_pf_results(uw_traces, gt_trace, from_observer)
         for (particle_num, ch) in enumerate(choices_per_particle)
             if i == 0
                 x = extract_submap_value(ch, [:init, :latents, :x, :val])
-                y = extract_submap_value(ch, [:init, :latents, :y, :val])
-                z = extract_submap_value(ch, [:init, :latents, :z, :val])
+                if yz_gridded
+                    y, z = extract_submap_value(ch, [:init, :latents, :yz, :val])                    
+                else
+                    y = extract_submap_value(ch, [:init, :latents, :y, :val])
+                    z = extract_submap_value(ch, [:init, :latents, :z, :val])
+                end
             else
                 x = extract_submap_value(ch, [:steps, i, :latents, :x, :val])
-                y = extract_submap_value(ch, [:steps, i, :latents, :y, :val])
-                z = extract_submap_value(ch, [:steps, i, :latents, :z, :val])
+                if yz_gridded
+                    y, z = extract_submap_value(ch, [:steps, i, :latents, :yz, :val])
+                else
+                    y = extract_submap_value(ch, [:steps, i, :latents, :y, :val])
+                    z = extract_submap_value(ch, [:steps, i, :latents, :z, :val])
+                end
             end
             if from_observer
                 y = -y

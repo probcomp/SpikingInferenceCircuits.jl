@@ -37,8 +37,10 @@ tanksize = 302
 θs() = -1.4:θstep():1.4
 #MinProb() = 0.01
 #MinProb() = 0.001
-ProbEstimates.MinProb() = .001
+ProbEstimates.MinProb() = .000001
 MinProb() = ProbEstimates.MinProb()
 
 scale_velocity(vel, is_prey) = is_prey ? Int(round(vel / PreyVelScale())) : Int(round(vel / PredatorVelScale()))
 
+grid_YZ(y, z, noise) = [yp*zp for yp in truncated_discretized_gaussian(
+                            y, noise, Ys()) for zp in truncated_discretized_gaussian(z, noise, Zs())]

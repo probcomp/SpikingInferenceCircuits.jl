@@ -31,6 +31,7 @@ noise_multiplier = .1
 neg_to_inf(x) = x <= 0 ? Inf : x
 norm_3d(x, y, z) = sqrt(x^2 + y^2 + z^2)
 round_to_pt1(x) = round(x, digits=1)
+round_to_domain(x, dom) = dom[argmin([(x-y)^2 for y in dom])]
 
 # x, y, zₜ are the current positions at time t.
 # vx vy and vz are the velocities that move the animal from xt-1 to xt
@@ -45,9 +46,9 @@ round_to_pt1(x) = round(x, digits=1)
     yzₜ = { :yz } ~ LCat(YZs())(unif(YZs()))
     true_r = round(norm_3d(xₜ, yzₜ[1], yzₜ[2]))
     true_ϕ = { :true_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(
-        round_to_pt1(nm.asin(yzₜ[2] / true_r)), 0.2 * noise_multiplier, ϕs()))
+        round_to_domain(nm.asin(yzₜ[2] / true_r), ϕs()), 0.2 * noise_multiplier, ϕs()))
     true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(
-        round_to_pt1(nm.atan(yzₜ[1] / xₜ)), 0.2 * noise_multiplier, θs()))
+        round_to_domain(nm.atan(yzₜ[1] / xₜ), θs()), 0.2 * noise_multiplier, θs()))
     r_max = max_distance_inside_grid(true_ϕ, true_θ)
     r_probvec = normalize(
         vcat(truncated_discretized_gaussian(
@@ -68,11 +69,11 @@ end
     yzₜ = { :yz } ~ LCat(YZs())(grid_YZ(yzₜ₋₁[1] + dyₜ, yzₜ₋₁[2] + dzₜ, 2.0 * noise_multiplier))
     # Here: a stochastic mapping from (x, y, h) -> (r, θ, ϕ)
     # For now: just use dimension-wise discretized Gaussians.
-    true_r = round(norm_3d(xₜ, yₜ, zₜ))
+    true_r = round(norm_3d(xₜ, yzₜ[1], yzₜ[2]))
     true_ϕ = { :true_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(
-        round_to_pt1(nm.asin(zₜ / true_r)), 0.2 * noise_multiplier, ϕs()))
+        round_to_domain(nm.asin(yzₜ[2] / true_r), ϕs()), 0.2 * noise_multiplier, ϕs()))
     true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(
-        round_to_pt1(nm.atan(yₜ / xₜ)), 0.2 * noise_multiplier, θs()))
+        round_to_domain(nm.atan(yzₜ[1] / xₜ), θs()), 0.2 * noise_multiplier, θs()))
     r_max = max_distance_inside_grid(true_ϕ, true_θ)
     r_probvec = normalize(
         vcat(truncated_discretized_gaussian(
@@ -88,8 +89,8 @@ end
 @gen (static) function obs_model(dxₜ, dyₜ, dzₜ, xₜ, yzₜ, rₜ, true_ϕ, true_θ)
     # can't propose to these b/c they are the final observations we're scoring.
     # have to propose to the exact theta and phi.
-    obs_ϕ = { :obs_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(round_to_pt1(true_ϕ), 0.3 * noise_multiplier, ϕs()))
-    obs_θ = { :obs_θ } ~ LCat(θs())(truncated_discretized_gaussian(round_to_pt1(true_θ), 0.3 * noise_multiplier, θs()))
+    obs_ϕ = { :obs_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(round_to_domain(true_ϕ, ϕs()), 0.3 * noise_multiplier, ϕs()))
+    obs_θ = { :obs_θ } ~ LCat(θs())(truncated_discretized_gaussian(round_to_domain(true_θ, θs()), 0.3 * noise_multiplier, θs()))
     return (obs_ϕ, obs_θ)
 end
 
@@ -155,10 +156,6 @@ end
     return (dxₜ, dyₜ, dzₜ, xₜ, yzₜ, rₜ, true_ϕ, true_θ)
 end
 
-function grid_YZ(y, z, noise)
-    [yp*zp for yp in truncated_discretized_gaussian(
-         y, noise, Ys()) for zp in truncated_discretized_gaussian(z, noise, Zs())]
-end
 
 function max_distance_inside_grid(ϕ, θ)
     for (i, r) in enumerate(Rs())
@@ -188,9 +185,9 @@ function make_deterministic_trace()
     dz_traj_choice = [(:steps => i => :latents => :dz => :val, dz) for (i, dz) in enumerate(dz_traj)]
     # Think deeply about the right answer here for true_r and rt-1. 
     true_r = [round(norm_3d(x, y, z)) for (x, y, z) in zip(x_traj, y_traj, z_traj)]
-    true_ϕ = [round_to_pt1(nm.asin(z / r)) for (z, r) in zip(z_traj, true_r)]
+    true_ϕ = [round_to_domain(nm.asin(z / r), ϕs()) for (z, r) in zip(z_traj, true_r)]
     true_ϕ_choice = [(:steps => i => :latents => :true_ϕ => :val, ϕ) for (i, ϕ) in enumerate(true_ϕ[2:end])]    
-    true_θ = [round_to_pt1(nm.atan(y / x)) for (x, y) in zip(x_traj, y_traj)] 
+    true_θ = [round_to_domain(nm.atan(y / x), θs()) for (x, y) in zip(x_traj, y_traj)] 
     true_θ_choice = [(:steps => i => :latents => :true_θ => :val, θ) for (i, θ) in enumerate(true_θ[2:end])]
     r_choice = [(:steps => i => :latents => :r => :val, r) for (i, r) in enumerate(true_r[2:end])]
     obsθ_choice = [(:steps => i => :obs => :obs_θ => :val, θ) for (i, θ) in enumerate(true_θ[2:end])]
