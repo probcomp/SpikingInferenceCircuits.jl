@@ -12,7 +12,7 @@ using ProbEstimates
 # foregone conclusion if you change X. Fix this. 
 
 # the noise in all model values has been increased -- there is tons of variation now. 
-include("../model.jl")
+include("../model_gridded.jl")
 include("../ab_viz.jl")
 include("deferred_inference.jl")
 include("smart_twostep_proposal.jl")
@@ -42,10 +42,10 @@ NSTEPS = 10
 NPARTICLES = 100
 
 
-model = @DynamicModel(initial_model, step_model, obs_model, 9)
+model = @DynamicModel(initial_model, step_model, obs_model, 8)
 initial_proposal_compiled = @compile_initial_proposal(initial_proposal, 2)
-step_proposal_compiled = @compile_step_proposal(step_proposal, 9, 2)
-two_timestep_proposal_dumb = @compile_2timestep_proposal(initial_proposal, step_proposal, 9, 2)
+step_proposal_compiled = @compile_step_proposal(step_proposal, 8, 2)
+two_timestep_proposal_dumb = @compile_2timestep_proposal(initial_proposal, step_proposal, 8, 2)
 
 @load_generated_functions()
 

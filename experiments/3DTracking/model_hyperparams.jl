@@ -16,6 +16,7 @@ fish_origin = (0, 0, 0)
 Xs() = 1:(y_ub * 2)
 Ys() = y_lb:ydiv:y_ub
 Zs() = z_lb:zdiv:z_ub
+YZs() = [(y, z) for y in Ys() for z in Zs()]
 X_init = 20
 Y_init = y_lb / 4
 Z_init = 3
