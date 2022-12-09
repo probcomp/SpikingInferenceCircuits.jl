@@ -19,7 +19,7 @@ include("smart_twostep_proposal_gridded.jl")
 include("../old/gather_para_trajectories_gridded.jl")
 
 println("MinProb() = $(MinProb())")
-# ProbEstimates.use_perfect_weights!()
+#ProbEstimates.use_perfect_weights!()
 ProbEstimates.use_noisy_weights!()
 ProbEstimates.set_assembly_size!(1000000)
 ProbEstimates.set_latency!(20)
@@ -37,7 +37,7 @@ X_init, Y_init, Z_init = norm_xyz[1][1], norm_xyz[2][1], norm_xyz[3][1]
 X2, Y2, Z2 = norm_xyz[1][2], norm_xyz[2][2], norm_xyz[3][2]
 
 #NSTEPS = floor(Int64, length(norm_xyz[1]))
-NSTEPS = 10
+NSTEPS = 8
 NPARTICLES = 100
 
 model = @DynamicModel(initial_model, step_model, obs_model, 8)
@@ -48,13 +48,13 @@ two_timestep_proposal_dumb = @compile_2timestep_proposal(initial_proposal, step_
 @load_generated_functions()
 
 # cmap = make_deterministic_trace()
-tr, w = generate(model, (NSTEPS,))
+#tr, w = generate(model, (NSTEPS,))
 tr, w = generate(model, (NSTEPS,), cmap)
 observations = get_dynamic_model_obs(tr);
 
 final_particle_set = []
 
-for i in 1:10
+for i in 1:100
     # try
         (unweighted_traces_at_each_step, weighted_traces) = deferred_dynamic_model_smc(
             model, observations,
