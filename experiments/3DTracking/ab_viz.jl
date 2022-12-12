@@ -77,11 +77,11 @@ function animate_azalt_heatmap(tr_list, anim_now)
     end
     for tr in tr_list
         choices = get_choices(tr)
-        azalt_matrices[1, findfirst(map(x -> x == choices[:init => :latents => :true_θ => :val], θs())),
-                        findfirst(map(x -> x == choices[:init => :latents => :true_ϕ => :val], ϕs()))] += 1
+        azalt_matrices[1, findfirst(map(x -> x == choices[:init => :latents => :ϕθ => :val][2], θs())),
+                        findfirst(map(x -> x == choices[:init => :latents => :ϕθ => :val][1], ϕs()))] += 1
         for step in 1:NSTEPS
-            obs_θ = choices[:steps => step => :latents => :true_θ => :val]
-            obs_ϕ = choices[:steps => step => :latents => :true_ϕ => :val]
+            obs_θ = choices[:steps => step => :latents => :ϕθ => :val][2]
+            obs_ϕ = choices[:steps => step => :latents => :ϕθ => :val][1]
             azalt_matrices[step+1,
                            findfirst(map(x -> x == obs_θ, θs())),
                            findfirst(map(x -> x == obs_ϕ, ϕs()))] += 1

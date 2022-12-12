@@ -16,7 +16,7 @@ import NaNMath as nm
 # NOTES 8/3/2021
 # the nanmath and the isfinite calls in onehot, truncated_discretized_gaussian. After running again, all scores are NaN. 
 # Usually on a 20 particle run get mostly non-nan scores. May be worth debugging a bit with George.
-# Re-added nanmath and its fine. It's the isfinite calls in the distributions. 
+# Re-added nanmath and its fine. It's the isfinite calls in the distributions.
 # like the drawings from Xuan's paper.
 
 # pseudo-marginal tumbling state (draw uniform, draw from previous).
@@ -45,52 +45,50 @@ round_to_domain(x, dom) = dom[argmin([(x-y)^2 for y in dom])]
     xₜ = { :x } ~ Cat(unif(Xs()))
     yzₜ = { :yz } ~ LCat(YZs())(unif(YZs()))
     true_r = round(norm_3d(xₜ, yzₜ[1], yzₜ[2]))
-    true_ϕ = { :true_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(
-        round_to_domain(nm.asin(yzₜ[2] / true_r), ϕs()), 0.2 * noise_multiplier, ϕs()))
-    true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(
-        round_to_domain(nm.atan(yzₜ[1] / xₜ), θs()), 0.2 * noise_multiplier, θs()))
-    r_max = max_distance_inside_grid(true_ϕ, true_θ)
+    true_ϕθ = { :ϕθ } ~ LCat(ϕθs())(grid_pair(round_to_domain(nm.asin(yzₜ[2] / true_r), ϕs()),
+                                            round_to_domain(nm.atan(yzₜ[1] / xₜ), θs()),
+                                            ϕs(), θs(), 0.2 * noise_multiplier))
+    r_max = max_distance_inside_grid(true_ϕθ[1], true_ϕθ[2])
     r_probvec = normalize(
         vcat(truncated_discretized_gaussian(
             true_r <= r_max ? true_r : r_max, 2.0 * noise_multiplier, Rs())[1:Int(r_max)],
              zeros(length(Rs())-Int(r_max))))
     rₜ = { :r } ~ LCat(Rs())(r_probvec)
-    return (dxₜ, dyₜ, dzₜ, xₜ, yzₜ, rₜ, true_ϕ, true_θ)
+    return (dxₜ, dyₜ, dzₜ, xₜ, yzₜ, rₜ, true_ϕθ)
 end
 
 # x = back and forth
 # y = left and right
 # z = up and down
-@gen (static) function step_model(dxₜ₋₁, dyₜ₋₁, dzₜ₋₁, xₜ₋₁, yzₜ₋₁, rₜ₋₁, true_ϕₜ₋₁, true_θₜ₋₁)
+@gen (static) function step_model(dxₜ₋₁, dyₜ₋₁, dzₜ₋₁, xₜ₋₁, yzₜ₋₁, rₜ₋₁, true_ϕθₜ₋₁)
     dxₜ = { :dx } ~ LCat(Vels())(truncated_discretized_gaussian(dxₜ₋₁, 2.0 * noise_multiplier, Vels()))
     dyₜ = { :dy } ~ LCat(Vels())(truncated_discretized_gaussian(dyₜ₋₁, 2.0 * noise_multiplier, Vels()))
     dzₜ = { :dz } ~ LCat(Vels())(truncated_discretized_gaussian(dzₜ₋₁, 2.0 * noise_multiplier, Vels()))
     xₜ = { :x } ~ Cat(truncated_discretized_gaussian(xₜ₋₁ + dxₜ, 2.0 * noise_multiplier, Xs()))
-    yzₜ = { :yz } ~ LCat(YZs())(grid_YZ(yzₜ₋₁[1] + dyₜ, yzₜ₋₁[2] + dzₜ, 2.0 * noise_multiplier))
+    yzₜ = { :yz } ~ LCat(YZs())(grid_pair(yzₜ₋₁[1] + dyₜ, yzₜ₋₁[2] + dzₜ, Ys(), Zs(), 2.0 * noise_multiplier))
     # Here: a stochastic mapping from (x, y, h) -> (r, θ, ϕ)
     # For now: just use dimension-wise discretized Gaussians.
     true_r = round(norm_3d(xₜ, yzₜ[1], yzₜ[2]))
-    true_ϕ = { :true_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(
-        round_to_domain(nm.asin(yzₜ[2] / true_r), ϕs()), 0.2 * noise_multiplier, ϕs()))
-    true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(
-        round_to_domain(nm.atan(yzₜ[1] / xₜ), θs()), 0.2 * noise_multiplier, θs()))
-    r_max = max_distance_inside_grid(true_ϕ, true_θ)
+    true_ϕθ = { :ϕθ } ~ LCat(ϕθs())(grid_pair(round_to_domain(nm.asin(yzₜ[2] / true_r), ϕs()),
+                                              round_to_domain(nm.atan(yzₜ[1] / xₜ), θs()),
+                                              ϕs(), θs(), 0.2 * noise_multiplier))
+    r_max = max_distance_inside_grid(true_ϕθ[1], true_ϕθ[2])
     r_probvec = normalize(
         vcat(truncated_discretized_gaussian(
             true_r <= r_max ? true_r : r_max, 2.0 * noise_multiplier, Rs())[1:Int(r_max)],
              zeros(length(Rs())-Int(r_max))))
     rₜ = { :r } ~ LCat(Rs())(r_probvec)
-    return (dxₜ, dyₜ, dzₜ, xₜ, yzₜ, rₜ, true_ϕ, true_θ)
+    return (dxₜ, dyₜ, dzₜ, xₜ, yzₜ, rₜ, true_ϕθ)
 end
 
 
 # YZs is going to be [for yp in truncated_disc(yval, noise, Ys() for zp in truncated_disc(zval, noise, Zs()]
 
-@gen (static) function obs_model(dxₜ, dyₜ, dzₜ, xₜ, yzₜ, rₜ, true_ϕ, true_θ)
+@gen (static) function obs_model(dxₜ, dyₜ, dzₜ, xₜ, yzₜ, rₜ, true_ϕθ)
     # can't propose to these b/c they are the final observations we're scoring.
     # have to propose to the exact theta and phi.
-    obs_ϕ = { :obs_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(round_to_domain(true_ϕ, ϕs()), 0.3 * noise_multiplier, ϕs()))
-    obs_θ = { :obs_θ } ~ LCat(θs())(truncated_discretized_gaussian(round_to_domain(true_θ, θs()), 0.3 * noise_multiplier, θs()))
+    obs_ϕ = { :obs_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(round_to_domain(true_ϕθ[1], ϕs()), 0.3 * noise_multiplier, ϕs()))
+    obs_θ = { :obs_θ } ~ LCat(θs())(truncated_discretized_gaussian(round_to_domain(true_ϕθ[2], θs()), 0.3 * noise_multiplier, θs()))
     return (obs_ϕ, obs_θ)
 end
 
@@ -106,13 +104,12 @@ end
 # six independent runs of SMC. take one particle at the end. then get 6 uncorrelated particles.# one particle is the resampled independent sample from the posterior. 
 
 @gen (static) function step_proposal(dxₜ₋₁, dyₜ₋₁, dzₜ₋₁, xₜ₋₁, yzₜ₋₁,
-                                     rₜ₋₁, true_ϕ, true_θ, obs_ϕ, obs_θ)
+                                     rₜ₋₁, true_ϕθₜ₋₁, obs_ϕ, obs_θ)
     # θ and ϕ are noisy observations. first sample true angles. 
     # instead of sampling (x, y, h) then computing r (as we do in the model)
     # in the proposal we sample r based on prev_XYZ and prev_dXYZ. 
-    true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(obs_θ, 0.05, θs()))
-    true_ϕ = { :true_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(obs_ϕ, 0.05, ϕs()))
-    r_max = max_distance_inside_grid(true_ϕ, true_θ)
+    true_ϕθ = { :ϕθ } ~ LCat(ϕθs())(grid_pair(obs_ϕ, obs_θ, ϕs(), θs(), 0.05))
+    r_max = max_distance_inside_grid(true_ϕθ[1], true_ϕθ[2])
     euler_x = xₜ₋₁ + dxₜ₋₁
     euler_y = yzₜ₋₁[1] + dyₜ₋₁
     euler_z = yzₜ₋₁[2] + dzₜ₋₁
@@ -122,38 +119,39 @@ end
             true_r <= r_max ? true_r : r_max, .6, Rs())[1:Int(r_max)],
              zeros(length(Rs())-Int(r_max))))
     rₜ = { :r } ~ LCat(Rs())(r_probvec)
-    x_mean = rₜ * cos(true_ϕ) * cos(true_θ)
-    y_mean = rₜ * cos(true_ϕ) * sin(true_θ)
-    z_mean = rₜ * sin(true_ϕ)
+    x_mean = rₜ * cos(true_ϕθ[1]) * cos(true_ϕθ[2])
+    y_mean = rₜ * cos(true_ϕθ[1]) * sin(true_ϕθ[2])
+    z_mean = rₜ * sin(true_ϕθ[1])
     xₜ = { :x } ~ LCat(Xs())(truncated_discretized_gaussian(x_mean, .1, Xs()))
-    yzₜ = { :yz } ~ LCat(YZs())(grid_YZ(y_mean, z_mean, .1))
+    yzₜ = { :yz } ~ LCat(YZs())(grid_pair(y_mean, z_mean, Ys(), Zs(), .1))
     dxₜ = { :dx } ~ LCat(Vels())(truncated_discretized_gaussian(xₜ-xₜ₋₁, .1, Vels()))
     dyₜ = { :dy } ~ LCat(Vels())(truncated_discretized_gaussian(yzₜ[1]-yzₜ₋₁[1], .1, Vels()))
     dzₜ = { :dz } ~ LCat(Vels())(truncated_discretized_gaussian(yzₜ[2]-yzₜ₋₁[2], .1, Vels()))
-    return (dxₜ, dyₜ, dzₜ, xₜ, yzₜ, rₜ, true_ϕ, true_θ)
+    return (dxₜ, dyₜ, dzₜ, xₜ, yzₜ, rₜ, true_ϕθ)
 end
 
 @gen (static) function initial_proposal(obs_ϕ, obs_θ)
-    true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(obs_θ, 0.05, θs()))
-    true_ϕ = { :true_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(obs_ϕ, 0.05, ϕs()))
+    true_ϕθ = { :ϕθ } ~ LCat(ϕθs())(grid_pair(obs_ϕ, obs_θ, ϕs(), θs(), 0.05))
     # r_max on the first draw is guaranteed to not leave the cube
-    r_max = max_distance_inside_grid(true_ϕ, true_θ)
+    r_max = max_distance_inside_grid(true_ϕθ[1], true_ϕθ[2])
     l = length(Rs())
     r_probvec = normalize(vcat(ones(Int64(r_max)), zeros(Int64(l-r_max))))
     rₜ = { :r } ~ LCat(Rs())(r_probvec)
  #   rₜ = { :r } ~ LCat(Rs())(truncated_discretized_gaussian(round(norm_3d(X_init, Y_init, Z_init)),
   #                                                          .6, Rs()))
-    x_mean = rₜ * cos(true_ϕ) * cos(true_θ)
-    y_mean = rₜ * cos(true_ϕ) * sin(true_θ)
-    z_mean = rₜ * sin(true_ϕ)
+    x_mean = rₜ * cos(true_ϕθ[1]) * cos(true_ϕθ[2])
+    y_mean = rₜ * cos(true_ϕθ[1]) * sin(true_ϕθ[2])
+    z_mean = rₜ * sin(true_ϕθ[1])
     # size in absolute terms is obtained by the az alt divs being discrete 
     # and az alt not having fixed xyz transforms when distant.
     xₜ = { :x } ~ LCat(Xs())(truncated_discretized_gaussian(round(x_mean), .2, Xs()))
-    yzₜ = { :yz } ~ LCat(YZs())(grid_YZ(round(y_mean), round(z_mean), .2))
+    yzₜ = { :yz } ~ LCat(YZs())(grid_pair(round_to_domain(y_mean, Ys()),
+                                          round_to_domain(z_mean, Zs()),
+                                          Ys(), Zs(), 0.2))
     dxₜ = { :dx } ~ LCat(Vels())(unif(Vels()))
     dyₜ = { :dy } ~ LCat(Vels())(unif(Vels()))
     dzₜ = { :dz } ~ LCat(Vels())(unif(Vels()))
-    return (dxₜ, dyₜ, dzₜ, xₜ, yzₜ, rₜ, true_ϕ, true_θ)
+    return (dxₜ, dyₜ, dzₜ, xₜ, yzₜ, rₜ, true_ϕθ)
 end
 
 

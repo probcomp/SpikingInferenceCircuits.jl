@@ -31,12 +31,12 @@ tanksize = 302
 # vis field is 1.57 radians. 
 ϕs() = -1.4:ϕstep():1.4
 θs() = -1.4:θstep():1.4
+ϕθs() = [(ϕ, θ) for ϕ in ϕs() for θ in θs()]
 #MinProb() = 0.01
 #MinProb() = 0.001
 ProbEstimates.MinProb() = .000001
 MinProb() = ProbEstimates.MinProb()
-
 scale_velocity(vel, is_prey) = is_prey ? Int(round(vel / PreyVelScale())) : Int(round(vel / PredatorVelScale()))
-
-grid_YZ(y, z, noise) = [yp*zp for yp in truncated_discretized_gaussian(
-                            y, noise, Ys()) for zp in truncated_discretized_gaussian(z, noise, Zs())]
+grid_pair(v1, v2, v1_catprob, v2_catprob, noise) = [p1*p2 for p1 in truncated_discretized_gaussian(
+                                                        v1, noise, v1_catprob) for p2 in truncated_discretized_gaussian(
+                                                            v2, noise, v2_catprob)]

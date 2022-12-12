@@ -40,15 +40,15 @@ X2, Y2, Z2 = norm_xyz[1][2], norm_xyz[2][2], norm_xyz[3][2]
 NSTEPS = 8
 NPARTICLES = 100
 
-model = @DynamicModel(initial_model, step_model, obs_model, 8)
+model = @DynamicModel(initial_model, step_model, obs_model, 7)
 initial_proposal_compiled = @compile_initial_proposal(initial_proposal, 2)
-step_proposal_compiled = @compile_step_proposal(step_proposal, 8, 2)
-two_timestep_proposal_dumb = @compile_2timestep_proposal(initial_proposal, step_proposal, 8, 2)
+step_proposal_compiled = @compile_step_proposal(step_proposal, 7, 2)
+two_timestep_proposal_dumb = @compile_2timestep_proposal(initial_proposal, step_proposal, 7, 2)
 
 @load_generated_functions()
 
 # cmap = make_deterministic_trace()
-#tr, w = generate(model, (NSTEPS,))
+tr, w = generate(model, (NSTEPS,))
 tr, w = generate(model, (NSTEPS,), cmap)
 observations = get_dynamic_model_obs(tr);
 
