@@ -104,11 +104,12 @@ end
 # six independent runs of SMC. take one particle at the end. then get 6 uncorrelated particles.# one particle is the resampled independent sample from the posterior. 
 
 
+θ_std() = 0.005
 @gen function step_proposal(dxₜ₋₁, dyₜ₋₁, dzₜ₋₁, xₜ₋₁, yₜ₋₁, zₜ₋₁,
                                      rₜ₋₁, true_ϕ, true_θ, obs_ϕ, obs_θ) # θ and ϕ are noisy
     # instead of sampling (x, y, h) then computing r (as we do in the model)
     # in the proposal we sample (r, x, y) and then compute h
-    true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(obs_θ, 0.05, θs()))
+    true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(obs_θ, θ_std(), θs()))
     # println("the probability that true_θ = -0.4 is $(truncated_discretized_gaussian(obs_θ, 0.05, θs())[findfirst([v==-0.4 for v in θs()])])")
     true_ϕ = { :true_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(obs_ϕ, 0.05, ϕs()))
     r_max = max_distance_inside_grid(true_ϕ, true_θ)
@@ -136,7 +137,7 @@ end
 end
 
 @gen (static) function initial_proposal(obs_ϕ, obs_θ)
-    true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(obs_θ, 0.05, θs()))
+    true_θ = { :true_θ } ~ LCat(θs())(truncated_discretized_gaussian(obs_θ, θ_std(), θs()))
     true_ϕ = { :true_ϕ } ~ LCat(ϕs())(truncated_discretized_gaussian(obs_ϕ, 0.05, ϕs()))
     # r_max on the first draw is guaranteed to not leave the cube
     r_max = max_distance_inside_grid(true_ϕ, true_θ)
