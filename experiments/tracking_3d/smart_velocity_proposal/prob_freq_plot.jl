@@ -8,7 +8,7 @@ unzip(list) = ([x for (x, y) in list], [y for (x, y) in list])
 includet("../model.jl")
 includet("../ab_viz.jl")
 include("deferred_inference.jl")
-θ_std() = 0.0175
+θ_std() = 0.0375
 
 ### Set hyperparameters ###
 ProbEstimates.MinProb() = 0.01
@@ -230,34 +230,53 @@ AXISSIZE = 150
     first_label_length=170, axissize=AXISSIZE
 ); t[] = 45; GLMakie.activate!(); f
 
-f = Figure(resolution=(1200, 500))
-ax = Axis(f[2, 1], title="Spikes from neurons tuned to θ ∈ $(θs_to_view())")
-ax.xlabel = "Prey θ position on retina"
-ax.xticks = (0:25:175, ["$(round(x, digits=1))" for x in STARTθ:0.2:(STARTθ+1.41)])
-xlims!(ax, (0, 150))
-hideydecorations!(ax)
-f
-# draw_lines!(ax, lines, labels, colors, time, xmin, xmax, axissize; hide_y_decorations=true)
+function get_window(spikes, (st, nd))
+    [
+        filter(x -> st ≤ x ≤ nd, train)
+        for train in spikes
+    ]
+end
+function get_prob_to_timing_data(traces_at_each_time, hidden_line_specs, times, first_timestep_plotted, j, k)
+    times_for_theta_values = times[1:length(hidden_line_specs[1].line_specs)]
+    time_to_probs = [
+        get_choices(first(traces))[:steps => get_args(first(traces))[1] => :latents => :true_θ => :proposal_probs]
+        for traces in traces_at_each_time
+    ]
 
-sspikes = times[n_hidden_lines+1:end] # all spikelines to show
+    points = Point2[]
+    points2 = Point2[]
+    for (probs, traces) in zip(time_to_probs[j:k], traces_at_each_time[j:k])
+        t = get_args(first(traces))[1]
+        plottime = t - first_timestep_plotted
+        plottime < 0 && continue
+        ΔT = 25
+        window = get_window(times_for_theta_values, (ΔT*plottime, ΔT*(plottime+1)))
+        subwindow = get_window(times_for_theta_values, (ΔT*plottime, ΔT*(plottime+2/5)))
+        total_n_spikes = reduce(+, length.(window), init=0.)
+        for (i, prob) in enumerate(probs)
+            if prob == 0
+                # @assert length(subwindow[i]) == 0 "prob = $prob ; n_spikes = $(length(subwindow[i]))"
+                continue
+            end
+            push!(points2, Point2(θs()[i], length(subwindow[i])/ total_n_spikes))
+            push!(points, Point2(prob, length(subwindow[i])/ total_n_spikes))
+        end
+    end
 
-spikes_to_show=[sort(vcat(sspikes[(5*(x-1)+1):5*x]...)) for x=1:20] # concatenate every group of 10 spiketrains
+    return (points, points2)
+end
+function plot_spikepercent_plot(args...)
+    (datapoints, points2) = get_prob_to_timing_data(args...)
+    f = Figure()
+    ax = Axis(f[1, 1], title="Frequency of early spiking vs value probability", xlabel="Q[θ = X]", ylabel="% spikes from Q[Θ=X] assembly & in first 10ms of Γ cycle")
+    to_plot = Point2[Point2(x, 100*y) for (x, y) in datapoints]
+    scatter!(ax, to_plot, color=:black)
+    
+    # ax2 = Axis(f[1, 2])
+    # xlims!(ax2, (-1.4, 1.4))
+    # scatter!(ax2, points2)
 
-spikes_to_show = [
-    [sort(vcat(sspikes[(st + 5*(x-1)+1):(st + 5*x)]...)) for x=1:20]
-    for st = 0:100:200
-]
-
-colors = vcat(([col for _ in lst] for (col, lst) in zip((:blue, :black, :red), spikes_to_show))...)
-ProbEstimates.Spiketrains.SpiketrainViz.draw_lines!(ax,
-    vcat(spikes_to_show...), [], colors,
-    t, nothing, nothing, 150
-)
-
-c = Observable(RGBA(colorant"yellow", 0.2))
-poly!(ax, Rect2D(Point2(75, 0), Point2(16, 61)), color=c)
-
-f
-
-augment_figure_with_wave!(f, times, AXISSIZE, n_hidden_lines, 1)
+    return (f, ax)
+end
+(f, ax) = plot_spikepercent_plot(traces_at_each_time, hidden_line_specs, times, 2, 1, 8);
 f
