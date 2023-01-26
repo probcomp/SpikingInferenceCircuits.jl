@@ -121,7 +121,7 @@ function v_t_dist(obs_prev_diff, vₜ₋₁)
     return isprobvec(val) ? val : unif(Vels())
 end
 kl(pv1, pv2) = sum(
-    p1 * log(p1/p2) for (p1, p2) in zip(pv1, pv2)
+    (p1 == 0. ? 0. : p1 * (log(p1) - log(p2))) for (p1, p2) in zip(pv1, pv2)
 )
 @gen (static) function _approx_step_proposal(xₜ₋₁, vₜ₋₁, obs)
     obs_prev_diff = obs - xₜ₋₁

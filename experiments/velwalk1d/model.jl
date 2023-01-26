@@ -1,6 +1,6 @@
 using Gen, Distributions
 # Include the library exposing `Cat` and `LCat`
-using ProbEstimates
+using ProbEstimates, DynamicModels
 ProbEstimates.use_perfect_weights!()
 
 # Include some utilities for defining discrete probability distributions
