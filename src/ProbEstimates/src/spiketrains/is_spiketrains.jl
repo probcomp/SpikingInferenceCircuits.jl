@@ -362,5 +362,5 @@ function to_int(v)
 end
 
 ### Some default distributions for spiketrain production ###
-DefaultInterSampleTimeDist() = Exponential(1 / (MaxRate() * 4.5))
+DefaultInterSampleTimeDist() = Exponential(1 / (MaxRate() * 4.5)) # (AssemblySize() * MaxRate()))
 DefaultToReadySpikeDist() = Exponential(1 / (AssemblySize() * MaxRate()))

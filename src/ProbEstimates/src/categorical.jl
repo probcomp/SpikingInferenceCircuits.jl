@@ -43,10 +43,14 @@ ContinuousInvertingCat = LCat{Int}(true, Int[], true)
 LCat(labels::Vector{T}) where {T} = LCat{T}(false, labels)
 LCat(labels) = LCat(collect(labels))
 
-Gen.simulate(c::LCat, (probs,)::Tuple) = CatTrace(c, probs, categorical(recip_truncate(probs, c.inverts_continuous)))
+Gen.simulate(c::LCat, (probs,)::Tuple) =
+    let ps = recip_truncate(probs, c.inverts_continuous)
+        CatTrace(c, probs, categorical(ps), nothing, nothing, ps)
+    end
 function Gen.generate(c::LCat, (probs,)::Tuple, cm::Union{Gen.ChoiceMap, Gen.EmptyChoiceMap})
     if isempty(cm)
-        tr = CatTrace(c, probs, categorical(fwd_truncate(probs, c.inverts_continuous)))
+        ps = fwd_truncate(probs, c.inverts_continuous)
+        tr = CatTrace(c, probs, categorical(ps), nothing, nothing, nothing)
         return (
             tr,
             log(fwd_prob_estimate(tr)) + log(recip_prob_estimate(tr))
@@ -57,9 +61,10 @@ function Gen.generate(c::LCat, (probs,)::Tuple, cm::Union{Gen.ChoiceMap, Gen.Emp
         # @assert length(collect(get_values_shallow(cm))) == 1
         rscore = has_value(cm, :recip_score) ? cm[:recip_score] : nothing
         fscore = has_value(cm, :fwd_score) ? cm[:fwd_score] : nothing
+        pprobs = has_value(cm, :proposal_probs) ? cm[:proposal_probs] : nothing
         idx = label_to_idx(c, cm[:val])
         @assert !isnothing(idx) "couldn't find value $(cm[:val])"
-        tr = CatTrace(c, probs, idx, fscore, rscore, probs)
+        tr = CatTrace(c, probs, idx, fscore, rscore, pprobs)
         return (tr, log(fwd_prob_estimate(tr)))
     end
 end

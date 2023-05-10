@@ -118,12 +118,13 @@ function draw_multiparticle_multistep_spiketrain_group_fig_plus_extras(
     ms_per_timestep = timestep_length_to_latency_ratio * Latency()
     lines = []
     starttime = 0
-    for (t_plus_1, (trs_at_step, logweights_at_step)) in enumerate(zip(trs, log_trace_weights))
+    for (trs_at_step, logweights_at_step) in zip(trs, log_trace_weights)
+        t = get_args(trs_at_step[1])[1]
         lines_now = get_lines_for_multiparticle_spec_groups(
             groupspecs, trs_at_step, 
             logweights_at_step,
             (prop_sample_tree, assess_sample_tree, prop_addr_top_order, addr_to_domain);
-            nest_all_at=time_to_nesting_addr(t_plus_1 - 1)
+            nest_all_at=time_to_nesting_addr(t)
         )
         if isempty(lines)
             lines = copy(lines_now)

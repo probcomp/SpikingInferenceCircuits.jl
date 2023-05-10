@@ -8,6 +8,7 @@ unzip(list) = ([x for (x, y) in list], [y for (x, y) in list])
 includet("../model.jl")
 includet("../ab_viz.jl")
 include("deferred_inference.jl")
+θ_std() = 0.0375
 
 ### Set hyperparameters ###
 ProbEstimates.MinProb() = 0.01
@@ -36,11 +37,12 @@ NPARTICLES = 10
 # cmap = get_selected(make_deterministic_trace(), select(:init, :steps => 1, :steps => 2, :steps => 3, :steps => 4))
 # tr, w = generate(model, (NSTEPS,), cmap)
 # observations = get_dynamic_model_obs(tr);
+STARTθ = -0.6
 observations = (
-    choicemap((:obs_θ => :val, -0.5), (:obs_ϕ => :val, 0.3)),
+    choicemap((:obs_θ => :val, STARTθ - 0.4), (:obs_ϕ => :val, 0.3)),
     [
-        choicemap((:obs_θ => :val, x), (:obs_ϕ => :val, 0.3))
-        for x=-0.6:0.2:0.8
+        choicemap((:obs_θ => :val, round(x, digits=1)), (:obs_ϕ => :val, 0.3))
+        for x=(STARTθ - 0.2):0.2:(STARTθ + 1.2)
     ]
 )
 
@@ -211,36 +213,70 @@ function augment_figure_with_wave!(f, times, axissize, n_hidden_lines, axispos)
         xlims!(ax, (t[], t[] + axissize))
     end
     t[] = 0
-    rowsize!(f.layout, 2, Relative(.5))
+    rowsize!(f.layout, 1, Relative(.3))
+    ax.tellheight = true
     f
 end
 
 ### Make the Makie figure with the animation.
 ### `t` controls which window of time is shown on screen.
 AXISSIZE = 150
+θs_to_view() = [-0.4, 0.0, 0.4]
 (((f, t), (times, group_labels, colors, n_hidden_lines)), hidden_line_specs) = make_Qθ_spiketrain_fig_and_get_all_L4(
     traces_at_each_time[2:end], logweights_at_each_time[2:end],
-    [0.0], 1:100;
+    θs_to_view(), 1:100;
     figure_title="Spikes from SMC Neurons for 3D Tracking",
     resolution=(750, 150), return_metadata=true,
     first_label_length=170, axissize=AXISSIZE
 ); t[] = 45; GLMakie.activate!(); f
 
-f = Figure()
-ax = Axis(f[2, 1], title="Spikes from neurons tuned to θ=0.0")
-ax.xlabel = "Prey θ position on retina"
-ax.xticks = (0:25:125, ["$x" for x in -0.6:0.2:0.4])
-xlims!(ax, (0, 150))
-hideydecorations!(ax)
+function get_window(spikes, (st, nd))
+    [
+        filter(x -> st ≤ x ≤ nd, train)
+        for train in spikes
+    ]
+end
+function get_prob_to_timing_data(traces_at_each_time, hidden_line_specs, times, first_timestep_plotted, j, k)
+    times_for_theta_values = times[1:length(hidden_line_specs[1].line_specs)]
+    time_to_probs = [
+        get_choices(first(traces))[:steps => get_args(first(traces))[1] => :latents => :true_θ => :proposal_probs]
+        for traces in traces_at_each_time
+    ]
+
+    points = Point2[]
+    points2 = Point2[]
+    for (probs, traces) in zip(time_to_probs[j:k], traces_at_each_time[j:k])
+        t = get_args(first(traces))[1]
+        plottime = t - first_timestep_plotted
+        plottime < 0 && continue
+        ΔT = 25
+        window = get_window(times_for_theta_values, (ΔT*plottime, ΔT*(plottime+1)))
+        subwindow = get_window(times_for_theta_values, (ΔT*plottime, ΔT*(plottime+2/5)))
+        total_n_spikes = reduce(+, length.(window), init=0.)
+        for (i, prob) in enumerate(probs)
+            if prob == 0
+                # @assert length(subwindow[i]) == 0 "prob = $prob ; n_spikes = $(length(subwindow[i]))"
+                continue
+            end
+            push!(points2, Point2(θs()[i], length(subwindow[i])/ total_n_spikes))
+            push!(points, Point2(prob, length(subwindow[i])/ total_n_spikes))
+        end
+    end
+
+    return (points, points2)
+end
+function plot_spikepercent_plot(args...)
+    (datapoints, points2) = get_prob_to_timing_data(args...)
+    f = Figure()
+    ax = Axis(f[1, 1], title="Frequency of early spiking vs value probability", xlabel="Q[θ = X]", ylabel="% spikes from Q[Θ=X] assembly & in first 10ms of Γ cycle")
+    to_plot = Point2[Point2(x, 100*y) for (x, y) in datapoints]
+    scatter!(ax, to_plot, color=:black)
+    
+    # ax2 = Axis(f[1, 2])
+    # xlims!(ax2, (-1.4, 1.4))
+    # scatter!(ax2, points2)
+
+    return (f, ax)
+end
+(f, ax) = plot_spikepercent_plot(traces_at_each_time, hidden_line_specs, times, 2, 1, 8);
 f
-# draw_lines!(ax, lines, labels, colors, time, xmin, xmax, axissize; hide_y_decorations=true)
-
-# times[n_hidden_lines+1:end]
-# spikes_to_show=[sort(vcat(times[n_hidden_lines+1:end]...))]
-sspikes = times[n_hidden_lines+1:end]
-spikes_to_show=[sort(vcat(sspikes[(5*(x-1)+1):5*x]...)) for x=1:20]
-ProbEstimates.Spiketrains.SpiketrainViz.draw_lines!(ax, spikes_to_show, [], [:black for _ in spikes_to_show], t, nothing, nothing, 150)
-
-f
-
-augment_figure_with_wave!(f, times, AXISSIZE, n_hidden_lines, 1)
