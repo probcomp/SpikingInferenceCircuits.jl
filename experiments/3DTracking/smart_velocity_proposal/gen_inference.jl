@@ -19,8 +19,8 @@ include("smart_twostep_proposal.jl")
 include("../old/gather_para_trajectories.jl")
 
 println("MinProb() = $(MinProb())")
-# ProbEstimates.use_perfect_weights!()
-ProbEstimates.use_noisy_weights!()
+ProbEstimates.use_perfect_weights!()
+#ProbEstimates.use_noisy_weights!()
 ProbEstimates.set_assembly_size!(1000)
 ProbEstimates.set_latency!(20)
 ProbEstimates.UseLowPrecisionMultiply() = false
@@ -85,10 +85,10 @@ for i in 1:100
 end
 length(final_particle_set)
 GLMakie.activate!()
-animate_pf_results(final_particle_set, tr, true)
-animate_pf_results(final_particle_set, tr, false)
-render_static_trajectories(final_particle_set, tr, true)
-pcoords, gtcoords = render_static_trajectories(final_particle_set, tr, false)
+animate_pf_results(final_particle_set, tr, false, false) 
+#animate_pf_results(final_particle_set, tr, false)
+render_static_trajectories(final_particle_set, tr, true, false)
+pcoords, gtcoords = render_static_trajectories(final_particle_set, tr, false, false)
 # final_scores = [get_score(t) for t in final_particle_set]
 # final_probs = normalize(exp.(final_scores .- logsumexp(final_scores)))
 render_obs_from_particles(final_particle_set, 10; do_obs=false);

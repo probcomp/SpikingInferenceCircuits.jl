@@ -62,7 +62,7 @@ end
 
 
 
-function animate_azalt_heatmap(tr_list, anim_now)
+function animate_azalt_heatmap(tr_list, anim_now, gridded_model)
     azalt_matrices = zeros(NSTEPS+1, length(θs()), length(ϕs()))
     obs_matrices = zeros(NSTEPS+1, length(θs()), length(ϕs()))
     gt_obs_choices = get_choices(tr_list[1])
@@ -75,16 +75,31 @@ function animate_azalt_heatmap(tr_list, anim_now)
                      findfirst(map(x -> x == obs_θ, θs())),
                      findfirst(map(x -> x == obs_ϕ, ϕs()))] += 1
     end
-    for tr in tr_list
-        choices = get_choices(tr)
-        azalt_matrices[1, findfirst(map(x -> x == choices[:init => :latents => :ϕθ => :val][2], θs())),
-                        findfirst(map(x -> x == choices[:init => :latents => :ϕθ => :val][1], ϕs()))] += 1
-        for step in 1:NSTEPS
-            obs_θ = choices[:steps => step => :latents => :ϕθ => :val][2]
-            obs_ϕ = choices[:steps => step => :latents => :ϕθ => :val][1]
-            azalt_matrices[step+1,
-                           findfirst(map(x -> x == obs_θ, θs())),
-                           findfirst(map(x -> x == obs_ϕ, ϕs()))] += 1
+    if gridded_model
+        for tr in tr_list
+            choices = get_choices(tr)
+            azalt_matrices[1, findfirst(map(x -> x == choices[:init => :latents => :ϕθ => :val][2], θs())),
+                            findfirst(map(x -> x == choices[:init => :latents => :ϕθ => :val][1], ϕs()))] += 1
+            for step in 1:NSTEPS
+                obs_θ = choices[:steps => step => :latents => :ϕθ => :val][2]
+                obs_ϕ = choices[:steps => step => :latents => :ϕθ => :val][1]
+                azalt_matrices[step+1,
+                               findfirst(map(x -> x == obs_θ, θs())),
+                               findfirst(map(x -> x == obs_ϕ, ϕs()))] += 1
+            end
+        end
+    else
+        for tr in tr_list
+            choices = get_choices(tr)
+            azalt_matrices[1, findfirst(map(x -> x == choices[:init => :latents => :true_θ => :val], θs())),
+                            findfirst(map(x -> x == choices[:init => :latents => :true_ϕ => :val], ϕs()))] += 1
+            for step in 1:NSTEPS
+                obs_θ = choices[:steps => step => :latents => :true_θ => :val]
+                obs_ϕ = choices[:steps => step => :latents => :true_ϕ => :val]
+                azalt_matrices[step+1,
+                               findfirst(map(x -> x == obs_θ, θs())),
+                               findfirst(map(x -> x == obs_ϕ, ϕs()))] += 1
+            end
         end
     end
     fig = Figure(resolution=(2000,1000))
@@ -297,7 +312,7 @@ function animate_pf_results(uw_traces, gt_trace, from_observer::Bool, yz_gridded
                                viewmode=:fit, aspect=(1,1,1), perspectiveness=0.0, protrusions=0, limits=lim,
                                elevation = 1.2*pi, azimuth= .7*pi)
     azalt_axis = fig[1, 1:2] = Axis(outer_padding= 400, fig)
-    observation_matrices, azalt_particle_matrices = animate_azalt_heatmap(uw_traces, false)
+    observation_matrices, azalt_particle_matrices = animate_azalt_heatmap(uw_traces, false, yz_gridded)
     # scatter takes a list of tuples. want a list of lists of tuples as an f(t) and lift a node to that.
     time_node = Node(1)
     gt_coords = []
@@ -307,6 +322,7 @@ function animate_pf_results(uw_traces, gt_trace, from_observer::Bool, yz_gridded
     trace_scores = [get_score(tr) for tr in uw_traces]
     for i in 0:NSTEPS
         step_particle_coords = []
+        println("HEY MAN")
         for (particle_num, ch) in enumerate(choices_per_particle)
             if i == 0
                 x = extract_submap_value(ch, [:init, :latents, :x, :val])
